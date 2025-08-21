@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "phd-jssp"
+version = "0.0.0"
+description = "Szkielet repozytorium do pracy nad JSSP."
+authors = [{ name = "Remigiusz Wojewódzki" }]
+readme = "README.md"
+requires-python = ">=3.9"
+
+[tool.pytest.ini_options]
+addopts = "-q"
+pythonpath = ["src"]

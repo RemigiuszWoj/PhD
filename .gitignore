@@ -1,0 +1,24 @@
+# Python virtual environments
+.venv/
+venv/
+ENV/
+
+# Python cache and build
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# VSCode workspace
+.vscode/
+
+# Test & coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Data (keep marker)
+data/
+!data/.gitkeep

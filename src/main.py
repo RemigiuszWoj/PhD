@@ -12,6 +12,7 @@ from .decoder import (
     create_random_permutation,
     create_spt_permutation,
 )
+from .neighborhood import generate_neighbors
 from .operations import create_base_permutation, validate_permutation
 from .parser import parse_taillard_data
 
@@ -33,7 +34,11 @@ def main() -> None:
     # Base permutation (job-major order)
     base_perm = create_base_permutation(instance)
     validate_permutation(instance, base_perm)
-    base_schedule = build_schedule_from_permutation(instance, base_perm, check_completeness=True)
+    base_schedule = build_schedule_from_permutation(
+        instance,
+        base_perm,
+        check_completeness=True,
+    )
     check_no_machine_overlap(base_schedule)
     print("Base   ", format_schedule(base_schedule))
 
@@ -41,14 +46,22 @@ def main() -> None:
     rng = random.Random(42)
     rand_perm = create_random_permutation(instance, rng=rng)
     validate_permutation(instance, rand_perm)
-    rand_schedule = build_schedule_from_permutation(instance, rand_perm, check_completeness=True)
+    rand_schedule = build_schedule_from_permutation(
+        instance,
+        rand_perm,
+        check_completeness=True,
+    )
     check_no_machine_overlap(rand_schedule)
     print("Random ", format_schedule(rand_schedule))
 
     # SPT permutation
     spt_perm = create_spt_permutation(instance)
     validate_permutation(instance, spt_perm)
-    spt_schedule = build_schedule_from_permutation(instance, spt_perm, check_completeness=True)
+    spt_schedule = build_schedule_from_permutation(
+        instance,
+        spt_perm,
+        check_completeness=True,
+    )
     check_no_machine_overlap(spt_schedule)
     print("SPT    ", format_schedule(spt_schedule))
 
@@ -62,6 +75,17 @@ def main() -> None:
         key=lambda x: x[1],
     )
     print("Best initial heuristic:", best)
+
+    # Neighborhood demo: take first 5 neighbors of SPT and show best cmax
+    neighbors = generate_neighbors(spt_perm, limit=5, rng=rng)
+    best_c = None
+    for p in neighbors:
+        sched = build_schedule_from_permutation(instance, p, check_completeness=True)
+        c = sched.cmax
+        if best_c is None or c < best_c:
+            best_c = c
+    if best_c is not None:
+        print("Best neighbor (from SPT) cmax:", best_c)
 
 
 if __name__ == "__main__":

@@ -19,6 +19,7 @@ build/
 .coverage
 htmlcov/
 
-# Data (keep marker)
+# Data: ignore by default, but keep Taillard JSSP dataset
 data/
 !data/.gitkeep
+!data/taillard_jssp/**

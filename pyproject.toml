@@ -13,3 +13,44 @@ requires-python = ">=3.9"
 [tool.pytest.ini_options]
 addopts = "-q"
 pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+select = [
+	"E",   # pycodestyle errors
+	"F",   # pyflakes
+	"I",   # isort
+	"B",   # flake8-bugbear
+	"UP",  # pyupgrade
+	"ANN"  # flake8-annotations (enforce type hints)
+]
+ignore = [
+	"ANN101", # missing self type annotation (can relax later)
+	"ANN102"  # missing cls annotation
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["jssp"]
+combine-as-imports = true
+
+[tool.black]
+line-length = 100
+target-version = ["py39"]
+
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["jssp"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+no_implicit_optional = true
+strict_equality = true
+show_error_codes = true
+pretty = true
+exclude = [".venv"]

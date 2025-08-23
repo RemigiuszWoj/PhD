@@ -5,14 +5,20 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "phd-jssp"
 version = "0.0.0"
-description = "Szkielet repozytorium do pracy nad JSSP."
+description = "Minimal scaffold for Job Shop Scheduling Problem experiments."
 authors = [{ name = "Remigiusz Wojewódzki" }]
 readme = "README.md"
 requires-python = ">=3.9"
 
 [tool.pytest.ini_options]
-addopts = "-q"
+# -ra: show brief summary of skipped/xfailed/xpassed/failed
+# -vv: verbose test names
+# --durations=5: list 5 slowest tests
+# --durations-min=0.05: only show if >= 50 ms
+# --color=yes: force colored output
+addopts = "-ra -vv --durations=5 --durations-min=0.05 --color=yes"
 pythonpath = ["src"]
+testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100

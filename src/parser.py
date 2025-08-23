@@ -56,9 +56,8 @@ def parse_taillard_data(file_path: str) -> DataInstance:
     # Normalize 1-based indices if needed
     if min_machine == 1 and max_machine == machines_number:
         jobs = [[(m - 1, p) for (m, p) in job] for job in jobs]
-        max_machine -= 1
-        min_machine -= 1
-        machines_number = [m - 1 for m in machines_number]
+        max_machine -= 1  # now max_machine should be machines_number - 1
+        min_machine = 0
 
     if min_machine < 0 or max_machine >= machines_number:
         raise ValueError("Machine index out of range")

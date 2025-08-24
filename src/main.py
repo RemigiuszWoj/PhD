@@ -1,10 +1,10 @@
-"""Executable demo & experiment runner for JSSP metaheuristics.
+"""Executable runner for Job Shop metaheuristic experiments.
 
-Tryby:
-- demo: pokaz sąsiedztwa + pipeline HC->Tabu->SA
-- hill / tabu / sa: pojedynczy algorytm
-- pipeline: sekwencja wszystkich
-- auto: niezależne wielokrotne uruchomienia wszystkich algorytmów z raportami
+Modes:
+* demo      – neighborhood sample + HC -> Tabu -> SA pipeline
+* hill/tabu/sa – run a single algorithm
+* pipeline  – sequential HC -> Tabu -> SA starting from SPT
+* auto      – independent multi‑start benchmark of all algorithms with reports
 """
 
 from __future__ import annotations
@@ -88,6 +88,22 @@ def main(
     parser.add_argument(
         "--gantt-path", help="Path to save chart (PNG) instead of displaying"
     )
+    parser.add_argument(
+        "--instances-dir",
+        default="data/JSPLIB/instances",
+        help="Directory with Taillard instances (for benchmark mode)",
+    )
+    parser.add_argument(
+        "--benchmark-dir",
+        default="research",
+        help="Root directory for benchmark outputs (benchmark mode)",
+    )
+    parser.add_argument(
+        "--benchmark-sample",
+        type=int,
+        default=5,
+        help="Number of random instances to sample for benchmark (max)",
+    )
     args = parser.parse_args()
 
     instance_path = args.instance
@@ -105,10 +121,13 @@ def main(
     pipeline_runs = args.pipeline_runs
     runs = args.runs
     charts_dir = args.charts_dir
+    instances_dir = args.instances_dir
+    benchmark_dir = args.benchmark_dir
+    benchmark_sample = args.benchmark_sample
     gantt = args.gantt
     gantt_path = args.gantt_path
 
-    # Jeśli brak argumentów użytkownika wymuś generowanie gantt
+    # If user supplied no extra args force Gantt generation
     import sys
     if len(sys.argv) == 1:
         gantt = True
@@ -124,7 +143,7 @@ def main(
     # Heurystyki startowe
     base_schedule = build_schedule_from_permutation(
         instance,
-        create_spt_permutation(instance),  # przykładowo
+        create_spt_permutation(instance),  # baseline heuristic
         check_completeness=True,
     )
     check_no_machine_overlap(base_schedule)
@@ -161,6 +180,297 @@ def main(
     final_c = None
 
     # --- Tryby ---
+    if algo == "benchmark":
+        # Batch research mode: iterate Taillard instance files in directory
+        # run each algorithm independently 'runs' times and store outputs
+        if not os.path.isdir(instances_dir):
+            logger.error("Instances directory not found: %s", instances_dir)
+            return
+        instance_files = [
+            os.path.join(instances_dir, f)
+            for f in sorted(os.listdir(instances_dir))
+            if (
+                os.path.isfile(os.path.join(instances_dir, f))
+                and not f.startswith(".")
+            )
+        ]
+    # Keep only Taillard instances (prefix 'ta') to avoid incompatible
+    # formats (la*, orb*, etc.)
+        instance_files = [
+            p for p in instance_files if os.path.basename(p).startswith("ta")
+        ]
+        if not instance_files:
+            logger.error(
+                "No Taillard (ta*) instance files found in %s", instances_dir
+            )
+            return
+        # Sample N random distinct instances (or fewer if not enough)
+        if instance_files:
+            k = min(max(1, benchmark_sample), len(instance_files))
+            instance_files = random.sample(instance_files, k)
+            logger.info("Benchmark sampling %d random instances", k)
+        if not instance_files:
+            logger.error("No instance files in %s", instances_dir)
+            return
+        algos = ["hill", "tabu", "sa"]
+        logger.info(
+            "Benchmark: %d instances, algorithms=%s, runs per algo=%d",
+            len(instance_files),
+            ",".join(algos),
+            runs,
+        )
+
+        def _perm_inline(perm):
+            if perm is None:
+                return None
+            return "[" + ",".join(f"[{p[0]},{p[1]}]" for p in perm) + "]"
+
+        for inst_path in instance_files:
+            try:
+                data_inst: DataInstance = load_instance(inst_path)
+            except Exception as e:  # pragma: no cover
+                logger.warning("Failed to load %s: %s", inst_path, e)
+                continue
+            inst_name = os.path.splitext(os.path.basename(inst_path))[0]
+            logger.info(
+                "Instance %s: jobs=%d machines=%d",
+                inst_name,
+                data_inst.jobs_number,
+                data_inst.machines_number,
+            )
+            # Collect best-run progress/time series per algorithm
+            # for a combined plot
+            inst_progress: dict[str, list[int]] = {}
+            inst_time_progress: dict[str, list[float]] = {}
+            for algo_name in algos:
+                out_dir = os.path.join(benchmark_dir, inst_name, algo_name)
+                os.makedirs(out_dir, exist_ok=True)
+                # Clean old outputs (json/png)
+                for f in os.listdir(out_dir):
+                    if f.endswith('.json') or f.lower().endswith('.png'):
+                        try:
+                            os.remove(os.path.join(out_dir, f))
+                        except OSError:
+                            pass
+                results_c: list[int] = []
+                results_t: list[float] = []
+                best_c = None
+                best_time = None
+                best_perm = None
+                best_progress: list[int] = []
+                best_time_progress: list[float] = []
+                per_run_records: list[dict] = []
+                # Stable incremental results file path (overwritten each run)
+                incr_path = os.path.join(
+                    out_dir, f"results_incremental_{algo_name}.json"
+                )
+                algo_start_stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                for r_i in range(1, runs + 1):
+                    start_perm = create_random_permutation(data_inst, rng=rng)
+                    progress_list: list[int] = []
+                    time_list: list[float] = []
+                    t0 = time.perf_counter()
+                    if algo_name == "hill":
+                        perm, c, _, _ = hill_climb(
+                            data_inst,
+                            start_perm,
+                            neighbor_limit=neighbor_limit,
+                            max_no_improve=max_no_improve,
+                            best_improvement=True,
+                            rng=rng,
+                            progress=progress_list,
+                            time_progress=time_list,
+                        )
+                    elif algo_name == "tabu":
+                        perm, c, _ = tabu_search(
+                            data_inst,
+                            start_perm,
+                            iterations=tabu_iterations,
+                            tenure=tabu_tenure,
+                            candidate_size=tabu_candidate_size,
+                            rng=rng,
+                            progress=progress_list,
+                            time_progress=time_list,
+                        )
+                    else:  # sa
+                        perm, c, _, _ = simulated_annealing(
+                            data_inst,
+                            start_perm,
+                            iterations=sa_iterations,
+                            initial_temp=sa_initial_temp,
+                            cooling=sa_cooling,
+                            neighbor_moves=sa_neighbor_moves,
+                            rng=rng,
+                            progress=progress_list,
+                            time_progress=time_list,
+                        )
+                    elapsed = time.perf_counter() - t0
+                    results_c.append(c)
+                    results_t.append(elapsed)
+                    if best_c is None or c < best_c:  # type: ignore[operator]
+                        best_c = c
+                        best_time = elapsed
+                        best_perm = perm
+                        best_progress = list(progress_list)
+                        best_time_progress = list(time_list)
+                    # Incremental save after this run (fault tolerance)
+                    per_run_records.append(
+                        {"run": r_i, "cmax": c, "time": elapsed}
+                    )
+                    try:
+                        avg_c_inc = sum(results_c) / len(results_c)
+                        avg_t_inc = sum(results_t) / len(results_t)
+                        incr_payload = {
+                            "instance": inst_path,
+                            "instance_name": inst_name,
+                            "algorithm": algo_name,
+                            "timestamp_start": algo_start_stamp,
+                            "runs_completed": r_i,
+                            "planned_runs": runs,
+                            "per_run": per_run_records,
+                            "best": {
+                                "cmax": best_c,
+                                "time": best_time,
+                                "permutation": _perm_inline(best_perm),
+                            },
+                            "average": {
+                                "avg_cmax": avg_c_inc,
+                                "avg_time": avg_t_inc,
+                            },
+                        }
+                        tmp_path = incr_path + ".tmp"
+                        with open(tmp_path, "w", encoding="utf-8") as f_inc:
+                            json.dump(
+                                incr_payload,
+                                f_inc,
+                                ensure_ascii=False,
+                                indent=2,
+                            )
+                        os.replace(tmp_path, incr_path)
+                    except Exception as e:  # pragma: no cover
+                        logger.warning(
+                            "Incremental JSON save failed %s run %d: %s",
+                            algo_name,
+                            r_i,
+                            e,
+                        )
+                    if r_i % max(1, runs // 10) == 0:
+                        logger.info(
+                            "%s %s progress %d/%d best_c=%s",
+                            inst_name,
+                            algo_name,
+                            r_i,
+                            runs,
+                            best_c,
+                        )
+                # Save progress curve (best run)
+                try:
+                    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    prog_path = os.path.join(
+                        out_dir, f"progress_{algo_name}_{stamp}.png"
+                    )
+                    plot_progress_curves(
+                        {algo_name: best_progress},
+                        {algo_name: best_time_progress},
+                        save_path=prog_path,
+                    )
+                except Exception as e:  # pragma: no cover
+                    logger.warning("Progress plot failed %s %s", algo_name, e)
+                # Save Gantt for best perm
+                try:
+                    if best_perm is not None:
+                        sched_best = build_schedule_from_permutation(
+                            data_inst, best_perm, check_completeness=True
+                        )
+                        g_path = os.path.join(
+                            out_dir,
+                            f"gantt_{algo_name}_c{sched_best.cmax}.png",
+                        )
+                        plot_gantt(
+                            sched_best,
+                            save_path=g_path,
+                            algo_name=algo_name,
+                        )
+                except Exception as e:  # pragma: no cover
+                    logger.warning("Gantt failed %s %s", algo_name, e)
+                # JSON summary
+                try:
+                    stamp2 = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    json_path = os.path.join(
+                        out_dir, f"results_{algo_name}_{stamp2}.json"
+                    )
+                    per_run = [
+                        {
+                            "run": i + 1,
+                            "cmax": results_c[i],
+                            "time": results_t[i],
+                        }
+                        for i in range(len(results_c))
+                    ]
+                    payload = {
+                        "instance": inst_path,
+                        "instance_name": inst_name,
+                        "algorithm": algo_name,
+                        "runs": runs,
+                        "timestamp": stamp2,
+                        "per_run": per_run,
+                        "best": {
+                            "cmax": best_c,
+                            "time": best_time,
+                            "permutation": _perm_inline(best_perm),
+                        },
+                        "average": {
+                            "avg_cmax": (
+                                sum(results_c) / len(results_c)
+                                if results_c
+                                else None
+                            ),
+                            "avg_time": (
+                                sum(results_t) / len(results_t)
+                                if results_t
+                                else None
+                            ),
+                        },
+                    }
+                    with open(json_path, "w", encoding="utf-8") as f:
+                        json.dump(payload, f, ensure_ascii=False, indent=2)
+                except Exception as e:  # pragma: no cover
+                    logger.warning("JSON save failed %s %s", algo_name, e)
+                # Store best run progress for combined chart
+                inst_progress[algo_name] = best_progress
+                inst_time_progress[algo_name] = best_time_progress
+            # After all algorithms for this instance -> combined progress plot
+            try:
+                inst_root = os.path.join(benchmark_dir, inst_name)
+                # Optional cleanup of previous combined plots
+                for f in os.listdir(inst_root):
+                    if (
+                        f.startswith("progress_all_")
+                        and f.lower().endswith(".png")
+                    ):
+                        try:
+                            os.remove(os.path.join(inst_root, f))
+                        except OSError:
+                            pass
+                stamp_all = datetime.now().strftime("%Y%m%d_%H%M%S")
+                combined_path = os.path.join(
+                    inst_root, f"progress_all_{stamp_all}.png"
+                )
+                plot_progress_curves(
+                    inst_progress,
+                    inst_time_progress,
+                    save_path=combined_path,
+                )
+                logger.info(
+                    "Saved combined progress plot for %s to %s",
+                    inst_name,
+                    combined_path,
+                )
+            except Exception as e:  # pragma: no cover
+                logger.warning(
+                    "Combined progress plot failed for %s: %s", inst_name, e
+                )
+        return
     if algo == "demo":
         neighbors = generate_neighbors(spt_perm, limit=5, rng=rng)
         best_c = None
@@ -483,7 +793,7 @@ def main(
         auto_best = {k: stats[k]["best_perm"] for k in ("hill", "tabu", "sa")}
         try:
             os.makedirs(charts_dir, exist_ok=True)
-            # Wyczyść stare PNG (cały batch świeży)
+            # Clean old PNGs so only the newest batch remains
             for f in os.listdir(charts_dir):
                 if f.lower().endswith(".png"):
                     try:
@@ -610,7 +920,7 @@ def main(
         except Exception as e:  # pragma: no cover
             logger.warning("Failed to create Gantt charts: %s", e)
 
-    # Zakończ funkcję w trybie auto (dalej kod pojedynczego algorytmu)
+    # Return early for auto mode (single‑algorithm block below not needed)
         return
         if final_perm is None:
             logger.warning("Brak finalnej permutacji do wizualizacji")
@@ -658,6 +968,23 @@ if __name__ == "__main__":
         default=100,
         help="Repetitions for auto mode",
     )
+    # Benchmark mode arguments (duplicated with inner parser for now)
+    parser.add_argument(
+        "--instances-dir",
+        default="data/JSPLIB/instances",
+        help="Directory with Taillard instances (for benchmark mode)",
+    )
+    parser.add_argument(
+        "--benchmark-dir",
+        default="research",
+        help="Root directory for benchmark outputs (benchmark mode)",
+    )
+    parser.add_argument(
+        "--benchmark-sample",
+        type=int,
+        default=5,
+        help="Number of random instances to sample for benchmark (max)",
+    )
     parser.add_argument(
         "--charts-dir",
         default="charts",
@@ -681,7 +1008,7 @@ if __name__ == "__main__":
         level=getattr(logging, args.log_level.upper(), logging.INFO),
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
-    # Brak dodatkowych argumentów -> erzecie auto + gantt
+    # No extra arguments -> force auto charts
     if len(sys.argv) == 1:
         args.gantt = True
         logging.getLogger(__name__).info(

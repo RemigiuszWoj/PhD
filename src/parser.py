@@ -71,7 +71,7 @@ def parse_taillard_data(file_path: str) -> DataInstance:
     for job in jobs:
         if len(job) != machines_number:
             raise ValueError("unexpected job length (non-uniform)")
-        for m, p in job:
+        for _m, p in job:
             if p <= 0:
                 raise ValueError("non-positive processing time")
     return DataInstance(jobs=jobs, jobs_number=jobs_number, machines_number=machines_number)

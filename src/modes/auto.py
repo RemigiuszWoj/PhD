@@ -16,18 +16,12 @@ import logging
 import os
 import random
 from datetime import datetime
-from typing import Dict, List, Optional
 
-from src.decoder import (
-    build_schedule_from_permutation,
-    create_random_permutation,
-)
+from src.decoder import build_schedule_from_permutation, create_random_permutation
 from src.models import DataInstance
 from src.visualization import plot_gantt
 
 from .common import AlgoParams, run_algorithm
-
-logger = logging.getLogger("jssp.auto")
 
 
 def run_auto(
@@ -37,24 +31,14 @@ def run_auto(
     params: AlgoParams,
     rng: random.Random,
     charts_dir: str,
-) -> tuple[Optional[list[tuple[int, int]]], Optional[int]]:
-    """Run independent multi-start experiments for all algorithms.
+) -> tuple[list[tuple[int, int]] | None, int | None]:
+    """Execute auto mode across all algorithms returning best permutation.
 
-    Args:
-        instance: Parsed JSSP instance.
-        instance_path: Original path (stored in JSON output for traceability).
-        runs: Number of independent starts per algorithm.
-        params: Shared algorithm hyper-parameters.
-        rng: Random generator used for permutation sampling & stochastic moves.
-        charts_dir: Directory for output artefacts (created if missing).
-
-    Returns:
-    Tuple ``(best_perm, best_cmax)`` across all algorithms or
-    ``(None, None)`` when no candidate produced (should not happen unless
-    ``runs==0``).
+    Returns overall best (perm, cmax) or (None, None) if no runs executed.
     """
+    logger = logging.getLogger("jssp.auto")
     algo_names = ("hill", "tabu", "sa")
-    stats: Dict[str, Dict] = {
+    stats: dict[str, dict] = {
         name: {
             "best_c": None,
             "best_perm": None,
@@ -92,7 +76,7 @@ def run_auto(
                 stats["sa"]["best_c"],
             )
 
-    def _avg(vals: List[float]) -> float:
+    def _avg(vals: list[float]) -> float:
         return sum(vals) / len(vals) if vals else float("nan")
 
     for name in algo_names:
@@ -117,21 +101,17 @@ def run_auto(
     auto_best = {k: stats[k]["best_perm"] for k in algo_names}
     try:
 
-        def _perm_to_list(
-            perm: Optional[list[tuple[int, int]]],
-        ) -> Optional[list[list[int]]]:
+        def _perm_to_list(perm: list[tuple[int, int]] | None) -> list[list[int]] | None:
             if perm is None:
                 return None
             return [[int(p[0]), int(p[1])] for p in perm]
 
-        def _perm_compact(perm: Optional[list[tuple[int, int]]]) -> Optional[str]:
+        def _perm_compact(perm: list[tuple[int, int]] | None) -> str | None:
             if perm is None:
                 return None
             return ",".join(f"J{p[0]}O{p[1]}" for p in perm)
 
-        def _job_sequence(
-            perm: Optional[list[tuple[int, int]]],
-        ) -> Optional[list[int]]:
+        def _job_sequence(perm: list[tuple[int, int]] | None) -> list[int] | None:
             if perm is None:
                 return None
             return [int(p[0]) for p in perm]

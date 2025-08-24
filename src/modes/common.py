@@ -5,14 +5,15 @@ This module isolates the light data container with algorithm hyper-parameters
 (`auto`, `benchmark`, CLI single-algo / pipeline) can invoke metaheuristics
 uniformly without duplicating timing / progress collection code.
 """
+
 from __future__ import annotations
 
-from dataclasses import dataclass
 import random
 import time
+from dataclasses import dataclass
 
 from src.models import DataInstance
-from src.search import hill_climb, tabu_search, simulated_annealing
+from src.search import hill_climb, simulated_annealing, tabu_search
 
 
 @dataclass(slots=True)
@@ -24,6 +25,7 @@ class AlgoParams:
     extracted *mode* functions and makes it straightforward to persist / log
     an experiment setup if desired in the future.
     """
+
     neighbor_limit: int
     max_no_improve: int
     tabu_iterations: int

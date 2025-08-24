@@ -4,12 +4,13 @@ from src.decoder import create_random_permutation
 from src.operations import create_base_permutation, validate_permutation
 from src.parser import parse_taillard_data
 from src.search import evaluate, hill_climb, simulated_annealing, tabu_search
+from src.search import CacheType
 
 
 def test_evaluate_cache_reuses_schedule() -> None:
     inst = parse_taillard_data("data/JSPLIB/instances/ta01")
     perm = create_base_permutation(inst)
-    cache = {}
+    cache: CacheType = {}
     c1, sched1 = evaluate(
         inst,
         perm,
@@ -23,14 +24,14 @@ def test_evaluate_cache_reuses_schedule() -> None:
         return_schedule=True,
     )
     assert c1 == c2
-    assert sched1 is sched2  # obiekt z cache
+    assert sched1 is sched2  # object reused from cache
     assert len(cache) == 1
 
 
 def test_hill_climb_not_worse_best_improvement() -> None:
     inst = parse_taillard_data("data/JSPLIB/instances/ta01")
     start = create_base_permutation(inst)
-    cache = {}
+    cache: CacheType = {}
     start_c = evaluate(inst, start, cache=cache)
     best_perm, best_c, iters, evals = hill_climb(
         inst,
@@ -44,7 +45,7 @@ def test_hill_climb_not_worse_best_improvement() -> None:
     validate_permutation(inst, best_perm)
     assert best_c <= start_c
     assert iters > 0
-    assert evals >= iters  # zawsze liczymy co najmniej 1 eval na iterację
+    assert evals >= iters  # at least one evaluation per iteration expected
 
 
 def test_hill_climb_first_improvement_runs() -> None:
@@ -107,9 +108,9 @@ def test_hill_climb_best_vs_first() -> None:
     validate_permutation(inst, perm_first)
     assert c_best <= start_c
     assert c_first <= start_c
-    # Strategie mogą dawać różne wyniki; ważne że obie poprawiają start.
-    # (Brak gwarancji deterministycznej, że best-improvement <= first
-    # przy tym samym seedzie i ograniczonej próbce sąsiadów.)
+    # Strategies can yield different results; both should improve start.
+    # No deterministic guarantee best-improvement <= first-improvement under
+    # identical seed with a limited sampled neighborhood.
 
 
 def test_tabu_small_candidate_size() -> None:
@@ -151,7 +152,7 @@ def test_simulated_annealing_runs_and_not_worse() -> None:
 def test_simulated_annealing_min_temp_stops_early() -> None:
     inst = parse_taillard_data("data/JSPLIB/instances/ta01")
     start = create_base_permutation(inst)
-    # Ustawiamy wysokie min_temp aby zatrzymało się po 1 iteracji
+    # Set high min_temp so it stops after exactly one iteration
     best_perm, best_c, evals, iters = simulated_annealing(
         inst,
         start,

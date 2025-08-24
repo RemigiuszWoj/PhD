@@ -81,8 +81,7 @@ def build_schedule_from_permutation(
         expected_elements = jobs_number * machines_number
         if count != expected_elements:
             raise ValueError(
-                "Incomplete schedule: "
-                f"{count}/{expected_elements} operations decoded"
+                "Incomplete schedule: " f"{count}/{expected_elements} operations decoded"
             )
 
     cmax = max((row.end for row in operations), default=0)
@@ -114,8 +113,7 @@ def check_no_machine_overlap(schedule: Schedule) -> bool:
         for r in machine_ops:
             if r.start < prev_end:
                 raise AssertionError(
-                    "Overlap on machine "
-                    f"{r.machine} between end {prev_end} and start {r.start}"
+                    "Overlap on machine " f"{r.machine} between end {prev_end} and start {r.start}"
                 )
             prev_end = r.end
     return True

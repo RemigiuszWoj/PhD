@@ -70,6 +70,7 @@ def plot_gantt(
     # Group operations by machine
     # Store operation rows per machine
     from src.models import ScheduleOperationRow  # local import to avoid cycle
+
     machines: dict[int, list[ScheduleOperationRow]] = {}
     for op in ops:
         machines.setdefault(op.machine, []).append(op)
@@ -118,11 +119,7 @@ def plot_gantt(
     ]
     colors = {}
 
-    text_effect = (
-        [patheffects.withStroke(linewidth=1.6, foreground="black")]
-        if use_stroke
-        else []
-    )
+    text_effect = [patheffects.withStroke(linewidth=1.6, foreground="black")] if use_stroke else []
 
     # For collision detection store centers of already placed labels per row
     for m in machine_ids:
@@ -160,21 +157,13 @@ def plot_gantt(
 
                 if chosen and smart_collision:
                     # Collision: center too close to an existing label
-                    too_close = any(
-                        abs(center - c) < min_label_gap for c in placed_centers
-                    )
+                    too_close = any(abs(center - c) < min_label_gap for c in placed_centers)
                     if too_close:
                         # Attempt to shorten if still full label
-                        if (
-                            chosen == full_label
-                            and bar_width >= min_bar_width_short
-                        ):
+                        if chosen == full_label and bar_width >= min_bar_width_short:
                             chosen = short_label
                             # second collision -> drop entirely
-                            if any(
-                                abs(center - c) < min_label_gap
-                                for c in placed_centers
-                            ):
+                            if any(abs(center - c) < min_label_gap for c in placed_centers):
                                 chosen = ""  # drop entirely
                         else:
                             chosen = ""  # drop

@@ -23,7 +23,8 @@ def pytest_terminal_summary(
 ) -> None:  # noqa: D401
     """Append a compact custom summary at the end of test session."""
     stats = terminalreporter.stats
-    collected = terminalreporter._numcollected  # type: ignore[attr-defined]
+    # _numcollected is a private attribute but present in pytest's TerminalReporter
+    collected = getattr(terminalreporter, "_numcollected", 0)
     passed = len(stats.get("passed", []))
     failed = len(stats.get("failed", []))
     errors = len(stats.get("error", []))

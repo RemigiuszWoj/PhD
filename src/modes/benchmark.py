@@ -7,6 +7,7 @@ snapshots (fault tolerant), final summary JSON, individual progress & Gantt
 plots, and an aggregated progress plot per instance combining the best curve
 of each algorithm.
 """
+
 from __future__ import annotations
 
 import json
@@ -15,14 +16,11 @@ import os
 import random
 from datetime import datetime
 
+from src.decoder import build_schedule_from_permutation, create_random_permutation
 from src.models import DataInstance
-from src.parser import load_instance
-from src.decoder import (
-    build_schedule_from_permutation,
-    create_random_permutation,
-)
-from src.visualization import plot_progress_curves, plot_gantt
 from src.modes.common import AlgoParams, run_algorithm
+from src.parser import load_instance
+from src.visualization import plot_gantt, plot_progress_curves
 
 logger = logging.getLogger("jssp.benchmark")
 
@@ -38,9 +36,7 @@ def _perm_inline(perm: list[tuple[int, int]] | None) -> str | None:
     return "[" + ",".join(f"[{p[0]},{p[1]}]" for p in perm) + "]"
 
 
-def _collect_instance_files(
-    instances_dir: str, benchmark_sample: int
-) -> list[str]:
+def _collect_instance_files(instances_dir: str, benchmark_sample: int) -> list[str]:
     """Collect candidate Taillard instance file paths.
 
     Args:
@@ -57,15 +53,11 @@ def _collect_instance_files(
     files = [
         os.path.join(instances_dir, f)
         for f in sorted(os.listdir(instances_dir))
-        if os.path.isfile(os.path.join(instances_dir, f)) and not f.startswith(
-            "."
-        )
+        if os.path.isfile(os.path.join(instances_dir, f)) and not f.startswith(".")
     ]
     files = [p for p in files if os.path.basename(p).startswith("ta")]
     if not files:
-        logger.error(
-            "No Taillard (ta*) instance files found in %s", instances_dir
-        )
+        logger.error("No Taillard (ta*) instance files found in %s", instances_dir)
         return []
     k = min(max(1, benchmark_sample), len(files))
     if k < len(files):
@@ -116,7 +108,7 @@ def run_benchmark(
         for algo_name in algos:
             out_dir = os.path.join(benchmark_dir, inst_name, algo_name)
             os.makedirs(out_dir, exist_ok=True)
-            # Czyść stare artefakty
+            # Clean old artefacts (JSON / PNG) before new runs
             for fname in os.listdir(out_dir):
                 if fname.endswith(".json") or fname.lower().endswith(".png"):
                     try:
@@ -131,9 +123,7 @@ def run_benchmark(
             best_progress: list[int] = []
             best_time_progress: list[float] = []
             per_run_records: list[dict] = []
-            incr_path = os.path.join(
-                out_dir, f"results_incremental_{algo_name}.json"
-            )
+            incr_path = os.path.join(out_dir, f"results_incremental_{algo_name}.json")
             algo_start_stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             for r_i in range(1, runs + 1):
                 start_perm = create_random_permutation(data_inst, rng=rng)
@@ -156,9 +146,7 @@ def run_benchmark(
                     best_perm = perm
                     best_progress = list(progress_list)
                     best_time_progress = list(time_list)
-                per_run_records.append(
-                    {"run": r_i, "cmax": c, "time": elapsed}
-                )
+                per_run_records.append({"run": r_i, "cmax": c, "time": elapsed})
                 # incremental JSON
                 try:
                     avg_c_inc = sum(results_c) / len(results_c)
@@ -183,9 +171,7 @@ def run_benchmark(
                     }
                     tmp_path = incr_path + ".tmp"
                     with open(tmp_path, "w", encoding="utf-8") as f_inc:
-                        json.dump(
-                            incr_payload, f_inc, ensure_ascii=False, indent=2
-                        )
+                        json.dump(incr_payload, f_inc, ensure_ascii=False, indent=2)
                     os.replace(tmp_path, incr_path)
                 except Exception as e:  # pragma: no cover
                     logger.warning(
@@ -206,9 +192,7 @@ def run_benchmark(
             # Wykres progresu
             try:
                 stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                prog_path = os.path.join(
-                    out_dir, f"progress_{algo_name}_{stamp}.png"
-                )
+                prog_path = os.path.join(out_dir, f"progress_{algo_name}_{stamp}.png")
                 plot_progress_curves(
                     {algo_name: best_progress},
                     {algo_name: best_time_progress},
@@ -222,9 +206,7 @@ def run_benchmark(
                     sched_best = build_schedule_from_permutation(
                         data_inst, best_perm, check_completeness=True
                     )
-                    g_path = os.path.join(
-                        out_dir, f"gantt_{algo_name}_c{sched_best.cmax}.png"
-                    )
+                    g_path = os.path.join(out_dir, f"gantt_{algo_name}_c{sched_best.cmax}.png")
                     plot_gantt(
                         sched_best,
                         save_path=g_path,
@@ -235,9 +217,7 @@ def run_benchmark(
             # Final JSON
             try:
                 stamp2 = datetime.now().strftime("%Y%m%d_%H%M%S")
-                json_path = os.path.join(
-                    out_dir, f"results_{algo_name}_{stamp2}.json"
-                )
+                json_path = os.path.join(out_dir, f"results_{algo_name}_{stamp2}.json")
                 per_run = [
                     {
                         "run": i + 1,
@@ -259,16 +239,8 @@ def run_benchmark(
                         "permutation": _perm_inline(best_perm),
                     },
                     "average": {
-                        "avg_cmax": (
-                            sum(results_c) / len(results_c)
-                            if results_c
-                            else None
-                        ),
-                        "avg_time": (
-                            sum(results_t) / len(results_t)
-                            if results_t
-                            else None
-                        ),
+                        "avg_cmax": sum(results_c) / len(results_c) if results_c else None,
+                        "avg_time": sum(results_t) / len(results_t) if results_t else None,
                     },
                 }
                 with open(json_path, "w", encoding="utf-8") as f:
@@ -281,18 +253,13 @@ def run_benchmark(
         try:
             inst_root = os.path.join(benchmark_dir, inst_name)
             for fname in os.listdir(inst_root):
-                if (
-                    fname.startswith("progress_all_")
-                    and fname.lower().endswith(".png")
-                ):
+                if fname.startswith("progress_all_") and fname.lower().endswith(".png"):
                     try:
                         os.remove(os.path.join(inst_root, fname))
                     except OSError:
                         pass
             stamp_all = datetime.now().strftime("%Y%m%d_%H%M%S")
-            combined_path = os.path.join(
-                inst_root, f"progress_all_{stamp_all}.png"
-            )
+            combined_path = os.path.join(inst_root, f"progress_all_{stamp_all}.png")
             plot_progress_curves(
                 inst_progress,
                 inst_time_progress,

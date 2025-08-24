@@ -8,21 +8,23 @@ best schedules may be rendered to Gantt charts.
 This is intentionally decoupled from the CLI entry point to keep ``main.py``
 small and enable re-use in notebooks or higher level experiment drivers.
 """
+
 from __future__ import annotations
 
 import json
 import logging
 import os
+import random
 from datetime import datetime
 from typing import Dict, List, Optional
-import random
 
 from src.decoder import (
     build_schedule_from_permutation,
     create_random_permutation,
 )
-from src.visualization import plot_gantt
 from src.models import DataInstance
+from src.visualization import plot_gantt
+
 from .common import AlgoParams, run_algorithm
 
 logger = logging.getLogger("jssp.auto")
@@ -78,13 +80,8 @@ def run_auto(
             )
             stats[name]["c"].append(c)
             stats[name]["t"].append(elapsed)
-            if (
-                stats[name]["best_c"] is None
-                or c < stats[name]["best_c"]  # type: ignore[operator]
-            ):
-                stats[name].update(
-                    {"best_c": c, "best_perm": perm, "best_time": elapsed}
-                )
+            if stats[name]["best_c"] is None or c < stats[name]["best_c"]:
+                stats[name].update({"best_c": c, "best_perm": perm, "best_time": elapsed})
         if i % max(1, runs // 10) == 0:
             logger.info(
                 "Progress %d/%d: HC=%s Tabu=%s SA=%s",
@@ -94,9 +91,10 @@ def run_auto(
                 stats["tabu"]["best_c"],
                 stats["sa"]["best_c"],
             )
-    
+
     def _avg(vals: List[float]) -> float:
         return sum(vals) / len(vals) if vals else float("nan")
+
     for name in algo_names:
         logger.info(
             "Auto summary %-8s: best=%s (%.4fs) avg=%.2f (%.4fs)",
@@ -109,20 +107,16 @@ def run_auto(
     candidates = [
         (name, stats[name]["best_c"], stats[name]["best_perm"])
         for name in algo_names
-        if stats[name]["best_c"] is not None
-        and stats[name]["best_perm"] is not None
+        if stats[name]["best_c"] is not None and stats[name]["best_perm"] is not None
     ]
     best_perm = None
     best_c = None
     if candidates:
-        best_algo_name, best_c, best_perm = min(
-            candidates, key=lambda x: x[1]
-        )  # type: ignore
-        logger.info(
-            "Overall best algorithm=%s cmax=%s", best_algo_name, best_c
-        )
+        best_algo_name, best_c, best_perm = min(candidates, key=lambda x: x[1])
+        logger.info("Overall best algorithm=%s cmax=%s", best_algo_name, best_c)
     auto_best = {k: stats[k]["best_perm"] for k in algo_names}
     try:
+
         def _perm_to_list(
             perm: Optional[list[tuple[int, int]]],
         ) -> Optional[list[list[int]]]:
@@ -130,9 +124,7 @@ def run_auto(
                 return None
             return [[int(p[0]), int(p[1])] for p in perm]
 
-        def _perm_compact(
-            perm: Optional[list[tuple[int, int]]]
-        ) -> Optional[str]:
+        def _perm_compact(perm: Optional[list[tuple[int, int]]]) -> Optional[str]:
             if perm is None:
                 return None
             return ",".join(f"J{p[0]}O{p[1]}" for p in perm)
@@ -146,14 +138,12 @@ def run_auto(
 
         stamp2 = datetime.now().strftime("%Y%m%d_%H%M%S")
         results_path = os.path.join(charts_dir, f"auto_results_{stamp2}.json")
-        per_run = {"hill": [], "tabu": [], "sa": []}
+        per_run: dict[str, list[dict[str, int | float]]] = {"hill": [], "tabu": [], "sa": []}
         for algo in algo_names:
             c_list = stats[algo]["c"]
             t_list = stats[algo]["t"]
             for idx in range(len(c_list)):
-                per_run[algo].append(
-                    {"run": idx + 1, "cmax": c_list[idx], "time": t_list[idx]}
-                )
+                per_run[algo].append({"run": idx + 1, "cmax": c_list[idx], "time": t_list[idx]})
         best_block = {}
         for algo in algo_names:
             best_block[algo] = {
@@ -168,8 +158,8 @@ def run_auto(
             c_vals = stats[algo]["c"]
             t_vals = stats[algo]["t"]
             averages_block[algo] = {
-                "avg_cmax": (sum(c_vals) / len(c_vals) if c_vals else None),
-                "avg_time": (sum(t_vals) / len(t_vals) if t_vals else None),
+                "avg_cmax": sum(c_vals) / len(c_vals) if c_vals else None,
+                "avg_time": sum(t_vals) / len(t_vals) if t_vals else None,
             }
         json_payload = {
             "instance": instance_path,
@@ -189,12 +179,8 @@ def run_auto(
         for name, perm in auto_best.items():
             if perm is None:
                 continue
-            sched_best = build_schedule_from_permutation(
-                instance, perm, check_completeness=True
-            )
-            g_path = os.path.join(
-                charts_dir, f"gantt_{name}_c{sched_best.cmax}_{stamp3}.png"
-            )
+            sched_best = build_schedule_from_permutation(instance, perm, check_completeness=True)
+            g_path = os.path.join(charts_dir, f"gantt_{name}_c{sched_best.cmax}_{stamp3}.png")
             plot_gantt(sched_best, save_path=g_path, algo_name=name)
             logger.info("Saved Gantt chart for %s to %s", name, g_path)
     except Exception as e:  # pragma: no cover

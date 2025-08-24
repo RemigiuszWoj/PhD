@@ -22,7 +22,7 @@ def small_instance() -> DataInstance:
     return DataInstance(jobs=jobs, jobs_number=2, machines_number=2)
 
 
-def test_base_decode_and_overlap():
+def test_base_decode_and_overlap() -> None:
     data = small_instance()
     perm = create_base_permutation(data)
     validate_permutation(data, perm)
@@ -31,7 +31,7 @@ def test_base_decode_and_overlap():
     assert check_no_machine_overlap(sched)
 
 
-def test_random_and_spt_permutations_valid_and_different():
+def test_random_and_spt_permutations_valid_and_different() -> None:
     data = small_instance()
     rng = random.Random(123)
     rand_perm = create_random_permutation(data, rng=rng)
@@ -41,7 +41,7 @@ def test_random_and_spt_permutations_valid_and_different():
     assert rand_perm != spt_perm  # highly likely different for this toy case
 
 
-def test_incomplete_permutation_raises():
+def test_incomplete_permutation_raises() -> None:
     data = small_instance()
     # Missing last operation of job 1
     incomplete = [(0, 0), (0, 1), (1, 0)]
@@ -49,7 +49,7 @@ def test_incomplete_permutation_raises():
         validate_permutation(data, incomplete)
 
 
-def test_precedence_violation_in_decoder():
+def test_precedence_violation_in_decoder() -> None:
     data = small_instance()
     # reversed operations of job 0
     bad = [(0, 1), (0, 0), (1, 0), (1, 1)]

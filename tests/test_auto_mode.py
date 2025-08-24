@@ -1,12 +1,10 @@
 """Tests for auto mode orchestration (run_auto).
 
 Covers:
-- JSON result file creation with expected top-level keys.
-- Best permutation/cmax returned and consistent with JSON data.
-- Determinism with fixed RNG seed (one run per algo).
 
 Creates a temporary charts output directory under pytest tmp_path.
 """
+
 from __future__ import annotations
 
 import json
@@ -14,9 +12,9 @@ import random
 from pathlib import Path
 
 from src.models import DataInstance
-from src.parser import parse_taillard_data
 from src.modes.auto import run_auto
 from src.modes.common import AlgoParams
+from src.parser import parse_taillard_data
 
 
 def _load_small_instance() -> DataInstance:
@@ -86,9 +84,7 @@ def test_run_auto_creates_results_and_returns_best(tmp_path: Path) -> None:
 
     # Verify returned best matches one of the best algo entries
     all_best_cs = [
-        best_block[a]["cmax"]
-        for a in ("hill", "tabu", "sa")
-        if best_block[a]["cmax"] is not None
+        best_block[a]["cmax"] for a in ("hill", "tabu", "sa") if best_block[a]["cmax"] is not None
     ]
     if all_best_cs:
         assert best_c in all_best_cs

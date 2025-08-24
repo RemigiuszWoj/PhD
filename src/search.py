@@ -30,12 +30,11 @@ from __future__ import annotations
 import random
 import time
 from collections.abc import Iterable
+from typing import Literal, overload
 
 from src.decoder import build_schedule_from_permutation
 from src.models import DataInstance, OperationKey, Schedule
 from src.neighborhood import generate_neighbors, swap_any
-
-from typing import overload, Literal
 
 CacheType = dict[tuple[OperationKey, ...], tuple[int, Schedule]]
 
@@ -253,10 +252,7 @@ def tabu_search(
         seen_pairs: set[tuple[int, int]] = set()
         # sample candidate_size unique index pairs
         attempts = 0
-        while (
-            len(candidates) < candidate_size
-            and attempts < candidate_size * 5
-        ):
+        while len(candidates) < candidate_size and attempts < candidate_size * 5:
             attempts += 1
             i, j = sorted(rng.sample(range(n), 2))
             if (i, j) in seen_pairs:
@@ -413,11 +409,7 @@ def simulated_annealing(
             prob = math.exp(-delta / T)
             if rng.random() < prob:
                 accept = True
-        if (
-            accept
-            and candidate_best_perm is not None
-            and candidate_best_c is not None
-        ):
+        if accept and candidate_best_perm is not None and candidate_best_c is not None:
             current = candidate_best_perm
             current_c = candidate_best_c
             if current_c < best_c:

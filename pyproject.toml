@@ -64,14 +64,23 @@ known-first-party = ["jssp"]
 combine-as-imports = true
 
 [tool.black]
-line-length = 100
+line-length = 100  # keep 100-char line length
 target-version = ["py311"]
-preview = true
+preview = true     # enable latest (stricter) formatting rules
+# Black has no separate 'strict' flag; 'preview' activates the most recent
+# (potentially more opinionated) transformations.
 
 [tool.isort]
 profile = "black"
 line_length = 100
 known_first_party = ["jssp"]
+skip = [".venv", ".venv311", "build", "dist", "data", "research"]
+src_paths = ["src", "tests"]
+
+[tool.flake8]
+# Align flake8 with Black/Ruff configuration
+max-line-length = 100
+extend-ignore = ["E203", "W503"]
 
 [tool.mypy]
 python_version = "3.11"

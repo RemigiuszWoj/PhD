@@ -148,7 +148,8 @@ def generate_neighbors(
         guaranteed). The original permutation is never included.
     """
     if rng is None:
-        rng = random
+        # Create dedicated RNG instance for reproducibility isolation
+        rng = random.Random()
     n = len(perm)
     result: list[list[OperationKey]] = []
     seen: set[tuple[OperationKey, ...]] = {tuple(perm)}

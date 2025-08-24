@@ -3,8 +3,7 @@ import random
 from src.decoder import create_random_permutation
 from src.operations import create_base_permutation, validate_permutation
 from src.parser import parse_taillard_data
-from src.search import evaluate, hill_climb, simulated_annealing, tabu_search
-from src.search import CacheType
+from src.search import CacheType, evaluate, hill_climb, simulated_annealing, tabu_search
 
 
 def test_evaluate_cache_reuses_schedule() -> None:

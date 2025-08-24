@@ -7,7 +7,7 @@ from src.search import CacheType, evaluate, hill_climb, simulated_annealing, tab
 
 
 def test_evaluate_cache_reuses_schedule() -> None:
-    inst = parse_taillard_data("data/JSPLIB/instances/ta01")
+    inst = parse_taillard_data("tests/fixtures/ta01")
     perm = create_base_permutation(inst)
     cache: CacheType = {}
     c1, sched1 = evaluate(
@@ -28,7 +28,7 @@ def test_evaluate_cache_reuses_schedule() -> None:
 
 
 def test_hill_climb_not_worse_best_improvement() -> None:
-    inst = parse_taillard_data("data/JSPLIB/instances/ta01")
+    inst = parse_taillard_data("tests/fixtures/ta01")
     start = create_base_permutation(inst)
     cache: CacheType = {}
     start_c = evaluate(inst, start, cache=cache)
@@ -48,7 +48,7 @@ def test_hill_climb_not_worse_best_improvement() -> None:
 
 
 def test_hill_climb_first_improvement_runs() -> None:
-    inst = parse_taillard_data("data/JSPLIB/instances/ta01")
+    inst = parse_taillard_data("tests/fixtures/ta01")
     rng = random.Random(1)
     start = create_random_permutation(inst, rng=rng)
     start_c = evaluate(inst, start)
@@ -67,7 +67,7 @@ def test_hill_climb_first_improvement_runs() -> None:
 
 
 def test_tabu_search_runs_and_not_worse() -> None:
-    inst = parse_taillard_data("data/JSPLIB/instances/ta01")
+    inst = parse_taillard_data("tests/fixtures/ta01")
     start = create_base_permutation(inst)
     start_c = evaluate(inst, start)
     best_perm, best_c, evals = tabu_search(
@@ -84,7 +84,7 @@ def test_tabu_search_runs_and_not_worse() -> None:
 
 
 def test_hill_climb_best_vs_first() -> None:
-    inst = parse_taillard_data("data/JSPLIB/instances/ta01")
+    inst = parse_taillard_data("tests/fixtures/ta01")
     start = create_base_permutation(inst)
     start_c = evaluate(inst, start)
     perm_best, c_best, _, _ = hill_climb(
@@ -113,7 +113,7 @@ def test_hill_climb_best_vs_first() -> None:
 
 
 def test_tabu_small_candidate_size() -> None:
-    inst = parse_taillard_data("data/JSPLIB/instances/ta01")
+    inst = parse_taillard_data("tests/fixtures/ta01")
     start = create_base_permutation(inst)
     start_c = evaluate(inst, start)
     best_perm, best_c, evals = tabu_search(
@@ -130,7 +130,7 @@ def test_tabu_small_candidate_size() -> None:
 
 
 def test_simulated_annealing_runs_and_not_worse() -> None:
-    inst = parse_taillard_data("data/JSPLIB/instances/ta01")
+    inst = parse_taillard_data("tests/fixtures/ta01")
     start = create_base_permutation(inst)
     start_c = evaluate(inst, start)
     best_perm, best_c, evals, iters = simulated_annealing(
@@ -149,7 +149,7 @@ def test_simulated_annealing_runs_and_not_worse() -> None:
 
 
 def test_simulated_annealing_min_temp_stops_early() -> None:
-    inst = parse_taillard_data("data/JSPLIB/instances/ta01")
+    inst = parse_taillard_data("tests/fixtures/ta01")
     start = create_base_permutation(inst)
     # Set high min_temp so it stops after exactly one iteration
     best_perm, best_c, evals, iters = simulated_annealing(

@@ -11,7 +11,7 @@ from src.parser import parse_taillard_data
 
 
 def test_swap_adjacent_preserves_order() -> None:
-    inst = parse_taillard_data("data/JSPLIB/instances/ta01")
+    inst = parse_taillard_data("tests/fixtures/ta01")
     perm = create_base_permutation(inst)
     # swap first two positions (likely same job -> no change)
     newp = swap_adjacent(perm, 0)
@@ -19,7 +19,7 @@ def test_swap_adjacent_preserves_order() -> None:
 
 
 def test_swap_any_legal_and_illegal() -> None:
-    inst = parse_taillard_data("data/JSPLIB/instances/ta01")
+    inst = parse_taillard_data("tests/fixtures/ta01")
     perm = create_base_permutation(inst)
     # pick two positions from different jobs:
     # last op of job0 and first op of job1
@@ -30,7 +30,7 @@ def test_swap_any_legal_and_illegal() -> None:
 
 
 def test_insertion_and_multiset() -> None:
-    inst = parse_taillard_data("data/JSPLIB/instances/ta01")
+    inst = parse_taillard_data("tests/fixtures/ta01")
     perm = create_base_permutation(inst)
     newp = insertion(perm, 0, len(perm) - 1)
     validate_permutation(inst, newp)
@@ -38,7 +38,7 @@ def test_insertion_and_multiset() -> None:
 
 
 def test_generate_neighbors() -> None:
-    inst = parse_taillard_data("data/JSPLIB/instances/ta01")
+    inst = parse_taillard_data("tests/fixtures/ta01")
     perm = create_base_permutation(inst)
     neighs = generate_neighbors(perm, 25, rng=random.Random(0))
     assert 0 < len(neighs) <= 25

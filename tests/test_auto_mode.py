@@ -19,7 +19,7 @@ from src.parser import parse_taillard_data
 
 def _load_small_instance() -> DataInstance:
     # Use a tiny Taillard instance (ta01) to keep runtime low
-    return parse_taillard_data("data/JSPLIB/instances/ta01")
+    return parse_taillard_data("tests/fixtures/ta01")
 
 
 def test_run_auto_creates_results_and_returns_best(tmp_path: Path) -> None:
@@ -41,7 +41,7 @@ def test_run_auto_creates_results_and_returns_best(tmp_path: Path) -> None:
 
     best_perm, best_c = run_auto(
         instance=instance,
-        instance_path="data/JSPLIB/instances/ta01",
+        instance_path="tests/fixtures/ta01",
         runs=3,
         params=params,
         rng=rng,
@@ -114,7 +114,7 @@ def test_run_auto_determinism_seed(tmp_path: Path) -> None:
 
     best_perm_a, best_c_a = run_auto(
         instance=instance,
-        instance_path="data/JSPLIB/instances/ta01",
+        instance_path="tests/fixtures/ta01",
         runs=2,
         params=params,
         rng=rng1,
@@ -122,7 +122,7 @@ def test_run_auto_determinism_seed(tmp_path: Path) -> None:
     )
     best_perm_b, best_c_b = run_auto(
         instance=instance,
-        instance_path="data/JSPLIB/instances/ta01",
+        instance_path="tests/fixtures/ta01",
         runs=2,
         params=params,
         rng=rng2,

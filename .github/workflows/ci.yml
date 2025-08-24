@@ -2,9 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ "**" ]   # run on all branches
   pull_request:
-    branches: [ main ]
+    branches: [ "**" ]   # run on any PR target branch
+  workflow_dispatch:      # allow manual runs from the Actions tab
 
 jobs:
   build-test:

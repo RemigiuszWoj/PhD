@@ -1,6 +1,21 @@
 """Parser for Taillard pair-format job shop instances."""
 
-from models import DataInstance, Job
+from .models import DataInstance, Job
+import os
+
+
+def load_instance(path: str) -> DataInstance:
+    """Load instance by path (directory or file).
+
+    If `path` is a directory, picks the first file inside. Simplified helper
+    used by main script.
+    """
+    if os.path.isdir(path):
+        entries = [f for f in os.listdir(path) if not f.startswith('.')]
+        if not entries:
+            raise FileNotFoundError("Empty instance directory")
+        path = os.path.join(path, sorted(entries)[0])
+    return parse_taillard_data(path)
 
 
 def parse_taillard_data(file_path: str) -> DataInstance:

@@ -80,3 +80,50 @@ A custom `pytest_terminal_summary` hook (see `tests/conftest.py`) prints a compa
 
 Implemented Taillard parser (`src/parser.py`) producing `DataInstance` (`src/models.py`) with automatic normalization of 1-based machine indices.
 
+## Visualization (Gantt)
+
+Optional Gantt chart generation (after running search algorithms) is available via:
+
+```bash
+python -m src.main --algo demo --gantt --gantt-path gantt.png
+```
+
+To enable plotting install the extra dependency:
+
+```bash
+pip install .[viz]
+```
+
+If you only want to add matplotlib to an existing environment:
+
+```bash
+pip install matplotlib
+```
+
+When `--gantt-path` is omitted a window will pop up (interactive backend permitting). The file name extension determines the output format (e.g. `.png`, `.pdf`).
+
+## CLI Modes
+
+`src/main.py` exposes multiple modes via `--algo`:
+
+- `demo` – heuristic comparison + hill climb + tabu + SA + (optional) Gantt
+- `hill` – only hill climbing from SPT permutation
+- `tabu` – hill climb warm‑start then tabu search
+- `sa` – simulated annealing from SPT
+- `pipeline` – multi‑start random → hill → tabu → SA summary
+
+Common useful flags:
+
+```bash
+--neighbor-limit 40 --max-no-improve 20 \
+--tabu-iterations 150 --tabu-tenure 12 --tabu-candidate-size 60 \
+--sa-iterations 800 --sa-initial-temp 40 --sa-cooling 0.96 --sa-neighbor-moves 2 \
+--pipeline-runs 5 --gantt
+```
+
+Logging level can be adjusted:
+
+```bash
+python -m src.main --algo hill --log-level DEBUG
+```
+

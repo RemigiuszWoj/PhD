@@ -1,8 +1,8 @@
 import random
 from typing import Iterable, Optional
 
-from models import DataInstance, OperationKey, Schedule, ScheduleOperationRow
-from operations import validate_permutation
+from .models import DataInstance, OperationKey, Schedule, ScheduleOperationRow
+from .operations import validate_permutation
 
 
 def build_schedule_from_permutation(
@@ -13,8 +13,29 @@ def build_schedule_from_permutation(
 ) -> Schedule:
     """Decode a permutation into a schedule (Serial SGS, non-delay).
 
-    If validate=True perform full permutation validation first. If
-    check_completeness=True ensure number of decoded operations == J*M.
+    The Serial Schedule Generation Scheme (non-delay variant) places each
+    operation as early as possible obeying two constraints: (1) job
+    precedence (operation j,k starts after j,k-1 finishes) and (2) machine
+    capacity (one operation at a time per machine). Order of consideration
+    is exactly the given permutation.
+
+    Args:
+        data_instance: Problem data (jobs with (machine, proc_time) tuples).
+        permutation: Sequence of (job_id, op_index) specifying insertion
+            order for SGS.
+        validate: When True perform full permutation validation (length
+            and per-job order) before decoding.
+        check_completeness: When True verify number of decoded operations
+            equals jobs_number * machines_number; raise if not.
+
+    Returns:
+        Schedule: Object containing list of scheduled operations with start
+        and end times plus computed makespan (cmax).
+
+    Raises:
+        ValueError: If job id out of range, precedence violated, duplicate
+            operation encountered, or schedule incomplete when
+            check_completeness=True.
     """
     jobs_number = data_instance.jobs_number
     machines_number = data_instance.machines_number
@@ -63,10 +84,20 @@ def build_schedule_from_permutation(
 
 
 def check_no_machine_overlap(schedule: Schedule) -> bool:
-    """Ensure no overlapping operations on the same machine.
+    """Ensure no two operations overlap on the same machine.
 
-    Sorts operations per machine by start time and checks start >= prev_end.
-    Raises AssertionError on the first detected overlap.
+    Iterates operations grouped by machine, ordered by start, verifying
+    that each starts no earlier than the previous one ended.
+
+    Args:
+        schedule: Schedule returned by the decoder.
+
+    Returns:
+        True if no overlaps are found.
+
+    Raises:
+        AssertionError: On the first detected temporal overlap for a
+        machine.
     """
     by_machine: dict[int, list[ScheduleOperationRow]] = {}
     for op in schedule.operations:
@@ -88,9 +119,18 @@ def create_random_permutation(
     *,
     rng: Optional[random.Random] = None,
 ) -> list[OperationKey]:
-    """Random permutation preserving intra-job order.
+    """Generate a random feasible permutation.
 
-    Repeatedly selects uniformly a job with remaining operations.
+    At each step uniformly chooses among jobs with remaining operations and
+    appends that job's next operation, preserving intra-job order.
+
+    Args:
+        data_instance: Problem data.
+        rng: Optional random.Random instance (for reproducibility). If
+            None uses module-level random.
+
+    Returns:
+        List of (job_id, op_index) forming a feasible permutation.
     """
     if rng is None:
         rng = random
@@ -110,9 +150,17 @@ def create_random_permutation(
 
 
 def create_spt_permutation(data_instance: DataInstance) -> list[OperationKey]:
-    """SPT permutation: always pick job with shortest next operation.
+    """Construct a Shortest Processing Time (SPT) permutation.
 
-    Ties broken by lower job id.
+    Repeatedly selects the job whose *next* operation has minimal processing
+    time (ties broken by lower job id), then appends that operation. This
+    yields a static permutation heuristic (not a dynamic dispatch rule).
+
+    Args:
+        data_instance: Problem data.
+
+    Returns:
+        List of (job_id, op_index) chosen under SPT criterion.
     """
     remaining = [len(job_ops) for job_ops in data_instance.jobs]
     next_idx = [0] * data_instance.jobs_number

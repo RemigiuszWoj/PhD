@@ -1,8 +1,19 @@
-"""Pytest configuration & custom summary hook."""
+"""Pytest configuration & custom summary hook.
+
+Also ensures 'src' directory (src layout) is on sys.path for imports.
+"""
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
 import pytest
+
+# Ensure project root is on sys.path so 'import src.*' works
+_root = Path(__file__).resolve().parents[1]
+if str(_root) not in sys.path:
+    sys.path.insert(0, str(_root))
 
 
 def pytest_terminal_summary(

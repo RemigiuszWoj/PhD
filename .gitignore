@@ -23,3 +23,9 @@ htmlcov/
 data/
 !data/.gitkeep
 !data/taillard_jssp/**
+
+# Generated charts (auto mode / demo output)
+charts/
+charts_test/
+
+*.png

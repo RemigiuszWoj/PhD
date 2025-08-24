@@ -9,6 +9,12 @@ description = "Minimal scaffold for Job Shop Scheduling Problem experiments."
 authors = [{ name = "Remigiusz Wojewódzki" }]
 readme = "README.md"
 requires-python = ">=3.9"
+dependencies = [
+	# optional core runtime libs kept minimal; matplotlib only if visualization used
+]
+
+[project.optional-dependencies]
+viz = ["matplotlib>=3.9.0"]
 
 [tool.pytest.ini_options]
 # -ra: show brief summary of skipped/xfailed/xpassed/failed

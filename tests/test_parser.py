@@ -9,13 +9,15 @@ from __future__ import annotations
 import os
 import tempfile
 from contextlib import contextmanager
-from parser import parse_taillard_data
+from typing import Iterator
 
 import pytest
 
+from src.parser import parse_taillard_data
+
 
 @contextmanager
-def temp_instance(content: str):
+def temp_instance(content: str) -> Iterator[str]:
     fd, path = tempfile.mkstemp(text=True)
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
@@ -28,7 +30,7 @@ def temp_instance(content: str):
             pass
 
 
-def test_parse_simple_zero_based():
+def test_parse_simple_zero_based() -> None:
     with temp_instance("""2 2\n0 5 1 3\n1 4 0 2\n""") as path:
         inst = parse_taillard_data(path)
         assert inst.jobs_number == 2
@@ -39,7 +41,7 @@ def test_parse_simple_zero_based():
         assert {m for job in inst.jobs for (m, _) in job} == {0, 1}
 
 
-def test_parse_simple_one_based_normalization():
+def test_parse_simple_one_based_normalization() -> None:
     with temp_instance("""1 3\n1 10 2 5 3 7\n""") as path:
         inst = parse_taillard_data(path)
         assert inst.jobs_number == 1
@@ -59,7 +61,7 @@ def test_parse_simple_one_based_normalization():
         """1 2\n5 3 1 2\n""",  # machine index out of range
     ],
 )
-def test_parse_errors(content: str):
+def test_parse_errors(content: str) -> None:
     with temp_instance(content) as path:
         with pytest.raises(ValueError):
             parse_taillard_data(path)

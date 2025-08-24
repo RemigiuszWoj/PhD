@@ -1,8 +1,13 @@
 import random
-from typing import Iterable, Optional
+from collections.abc import Iterable
 
-from .models import DataInstance, OperationKey, Schedule, ScheduleOperationRow
-from .operations import validate_permutation
+from src.models import (
+    DataInstance,
+    OperationKey,
+    Schedule,
+    ScheduleOperationRow,
+)
+from src.operations import validate_permutation
 
 
 def build_schedule_from_permutation(
@@ -76,7 +81,8 @@ def build_schedule_from_permutation(
         expected_elements = jobs_number * machines_number
         if count != expected_elements:
             raise ValueError(
-                "Incomplete schedule: " f"{count}/{expected_elements} operations decoded"
+                "Incomplete schedule: "
+                f"{count}/{expected_elements} operations decoded"
             )
 
     cmax = max((row.end for row in operations), default=0)
@@ -108,7 +114,8 @@ def check_no_machine_overlap(schedule: Schedule) -> bool:
         for r in machine_ops:
             if r.start < prev_end:
                 raise AssertionError(
-                    "Overlap on machine " f"{r.machine} between end {prev_end} and start {r.start}"
+                    "Overlap on machine "
+                    f"{r.machine} between end {prev_end} and start {r.start}"
                 )
             prev_end = r.end
     return True
@@ -117,7 +124,7 @@ def check_no_machine_overlap(schedule: Schedule) -> bool:
 def create_random_permutation(
     data_instance: DataInstance,
     *,
-    rng: Optional[random.Random] = None,
+    rng: random.Random | None = None,
 ) -> list[OperationKey]:
     """Generate a random feasible permutation.
 
@@ -133,7 +140,7 @@ def create_random_permutation(
         List of (job_id, op_index) forming a feasible permutation.
     """
     if rng is None:
-        rng = random
+        rng = random.Random()
     remaining = [len(job_ops) for job_ops in data_instance.jobs]
     next_idx = [0] * data_instance.jobs_number
     eligible = [j for j, r in enumerate(remaining) if r > 0]

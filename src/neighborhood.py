@@ -15,7 +15,6 @@ Return semantics:
 """
 
 import random
-from typing import Optional
 
 from .models import OperationKey
 
@@ -129,7 +128,7 @@ def insertion(perm: list[OperationKey], i: int, j: int) -> list[OperationKey]:
 def generate_neighbors(
     perm: list[OperationKey],
     limit: int,
-    rng: Optional[random.Random] = None,
+    rng: random.Random | None = None,
 ) -> list[list[OperationKey]]:
     """Stochastically generate up to ``limit`` distinct feasible neighbors.
 

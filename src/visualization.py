@@ -14,18 +14,18 @@ the dependency. A clear ImportError message is raised when missing.
 
 from __future__ import annotations
 
-from typing import Optional, Dict, List
+from typing import Any  # noqa: F401 (placeholder for potential future types)
 
-import matplotlib.patches as patches  # type: ignore
-import matplotlib.pyplot as plt  # type: ignore
-from matplotlib import patheffects  # type: ignore
+import matplotlib.patches as patches
+import matplotlib.pyplot as plt
+from matplotlib import patheffects
 
-from .models import Schedule
+from src.models import Schedule
 
 
 def plot_gantt(
     schedule: Schedule,
-    save_path: Optional[str] = None,
+    save_path: str | None = None,
     *,
     width: float = 12.0,
     row_height: float = 0.8,
@@ -39,7 +39,7 @@ def plot_gantt(
     min_label_gap: float = 5.0,
     smart_collision: bool = True,
     watermark_cmax: bool = False,
-    algo_name: Optional[str] = None,
+    algo_name: str | None = None,
 ) -> None:
     """Render a Gantt chart for the given schedule.
 
@@ -68,7 +68,9 @@ def plot_gantt(
     """
     ops = schedule.operations
     # Group operations by machine
-    machines = {}
+    # Store operation rows per machine
+    from src.models import ScheduleOperationRow  # local import to avoid cycle
+    machines: dict[int, list[ScheduleOperationRow]] = {}
     for op in ops:
         machines.setdefault(op.machine, []).append(op)
 
@@ -215,7 +217,7 @@ def plot_gantt(
 
     # Legend (job color mapping) + optional label format note
     if add_legend:
-        from matplotlib.patches import Patch  # type: ignore
+        from matplotlib.patches import Patch
 
         job_ids_sorted = sorted(colors.keys())
         # Avoid unwieldy legend (soft limit)
@@ -273,9 +275,9 @@ def plot_gantt(
 
 
 def plot_progress_curves(
-    progresses: Dict[str, List[int]],
-    time_axes: Dict[str, List[float]],
-    save_path: Optional[str] = None,
+    progresses: dict[str, list[int]],
+    time_axes: dict[str, list[float]],
+    save_path: str | None = None,
     *,
     dpi: int = 220,
     white_background: bool = True,
@@ -294,8 +296,8 @@ def plot_progress_curves(
         white_background: Theme toggle.
         minimalist: If True lighter grid & hides top/right spines.
     """
-    import matplotlib.pyplot as plt  # type: ignore
-    from matplotlib.lines import Line2D  # type: ignore
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
 
     bg = "#ffffff" if white_background else "#0d0b1e"
     fg = "#111111" if white_background else "#f2eeff"
@@ -306,7 +308,7 @@ def plot_progress_curves(
     palette = {
         "hill": "#9c27b0",  # purple
         "tabu": "#ff00c8",  # neon magenta
-        "sa": "#b388ff",    # soft lavender
+        "sa": "#b388ff",  # soft lavender
     }
     marker_map = {"hill": "o", "tabu": "s", "sa": "^"}
     for algo, series in progresses.items():

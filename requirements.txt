@@ -1,0 +1,6 @@
+# Minimal runtime requirements (visualization optional via extra in pyproject)
+# Install with: pip install -r requirements.txt
+
+# Core: currently standard library only for algorithms
+# Visualization (uncomment if not using extras):
+matplotlib>=3.9.0

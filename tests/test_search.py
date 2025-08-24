@@ -3,10 +3,10 @@ import random
 from src.decoder import create_random_permutation
 from src.operations import create_base_permutation, validate_permutation
 from src.parser import parse_taillard_data
-from src.search import evaluate, hill_climb, tabu_search, simulated_annealing
+from src.search import evaluate, hill_climb, simulated_annealing, tabu_search
 
 
-def test_evaluate_cache_reuses_schedule():
+def test_evaluate_cache_reuses_schedule() -> None:
     inst = parse_taillard_data("data/JSPLIB/instances/ta01")
     perm = create_base_permutation(inst)
     cache = {}
@@ -27,7 +27,7 @@ def test_evaluate_cache_reuses_schedule():
     assert len(cache) == 1
 
 
-def test_hill_climb_not_worse_best_improvement():
+def test_hill_climb_not_worse_best_improvement() -> None:
     inst = parse_taillard_data("data/JSPLIB/instances/ta01")
     start = create_base_permutation(inst)
     cache = {}
@@ -47,7 +47,7 @@ def test_hill_climb_not_worse_best_improvement():
     assert evals >= iters  # zawsze liczymy co najmniej 1 eval na iterację
 
 
-def test_hill_climb_first_improvement_runs():
+def test_hill_climb_first_improvement_runs() -> None:
     inst = parse_taillard_data("data/JSPLIB/instances/ta01")
     rng = random.Random(1)
     start = create_random_permutation(inst, rng=rng)
@@ -66,7 +66,7 @@ def test_hill_climb_first_improvement_runs():
     assert evals >= iters
 
 
-def test_tabu_search_runs_and_not_worse():
+def test_tabu_search_runs_and_not_worse() -> None:
     inst = parse_taillard_data("data/JSPLIB/instances/ta01")
     start = create_base_permutation(inst)
     start_c = evaluate(inst, start)
@@ -83,7 +83,7 @@ def test_tabu_search_runs_and_not_worse():
     assert evals > 0
 
 
-def test_hill_climb_best_vs_first():
+def test_hill_climb_best_vs_first() -> None:
     inst = parse_taillard_data("data/JSPLIB/instances/ta01")
     start = create_base_permutation(inst)
     start_c = evaluate(inst, start)
@@ -112,7 +112,7 @@ def test_hill_climb_best_vs_first():
     # przy tym samym seedzie i ograniczonej próbce sąsiadów.)
 
 
-def test_tabu_small_candidate_size():
+def test_tabu_small_candidate_size() -> None:
     inst = parse_taillard_data("data/JSPLIB/instances/ta01")
     start = create_base_permutation(inst)
     start_c = evaluate(inst, start)
@@ -129,7 +129,7 @@ def test_tabu_small_candidate_size():
     assert best_c <= start_c
 
 
-def test_simulated_annealing_runs_and_not_worse():
+def test_simulated_annealing_runs_and_not_worse() -> None:
     inst = parse_taillard_data("data/JSPLIB/instances/ta01")
     start = create_base_permutation(inst)
     start_c = evaluate(inst, start)
@@ -148,7 +148,7 @@ def test_simulated_annealing_runs_and_not_worse():
     assert iters > 0
 
 
-def test_simulated_annealing_min_temp_stops_early():
+def test_simulated_annealing_min_temp_stops_early() -> None:
     inst = parse_taillard_data("data/JSPLIB/instances/ta01")
     start = create_base_permutation(inst)
     # Ustawiamy wysokie min_temp aby zatrzymało się po 1 iteracji

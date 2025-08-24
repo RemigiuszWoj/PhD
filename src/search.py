@@ -29,22 +29,47 @@ from __future__ import annotations
 
 import random
 import time
-from typing import Dict, Iterable, List, Optional, Tuple
+from collections.abc import Iterable
 
-from .decoder import build_schedule_from_permutation
-from .models import DataInstance, OperationKey, Schedule
-from .neighborhood import generate_neighbors, swap_any
+from src.decoder import build_schedule_from_permutation
+from src.models import DataInstance, OperationKey, Schedule
+from src.neighborhood import generate_neighbors, swap_any
 
-CacheType = Dict[Tuple[OperationKey, ...], Tuple[int, Schedule]]
+from typing import overload, Literal
+
+CacheType = dict[tuple[OperationKey, ...], tuple[int, Schedule]]
+
+
+@overload
+def evaluate(
+    data: DataInstance,
+    permutation: Iterable[OperationKey],
+    cache: CacheType | None = None,
+    *,
+    return_schedule: Literal[False] = False,
+    validate: bool = False,
+) -> int: ...
+
+
+@overload
+def evaluate(
+    data: DataInstance,
+    permutation: Iterable[OperationKey],
+    cache: CacheType | None = None,
+    *,
+    return_schedule: Literal[True],
+    validate: bool = False,
+) -> tuple[int, Schedule]: ...
 
 
 def evaluate(
     data: DataInstance,
     permutation: Iterable[OperationKey],
-    cache: Optional[CacheType] = None,
+    cache: CacheType | None = None,
+    *,
     return_schedule: bool = False,
     validate: bool = False,
-) -> int | Tuple[int, Schedule]:
+) -> int | tuple[int, Schedule]:
     """Decode a permutation and return its makespan.
 
     Args:
@@ -64,7 +89,9 @@ def evaluate(
     key = tuple(permutation)
     if cache is not None and key in cache:
         cmax, sched = cache[key]
-        return (cmax, sched) if return_schedule else cmax
+        if return_schedule:
+            return cmax, sched
+        return cmax
     sched = build_schedule_from_permutation(
         data,
         key,  # tuple is iterable of OperationKey
@@ -73,20 +100,22 @@ def evaluate(
     )
     if cache is not None:
         cache[key] = (sched.cmax, sched)
-    return (sched.cmax, sched) if return_schedule else sched.cmax
+    if return_schedule:
+        return sched.cmax, sched
+    return sched.cmax
 
 
 def hill_climb(
     data: DataInstance,
-    start_perm: List[OperationKey],
+    start_perm: list[OperationKey],
     neighbor_limit: int = 50,
     max_no_improve: int = 50,
     best_improvement: bool = True,
-    rng: Optional[random.Random] = None,
-    cache: Optional[CacheType] = None,
-    progress: Optional[List[int]] = None,
-    time_progress: Optional[List[float]] = None,
-) -> Tuple[List[OperationKey], int, int, int]:
+    rng: random.Random | None = None,
+    cache: CacheType | None = None,
+    progress: list[int] | None = None,
+    time_progress: list[float] | None = None,
+) -> tuple[list[OperationKey], int, int, int]:
     """Perform hill climbing from a starting permutation.
 
     Args:
@@ -115,20 +144,16 @@ def hill_climb(
         cache = {}
 
     current = list(start_perm)
-    current_cmax = evaluate(
-        data,
-        current,
-        cache=cache,
-    )  # type: ignore[arg-type]
+    current_cmax = evaluate(data, current, cache=cache)
     best_perm = list(current)
-    best_cmax = current_cmax  # type: ignore[assignment]
+    best_cmax: int = int(current_cmax)
     iters = 0
     evals = 1
     no_imp = 0
 
     t0 = time.perf_counter()
     if progress is not None:
-        progress.append(best_cmax)  # initial state
+        progress.append(best_cmax)
     if time_progress is not None:
         time_progress.append(0.0)
     while no_imp < max_no_improve:
@@ -136,40 +161,38 @@ def hill_climb(
         improved = False
         neighbors = generate_neighbors(current, neighbor_limit, rng=rng)
         if best_improvement:
-            candidate_best = None
-            candidate_perm = None
+            candidate_best: int | None = None
+            candidate_perm: list[OperationKey] | None = None
             for n in neighbors:
-                c = evaluate(data, n, cache=cache)  # type: ignore[arg-type]
+                c = evaluate(data, n, cache=cache)
                 evals += 1
                 if candidate_best is None or c < candidate_best:
                     candidate_best = c
                     candidate_perm = n
-            if (
-                candidate_best is not None
-                and candidate_best < current_cmax  # type: ignore[operator]
-            ):
-                current = candidate_perm  # type: ignore[assignment]
-                current_cmax = candidate_best  # type: ignore[assignment]
+            if candidate_best is not None and candidate_best < current_cmax:
+                assert candidate_perm is not None
+                current = list(candidate_perm)
+                current_cmax = candidate_best
                 improved = True
         else:  # first improvement
             rng.shuffle(neighbors)
             for n in neighbors:
-                c = evaluate(data, n, cache=cache)  # type: ignore[arg-type]
+                c = evaluate(data, n, cache=cache)
                 evals += 1
-                if c < current_cmax:  # type: ignore[operator]
+                if c < current_cmax:
                     current = n
-                    current_cmax = c  # type: ignore[assignment]
+                    current_cmax = c
                     improved = True
                     break
         if improved:
-            if current_cmax < best_cmax:  # type: ignore[operator]
-                best_cmax = current_cmax  # type: ignore[assignment]
+            if current_cmax < best_cmax:
+                best_cmax = current_cmax
                 best_perm = list(current)
             no_imp = 0
         else:
             no_imp += 1
         if progress is not None:
-            progress.append(best_cmax)  # type: ignore[arg-type]
+            progress.append(best_cmax)
         if time_progress is not None:
             time_progress.append(time.perf_counter() - t0)
     return best_perm, best_cmax, iters, evals
@@ -177,16 +200,16 @@ def hill_climb(
 
 def tabu_search(
     data: DataInstance,
-    start_perm: List[OperationKey],
+    start_perm: list[OperationKey],
     iterations: int = 200,
     tenure: int = 15,
     candidate_size: int = 60,
-    rng: Optional[random.Random] = None,
-    cache: Optional[CacheType] = None,
+    rng: random.Random | None = None,
+    cache: CacheType | None = None,
     aspiration: bool = True,
-    progress: Optional[List[int]] = None,
-    time_progress: Optional[List[float]] = None,
-) -> Tuple[List[OperationKey], int, int]:
+    progress: list[int] | None = None,
+    time_progress: list[float] | None = None,
+) -> tuple[list[OperationKey], int, int]:
     """Run a simple swap-based Tabu Search.
 
     Args:
@@ -211,13 +234,13 @@ def tabu_search(
     if cache is None:
         cache = {}
     current = list(start_perm)
-    current_c = evaluate(data, current, cache=cache)  # type: ignore[arg-type]
+    current_c = evaluate(data, current, cache=cache)
     best_perm = list(current)
-    best_c = current_c  # type: ignore[assignment]
+    best_c = current_c
     evals = 1
 
     # tabu dict: move_descriptor -> expire_iteration
-    tabu: dict[Tuple[OperationKey, OperationKey], int] = {}
+    tabu: dict[tuple[OperationKey, OperationKey], int] = {}
 
     n = len(current)
     t0 = time.perf_counter()
@@ -226,8 +249,8 @@ def tabu_search(
     if time_progress is not None:
         time_progress.append(0.0)
     for it in range(1, iterations + 1):
-        candidates: list[Tuple[int, int]] = []
-        seen_pairs: set[Tuple[int, int]] = set()
+        candidates: list[tuple[int, int]] = []
+        seen_pairs: set[tuple[int, int]] = set()
         # sample candidate_size unique index pairs
         attempts = 0
         while (
@@ -251,11 +274,14 @@ def tabu_search(
 
         for i, j in candidates:
             op_i, op_j = current[i], current[j]
-            move_key = tuple(sorted((op_i, op_j)))  # type: ignore[arg-type]
+            if op_i <= op_j:
+                move_key = (op_i, op_j)
+            else:
+                move_key = (op_j, op_i)
             new_perm = swap_any(current, i, j)
             if new_perm == current:
                 continue
-            c = evaluate(data, new_perm, cache=cache)  # type: ignore[arg-type]
+            c = evaluate(data, new_perm, cache=cache)
             evals += 1
             is_tabu = move_key in tabu and tabu[move_key] >= it
             if is_tabu and not (aspiration and c < best_c):
@@ -272,7 +298,7 @@ def tabu_search(
 
         # apply best move
         current = best_move_perm
-        current_c = best_move_c  # type: ignore[assignment]
+        current_c = best_move_c if best_move_c is not None else current_c
         # register tabu
         if best_move is not None:
             tabu[best_move] = it + tenure
@@ -281,11 +307,11 @@ def tabu_search(
         for k in expired:
             del tabu[k]
         # update global best
-        if current_c < best_c:  # type: ignore[operator]
-            best_c = current_c  # type: ignore[assignment]
+        if current_c < best_c:
+            best_c = int(current_c)
             best_perm = list(current)
         if progress is not None:
-            progress.append(best_c)  # type: ignore[arg-type]
+            progress.append(best_c)
         if time_progress is not None:
             time_progress.append(time.perf_counter() - t0)
 
@@ -294,17 +320,17 @@ def tabu_search(
 
 def simulated_annealing(
     data: DataInstance,
-    start_perm: List[OperationKey],
+    start_perm: list[OperationKey],
     iterations: int = 1000,
     initial_temp: float = 50.0,
     cooling: float = 0.95,
     neighbor_moves: int = 1,
-    rng: Optional[random.Random] = None,
-    cache: Optional[CacheType] = None,
+    rng: random.Random | None = None,
+    cache: CacheType | None = None,
     min_temp: float = 1e-3,
-    progress: Optional[List[int]] = None,
-    time_progress: Optional[List[float]] = None,
-) -> Tuple[List[OperationKey], int, int, int]:
+    progress: list[int] | None = None,
+    time_progress: list[float] | None = None,
+) -> tuple[list[OperationKey], int, int, int]:
     """Run Simulated Annealing (SA) on a permutation.
 
     A random swap (between operations of different jobs) or insertion move is
@@ -334,14 +360,14 @@ def simulated_annealing(
     if cache is None:
         cache = {}
     current = list(start_perm)
-    current_c = evaluate(data, current, cache=cache)  # type: ignore[arg-type]
+    current_c = evaluate(data, current, cache=cache)
     best_perm = list(current)
-    best_c = current_c  # type: ignore[assignment]
+    best_c = int(current_c)
     T = float(initial_temp)
     evals = 1
     n = len(current)
 
-    def random_neighbor(base: List[OperationKey]) -> List[OperationKey]:
+    def random_neighbor(base: list[OperationKey]) -> list[OperationKey]:
         # Attempt a feasible random move (swap or insertion)
         for _ in range(10):
             move_type = rng.choice(("swap", "ins"))
@@ -352,7 +378,7 @@ def simulated_annealing(
                 # simple insertion using slicing (reuse neighborhood.insertion
                 # would import extra symbol; light inline variant) but keep
                 # order feasibility by fallback if no change
-                from .neighborhood import insertion as _ins
+                from src.neighborhood import insertion as _ins
 
                 cand = _ins(base, i, j)
             if cand != base:
@@ -367,36 +393,39 @@ def simulated_annealing(
     it = 0
     while it < iterations and T > min_temp:
         it += 1
-        candidate_best_perm = None
-        candidate_best_c = None
+        candidate_best_perm: list[OperationKey] | None = None
+        candidate_best_c: int | None = None
         for _ in range(neighbor_moves):
             neigh = random_neighbor(current)
-            c = evaluate(data, neigh, cache=cache)  # type: ignore[arg-type]
+            c = evaluate(data, neigh, cache=cache)
             evals += 1
             if candidate_best_c is None or c < candidate_best_c:
                 candidate_best_c = c
                 candidate_best_perm = neigh
-        if candidate_best_perm is None:
+        if candidate_best_perm is None or candidate_best_c is None:
             T *= cooling
             continue
-        delta = candidate_best_c - current_c  # type: ignore[operator]
+        delta = candidate_best_c - current_c
         accept = False
         if delta < 0:
             accept = True
-        else:
-            if T > 0:
-                prob = math.exp(-delta / T)  # type: ignore[arg-type]
-                if rng.random() < prob:
-                    accept = True
-        if accept:
+        elif T > 0:
+            prob = math.exp(-delta / T)
+            if rng.random() < prob:
+                accept = True
+        if (
+            accept
+            and candidate_best_perm is not None
+            and candidate_best_c is not None
+        ):
             current = candidate_best_perm
-            current_c = candidate_best_c  # type: ignore[assignment]
-            if current_c < best_c:  # type: ignore[operator]
-                best_c = current_c  # type: ignore[assignment]
+            current_c = candidate_best_c
+            if current_c < best_c:
+                best_c = int(current_c)
                 best_perm = list(current)
         T *= cooling
         if progress is not None:
-            progress.append(best_c)  # type: ignore[arg-type]
+            progress.append(best_c)
         if time_progress is not None:
             time_progress.append(time.perf_counter() - t0)
     return best_perm, best_c, evals, it

@@ -1,6 +1,8 @@
 # PhD JSSP Workspace
 
-Minimal skeleton for Job Shop Scheduling Problem experiments (Taillard instances initially).
+Experimental sandbox for Job Shop Scheduling Problem (JSSP) metaheuristics
+on Taillard benchmark instances. See `ARCHITECTURE.md` for a structured
+overview of modules and data flow.
 
 ## Environment setup
 
@@ -111,6 +113,8 @@ When `--gantt-path` is omitted a window will pop up (interactive backend permitt
 - `tabu` – hill climb warm‑start then tabu search
 - `sa` – simulated annealing from SPT
 - `pipeline` – multi‑start random → hill → tabu → SA summary
+- `auto` – independent multi‑start (all three algorithms)
+- `benchmark` – batch over a random sample of Taillard `ta*` files
 
 Common useful flags:
 
@@ -126,4 +130,138 @@ Logging level can be adjusted:
 ```bash
 python -m src.main --algo hill --log-level DEBUG
 ```
+
+## Auto Mode (independent multi‑start)
+
+Auto mode runs each algorithm (`hill`, `tabu`, `sa`) independently `--runs` times starting every run from a fresh random permutation (algorithms do NOT seed one another). Artifacts saved into `--charts-dir` (default `charts/`):
+
+- `progress_curves_<timestamp>.png` – overlay of best‐so‑far Cmax vs iteration/time for all algorithms (scatter / step look).
+- `gantt_<algo>_c<bestC>_<timestamp>.png` – per‑algorithm Gantt for its best run.
+- `auto_results_<timestamp>.json` – structured summary:
+	* `per_run` per algorithm list with `cmax` and `time` (seconds) per run
+	* `best` per algorithm: several permutation encodings (`permutation_pairs`, `permutation_compact`, `job_sequence`)
+	* `averages` per algorithm (mean cmax/time)
+
+Example:
+
+```bash
+python -m src.main --algo auto --instance data/JSPLIB/instances/ta01 --runs 50 \
+	--neighbor-limit 40 --max-no-improve 20 \
+	--tabu-iterations 150 --tabu-tenure 12 --tabu-candidate-size 60 \
+	--sa-iterations 800 --sa-initial-temp 40 --sa-cooling 0.96 --sa-neighbor-moves 2
+```
+
+## Benchmark Mode (batch over Taillard subset)
+
+Benchmark mode iterates a RANDOM sample of Taillard instances (`ta*`) from `--instances-dir` and for each instance runs each algorithm `--runs` times, storing per‑algorithm artifacts and a combined progress plot.
+
+Key flags:
+
+```bash
+--algo benchmark \
+--instances-dir data/JSPLIB/instances \
+--benchmark-dir research \
+--benchmark-sample 8   # how many random instances to include (max)
+--runs 60
+```
+
+Directory layout produced inside `research/` (example for two instances):
+
+```
+research/
+	ta01/
+		hill/
+			results_incremental_hill.json          # overwritten after each run (fault‑tolerant)
+			results_hill_<timestamp>.json          # final full summary
+			progress_hill_<timestamp>.png          # best run progress
+			gantt_hill_c<bestC>.png
+		tabu/
+			... (analogiczne pliki)
+		sa/
+			...
+		progress_all_<timestamp>.png             # combined (one best curve per algo)
+	ta17/
+		...
+```
+
+### Incremental JSON (fault tolerance)
+
+During benchmark each algorithm directory maintains `results_incremental_<algo>.json` rewritten atomically (temporary file + replace) after every run so that partial progress survives interruptions (e.g. crash / Ctrl+C / power loss). When all runs complete a timestamped `results_<algo>_<timestamp>.json` is also written (immutable record).
+
+Incremental schema (subset):
+
+```jsonc
+{
+	"instance": "data/JSPLIB/instances/ta01",
+	"algorithm": "tabu",
+	"runs_completed": 37,
+	"planned_runs": 60,
+	"per_run": [{"run":1,"cmax":1234,"time":0.231}, ...],
+	"best": {"cmax": 1178, "time": 0.812, "permutation": "[[0,0],[1,0],...]"},
+	"average": {"avg_cmax": 1210.4, "avg_time": 0.95}
+}
+```
+
+The final (non‑incremental) JSON adds a `timestamp` and retains full per‑run list.
+
+### Sampling
+
+`--benchmark-sample K` randomly picks at most `K` distinct `ta*` instance files (default 5). This accelerates iterative research cycles while still giving variety. Set it larger (or to the total number of Taillard files) for exhaustive benchmarking.
+
+### Reproducibility Tips
+
+- Provide `--seed` for deterministic permutation sampling; note that stochastic acceptance (SA) and candidate choices (Tabu) depend on this RNG state too.
+- Capture the exact CLI plus the contents of each `results_incremental_*.json` for resuming context.
+
+## JSON Permutation Representations
+
+In auto mode (`auto_results_*.json`) three complementary encodings help downstream analysis:
+
+- `permutation_pairs`: list of `[job, operation]` integer pairs
+- `permutation_compact`: `J{job}O{op}` comma separated tokens
+- `job_sequence`: only the job id sequence (useful for certain decoders)
+
+Benchmark incremental JSON uses a compact flattened pair format inside a single string for brevity.
+
+## Ignoring Research Artifacts
+
+The `.gitignore` now excludes the entire `research/` hierarchy (and PNG charts) to avoid polluting version control with large experimental outputs. If you need to version specific aggregated summaries, copy or move those JSON files into a tracked directory before committing, or add a curated script that extracts only the necessary metrics.
+
+If you want to keep directory structure without data, add empty `.gitkeep` files manually (ignored rule exempts them).
+
+## Developer / Lint Extras
+
+Install dev & viz extras in one step:
+
+```bash
+pip install .[dev,viz]
+```
+
+Where `dev` includes tooling (pytest, ruff, black, mypy) and `viz` brings `matplotlib`.
+
+## Quick Reference
+
+Run single algorithm once:
+
+```bash
+python -m src.main --algo tabu --instance data/JSPLIB/instances/ta01
+```
+
+Run auto comparison (30 runs each):
+
+```bash
+python -m src.main --algo auto --runs 30 --instance data/JSPLIB/instances/ta01
+```
+
+Run benchmark over 10 random Taillard instances (40 runs each):
+
+```bash
+python -m src.main --algo benchmark --benchmark-sample 10 --runs 40 \
+	--instances-dir data/JSPLIB/instances --benchmark-dir research
+```
+
+## License
+
+See `LICENSE` (MIT unless changed).
+
 

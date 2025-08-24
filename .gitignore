@@ -1,9 +1,14 @@
-# Python virtual environments
+############################################
+# Environments
+############################################
 .venv/
+.venv311/
 venv/
 ENV/
 
-# Python cache and build
+############################################
+# Python bytecode / build artifacts
+############################################
 __pycache__/
 *.py[cod]
 *.egg-info/
@@ -11,21 +16,57 @@ __pycache__/
 dist/
 build/
 
-# VSCode workspace
+############################################
+# Tool / IDE configs
+############################################
 .vscode/
+.idea/
 
-# Test & coverage
+############################################
+# Test & coverage artifacts
+############################################
 .pytest_cache/
 .coverage
+.coverage.*
+coverage.xml
 htmlcov/
 
-# Data: ignore by default, but keep Taillard JSSP dataset
+############################################
+# Static analysis / linter caches
+############################################
+.mypy_cache/
+.ruff_cache/
+
+############################################
+# Data (ignore all by default, keep selected dataset)
+############################################
 data/
 !data/.gitkeep
 !data/taillard_jssp/**
 
-# Generated charts (auto mode / demo output)
+############################################
+# Generated outputs (plots, charts)
+############################################
 charts/
 charts_test/
-
 *.png
+
+############################################
+# Research benchmark outputs (large / volatile)
+############################################
+research/
+research/**
+!research/.gitkeep
+**/results_incremental_*.json
+
+############################################
+# Local developer documentation (not for repo)
+############################################
+CODE_WALKTHROUGH.md
+WALKTHROUGH/
+
+############################################
+# Misc / OS
+############################################
+.DS_Store
+Thumbs.db

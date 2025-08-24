@@ -8,13 +8,27 @@ version = "0.0.0"
 description = "Minimal scaffold for Job Shop Scheduling Problem experiments."
 authors = [{ name = "Remigiusz Wojewódzki" }]
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 dependencies = [
 	# optional core runtime libs kept minimal; matplotlib only if visualization used
+]
+classifiers = [
+	"Programming Language :: Python :: 3",
+	"Programming Language :: Python :: 3.11",
+	"Programming Language :: Python :: 3.12",
+	"License :: OSI Approved :: MIT License",
+	"Intended Audience :: Science/Research",
+	"Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 
 [project.optional-dependencies]
 viz = ["matplotlib>=3.9.0"]
+dev = [
+	"pytest>=7.4",
+	"ruff>=0.4.0",
+	"black>=24.3.0",
+	"mypy>=1.8.0",
+]
 
 [tool.pytest.ini_options]
 # -ra: show brief summary of skipped/xfailed/xpassed/failed
@@ -28,18 +42,21 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py39"
+target-version = "py311"
+
+[tool.ruff.lint]
 select = [
 	"E",   # pycodestyle errors
 	"F",   # pyflakes
 	"I",   # isort
 	"B",   # flake8-bugbear
 	"UP",  # pyupgrade
-	"ANN"  # flake8-annotations (enforce type hints)
+	"ANN"  # annotations
 ]
 ignore = [
-	"ANN101", # missing self type annotation (can relax later)
-	"ANN102"  # missing cls annotation
+	"ANN101",
+	"ANN102",
+	"E501",      # let Black manage line length (100)
 ]
 
 [tool.ruff.lint.isort]
@@ -48,7 +65,8 @@ combine-as-imports = true
 
 [tool.black]
 line-length = 100
-target-version = ["py39"]
+target-version = ["py311"]
+preview = true
 
 [tool.isort]
 profile = "black"
@@ -56,7 +74,7 @@ line_length = 100
 known_first_party = ["jssp"]
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.11"
 warn_return_any = true
 warn_unused_ignores = true
 disallow_untyped_defs = true

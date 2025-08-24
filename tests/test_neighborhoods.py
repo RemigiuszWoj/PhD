@@ -1,4 +1,5 @@
 import random
+from typing import Set, Tuple
 
 from src.neighborhood import (
     generate_neighbors,
@@ -10,7 +11,7 @@ from src.operations import create_base_permutation, validate_permutation
 from src.parser import parse_taillard_data
 
 
-def test_swap_adjacent_preserves_order():
+def test_swap_adjacent_preserves_order() -> None:
     inst = parse_taillard_data("data/JSPLIB/instances/ta01")
     perm = create_base_permutation(inst)
     # swap first two positions (likely same job -> no change)
@@ -18,7 +19,7 @@ def test_swap_adjacent_preserves_order():
     validate_permutation(inst, newp)
 
 
-def test_swap_any_legal_and_illegal():
+def test_swap_any_legal_and_illegal() -> None:
     inst = parse_taillard_data("data/JSPLIB/instances/ta01")
     perm = create_base_permutation(inst)
     # pick two positions from different jobs:
@@ -29,7 +30,7 @@ def test_swap_any_legal_and_illegal():
     validate_permutation(inst, moved)
 
 
-def test_insertion_and_multiset():
+def test_insertion_and_multiset() -> None:
     inst = parse_taillard_data("data/JSPLIB/instances/ta01")
     perm = create_base_permutation(inst)
     newp = insertion(perm, 0, len(perm) - 1)
@@ -37,13 +38,13 @@ def test_insertion_and_multiset():
     assert sorted(perm) == sorted(newp)
 
 
-def test_generate_neighbors():
+def test_generate_neighbors() -> None:
     inst = parse_taillard_data("data/JSPLIB/instances/ta01")
     perm = create_base_permutation(inst)
     neighs = generate_neighbors(perm, 25, rng=random.Random(0))
     assert 0 < len(neighs) <= 25
     # all unique and valid
-    seen = set()
+    seen: Set[Tuple] = set()
     for p in neighs:
         validate_permutation(inst, p)
         t = tuple(p)

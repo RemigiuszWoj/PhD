@@ -38,6 +38,7 @@ class ScheduleOperationRow:
         machine: Machine on which the operation is processed.
         processing_time: Duration of the operation.
     """
+
     start: int
     end: int
     job: int
@@ -54,5 +55,6 @@ class Schedule:
         operations: Flat list of all scheduled operations (length J*M).
         cmax: Makespan (maximum completion time across all operations).
     """
+
     operations: list[ScheduleOperationRow]
     cmax: int

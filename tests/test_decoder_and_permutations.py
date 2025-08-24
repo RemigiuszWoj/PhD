@@ -13,6 +13,7 @@ from src.operations import create_base_permutation, validate_permutation
 
 
 def small_instance() -> DataInstance:
+    """Create a tiny 2x2 synthetic instance for focused unit tests."""
     # 2 jobs x 2 machines synthetic
     jobs = [
         [(0, 3), (1, 2)],

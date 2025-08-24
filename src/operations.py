@@ -10,7 +10,7 @@ Permutation
     such permutations.
 """
 
-from .models import DataInstance, OperationKey
+from src.models import DataInstance, OperationKey
 
 
 def create_base_permutation(data_instance: DataInstance) -> list[OperationKey]:
@@ -52,9 +52,7 @@ def validate_permutation(
             sequence of operation indices for any job deviates from the
             canonical increasing sequence (e.g. repeats, skips, or reorders).
     """
-    expected_permutation_length = (
-        data_instance.machines_number * data_instance.jobs_number
-    )
+    expected_permutation_length = data_instance.machines_number * data_instance.jobs_number
     if len(permutation) != expected_permutation_length:
         raise ValueError("Incomplete permutation (missing operations)")
     next_operational_index = [0] * data_instance.jobs_number
@@ -62,9 +60,6 @@ def validate_permutation(
         if not (0 <= job_id < data_instance.jobs_number):
             raise ValueError(f"Job index out of range: {job_id}")
         if operation_index != next_operational_index[job_id]:
-            raise ValueError(
-                "Operation index out of order for job "
-                f"{job_id}: {operation_index}"
-            )
+            raise ValueError("Operation index out of order for job " f"{job_id}: {operation_index}")
         next_operational_index[job_id] += 1
     return True

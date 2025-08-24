@@ -1,5 +1,7 @@
 # PhD JSSP Workspace
 
+[![CI](https://github.com/RemigiuszWoj/PhD/actions/workflows/ci.yml/badge.svg)](https://github.com/RemigiuszWoj/PhD/actions/workflows/ci.yml)
+
 Experimental sandbox for Job Shop Scheduling Problem (JSSP) metaheuristics
 on Taillard benchmark instances. See `ARCHITECTURE.md` for a structured
 overview of modules and data flow.
@@ -238,6 +240,57 @@ pip install .[dev,viz]
 ```
 
 Where `dev` includes tooling (pytest, ruff, black, mypy) and `viz` brings `matplotlib`.
+
+## Continuous Integration (GitHub Actions)
+
+This repository uses a single workflow at `.github/workflows/ci.yml` triggered on every
+`push` and `pull_request` to `main`. It enforces:
+
+1. Black (format check, 100 line length, preview mode)
+2. isort (import ordering check) limited to `src` and `tests`
+3. flake8 (style / basic lint) aligned with Black config
+4. Ruff (additional lint rules: pyflakes, bugbear, annotations, etc.)
+5. mypy (static typing) against `src` + `tests`
+6. pytest (unit tests, timing summary enabled)
+
+Artifacts (charts PNG/JSON) from test runs are uploaded if present.
+
+### How to Require Passing CI Before Merge
+
+1. Open GitHub repo: Settings → Branches.
+2. Under Branch protection rules click “Add rule”.
+3. Set “Branch name pattern” to `main`.
+4. Enable:
+	- “Require a pull request before merging”.
+	- “Require status checks to pass before merging”.
+	- In the status checks list select the job name: `CI / build-test` (it appears after the first workflow run on a PR or push).
+	- (Optional) “Require branches to be up to date before merging” (forces rebase/merge with latest `main` before final green).
+5. (Optional) Enable “Require signed commits” or “Require linear history” for stricter policy.
+6. Save rule.
+
+After this, any pull request must pass the CI workflow (all tools/tests green) prior to merge.
+
+### Running Locally Before Opening a PR
+
+You can mimic CI locally:
+
+```bash
+pip install .[dev,viz]
+black --check .
+isort --check-only src tests
+flake8 src tests
+ruff check .
+mypy src tests
+pytest
+```
+
+If formatting fails, apply:
+
+```bash
+black . && isort src tests
+```
+
+Then re-run the checks.
 
 ## Quick Reference
 

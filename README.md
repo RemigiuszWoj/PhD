@@ -313,6 +313,25 @@ python -m src.main --algo benchmark --benchmark-sample 10 --runs 40 \
 	--instances-dir data/JSPLIB/instances --benchmark-dir research
 ```
 
+## Development Convenience Script
+
+Pełny lokalny zestaw kontroli (format, lint, typy, testy) jednym poleceniem:
+
+```bash
+./scripts/check_all.sh
+```
+
+Flagi wyłączające wybrane kroki (przyspieszenie iteracji):
+
+```bash
+./scripts/check_all.sh --no-flake8       # Ruff pokrywa większość
+./scripts/check_all.sh --no-mypy         # tylko lint
+./scripts/check_all.sh --no-tests        # szybka weryfikacja stylu
+./scripts/check_all.sh --no-format --no-mypy --no-tests  # same Ruff/flake8
+```
+
+Skrypt automatycznie wykrywa lokalną wirtualną env `.venv311` lub `.venv`.
+
 ## License
 
 See `LICENSE` (MIT unless changed).

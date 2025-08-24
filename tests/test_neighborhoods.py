@@ -1,5 +1,4 @@
 import random
-from typing import Set, Tuple
 
 from src.neighborhood import (
     generate_neighbors,
@@ -44,7 +43,7 @@ def test_generate_neighbors() -> None:
     neighs = generate_neighbors(perm, 25, rng=random.Random(0))
     assert 0 < len(neighs) <= 25
     # all unique and valid
-    seen: Set[Tuple] = set()
+    seen: set[tuple] = set()
     for p in neighs:
         validate_permutation(inst, p)
         t = tuple(p)

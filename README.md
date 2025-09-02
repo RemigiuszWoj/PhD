@@ -3,8 +3,72 @@
 [![CI](https://github.com/RemigiuszWoj/PhD/actions/workflows/ci.yml/badge.svg)](https://github.com/RemigiuszWoj/PhD/actions/workflows/ci.yml)
 
 Experimental sandbox for Job Shop Scheduling Problem (JSSP) metaheuristics
-on Taillard benchmark instances. See `ARCHITECTURE.md` for a structured
-overview of modules and data flow.
+on Taillard benchmark instances.
+
+> CURRENT STATE (trimmed): Repository został uproszczony – aktywne są tylko dwa algorytmy: `tabu` oraz `sa` (plus tryb `both` uruchamiający oba po kolei). Poprzednie tryby (`demo`, `hill`, `pipeline`, `auto`, `benchmark`) zostały usunięte z kodu i poniższe sekcje oznaczone jako LEGACY nie dotyczą już bieżącej wersji. Zachowano je jedynie referencyjnie.
+
+## 🔥 Szybki start (nowa uproszczona wersja)
+
+Nowy terminal / świeża sesja:
+
+```bash
+# 1. (Opcjonalnie) utwórz / użyj środowiska wirtualnego
+python3 -m venv .venv311  # jeśli jeszcze nie istnieje
+source .venv311/bin/activate  # macOS / Linux (zsh/bash)
+
+# 2. Instalacja zależności (podstawowe + matplotlib do wykresów)
+pip install -r requirements.txt
+pip install matplotlib  # jeśli nie jest w requirements
+
+# 3. Uruchomienie jednego algorytmu
+python src/main.py --algo tabu --instance data/JSPLIB/instances/ta01 --runs 5
+python src/main.py --algo sa   --instance data/JSPLIB/instances/ta01 --runs 5
+
+# 4. Uruchomienie obu algorytmów sekwencyjnie
+python src/main.py --algo both --instance data/JSPLIB/instances/ta01 --runs 5
+
+# 5. Uruchomienie na wszystkich instancjach (podaj katalog zamiast pliku)
+python src/main.py --algo both --instance data/JSPLIB/instances --runs 3
+```
+
+Generowane pliki Gantta trafiają do katalogu `charts/`. Na początku każdego uruchomienia katalog jest czyszczony (tylko pliki – katalog pozostaje). Nazwa pliku zawiera algorytm, uzyskane `cmax`, nazwę instancji i timestamp.
+
+### Parametry kluczowe
+
+| Parametr | Opis | Domyślnie |
+|----------|------|-----------|
+| `--algo` | `tabu`, `sa` lub `both` | `tabu` |
+| `--instance` | Ścieżka do pojedynczej instancji lub katalogu z wieloma | `data/JSPLIB/instances/ta01` |
+| `--runs` | Ile niezależnych losowych startów (najlepszy zostaje na wykres) | `10` |
+| `--seed` | Seed RNG (powtarzalność) | `42` |
+| `--tabu-iterations` | Iteracje Tabu | `150` |
+| `--tabu-tenure` | Tenure listy tabu | `12` |
+| `--tabu-candidate-size` | Rozmiar puli sąsiadów | `60` |
+| `--sa-iterations` | Iteracje SA | `800` |
+| `--sa-initial-temp` | Temperatura początkowa | `40.0` |
+| `--sa-cooling` | Współczynnik chłodzenia | `0.96` |
+| `--sa-neighbor-moves` | Liczba ruchów sąsiedztwa / iterację | `2` |
+| `--charts-dir` | Katalog na wykresy | `charts` |
+| `--log-level` | Poziom logowania | `INFO` |
+
+Przykład z własnym katalogiem wykresów:
+
+```bash
+python src/main.py --algo both --instance data/JSPLIB/instances/ta01 \
+	--runs 8 --charts-dir out_charts --log-level INFO
+```
+
+### Typowe problemy
+
+1. `ModuleNotFoundError: No module named 'src'` – upewnij się, że uruchamiasz z katalogu głównego repo (`pwd` powinno kończyć się na `PhD`).
+2. Brak polecenia `python` – użyj `python3` (macOS / Linux) lub pełnej ścieżki do środowiska: `./.venv311/bin/python`.
+3. Puste wykresy / brak plików – sprawdź czy instancja istnieje (`ls data/JSPLIB/instances`).
+4. Duplikaty logów – jeśli dopisujesz własne loggery, unikaj wielokrotnego konfigurowania `basicConfig`.
+
+---
+
+## (LEGACY) Dokumentacja poprzedniej, rozbudowanej wersji
+Poniższe sekcje dotyczą wcześniejszej wersji projektu i mogą nie odzwierciedlać aktualnego kodu.
 
 ## Environment setup
 
@@ -106,7 +170,7 @@ pip install matplotlib
 
 When `--gantt-path` is omitted a window will pop up (interactive backend permitting). The file name extension determines the output format (e.g. `.png`, `.pdf`).
 
-## CLI Modes
+## CLI Modes (LEGACY – usunięte w aktualnym kodzie)
 
 `src/main.py` exposes multiple modes via `--algo`:
 
@@ -133,7 +197,7 @@ Logging level can be adjusted:
 python -m src.main --algo hill --log-level DEBUG
 ```
 
-## Auto Mode (independent multi‑start)
+## Auto Mode (LEGACY – usunięty)
 
 Auto mode runs each algorithm (`hill`, `tabu`, `sa`) independently `--runs` times starting every run from a fresh random permutation (algorithms do NOT seed one another). Artifacts saved into `--charts-dir` (default `charts/`):
 
@@ -153,7 +217,7 @@ python -m src.main --algo auto --instance data/JSPLIB/instances/ta01 --runs 50 \
 	--sa-iterations 800 --sa-initial-temp 40 --sa-cooling 0.96 --sa-neighbor-moves 2
 ```
 
-## Benchmark Mode (batch over Taillard subset)
+## Benchmark Mode (LEGACY – usunięty)
 
 Benchmark mode iterates a RANDOM sample of Taillard instances (`ta*`) from `--instances-dir` and for each instance runs each algorithm `--runs` times, storing per‑algorithm artifacts and a combined progress plot.
 

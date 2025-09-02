@@ -1,0 +1,9 @@
+{
+    "projectSrc": "src/",
+    "testDir": "tests/",
+    "venv": ".venv311",
+    "testCommand": "pytest",
+    "ignoreFolders": [
+        "0_INTRODUSTION"
+    ]
+}

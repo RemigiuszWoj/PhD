@@ -171,3 +171,13 @@ def generate_neighbors(
             seen.add(t)
             result.append(cand)
     return result
+
+
+def create_fibonachi_neighborhood(perm: list[OperationKey]) -> list[OperationKey]:
+    """Placeholder (pojedyncza permutacja) dla 'fibonachi_neighborhood'.
+
+    Przyjmuje jedną permutację i zwraca ją bez zmian. Tu możesz później
+    wprowadzić modyfikacje specyficzne dla "Fibonacci" (np. wybór odległości
+    na podstawie liczb Fibonacciego i wykonanie zamiany). Na razie no-op.
+    """
+    return perm

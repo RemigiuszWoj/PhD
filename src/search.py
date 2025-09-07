@@ -1,35 +1,14 @@
+import logging
+import math
+import os
 import random
 import time
+from typing import Optional
 
-from src.decoder import build_schedule_from_permutation
-from src.models import DataInstance, OperationKey, Schedule
+from src.evaluation import evaluate
+from src.models import DataInstance, OperationKey
 from src.neighborhood import create_fibonachi_neighborhood, swap_adjacent
-
-
-def evaluate(
-    data: DataInstance,
-    permutation: list[OperationKey],
-    cache: dict | None = None,
-    return_schedule: bool = False,
-    validate: bool = False,
-) -> int | tuple[int, Schedule]:
-    key = tuple(permutation)
-    if cache is not None and key in cache:
-        cmax, sched = cache[key]
-        if return_schedule:
-            return cmax, sched
-        return cmax
-    sched = build_schedule_from_permutation(
-        data,
-        key,
-        validate=validate,
-        check_completeness=True,
-    )
-    if cache is not None:
-        cache[key] = (sched.cmax, sched)
-    if return_schedule:
-        return sched.cmax, sched
-    return sched.cmax
+from src.visualization import plot_gantt
 
 
 def tabu_search(
@@ -37,17 +16,22 @@ def tabu_search(
     start_perm: list[OperationKey],
     iterations: int = 200,
     tenure: int = 15,
-    candidate_size: int = 60,
-    rng: random.Random | None = None,
-    cache: dict | None = None,
+    rng: Optional[random.Random] = None,
+    cache: Optional[dict] = None,
     aspiration: bool = True,
-    progress: list[int] | None = None,
-    time_progress: list[float] | None = None,
     neighborhood: str = "swap_adjacent_neighborhood",
-) -> tuple[list[OperationKey], int, int]:
+    time_limit_ms: Optional[int] = None,
+    gantt_dir: Optional[str] = None,
+    trace_file: str | None = None,
+) -> tuple[list[OperationKey], int, int, list[int]]:
     """Tabu Search z jedynym sąsiedztwem: adjacent swap (zamiana i,i+1 różnych jobów).
 
-    candidate_size: maksymalna liczba indeksów i (dla par (i,i+1)) rozważanych w iteracji.
+    (upr.) pełne sąsiedztwo adjacent bez limitu liczby kandydatów.
+    time_limit_ms: opcjonalny limit czasu działania (ms);
+        jeśli ustawiony, przerywamy po przekroczeniu.
+    save_gantt_dir: katalog do zapisu wykresów Gantta z każdej iteracji (lub None).
+    save_progress_path: ścieżka do zapisu końcowego wykresu postępu (lub None).
+    progress_plot: czy generować końcowy wykres postępu (wymaga progress oraz ścieżki).
     """
     # Initialize random number generator if not provided
     if rng is None:
@@ -64,11 +48,20 @@ def tabu_search(
     tabu: dict[tuple[OperationKey, OperationKey], int] = {}
 
     t0 = time.perf_counter()
-    if progress is not None:
-        progress.append(best_c)
-    if time_progress is not None:
-        time_progress.append(0.0)
+    current_history: list[int] = []  # surowy current c po każdej zmianie
+    # Dodajemy wartość początkową aby wykres porównawczy nie był pusty gdy brak ruchów
+    current_history.append(current_c)
+    # progress list usunięty – używamy tylko current_history
+    limit_s = (time_limit_ms / 1000.0) if time_limit_ms is not None else None
+    # ensure directories
+    if gantt_dir is not None:
+        os.makedirs(gantt_dir, exist_ok=True)
     for it in range(1, iterations + 1):
+        if limit_s is not None and (time.perf_counter() - t0) >= limit_s:
+            logging.getLogger("jssp").info(
+                "[tabu] stop time_limit reached at iter %d best=%s evals=%d", it, best_c, evals
+            )
+            break
         n = len(current)
         best_move_key = None
         best_move_perm = None
@@ -76,13 +69,16 @@ def tabu_search(
 
         # Neighborhood generation block
         if neighborhood == "swap_adjacent_neighborhood":  # adjacent swap neighborhood
-            indices = list(range(n - 1))
-            if candidate_size < len(indices):
-                indices = rng.sample(indices, candidate_size)
+            # Bierzemy wyłącznie pozycje gdzie joby się różnią (realne ruchy)
+            indices = [i for i in range(n - 1) if current[i][0] != current[i + 1][0]]
+            if not indices:  # brak możliwych ruchów
+                logging.getLogger("jssp").info(
+                    "[tabu] brak ruchów w iter %d best=%s evals=%d", it, best_c, evals
+                )
+                break
             for i in indices:
+                # tu swap zawsze zmieni permutację (bo joby różne)
                 new_perm = swap_adjacent(current, i)
-                if new_perm == current:
-                    continue
                 op_a, op_b = sorted((current[i], current[i + 1]))
                 move_key = (op_a, op_b)
                 c = evaluate(data, new_perm, cache=cache)
@@ -96,10 +92,41 @@ def tabu_search(
                     best_move_perm = new_perm
 
         elif neighborhood == "fibonachi_neighborhood":
-            # placeholder for future neighborhood strategy names
-            pass
+            new_perm, c = create_fibonachi_neighborhood(
+                current,
+                data=data,
+                cache=cache,
+                allow_equal=True,
+                debug=False,
+                return_cost=True,
+            )
+            evals += 1
+            if new_perm != current:
+                swapped_pairs: list[tuple[OperationKey, OperationKey]] = []
+                for i in range(n - 1):
+                    if (
+                        new_perm[i] == current[i + 1]
+                        and new_perm[i + 1] == current[i]
+                        and current[i][0] != current[i + 1][0]
+                    ):
+                        op_a, op_b = sorted((current[i], current[i + 1]))
+                        swapped_pairs.append((op_a, op_b))
+                if swapped_pairs:
+                    if len(swapped_pairs) == 1:
+                        move_key: tuple | tuple[OperationKey, OperationKey] = swapped_pairs[0]
+                    else:
+                        move_key = tuple(swapped_pairs)
+                    is_tabu = move_key in tabu and tabu[move_key] >= it
+                    if not (is_tabu and not (aspiration and c < best_c)):
+                        if best_move_c is None or c < best_move_c:
+                            best_move_c = c
+                            best_move_key = move_key
+                            best_move_perm = new_perm
 
         if best_move_perm is None:
+            logging.getLogger("jssp").info(
+                "[tabu] brak akceptowalnego ruchu iter=%d best=%s evals=%d", it, best_c, evals
+            )
             break
         current = best_move_perm
         current_c = best_move_c if best_move_c is not None else current_c
@@ -111,12 +138,36 @@ def tabu_search(
         if current_c < best_c:
             best_c = int(current_c)
             best_perm = list(current)
-        if progress is not None:
-            progress.append(best_c)
-        if time_progress is not None:
-            time_progress.append(time.perf_counter() - t0)
+        current_history.append(current_c)
+        logging.getLogger("jssp").info(
+            "[tabu] iter %d/%d current=%s best=%s evals=%d",
+            it,
+            iterations,
+            current_c,
+            best_c,
+            evals,
+        )
+        if trace_file is not None:
+            # format: it;current;best;move_key;evals
+            try:
+                with open(trace_file, "a", encoding="utf-8") as tf:
+                    tf.write(f"{it};{current_c};{best_c};{best_move_key};{evals}\n")
+            except Exception:
+                pass
+        # zapis Gantta (zawsze jeśli katalog podany)
+        if gantt_dir is not None:
+            c_sched = evaluate(data, current, cache=cache, return_schedule=True)
+            if isinstance(c_sched, tuple):
+                _, sched = c_sched
+                plot_gantt(
+                    sched,
+                    save_path=f"{gantt_dir}/tabu_iter_{it}.png",
+                    algo_name="tabu",
+                    white_background=True,
+                    add_legend=False,
+                )
 
-    return best_perm, best_c, evals
+    return best_perm, best_c, evals, current_history
 
 
 def simulated_annealing(
@@ -126,15 +177,14 @@ def simulated_annealing(
     initial_temp: float = 50.0,
     cooling: float = 0.95,
     neighbor_moves: int = 1,
-    rng: random.Random | None = None,
-    cache: dict | None = None,
+    rng: Optional[random.Random] = None,
+    cache: Optional[dict] = None,
     min_temp: float = 1e-3,
-    progress: list[int] | None = None,
-    time_progress: list[float] | None = None,
     neighborhood: str = "swap_adjacent_neighborhood",
-    # neighborhood: str = "fibonachi_neighborhood",
-) -> tuple[list[OperationKey], int, int, int]:
-    import math
+    time_limit_ms: Optional[int] = None,
+    gantt_dir: Optional[str] = None,
+    trace_file: str | None = None,
+) -> tuple[list[OperationKey], int, int, int, list[int]]:
 
     if rng is None:
         rng = random.Random()
@@ -148,21 +198,47 @@ def simulated_annealing(
     evals = 1
 
     t0 = time.perf_counter()
-    if progress is not None:
-        progress.append(best_c)
-    if time_progress is not None:
-        time_progress.append(0.0)
+    current_history: list[int] = []
+    # brak osobnej listy best_c – wystarczy current_history dla przebiegu
     it = 0
+    limit_s = (time_limit_ms / 1000.0) if time_limit_ms is not None else None
+    if gantt_dir is not None:
+        os.makedirs(gantt_dir, exist_ok=True)
     while it < iterations and T > min_temp:
+        if limit_s is not None and (time.perf_counter() - t0) >= limit_s:
+            logging.getLogger("jssp").info(
+                "[sa] stop time_limit reached at iter %d best=%s evals=%d", it, best_c, evals
+            )
+            break
         it += 1
         candidate_best_perm: list[OperationKey] | None = None
         candidate_best_c: int | None = None
+        move_repr: str | None = None
 
-        for _ in range(neighbor_moves):
+        if neighborhood == "fibonachi_neighborhood":
+            # deterministyczny wieloswap – jeden ruch wystarczy
             if len(current) < 2:
-                neigh = current[:]
+                candidate_best_perm = current[:]
+                candidate_best_c = current_c
             else:
-                if neighborhood == "swap_adjacent_neighborhood":  # adjacent swap neighborhood
+                neigh, c = create_fibonachi_neighborhood(
+                    current[:],
+                    data=data,
+                    cache=cache,
+                    allow_equal=True,
+                    debug=False,
+                    return_cost=True,
+                )
+                candidate_best_perm = neigh
+                candidate_best_c = c
+                evals += 1
+        else:
+            # standardowe wielokrotne próbkowanie pojedynczych swapów
+            for _ in range(neighbor_moves):
+                if len(current) < 2:
+                    neigh = current[:]
+                    c = current_c
+                else:
                     neigh = current[:]
                     for _try in range(10):
                         idx = rng.randrange(0, len(current) - 1)
@@ -170,23 +246,17 @@ def simulated_annealing(
                         if cand != current:
                             neigh = cand
                             break
-                elif neighborhood == "fibonachi_neighborhood":
-                    # placeholder: pojedyncza transformacja permutacji
-                    neigh = create_fibonachi_neighborhood(current[:])
-                    print(f"Fibonachi neighborhood generated: {neigh}")
-                    raise NotImplementedError("Fibonachi neighborhood not implemented yet")
-
-            c = evaluate(data, neigh, cache=cache)
-            evals += 1
-            if candidate_best_c is None or c < candidate_best_c:
-                candidate_best_c = c
-                candidate_best_perm = neigh
+                    c = evaluate(data, neigh, cache=cache)
+                evals += 1
+                if candidate_best_c is None or c < candidate_best_c:
+                    candidate_best_c = c
+                    candidate_best_perm = neigh
         if candidate_best_perm is None or candidate_best_c is None:
             T *= cooling
             continue
         delta = candidate_best_c - current_c
         accept = False
-        if delta < 0:
+        if delta <= 0:
             accept = True
         elif T > 0:
             prob = math.exp(-delta / T)
@@ -198,9 +268,40 @@ def simulated_annealing(
             if current_c < best_c:
                 best_c = int(current_c)
                 best_perm = list(current)
+        prev_T = T
         T *= cooling
-        if progress is not None:
-            progress.append(best_c)
-        if time_progress is not None:
-            time_progress.append(time.perf_counter() - t0)
-    return best_perm, best_c, evals, it
+        current_history.append(current_c)
+        logging.getLogger("jssp").info(
+            "[sa] iter %d/%d T=%.4f->%.4f current=%s best=%s delta=%s acc=%d evals=%d",
+            it,
+            iterations,
+            prev_T,
+            T,
+            current_c,
+            best_c,
+            delta,
+            1 if accept else 0,
+            evals,
+        )
+        if trace_file is not None:
+            # it;T;current;best;delta;accepted;evals;move
+            try:
+                with open(trace_file, "a", encoding="utf-8") as tf:
+                    tf.write(
+                        f"{it};{T:.6f};{current_c};{best_c};{delta};{int(accept)};{evals};"
+                        f"{move_repr}\n"
+                    )
+            except Exception:
+                pass
+        if gantt_dir is not None:
+            c_sched = evaluate(data, current, cache=cache, return_schedule=True)
+            if isinstance(c_sched, tuple):
+                _, sched = c_sched
+                plot_gantt(
+                    sched,
+                    save_path=f"{gantt_dir}/sa_iter_{it}.png",
+                    algo_name="sa",
+                    white_background=True,
+                    add_legend=False,
+                )
+    return best_perm, best_c, evals, it, current_history

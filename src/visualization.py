@@ -259,6 +259,7 @@ def plot_gantt(
     fig.tight_layout()
     if save_path:
         plt.savefig(save_path, dpi=dpi, facecolor=fig.get_facecolor())
+        plt.close(fig)
     else:
         plt.show()
 
@@ -356,5 +357,107 @@ def plot_progress_curves(
     fig.tight_layout()
     if save_path:
         plt.savefig(save_path, dpi=dpi, facecolor=fig.get_facecolor())
+        plt.close(fig)
+    else:
+        plt.show()
+
+
+def plot_iteration_progress(
+    progress: list[int],
+    save_path: str | None = None,
+    *,
+    algo_name: str | None = None,
+    dpi: int = 180,
+    white_background: bool = True,
+    line: bool = True,
+) -> None:
+    """Wykres cmax vs iteracja dla pojedynczego algorytmu.
+
+    Args:
+        progress: lista najlepszych cmax po każdej iteracji (kolejne punkty).
+        save_path: ścieżka zapisu (PNG) lub None aby wyświetlić.
+        algo_name: nazwa algorytmu do tytułu.
+        dpi: rozdzielczość.
+        white_background: motyw kolorystyczny.
+        line: jeśli True rysuje linię, inaczej tylko punkty.
+    """
+    import matplotlib.pyplot as plt  # lokalny import
+
+    if not progress:
+        return
+    bg = "#ffffff" if white_background else "#0d0b1e"
+    fg = "#111111" if white_background else "#f2eeff"
+    grid = "#dddddd" if white_background else "#3c3259"
+    fig, ax = plt.subplots(figsize=(8, 4.2))
+    fig.patch.set_facecolor(bg)
+    ax.set_facecolor(bg)
+    x = list(range(len(progress)))
+    if line:
+        ax.plot(x, progress, color="#ff00c8", linewidth=1.4, alpha=0.95)
+    ax.scatter(x, progress, color="#ff00c8", s=18, edgecolors=bg, linewidths=0.4)
+    ax.set_xlabel("Iteracja", color=fg)
+    ax.set_ylabel("Best cmax", color=fg)
+    title = "Postęp cmax" if not algo_name else f"Postęp cmax - {algo_name}"
+    ax.set_title(title, color=fg, pad=10)
+    ax.grid(True, linestyle=":", alpha=0.5, color=grid)
+    for spine in ax.spines.values():
+        spine.set_color(fg)
+    ax.tick_params(colors=fg, labelsize=9)
+    fig.tight_layout()
+    if save_path:
+        plt.savefig(save_path, dpi=dpi, facecolor=fig.get_facecolor())
+        plt.close(fig)
+    else:
+        plt.show()
+
+
+def plot_iteration_progress_multi(
+    series: dict[str, list[int]],
+    save_path: str | None = None,
+    *,
+    dpi: int = 180,
+    white_background: bool = True,
+) -> None:
+    """Wieloseriiowy wykres cmax vs iteracja.
+
+    series: mapowanie nazwa -> lista wartości (wszystkie listy tej samej długości).
+    """
+    import matplotlib.pyplot as plt
+
+    if not series:
+        return
+    length = len(next(iter(series.values())))
+    if length == 0:
+        return
+    bg = "#ffffff" if white_background else "#0d0b1e"
+    fg = "#111111" if white_background else "#f2eeff"
+    grid = "#dddddd" if white_background else "#3c3259"
+    fig, ax = plt.subplots(figsize=(8.6, 4.4))
+    fig.patch.set_facecolor(bg)
+    ax.set_facecolor(bg)
+    x = list(range(length))
+    palette = [
+        "#ff00c8",
+        "#9c27b0",
+        "#b388ff",
+        "#d500f9",
+        "#ff4dd2",
+        "#c51162",
+    ]
+    for i, (name, vals) in enumerate(series.items()):
+        color = palette[i % len(palette)]
+        ax.plot(x, vals, label=name, color=color, linewidth=1.3, alpha=0.95)
+    ax.set_xlabel("Iteracja", color=fg)
+    ax.set_ylabel("cmax", color=fg)
+    ax.set_title("Serie cmax vs iteracja", color=fg, pad=10)
+    ax.grid(True, linestyle=":", alpha=0.5, color=grid)
+    for spine in ax.spines.values():
+        spine.set_color(fg)
+    ax.tick_params(colors=fg, labelsize=9)
+    ax.legend(framealpha=0.85, fontsize=8.5)
+    fig.tight_layout()
+    if save_path:
+        plt.savefig(save_path, dpi=dpi, facecolor=fig.get_facecolor())
+        plt.close(fig)
     else:
         plt.show()

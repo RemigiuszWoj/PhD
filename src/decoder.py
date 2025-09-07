@@ -1,5 +1,6 @@
 import random
 from collections.abc import Iterable
+from typing import Optional
 
 from src.models import (
     DataInstance,
@@ -122,7 +123,7 @@ def check_no_machine_overlap(schedule: Schedule) -> bool:
 def create_random_permutation(
     data_instance: DataInstance,
     *,
-    rng: random.Random | None = None,
+    rng: Optional[random.Random] = None,
 ) -> list[OperationKey]:
     """Generate a random feasible permutation.
 
@@ -151,6 +152,25 @@ def create_random_permutation(
         remaining[job] -= 1
         if remaining[job] == 0:
             eligible.remove(job)
+    return perm
+
+
+def create_sequential_permutation(data_instance: DataInstance) -> list[OperationKey]:
+    """Zbuduj deterministyczną permutację bazową.
+
+    Kolejno wszystkie operacje joba 0 w porządku technologicznym, potem job 1, itd.
+    To gwarantuje stały, powtarzalny start niezależnie od ziarna RNG.
+
+    Args:
+        data_instance: Dane instancji.
+
+    Returns:
+        Lista (job_id, op_index) – blokami wg jobów.
+    """
+    perm: list[OperationKey] = []
+    for j, ops in enumerate(data_instance.jobs):
+        for op_idx, _ in enumerate(ops):
+            perm.append((j, op_idx))
     return perm
 
 

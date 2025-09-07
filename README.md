@@ -51,6 +51,48 @@ Generowane pliki Gantta trafiają do katalogu `charts/`. Na początku każdego u
 | `--charts-dir` | Katalog na wykresy | `charts` |
 | `--log-level` | Poziom logowania | `INFO` |
 
+### Konfiguracja przez plik YAML
+
+Zamiast długiej listy flag możesz użyć pliku konfiguracyjnego (JSON lub YAML). YAML wspiera komentarze `#`.
+
+Przykład `config_example.yaml`:
+
+```yaml
+algo: tabu
+instance: tests/fixtures/ta01
+runs: 2
+seed: 7
+time_limit_ms: null
+tabu:
+	iterations: 120
+	tenure: 15
+	candidate_size: 60
+	neighborhood: fibonachi_neighborhood
+sa:
+	iterations: 1000
+	initial_temp: 30.0
+	cooling: 0.95
+	neighbor_moves: 2
+	neighborhood: fibonachi_neighborhood
+charts:
+	dir: charts_cfg
+	save_iter_gantts: true
+	progress_plot: true
+	progress_plot_path: charts_cfg/progress.png
+```
+
+Uruchomienie z plikiem:
+
+```bash
+python src/main.py --config config_example.yaml
+```
+
+Flagi CLI nadal nadpisują wartości z pliku (np. wymuszenie innego algorytmu):
+
+```bash
+python src/main.py --config config_example.yaml --algo sa
+```
+
 Przykład z własnym katalogiem wykresów:
 
 ```bash

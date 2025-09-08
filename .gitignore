@@ -37,12 +37,12 @@ htmlcov/
 .mypy_cache/
 .ruff_cache/
 
-############################################
-# Data (ignore all by default, keep selected dataset)
-############################################
-data/
-!data/.gitkeep
-!data/taillard_jssp/**
+# ############################################
+# # Data (ignore all by default, keep selected dataset)
+# ############################################
+# data/
+# !data/.gitkeep
+# !data/taillard_jssp/**
 
 ############################################
 # Generated outputs (plots, charts)
@@ -64,9 +64,16 @@ research/**
 ############################################
 CODE_WALKTHROUGH.md
 WALKTHROUGH/
+docs/smutnicki_algorytmy.pdf
+docs/smutnicki.pdf
+*.pdf
+!docs/
+!docs/*.md
 
 ############################################
 # Misc / OS
 ############################################
 .DS_Store
 Thumbs.db
+
+tools/

@@ -35,6 +35,7 @@ def run_single(
     time_limit_ms,
     logger,
     traces_dir,
+    iter_gantts: bool,
 ):
     instance = load_instance(inst_path)
     logger.info(
@@ -48,12 +49,12 @@ def run_single(
     best_c = None
     best_perm = None
     all_current: list[list[int]] = []
-    # przygotowanie trace (zawsze włączone)
+    # Prepare trace output (always enabled when directory provided)
     trace_dir = os.path.join(traces_dir, "traces") if traces_dir else None
     if trace_dir:
         os.makedirs(trace_dir, exist_ok=True)
     for r_idx in range(runs):
-        # deterministyczna permutacja startowa (blokami jobów)
+        # Deterministic starting permutation (job blocks)
         perm = create_sequential_permutation(instance)
         trace_file = None
         if trace_dir:
@@ -63,11 +64,12 @@ def run_single(
                 f"trace_{algo_name}_run{r_idx}_" + os.path.basename(inst_path) + f"_{ts}.txt",
             )
             with open(trace_file, "w", encoding="utf-8") as tf:
-                if algo_name == "tabu":
-                    tf.write("iter;current;best;move;evals\n")
-                else:
-                    tf.write("iter;T;current;best;delta;accepted;evals;move\n")
-
+                header = (
+                    "iter;current;best;move;evals\n"
+                    if algo_name == "tabu"
+                    else "iter;T;current;best;delta;accepted;evals;move\n"
+                )
+                tf.write(header)
         if algo_name == "tabu":
             p, c, _, current_hist = tabu_search(
                 instance,
@@ -77,8 +79,9 @@ def run_single(
                 neighborhood=tabu_neighborhood,
                 rng=rng,
                 time_limit_ms=time_limit_ms,
-                gantt_dir=os.path.join(charts_dir, "tabu_iter_gantts"),
+                gantt_dir=(os.path.join(charts_dir, "tabu_iter_gantts") if iter_gantts else None),
                 trace_file=trace_file,
+                enable_diversification=bool(tabu_cfg.get("enable_diversification", False)),
             )
         elif algo_name == "sa":
             p, c, *_rest = simulated_annealing(
@@ -91,10 +94,9 @@ def run_single(
                 rng=rng,
                 neighborhood=sa_neighborhood,
                 time_limit_ms=time_limit_ms,
-                gantt_dir=os.path.join(charts_dir, "sa_iter_gantts"),
+                gantt_dir=(os.path.join(charts_dir, "sa_iter_gantts") if iter_gantts else None),
                 trace_file=trace_file,
             )
-            # _rest = (evals, it, current_hist)
             current_hist = _rest[-1]
         else:
             logger.error(f"Unknown algorithm: {algo_name}")
@@ -113,17 +115,28 @@ def run_single(
     )
     plot_gantt(sched, save_path=out_path, algo_name=algo_name)
     logger.info(f"Saved Gantt chart to {out_path}")
-    # wykres wieloseriiowy (wszystkie raw cmax)
+    # Multi-series plot (all raw cmax histories)
     if all_current:
-        # wyrównanie długości (dłuższe mogą być skrócone do minimalnej długości)
-        min_len = min(len(lst) for lst in all_current if lst)
-        trimmed = {
-            f"run_{i}": lst[:min_len] for i, lst in enumerate(all_current) if len(lst) >= min_len
-        }
-        if trimmed:
-            multi_path = os.path.join(charts_dir, f"{algo_name}_multi_progress.png")
-            plot_iteration_progress_multi(trimmed, save_path=multi_path)
-            logger.info(f"Saved multi-series progress to {multi_path}")
+        # Align lengths by padding shorter histories with their final value (no truncation)
+        valid = [lst for lst in all_current if lst]
+        if valid:
+            max_len = max(len(lst) for lst in valid)
+            aligned: dict[str, list[int]] = {}
+            for i, lst in enumerate(all_current):
+                if not lst:
+                    continue
+                if len(lst) < max_len:
+                    pad_val = lst[-1]
+                    lst = lst + [pad_val] * (max_len - len(lst))
+                aligned[f"run_{i}"] = lst
+            if aligned:
+                multi_path = os.path.join(charts_dir, f"{algo_name}_multi_progress.png")
+                plot_iteration_progress_multi(aligned, save_path=multi_path)
+                logger.info(
+                    "Saved multi-series progress to %s (padded to common length=%d)",
+                    multi_path,
+                    max_len,
+                )
 
 
 def main(
@@ -142,6 +155,7 @@ def main(
     charts_dir,
     time_limit_ms,
     traces_dir,
+    iter_gantts,
 ):
     logger = logging.getLogger("jssp")
     logger.setLevel(logging.INFO)
@@ -158,9 +172,9 @@ def main(
     algos = []
     if algo == "both":
         algos = ["tabu", "sa"]
-    elif algo == "sa_compare":  # wewnętrzny tryb porównania dwóch sąsiedztw SA
+    elif algo == "sa_compare":  # internal mode: compare two SA neighborhoods
         algos = ["sa_compare"]
-    elif algo == "tabu_compare":  # wewnętrzny tryb porównania dwóch sąsiedztw Tabu
+    elif algo == "tabu_compare":  # internal mode: compare two Tabu neighborhoods
         algos = ["tabu_compare"]
     else:
         algos = [algo]
@@ -202,13 +216,24 @@ def main(
                             c,
                             (hist[-1] if hist else "n/a"),
                         )
-                    min_len = min(len(h) for h in histories.values() if h)
-                    trimmed = {k: v[:min_len] for k, v in histories.items()}
+                    # Pad to max length (no truncation)
+                    non_empty = [v for v in histories.values() if v]
+                    if non_empty:
+                        max_len = max(len(v) for v in non_empty)
+                        padded: dict[str, list[int]] = {}
+                        for k, v in histories.items():
+                            if not v:
+                                continue
+                            if len(v) < max_len:
+                                v = v + [v[-1]] * (max_len - len(v))
+                            padded[k] = v
+                    else:
+                        padded = {}
                     os.makedirs(charts_dir, exist_ok=True)
                     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
                     out_name = f"sa_compare_progress_{os.path.basename(f)}_{ts}.png"
                     out_path = os.path.join(charts_dir, out_name)
-                    plot_iteration_progress_multi(trimmed, save_path=out_path)
+                    plot_iteration_progress_multi(padded, save_path=out_path)
                     logger.info(f"Saved SA neighborhood comparison to {out_path}")
                 elif a == "tabu_compare":
                     from src.decoder import create_sequential_permutation
@@ -228,6 +253,9 @@ def main(
                             time_limit_ms=None,
                             gantt_dir=None,
                             trace_file=None,
+                            enable_diversification=bool(
+                                tabu_cfg.get("enable_diversification", False)
+                            ),
                         )
                         histories[neigh] = hist
                         logger.info(
@@ -237,13 +265,24 @@ def main(
                             c,
                             (hist[-1] if hist else "n/a"),
                         )
-                    min_len = min(len(h) for h in histories.values() if h)
-                    trimmed = {k: v[:min_len] for k, v in histories.items()}
+                    # Pad to max length (no truncation)
+                    non_empty = [v for v in histories.values() if v]
+                    if non_empty:
+                        max_len = max(len(v) for v in non_empty)
+                        padded: dict[str, list[int]] = {}
+                        for k, v in histories.items():
+                            if not v:
+                                continue
+                            if len(v) < max_len:
+                                v = v + [v[-1]] * (max_len - len(v))
+                            padded[k] = v
+                    else:
+                        padded = {}
                     os.makedirs(charts_dir, exist_ok=True)
                     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
                     out_name = f"tabu_compare_progress_{os.path.basename(f)}_{ts}.png"
                     out_path = os.path.join(charts_dir, out_name)
-                    plot_iteration_progress_multi(trimmed, save_path=out_path)
+                    plot_iteration_progress_multi(padded, save_path=out_path)
                     logger.info(f"Saved TABU neighborhood comparison to {out_path}")
                 else:
                     run_single(
@@ -263,6 +302,7 @@ def main(
                         time_limit_ms,
                         logger,
                         charts_dir,
+                        iter_gantts,
                     )
     else:
         for a in algos:
@@ -295,13 +335,24 @@ def main(
                         c,
                         (hist[-1] if hist else "n/a"),
                     )
-                min_len = min(len(h) for h in histories.values() if h)
-                trimmed = {k: v[:min_len] for k, v in histories.items()}
+                # Pad to max length (no truncation)
+                non_empty = [v for v in histories.values() if v]
+                if non_empty:
+                    max_len = max(len(v) for v in non_empty)
+                    padded: dict[str, list[int]] = {}
+                    for k, v in histories.items():
+                        if not v:
+                            continue
+                        if len(v) < max_len:
+                            v = v + [v[-1]] * (max_len - len(v))
+                        padded[k] = v
+                else:
+                    padded = {}
                 os.makedirs(charts_dir, exist_ok=True)
                 ts = datetime.now().strftime("%Y%m%d_%H%M%S")
                 out_name = f"sa_compare_progress_{os.path.basename(instance_path)}_{ts}.png"
                 out_path = os.path.join(charts_dir, out_name)
-                plot_iteration_progress_multi(trimmed, save_path=out_path)
+                plot_iteration_progress_multi(padded, save_path=out_path)
                 logger.info(f"Saved SA neighborhood comparison to {out_path}")
             elif a == "tabu_compare":
                 from src.decoder import create_sequential_permutation
@@ -321,6 +372,7 @@ def main(
                         time_limit_ms=None,
                         gantt_dir=None,
                         trace_file=None,
+                        enable_diversification=bool(tabu_cfg.get("enable_diversification", False)),
                     )
                     histories[neigh] = hist
                     logger.info(
@@ -330,13 +382,24 @@ def main(
                         c,
                         (hist[-1] if hist else "n/a"),
                     )
-                min_len = min(len(h) for h in histories.values() if h)
-                trimmed = {k: v[:min_len] for k, v in histories.items()}
+                # Pad to max length (no truncation)
+                non_empty = [v for v in histories.values() if v]
+                if non_empty:
+                    max_len = max(len(v) for v in non_empty)
+                    padded: dict[str, list[int]] = {}
+                    for k, v in histories.items():
+                        if not v:
+                            continue
+                        if len(v) < max_len:
+                            v = v + [v[-1]] * (max_len - len(v))
+                        padded[k] = v
+                else:
+                    padded = {}
                 os.makedirs(charts_dir, exist_ok=True)
                 ts = datetime.now().strftime("%Y%m%d_%H%M%S")
                 out_name = f"tabu_compare_progress_{os.path.basename(instance_path)}_{ts}.png"
                 out_path = os.path.join(charts_dir, out_name)
-                plot_iteration_progress_multi(trimmed, save_path=out_path)
+                plot_iteration_progress_multi(padded, save_path=out_path)
                 logger.info(f"Saved TABU neighborhood comparison to {out_path}")
             else:
                 run_single(
@@ -356,17 +419,14 @@ def main(
                     time_limit_ms,
                     logger,
                     charts_dir,
+                    iter_gantts,
                 )
 
 
 if __name__ == "__main__":
-    # Teraz uruchomienie wyłącznie z pliku konfiguracyjnego.
+    # Execution via config file only (no extensive CLI options).
     parser = argparse.ArgumentParser(description="JSSP metaheuristic demo (config only)")
-    parser.add_argument(
-        "--config",
-        required=True,
-        help="Ścieżka do pliku konfiguracyjnego YAML/JSON (wymagane)",
-    )
+    parser.add_argument("--config", required=True, help="Path to YAML/JSON config file (required)")
     args = parser.parse_args()
 
     if not os.path.isfile(args.config):
@@ -379,12 +439,12 @@ if __name__ == "__main__":
         try:
             import yaml  # type: ignore
         except ImportError as e:  # pragma: no cover
-            raise RuntimeError("Brak pakietu pyyaml do parsowania YAML") from e
+            raise RuntimeError("Missing 'pyyaml' package for YAML parsing") from e
         cfg: Dict[str, Any] = yaml.safe_load(text) or {}
     else:
         cfg = json.loads(text)
 
-    # Sekcje
+    # Sections extraction
     tabu_cfg = cfg.get("tabu", {}) if isinstance(cfg.get("tabu"), dict) else {}
     sa_cfg = cfg.get("sa", {}) if isinstance(cfg.get("sa"), dict) else {}
     charts_cfg = cfg.get("charts", {}) if isinstance(cfg.get("charts"), dict) else {}
@@ -395,10 +455,10 @@ if __name__ == "__main__":
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
 
-    # Odczyt wartości (bez nadpisywania przez CLI)
+    # Read values (no CLI overrides beyond config)
     instance_path = cfg.get("instance")
     if not instance_path:
-        raise ValueError("Brak klucza 'instance' w configu")
+        raise ValueError("Missing 'instance' key in config")
     algo = cfg.get("algo", "tabu")
     runs = int(cfg.get("runs", 1))
     seed = cfg.get("seed")
@@ -420,4 +480,5 @@ if __name__ == "__main__":
         charts_dir=charts_cfg.get("dir", "charts"),
         time_limit_ms=time_limit_ms,
         traces_dir=charts_cfg.get("dir", "charts"),
+        iter_gantts=bool(charts_cfg.get("iter_gantts", True)),
     )

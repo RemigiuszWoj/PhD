@@ -1,57 +1,62 @@
 ###############################################
-# KOMPLETNY PLIK KONFIGURACYJNY (YAML) JSSP   #
+# COMPLETE JSSP CONFIGURATION FILE (YAML)     #
 ###############################################
-# Możesz komentować parametry i zmieniać wartości.
+# You can comment parameters and adjust values.
 
-# Algorytm do uruchomienia: tabu | sa | both
-# Tryb porównania dwóch sąsiedztw: 'sa_compare' albo 'tabu_compare'
+# Algorithm to run: tabu | sa | both
+# Neighborhood comparison mode: 'sa_compare' or 'tabu_compare'
 # algo: sa_compare
-algo: tabu
+# Default currently set to TABU.
+algo: tabu_compare
+# algo: sa_compare
 
-# Ścieżka do instancji lub katalogu z wieloma.
-instance: tests/fixtures/ta01
 
-# Liczba niezależnych uruchomień (dla each alg jeśli 'both').
+# Path to a single instance file or a directory with multiple instances.
+instance: data/JSPLIB/instances/ta80
+
+# Number of independent runs (for each algorithm if 'both').
 runs: 1
 
-# Ziarno RNG (losowe elementy; startowa permutacja zawsze deterministyczna sequential).
+# RNG seed (affects stochastic parts; starting permutation is deterministic sequential).
 seed: 7
 
-# Limit czasu (ms) na pojedyncze uruchomienie algorytmu; null = bez limitu.
+# Time limit (ms) for a single algorithm run; null = no limit.
 time_limit_ms: null
 
 
 #############################
-# Parametry TABU SEARCH     #
+# TABU SEARCH PARAMETERS    #
 #############################
 tabu:
-  # Maksymalna liczba iteracji.
-  iterations: 400   # więcej iteracji daje szansę na wyjście ze stagnacji
-  # Tenure listy tabu (ile iteracji ruch jest zakazany).
-  tenure: 15        # ~sqrt(liczby operacji); możesz testować 12–18
-  # Ile kandydatów (indeksów swapów) rozważać (dla swap_adjacent).
-  # Typ sąsiedztwa: swap_adjacent_neighborhood | fibonachi_neighborhood
+  # Maximum number of iterations.
+  iterations: 1000   # More iterations can help escape stagnation.
+  # Tabu tenure (iterations a move stays forbidden).
+  tenure: 15        # ~sqrt(number of operations); try 12–18.
+  # Neighborhood type: swap_adjacent_neighborhood | fibonachi_neighborhood
+  # neighborhood: swap_adjacent_neighborhood
   neighborhood: fibonachi_neighborhood
+  # Enable diversification (stagnation-triggered random perturbations + tenure lift)
+  enable_diversification: true
 
 #############################
-# Parametry SIMULATED ANNEALING
+# SIMULATED ANNEALING PARAMETERS
 #############################
 sa:
-  # Maksymalna liczba iteracji.
-  iterations: 1000
-  # Temperatura początkowa.
-  initial_temp: 30.0
-  # Współczynnik chłodzenia (T *= cooling).
-  cooling: 0.95
-  # Ile kandydatów generować w iteracji i wybrać najlepszy do akceptacji.
-  neighbor_moves: 2
-  # Typ sąsiedztwa: swap_adjacent_neighborhood | fibonachi_neighborhood
-  neighborhood: swap_adjacent_neighborhood
+  # Quick variant for tests (reduced vs earlier examples)
+  iterations: 1000       
+  initial_temp: 50.0   
+  cooling: 0.90        
+  neighbor_moves: 1     
 
+  # neighborhood: swap_adjacent_neighborhood
+  neighborhood: fibonachi_neighborhood
+  
 #############################
-# WYKRESY / OUTPUT          #
+# CHARTS / OUTPUT            #
 #############################
 charts:
-  # Katalog bazowy na artefakty (czyszczony z plików przed startem).
+  # Base directory for artifacts (cleaned of files before run).
   dir: charts_cfg
-  # (Uproszczone) – wszystkie wykresy i trace generowane automatycznie.
+  # Simplified: all plots and traces are generated automatically.
+  # Generate per-iteration Gantt charts (can be large & slow). Set false to disable.
+  iter_gantts: false

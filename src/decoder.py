@@ -156,16 +156,16 @@ def create_random_permutation(
 
 
 def create_sequential_permutation(data_instance: DataInstance) -> list[OperationKey]:
-    """Zbuduj deterministyczną permutację bazową.
+    """Build a deterministic baseline permutation.
 
-    Kolejno wszystkie operacje joba 0 w porządku technologicznym, potem job 1, itd.
-    To gwarantuje stały, powtarzalny start niezależnie od ziarna RNG.
+    Appends all operations of job 0 in technological order, then job 1, etc.
+    Provides a fixed reproducible starting point independent of RNG seed.
 
     Args:
-        data_instance: Dane instancji.
+        data_instance: Problem data.
 
     Returns:
-        Lista (job_id, op_index) – blokami wg jobów.
+        List of (job_id, op_index) grouped by jobs (contiguous blocks).
     """
     perm: list[OperationKey] = []
     for j, ops in enumerate(data_instance.jobs):
@@ -198,9 +198,9 @@ def create_spt_permutation(data_instance: DataInstance) -> list[OperationKey]:
                 candidates.append((p, j))
         if not candidates:
             break
-        _, chosen = min(candidates)  # tie-break przez job id
-        op = next_idx[chosen]
-        perm.append((chosen, op))
-        next_idx[chosen] += 1
-        remaining[chosen] -= 1
+    _, chosen = min(candidates)  # tie-break by job id
+    op = next_idx[chosen]
+    perm.append((chosen, op))
+    next_idx[chosen] += 1
+    remaining[chosen] -= 1
     return perm

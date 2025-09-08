@@ -15,7 +15,7 @@ Return semantics:
 """
 
 import random
-from typing import Dict, List, Tuple, Optional, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 from .evaluation import evaluate
 from .models import OperationKey
@@ -174,35 +174,33 @@ def generate_neighbors(
     return result
 
 
-# Wersja DP create_fibonachi_neighborhood (stara placeholder usunięta)
+# DP-based multi-adjacent swap neighborhood (replaces previous placeholder)
 def create_fibonachi_neighborhood(
     perm: list[OperationKey],
     data=None,
     cache: Optional[dict] = None,
-    allow_equal: bool = False,
     debug: bool = False,
     return_cost: bool = False,
 ) -> Union[list[OperationKey], tuple[list[OperationKey], int]]:
-    """Zbuduj wielokrotny ruch z kilku niekolidujących adjacent swapów.
+    """Build a composite move of several non-overlapping adjacent swaps.
 
-    Mechanika:
-    1. Wyznacz wszystkich dopuszczalnych kandydatów (zamiany (i,i+1) dwóch różnych jobów).
-    2. Dla każdej zamiany oblicz delta = cmax_after - cmax_base.
-        3. Rozwiąż problem wyboru podzbioru indeksów bez dwóch sąsiadujących
-            minimalizujących sumę delt (DP).
-        4. Jeśli łączna delta < 0 (lub allow_equal=True i delta==0) zastosuj
-            wszystkie zamiany (nie kolidują).
+    Mechanics:
+        1. Enumerate all admissible adjacent swaps (i,i+1) involving different jobs.
+        2. For each compute delta = cmax_after - cmax_base.
+        3. Solve a DP choosing a subset of indices with no two adjacent (non-overlapping swaps)
+           minimising total delta.
+        4. If no improving (negative) delta chosen, force the candidate with smallest delta
+           (ensures at least one move so higher-level search does not stall).
 
-    Parametry:
-        perm: wejściowa permutacja.
-        data: instancja danych (wymagana do evaluate).
-        cache: współdzielony cache ocen.
-        allow_equal: zezwól zwrócić ruch bez poprawy gdy delta==0.
-    debug: dodatkowe printy.
-    return_cost: jeżeli True zwróć (permutacja, cmax_nowego) zamiast samej permutacji.
+    Args:
+        perm: Input permutation.
+        data: Data instance (required by evaluate).
+        cache: Shared evaluation cache.
+        debug: Extra prints.
+        return_cost: If True return (new_perm, cmax_new) else only permutation.
     """
     if data is None:
-        raise ValueError("create_fibonachi_neighborhood: wymagane 'data'")
+        raise ValueError("create_fibonachi_neighborhood: 'data' parameter required")
     if cache is None:
         cache = {}
 
@@ -252,9 +250,10 @@ def create_fibonachi_neighborhood(
     if debug:
         print(f"[fibo-neigh] base={base_c} best_delta={total_delta} chosen={chosen}")
 
-    # Brak poprawy (lub brak wybranych swapów) -> zwrot oryginału bez kopiowania
-    if (not allow_equal and total_delta >= 0) or not chosen:
-        return (perm, base_c) if return_cost else perm
+    # Forced move: if DP picked none (no improvement) choose candidate with smallest delta
+    if not chosen:
+        best_idx = min(candidates, key=lambda x: x[1])[0]
+        chosen = (best_idx,)
 
     new_perm = perm[:]
     for idx in sorted(chosen):

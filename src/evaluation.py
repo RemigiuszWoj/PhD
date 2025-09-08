@@ -1,7 +1,7 @@
-"""Funkcje oceny (evaluate) wydzielone z search.py aby uniknąć importów cyklicznych.
+"""Evaluation utilities extracted from search logic to avoid cyclic imports.
 
-Zawiera jedną funkcję evaluate do liczenia cmax (z opcją zwrotu harmonogramu)
-+ prosty cache.
+Currently exposes a single function ``evaluate`` that computes makespan (cmax)
+with an optional schedule return plus a small memoisation cache.
 """
 
 from __future__ import annotations

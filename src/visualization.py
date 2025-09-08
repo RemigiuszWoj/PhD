@@ -371,15 +371,15 @@ def plot_iteration_progress(
     white_background: bool = True,
     line: bool = True,
 ) -> None:
-    """Wykres cmax vs iteracja dla pojedynczego algorytmu.
+    """Plot cmax vs iteration for a single algorithm.
 
     Args:
-        progress: lista najlepszych cmax po każdej iteracji (kolejne punkty).
-        save_path: ścieżka zapisu (PNG) lub None aby wyświetlić.
-        algo_name: nazwa algorytmu do tytułu.
-        dpi: rozdzielczość.
-        white_background: motyw kolorystyczny.
-        line: jeśli True rysuje linię, inaczej tylko punkty.
+        progress: List of best cmax values per iteration.
+        save_path: Output path (PNG) or None to display.
+        algo_name: Optional algorithm name for title.
+        dpi: Resolution.
+        white_background: Theme toggle.
+        line: If True draw connecting line, else markers only.
     """
     import matplotlib.pyplot as plt  # lokalny import
 
@@ -395,9 +395,9 @@ def plot_iteration_progress(
     if line:
         ax.plot(x, progress, color="#ff00c8", linewidth=1.4, alpha=0.95)
     ax.scatter(x, progress, color="#ff00c8", s=18, edgecolors=bg, linewidths=0.4)
-    ax.set_xlabel("Iteracja", color=fg)
+    ax.set_xlabel("Iteration", color=fg)
     ax.set_ylabel("Best cmax", color=fg)
-    title = "Postęp cmax" if not algo_name else f"Postęp cmax - {algo_name}"
+    title = "cmax Progress" if not algo_name else f"cmax Progress - {algo_name}"
     ax.set_title(title, color=fg, pad=10)
     ax.grid(True, linestyle=":", alpha=0.5, color=grid)
     for spine in ax.spines.values():
@@ -418,9 +418,13 @@ def plot_iteration_progress_multi(
     dpi: int = 180,
     white_background: bool = True,
 ) -> None:
-    """Wieloseriiowy wykres cmax vs iteracja.
+    """Multi-series cmax vs iteration plot.
 
-    series: mapowanie nazwa -> lista wartości (wszystkie listy tej samej długości).
+    Args:
+        series: Mapping name -> list of cmax values (uniform length).
+        save_path: Optional output path.
+        dpi: Resolution.
+        white_background: Theme toggle.
     """
     import matplotlib.pyplot as plt
 
@@ -447,9 +451,9 @@ def plot_iteration_progress_multi(
     for i, (name, vals) in enumerate(series.items()):
         color = palette[i % len(palette)]
         ax.plot(x, vals, label=name, color=color, linewidth=1.3, alpha=0.95)
-    ax.set_xlabel("Iteracja", color=fg)
+    ax.set_xlabel("Iteration", color=fg)
     ax.set_ylabel("cmax", color=fg)
-    ax.set_title("Serie cmax vs iteracja", color=fg, pad=10)
+    ax.set_title("cmax series vs iteration", color=fg, pad=10)
     ax.grid(True, linestyle=":", alpha=0.5, color=grid)
     for spine in ax.spines.values():
         spine.set_color(fg)

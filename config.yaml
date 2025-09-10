@@ -1,0 +1,24 @@
+# Configuration file for Flow Shop algorithms
+
+# General settings
+general:
+  input_file: "data/tai20_5.txt"
+  instance_number: 0
+  algorithm: "tabu_search"  # Options: "tabu_search" or "simulated_annealing"
+  
+# Visualization settings
+visualization:
+  save_plots: true
+  results_folder: "results"
+
+# Tabu Search parameters
+tabu_search:
+  max_time_ms: 10000  # Maximum execution time in milliseconds
+  tabu_tenure: 10     # Tabu list tenure
+
+# Simulated Annealing parameters
+simulated_annealing:
+  time_limit_ms: 10000    # Maximum execution time in milliseconds
+  initial_temp: 1000.0    # Initial temperature
+  final_temp: 1.0         # Final temperature (stopping criterion)
+  alpha: 0.95             # Cooling rate (temperature multiplier)

@@ -27,12 +27,12 @@ def tabu_search(processing_times: List[List[int]], max_time_ms: int = 100, tabu_
     iteration = 0
 
     while time.time() - start_time < max_time_seconds:
-        neighbors = generate_neighbors_adjacent(current_pi)
         move_selected = None
         pi_selected = None
         cmax_selected = float("inf")
 
         # choose best admissible neighbor
+        neighbors = generate_neighbors_adjacent(current_pi)
         for neighbor, move in neighbors:
             c = c_max(neighbor, processing_times)
             tabu_active = move in tabu_list and tabu_list[move] > iteration

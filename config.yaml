@@ -1,24 +1,45 @@
+simulated_annealing:
+
 # Configuration file for Flow Shop algorithms
 
 # General settings
 general:
-  input_file: "data/tai20_5.txt"
+  # input_file: "data/tai20_5.txt"
+  # input_file: "data/tai20_10.txt"
+  # input_file: "data/tai20_20.txt"
+
+  # input_file: "data/tai50_5.txt"
+  # input_file: "data/tai50_10.txt"
+  # input_file: "data/tai50_20.txt"
+
+  # input_file: "data/tai100_5.txt"
+  # input_file: "data/tai100_10.txt"
+  input_file: "data/tai100_20.txt"
+
+# Od tad lepsiejsze
+  # input_file: "data/tai200_10.txt"
+  # input_file: "data/tai200_20.txt"
+
+  # input_file: "data/tai500_20.txt"
   instance_number: 0
-  algorithm: "tabu_search"  # Options: "tabu_search" or "simulated_annealing"
-  
+  algorithm: "tabu_search_compare"  # Options: "tabu_search", "simulated_annealing", "tabu_search_compare", "simulated_annealing_compare"
+
 # Visualization settings
 visualization:
   save_plots: true
   results_folder: "results"
 
-# Tabu Search parameters
-tabu_search:
-  max_time_ms: 10000  # Maximum execution time in milliseconds
-  tabu_tenure: 10     # Tabu list tenure
+# Wspólne parametry dla wszystkich algorytmów
+algorithm_common:
+  time_limit_ms: 100000   # Maximum execution time in milliseconds
+  neigh_mode: "fibonahi_neighborhood"  # Options: "adjacent" or "fibonahi_neighborhood"
 
-# Simulated Annealing parameters
+# Parametry specyficzne dla Tabu Search
+tabu_search:
+  tabu_tenure: 10         # Tabu list tenure
+
+# Parametry specyficzne dla Simulated Annealing
 simulated_annealing:
-  time_limit_ms: 10000    # Maximum execution time in milliseconds
   initial_temp: 1000.0    # Initial temperature
   final_temp: 1.0         # Final temperature (stopping criterion)
   alpha: 0.95             # Cooling rate (temperature multiplier)

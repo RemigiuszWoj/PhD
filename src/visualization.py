@@ -6,6 +6,98 @@ from typing import List
 import matplotlib.pyplot as plt
 
 
+def save_gantt_chart_with_name(
+    pi: List[int], processing_times: List[List[int]], cmax: int, name: str
+):
+    """Create and save Gantt chart for the given permutation with custom filename."""
+    m = len(processing_times)
+    n = len(pi)
+    start_times, completion_times = calculate_schedule(pi, processing_times)
+    fig, ax = plt.subplots(figsize=(12, 8))
+    colors = [plt.cm.tab20(i / n) for i in range(n)]
+    for i in range(m):
+        for j in range(n):
+            job_id = pi[j]
+            start = start_times[i][j]
+            duration = processing_times[i][job_id]
+            ax.barh(
+                i,
+                duration,
+                left=start,
+                height=0.8,
+                color=colors[job_id],
+                alpha=0.8,
+                edgecolor="black",
+                linewidth=1,
+            )
+    ax.set_xlabel("Time", fontsize=12)
+    ax.set_ylabel("Machine", fontsize=12)
+    ax.set_title(f"Gantt Chart - Cmax = {cmax}", fontsize=14, fontweight="bold")
+    ax.set_yticks(range(m))
+    ax.set_yticklabels([f"M{i}" for i in range(m)])
+    ax.grid(True, alpha=0.3, axis="x")
+    ax.set_ylim(-0.5, m - 0.5)
+    legend_elements = [
+        plt.Rectangle(
+            (0, 0), 1, 1, facecolor=colors[i], alpha=0.8, edgecolor="black", label=f"Job {i}"
+        )
+        for i in range(n)
+    ]
+    ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc="upper left")
+    plt.tight_layout()
+    filepath = os.path.join("results", name)
+    plt.savefig(filepath, dpi=300, bbox_inches="tight")
+    plt.close()
+    print(f"Gantt chart saved as: {filepath}")
+
+
+def save_multi_convergence_plot(histories: dict, labels: dict = None, colors: dict = None):
+    """Rysuje porównanie kilku przebiegów konwergencji na jednym wykresie."""
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+    if labels is None:
+        labels = {}
+    if colors is None:
+        colors = {}
+    for key, (times, cmax_values) in histories.items():
+        label = labels.get(key, key)
+        color = colors.get(key, None)
+        ax.plot(
+            times,
+            cmax_values,
+            label=label,
+            linewidth=2,
+            marker="o",
+            markersize=5,
+            markerfacecolor="white",
+            markeredgewidth=1.5,
+            color=color,
+        )
+        # Dodaj adnotację z finalnym cmax
+        if times and cmax_values:
+            ax.annotate(
+                f"Final cmax: {cmax_values[-1]}",
+                xy=(times[-1], cmax_values[-1]),
+                xytext=(10, -20),
+                textcoords="offset points",
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="lightgreen", alpha=0.7),
+                arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=0"),
+                fontsize=10,
+            )
+    ax.set_xlabel("Time [ms]", fontsize=12)
+    ax.set_ylabel("Cmax", fontsize=12)
+    ax.set_title("Convergence comparison", fontsize=14, fontweight="bold")
+    ax.grid(True, alpha=0.3)
+    ax.legend()
+    plt.tight_layout()
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"multi_convergence_plot_{timestamp}.png"
+    filepath = os.path.join("results", filename)
+    plt.savefig(filepath, dpi=300, bbox_inches="tight")
+    plt.close()
+    print(f"Multi convergence plot saved as: {filepath}")
+
+
 def clear_old_plots():
     """Remove old plot files from results directory."""
     results_dir = "results"
@@ -15,6 +107,9 @@ def clear_old_plots():
             os.remove(file)
         # Remove old convergence plots
         for file in glob.glob(os.path.join(results_dir, "convergence_plot_*.png")):
+            os.remove(file)
+        # Remove old multi convergence plots
+        for file in glob.glob(os.path.join(results_dir, "multi_convergence_plot_*.png")):
             os.remove(file)
 
 
@@ -139,7 +234,7 @@ def save_convergence_plot(iterations: List[int], cmax_values: List[int]):
     )
 
     # Customize the plot
-    ax.set_xlabel("Iteration", fontsize=12)
+    ax.set_xlabel("Time [ms]", fontsize=12)
     ax.set_ylabel("Cmax", fontsize=12)
     ax.set_title("Tabu Search Convergence", fontsize=14, fontweight="bold")
     ax.grid(True, alpha=0.3)

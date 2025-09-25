@@ -3,6 +3,11 @@ import os
 from datetime import datetime
 from typing import List
 
+import matplotlib
+
+# Use Agg backend for file-only (non-GUI) plotting. This prevents macOS Cocoa
+# errors when figures are created from non-main threads or headless environments.
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 
@@ -14,7 +19,7 @@ def save_gantt_chart_with_name(
     n = len(pi)
     start_times, completion_times = calculate_schedule(pi, processing_times)
     fig, ax = plt.subplots(figsize=(12, 8))
-    colors = [plt.cm.tab20(i / n) for i in range(n)]
+    colors = [plt.cm.tab20(i / max(1, n)) for i in range(n)]
     for i in range(m):
         for j in range(n):
             job_id = pi[j]
@@ -37,22 +42,34 @@ def save_gantt_chart_with_name(
     ax.set_yticklabels([f"M{i}" for i in range(m)])
     ax.grid(True, alpha=0.3, axis="x")
     ax.set_ylim(-0.5, m - 0.5)
-    legend_elements = [
-        plt.Rectangle(
-            (0, 0), 1, 1, facecolor=colors[i], alpha=0.8, edgecolor="black", label=f"Job {i}"
+    legend_elements = []
+    for i in range(n):
+        legend_elements.append(
+            plt.Rectangle(
+                (0, 0), 1, 1, facecolor=colors[i], alpha=0.8, edgecolor="black", label=f"Job {i}"
+            )
         )
-        for i in range(n)
-    ]
     ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc="upper left")
     plt.tight_layout()
-    filepath = os.path.join("results", name)
+    # If `name` is a full path (has dir), use it; otherwise save under results folder
+    if os.path.dirname(name):
+        filepath = name
+    else:
+        filepath = os.path.join("results", name)
+    _ensure_dir(os.path.dirname(filepath) or "results")
     plt.savefig(filepath, dpi=300, bbox_inches="tight")
     plt.close()
     print(f"Gantt chart saved as: {filepath}")
 
 
-def save_multi_convergence_plot(histories: dict, labels: dict = None, colors: dict = None):
-    """Rysuje porównanie kilku przebiegów konwergencji na jednym wykresie."""
+def save_multi_convergence_plot(
+    histories: dict,
+    labels: dict = None,
+    colors: dict = None,
+    filepath: str = None,
+    results_folder: str = "results",
+):
+    """Draw comparison of several convergence histories on one plot and save it."""
 
     fig, ax = plt.subplots(figsize=(10, 6))
     if labels is None:
@@ -73,7 +90,6 @@ def save_multi_convergence_plot(histories: dict, labels: dict = None, colors: di
             markeredgewidth=1.5,
             color=color,
         )
-        # Dodaj adnotację z finalnym cmax
         if times and cmax_values:
             ax.annotate(
                 f"Final cmax: {cmax_values[-1]}",
@@ -90,17 +106,25 @@ def save_multi_convergence_plot(histories: dict, labels: dict = None, colors: di
     ax.grid(True, alpha=0.3)
     ax.legend()
     plt.tight_layout()
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"multi_convergence_plot_{timestamp}.png"
-    filepath = os.path.join("results", filename)
+    if filepath is None:
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"multi_convergence_plot_{timestamp}.png"
+        filepath = os.path.join(results_folder, filename)
+    else:
+        _ensure_dir(os.path.dirname(filepath) or results_folder)
     plt.savefig(filepath, dpi=300, bbox_inches="tight")
     plt.close()
     print(f"Multi convergence plot saved as: {filepath}")
 
 
-def clear_old_plots():
-    """Remove old plot files from results directory."""
-    results_dir = "results"
+def _ensure_dir(path: str):
+    if path:
+        os.makedirs(path, exist_ok=True)
+
+
+def clear_old_plots(results_folder: str = "results"):
+    """Remove old plot files from the specified results directory."""
+    results_dir = results_folder
     if os.path.exists(results_dir):
         # Remove old gantt charts
         for file in glob.glob(os.path.join(results_dir, "gantt_chart_*.png")):
@@ -145,83 +169,10 @@ def calculate_schedule(pi: List[int], processing_times: List[List[int]]):
     return start_times, completion_times
 
 
-def save_gantt_chart(pi: List[int], processing_times: List[List[int]], cmax: int):
-    """Create and save Gantt chart for the given permutation."""
-    # Clear old plots first
-    clear_old_plots()
-
-    m = len(processing_times)  # number of machines
-    n = len(pi)  # number of jobs
-
-    start_times, completion_times = calculate_schedule(pi, processing_times)
-
-    # Create the plot
-    fig, ax = plt.subplots(figsize=(12, 8))
-
-    # Colors for different jobs
-    colors = [plt.cm.tab20(i / n) for i in range(n)]
-
-    # Plot each job on each machine
-    for i in range(m):
-        for j in range(n):
-            job_id = pi[j]
-            start = start_times[i][j]
-            duration = processing_times[i][job_id]
-
-            # Draw the bar
-            ax.barh(
-                i,
-                duration,
-                left=start,
-                height=0.8,
-                color=colors[job_id],
-                alpha=0.8,
-                edgecolor="black",
-                linewidth=1,
-            )
-
-            # # Add job label
-            # ax.text(
-            #     start + duration / 2, i, f"J{job_id}", ha="center", va="center", fontweight="bold"
-            # )
-
-    # Customize the plot
-    ax.set_xlabel("Time", fontsize=12)
-    ax.set_ylabel("Machine", fontsize=12)
-    ax.set_title(f"Gantt Chart - Cmax = {cmax}", fontsize=14, fontweight="bold")
-    ax.set_yticks(range(m))
-    ax.set_yticklabels([f"M{i}" for i in range(m)])
-    ax.grid(True, alpha=0.3, axis="x")
-
-    # Set y-axis limits
-    ax.set_ylim(-0.5, m - 0.5)
-
-    # Add legend
-    legend_elements = [
-        plt.Rectangle(
-            (0, 0), 1, 1, facecolor=colors[i], alpha=0.8, edgecolor="black", label=f"Job {i}"
-        )
-        for i in range(n)
-    ]
-    ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc="upper left")
-
-    plt.tight_layout()
-
-    # Save the plot
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"gantt_chart_{timestamp}.png"
-    filepath = os.path.join("results", filename)
-    plt.savefig(filepath, dpi=300, bbox_inches="tight")
-    plt.close()
-
-    print(f"Gantt chart saved as: {filepath}")
-
-
-def save_convergence_plot(iterations: List[int], cmax_values: List[int]):
-    """Create and save convergence plot showing Cmax improvement over iterations."""
+def save_convergence_plot_to(iterations: List[int], cmax_values: List[int], filepath: str):
+    """Save convergence plot to a specific filepath."""
     fig, ax = plt.subplots(figsize=(10, 6))
 
-    # Plot the convergence
     ax.plot(
         iterations,
         cmax_values,
@@ -233,13 +184,11 @@ def save_convergence_plot(iterations: List[int], cmax_values: List[int]):
         markeredgewidth=2,
     )
 
-    # Customize the plot
     ax.set_xlabel("Time [ms]", fontsize=12)
     ax.set_ylabel("Cmax", fontsize=12)
-    ax.set_title("Tabu Search Convergence", fontsize=14, fontweight="bold")
+    ax.set_title("Convergence", fontsize=14, fontweight="bold")
     ax.grid(True, alpha=0.3)
 
-    # Add annotations for first and last values
     if len(iterations) > 1:
         ax.annotate(
             f"Start: {cmax_values[0]}",
@@ -260,12 +209,7 @@ def save_convergence_plot(iterations: List[int], cmax_values: List[int]):
         )
 
     plt.tight_layout()
-
-    # Save the plot
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"convergence_plot_{timestamp}.png"
-    filepath = os.path.join("results", filename)
+    _ensure_dir(os.path.dirname(filepath) or "results")
     plt.savefig(filepath, dpi=300, bbox_inches="tight")
     plt.close()
-
     print(f"Convergence plot saved as: {filepath}")

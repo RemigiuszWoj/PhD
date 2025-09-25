@@ -3,7 +3,13 @@ import random
 import time
 from typing import List
 
-from src.neighbors import fibonahi_neighborhood, generate_neighbors_adjacent, swap_jobs
+from src.dynasearch import dynasearch_full
+from src.neighbors import (
+    fibonahi_neighborhood,
+    generate_neighbors_adjacent,
+    naiv_dynasearch_neighborhood,
+    swap_jobs,
+)
 from src.permutation_procesing import c_max
 
 
@@ -52,6 +58,18 @@ def tabu_search(
 
         elif neigh_mode == "fibonahi_neighborhood":
             new_pi, new_c = fibonahi_neighborhood(current_pi, processing_times)
+            move_selected = tuple(new_pi)  # just a placeholder to store in tabu
+            pi_selected = new_pi
+            cmax_selected = new_c
+
+        elif neigh_mode == "dynasearch_neighborhood":
+            new_pi, new_c = naiv_dynasearch_neighborhood(current_pi, processing_times)
+            move_selected = tuple(new_pi)  # just a placeholder to store in tabu
+            pi_selected = new_pi
+            cmax_selected = new_c
+
+        elif neigh_mode == "full_dynasearch_neighborhood":
+            new_pi, new_c, _ = dynasearch_full(current_pi, processing_times)
             move_selected = tuple(new_pi)  # just a placeholder to store in tabu
             pi_selected = new_pi
             cmax_selected = new_c
@@ -127,6 +145,40 @@ def simulated_annealing(
 
         elif neigh_mode == "fibonahi_neighborhood":
             neighbor, neighbor_cmax = fibonahi_neighborhood(current_pi, processing_times)
+            delta = neighbor_cmax - current_cmax
+
+            if delta < 0 or random.random() < math.exp(-delta / T):
+                current_pi = neighbor
+                current_cmax = neighbor_cmax
+
+            if current_cmax < best_cmax:
+                best_cmax = current_cmax
+                best_pi = current_pi.copy()
+                cmax_history.append(best_cmax)
+                elapsed_ms = int((time.time() - start_time) * 1000)
+                iteration_history.append(elapsed_ms)
+
+            iteration += 1
+
+        elif neigh_mode == "dynasearch_neighborhood":
+            neighbor, neighbor_cmax = naiv_dynasearch_neighborhood(current_pi, processing_times)
+            delta = neighbor_cmax - current_cmax
+
+            if delta < 0 or random.random() < math.exp(-delta / T):
+                current_pi = neighbor
+                current_cmax = neighbor_cmax
+
+            if current_cmax < best_cmax:
+                best_cmax = current_cmax
+                best_pi = current_pi.copy()
+                cmax_history.append(best_cmax)
+                elapsed_ms = int((time.time() - start_time) * 1000)
+                iteration_history.append(elapsed_ms)
+
+            iteration += 1
+
+        elif neigh_mode == "full_dynasearch_neighborhood":
+            neighbor, neighbor_cmax, _ = dynasearch_full(current_pi, processing_times)
             delta = neighbor_cmax - current_cmax
 
             if delta < 0 or random.random() < math.exp(-delta / T):

@@ -1,5 +1,3 @@
-simulated_annealing:
-
 # Configuration file for Flow Shop algorithms
 
 # General settings
@@ -14,32 +12,44 @@ general:
 
   # input_file: "data/tai100_5.txt"
   # input_file: "data/tai100_10.txt"
-  input_file: "data/tai100_20.txt"
+  # input_file: "data/tai100_20.txt"
 
 # Od tad lepsiejsze
   # input_file: "data/tai200_10.txt"
   # input_file: "data/tai200_20.txt"
 
-  # input_file: "data/tai500_20.txt"
+  input_file: "data/tai500_20.txt"
   instance_number: 0
-  algorithm: "tabu_search_compare"  # Options: "tabu_search", "simulated_annealing", "tabu_search_compare", "simulated_annealing_compare"
+  # Choose exactly one compare mode:
+  # - "tabu_search_compare"
+  # - "simulated_annealing_compare"
+  algorithm: "tabu_search_compare"
 
-# Visualization settings
 visualization:
   save_plots: true
   results_folder: "results"
 
-# Wspólne parametry dla wszystkich algorytmów
 algorithm_common:
-  time_limit_ms: 100000   # Maximum execution time in milliseconds
-  neigh_mode: "fibonahi_neighborhood"  # Options: "adjacent" or "fibonahi_neighborhood"
+  # Time limit can be specified in seconds (recommended) or milliseconds.
+  time_limit_s: 30
 
-# Parametry specyficzne dla Tabu Search
 tabu_search:
-  tabu_tenure: 10         # Tabu list tenure
+  tabu_tenure: 10
 
-# Parametry specyficzne dla Simulated Annealing
 simulated_annealing:
-  initial_temp: 1000.0    # Initial temperature
-  final_temp: 1.0         # Final temperature (stopping criterion)
-  alpha: 0.95             # Cooling rate (temperature multiplier)
+  initial_temp: 1000.0
+  final_temp: 1.0
+  alpha: 0.95
+
+# Optional generator: if provided, `main.py` will generate a synthetic instance
+# instead of reading from `general.input_file`.
+generator:
+  enabled: false
+  # number of machines
+  m: 20
+  # number of jobs
+  n: 700
+  # RNG seed for reproducibility
+  seed: 42
+  # Taillard-only generator (no low/high)
+  # type is fixed to 'taillard'

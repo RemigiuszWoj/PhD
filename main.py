@@ -73,7 +73,6 @@ def run_compare_mode(
         "adjacent",
         "fibonahi_neighborhood",
         "dynasearch_neighborhood",
-        "full_dynasearch_neighborhood",
     ]:
         if algorithm == "tabu_search_compare":
             best_pi, best_cmax, iteration_history, cmax_history = tabu_search(
@@ -90,6 +89,9 @@ def run_compare_mode(
                 final_temp=sa_config.get("final_temp"),
                 alpha=sa_config.get("alpha"),
                 neigh_mode=neigh_mode,
+                reheat_factor=sa_config.get("reheat_factor"),
+                stagnation_ms=sa_config.get("stagnation_ms"),
+                temp_floor_factor=sa_config.get("temp_floor_factor"),
             )
 
         _pad_histories_and_store(
@@ -105,12 +107,17 @@ def run_compare_mode(
 
     # Save multi convergence into optional out_dir
     multi_path = os.path.join(out_dir, "multi_convergence.png") if out_dir else None
-    save_multi_convergence_plot(results, labels=labels, colors=colors, filepath=multi_path)
+    save_multi_convergence_plot(
+        results,
+        labels=labels,
+        colors=colors,
+        filepath=multi_path,
+        time_limit_ms=algorithm_common.get("time_limit_ms"),
+    )
     for neigh_mode in [
         "adjacent",
         "fibonahi_neighborhood",
         "dynasearch_neighborhood",
-        "full_dynasearch_neighborhood",
     ]:
         # Save gantt into neighborhood-specific file under out_dir if provided
         if out_dir:
@@ -125,7 +132,6 @@ def run_compare_mode(
         "adjacent",
         "fibonahi_neighborhood",
         "dynasearch_neighborhood",
-        "full_dynasearch_neighborhood",
     ]:
         print(f"Final cmax for {labels[neigh_mode]}: {cmax_summary[neigh_mode]}")
 
@@ -187,26 +193,22 @@ def main() -> None:
             "adjacent": "Tabu: adjacent",
             "fibonahi_neighborhood": "Tabu: fibonahi_neigh",
             "dynasearch_neighborhood": "Tabu: dynasearch",
-            "full_dynasearch_neighborhood": "Tabu: full_dynasearch",
         }
         colors = {
             "adjacent": "#00FFFF",  # neon cyan
             "fibonahi_neighborhood": "#FF00CC",  # neon magenta (kept)
             "dynasearch_neighborhood": "#7CFF00",  # neon lime
-            "full_dynasearch_neighborhood": "#FFA500",  # neon orange
         }
     elif algorithm == "simulated_annealing_compare":
         labels = {
             "adjacent": "SA: adjacent",
             "fibonahi_neighborhood": "SA: fibonahi_neigh",
             "dynasearch_neighborhood": "SA: dynasearch",
-            "full_dynasearch_neighborhood": "SA: full_dynasearch",
         }
         colors = {
             "adjacent": "#00FFFF",  # neon cyan
             "fibonahi_neighborhood": "#FF00CC",  # neon magenta (kept)
             "dynasearch_neighborhood": "#7CFF00",  # neon lime
-            "full_dynasearch_neighborhood": "#FFA500",  # neon orange
         }
     else:
         raise ValueError(
@@ -244,7 +246,7 @@ if __name__ == "__main__":
     # Allow deeper recursion for the recursive neighborhoods.
     # Set a higher recursion limit first (process-wide).
     try:
-        sys.setrecursionlimit(200000)
+        sys.setrecursionlimit(2000000)
     except Exception:
         pass
 
@@ -256,7 +258,7 @@ if __name__ == "__main__":
         # Request a 128MB stack for the new thread. This may be ignored on some platforms
         # or restricted by system limits; it's a best-effort increase.
         try:
-            threading.stack_size(128 * 1024 * 1024)
+            threading.stack_size(254 * 1024 * 1024)
         except Exception:
             pass
 

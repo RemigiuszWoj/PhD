@@ -15,15 +15,17 @@ general:
   # input_file: "data/tai100_20.txt"
 
 # Od tad lepsiejsze
-  # input_file: "data/tai200_10.txt"
+  input_file: "data/tai200_10.txt"
   # input_file: "data/tai200_20.txt"
 
-  input_file: "data/tai500_20.txt"
-  instance_number: 0
+  # input_file: "data/tai500_20.txt"
+  instance_number: 2
   # Choose exactly one compare mode:
   # - "tabu_search_compare"
   # - "simulated_annealing_compare"
-  algorithm: "tabu_search_compare"
+  # algorithm: "tabu_search_compare"
+  algorithm: "simulated_annealing_compare"
+
 
 visualization:
   save_plots: true
@@ -31,7 +33,7 @@ visualization:
 
 algorithm_common:
   # Time limit can be specified in seconds (recommended) or milliseconds.
-  time_limit_s: 30
+  time_limit_s: 60
 
 tabu_search:
   tabu_tenure: 10
@@ -40,6 +42,10 @@ simulated_annealing:
   initial_temp: 1000.0
   final_temp: 1.0
   alpha: 0.95
+  # Reheating activated
+  reheat_factor: 1.4          # multiplicative bump (cap at initial_temp)
+  stagnation_ms: 8000         # window (ms) without improvement triggering reheating
+  temp_floor_factor: 1.0      # floor = final_temp * factor
 
 # Optional generator: if provided, `main.py` will generate a synthetic instance
 # instead of reading from `general.input_file`.

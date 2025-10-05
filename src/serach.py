@@ -7,7 +7,6 @@ from src.dynasearch import dynasearch_full
 from src.neighbors import (
     fibonahi_neighborhood,
     generate_neighbors_adjacent,
-    naiv_dynasearch_neighborhood,
     swap_jobs,
 )
 from src.permutation_procesing import c_max
@@ -63,14 +62,9 @@ def tabu_search(
             cmax_selected = new_c
 
         elif neigh_mode == "dynasearch_neighborhood":
-            new_pi, new_c = naiv_dynasearch_neighborhood(current_pi, processing_times)
-            move_selected = tuple(new_pi)  # just a placeholder to store in tabu
-            pi_selected = new_pi
-            cmax_selected = new_c
-
-        elif neigh_mode == "full_dynasearch_neighborhood":
+            # Zastąpiono wersję naiwną pełną implementacją dynasearch
             new_pi, new_c, _ = dynasearch_full(current_pi, processing_times)
-            move_selected = tuple(new_pi)  # just a placeholder to store in tabu
+            move_selected = tuple(new_pi)  # placeholder
             pi_selected = new_pi
             cmax_selected = new_c
 
@@ -104,6 +98,9 @@ def simulated_annealing(
     alpha: float = 0.95,
     time_limit_ms: int = 100,
     neigh_mode: str = "adjacent",
+    reheat_factor: float | None = None,
+    stagnation_ms: int | None = None,
+    temp_floor_factor: float | None = None,
 ):
     """Simulated Annealing for Flow Shop starting from initial_pi."""
     n = len(processing_times[0])
@@ -122,7 +119,20 @@ def simulated_annealing(
     time_limit = time_limit_ms / 1000
     iteration = 0
 
-    while T > final_temp and (time.time() - start_time) < time_limit:
+    # Reheat / stagnation tracking placeholders (future config-driven)
+    last_improve_time = start_time
+    stagnation_reheat_factor = reheat_factor if (reheat_factor and reheat_factor > 1.0) else None
+    stagnation_ms_threshold = stagnation_ms if (stagnation_ms and stagnation_ms > 0) else None
+    temp_floor_factor_norm = (
+        temp_floor_factor if (temp_floor_factor and temp_floor_factor >= 1.0) else 1.0
+    )
+    temp_floor = final_temp * temp_floor_factor_norm
+
+    while (time.time() - start_time) < time_limit:
+        # Okresowe logowanie temperatury (co ~5s) bez nadmiaru spamu
+        now_loop = time.time()
+        if (now_loop - last_improve_time) < 0.01:  # świeża poprawa -> krótkie info
+            pass
         if neigh_mode == "adjacent":
             for _ in range(n):
                 i = random.randint(0, n - 2)
@@ -140,6 +150,7 @@ def simulated_annealing(
                     cmax_history.append(best_cmax)
                     elapsed_ms = int((time.time() - start_time) * 1000)
                     iteration_history.append(elapsed_ms)
+                    last_improve_time = time.time()
 
                 iteration += 1
 
@@ -157,27 +168,11 @@ def simulated_annealing(
                 cmax_history.append(best_cmax)
                 elapsed_ms = int((time.time() - start_time) * 1000)
                 iteration_history.append(elapsed_ms)
+                last_improve_time = time.time()
 
             iteration += 1
 
         elif neigh_mode == "dynasearch_neighborhood":
-            neighbor, neighbor_cmax = naiv_dynasearch_neighborhood(current_pi, processing_times)
-            delta = neighbor_cmax - current_cmax
-
-            if delta < 0 or random.random() < math.exp(-delta / T):
-                current_pi = neighbor
-                current_cmax = neighbor_cmax
-
-            if current_cmax < best_cmax:
-                best_cmax = current_cmax
-                best_pi = current_pi.copy()
-                cmax_history.append(best_cmax)
-                elapsed_ms = int((time.time() - start_time) * 1000)
-                iteration_history.append(elapsed_ms)
-
-            iteration += 1
-
-        elif neigh_mode == "full_dynasearch_neighborhood":
             neighbor, neighbor_cmax, _ = dynasearch_full(current_pi, processing_times)
             delta = neighbor_cmax - current_cmax
 
@@ -191,12 +186,29 @@ def simulated_annealing(
                 cmax_history.append(best_cmax)
                 elapsed_ms = int((time.time() - start_time) * 1000)
                 iteration_history.append(elapsed_ms)
+                last_improve_time = time.time()
 
             iteration += 1
 
         else:
             raise ValueError(f"Unknown neigh_mode={neigh_mode}")
 
+        # Cooling schedule: multiplicative
         T *= alpha
+        if T < temp_floor:
+            # Keep a floor temperature to continue probabilistic acceptance
+            T = temp_floor
+
+        # Optional (future): reheating if no improvement for threshold
+        if stagnation_ms_threshold is not None and stagnation_reheat_factor is not None:
+            now = time.time()
+            if (now - last_improve_time) * 1000 >= stagnation_ms_threshold:
+                old_T = T
+                T = min(T * stagnation_reheat_factor, initial_temp)
+                print(
+                    f"[SA][reheat] stagnation {(now - last_improve_time)*1000:.0f} ms | "
+                    f"T: {old_T:.2f} -> {T:.2f} (factor={stagnation_reheat_factor})"
+                )
+                last_improve_time = now  # reset stagnation window
 
     return best_pi, best_cmax, iteration_history, cmax_history

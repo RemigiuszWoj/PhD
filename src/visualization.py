@@ -1,25 +1,40 @@
 import glob
 import os
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 import matplotlib
 
-# Use Agg backend for file-only (non-GUI) plotting. This prevents macOS Cocoa
-# errors when figures are created from non-main threads or headless environments.
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
+matplotlib.use("Agg")  # Must be set before importing pyplot
+import matplotlib.pyplot as plt  # noqa: E402
 
 
 def save_gantt_chart_with_name(
-    pi: List[int], processing_times: List[List[int]], cmax: int, name: str
+    pi: List[int],
+    processing_times: List[List[int]],
+    cmax: int,
+    name: str,
+    show_legend: Optional[bool] = None,
 ):
-    """Create and save Gantt chart for the given permutation with custom filename."""
+    """Create and save Gantt chart for the given permutation with custom filename.
+
+    Improvements:
+    - Uses constrained_layout to reduce layout warnings.
+    - Disables legend automatically for large n unless forced.
+    - Adaptive figure size based on number of machines and jobs.
+    """
     m = len(processing_times)
     n = len(pi)
     start_times, completion_times = calculate_schedule(pi, processing_times)
-    fig, ax = plt.subplots(figsize=(12, 8))
-    colors = [plt.cm.tab20(i / max(1, n)) for i in range(n)]
+
+    # Adaptive sizing: width grows slowly with jobs, height with machines
+    base_w, base_h = 10, 0.5 * m + 2
+    fig, ax = plt.subplots(
+        figsize=(min(base_w + n * 0.05, 18), min(base_h, 16)),
+        constrained_layout=True,
+    )
+    cmap = plt.cm.get_cmap("tab20")
+    colors = [cmap(i % 20) for i in range(n)]
     for i in range(m):
         for j in range(n):
             job_id = pi[j]
@@ -31,34 +46,47 @@ def save_gantt_chart_with_name(
                 left=start,
                 height=0.8,
                 color=colors[job_id],
-                alpha=0.8,
+                alpha=0.85,
                 edgecolor="black",
-                linewidth=1,
+                linewidth=0.6,
             )
     ax.set_xlabel("Time", fontsize=12)
     ax.set_ylabel("Machine", fontsize=12)
     ax.set_title(f"Gantt Chart - Cmax = {cmax}", fontsize=14, fontweight="bold")
     ax.set_yticks(range(m))
     ax.set_yticklabels([f"M{i}" for i in range(m)])
-    ax.grid(True, alpha=0.3, axis="x")
+    ax.grid(True, alpha=0.25, axis="x", linestyle="--", linewidth=0.7)
     ax.set_ylim(-0.5, m - 0.5)
-    legend_elements = []
-    for i in range(n):
-        legend_elements.append(
+
+    # Legend logic
+    if show_legend is None:
+        # auto policy: only show when jobs <= 40
+        show_legend = n <= 40
+    if show_legend:
+        legend_elements = [
             plt.Rectangle(
-                (0, 0), 1, 1, facecolor=colors[i], alpha=0.8, edgecolor="black", label=f"Job {i}"
+                (0, 0), 1, 1, facecolor=colors[i], alpha=0.85, edgecolor="black", label=f"Job {i}"
             )
+            for i in range(n)
+        ]
+        ax.legend(
+            handles=legend_elements,
+            bbox_to_anchor=(1.02, 1),
+            loc="upper left",
+            borderaxespad=0.0,
+            fontsize=8,
+            frameon=False,
+            ncol=1 if n <= 25 else 2 if n <= 50 else 3,
         )
-    ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc="upper left")
-    plt.tight_layout()
+
     # If `name` is a full path (has dir), use it; otherwise save under results folder
     if os.path.dirname(name):
         filepath = name
     else:
         filepath = os.path.join("results", name)
     _ensure_dir(os.path.dirname(filepath) or "results")
-    plt.savefig(filepath, dpi=300, bbox_inches="tight")
-    plt.close()
+    fig.savefig(filepath, dpi=180)  # dpi 180 dla kompromisu jakości/czasu
+    plt.close(fig)
     print(f"Gantt chart saved as: {filepath}")
 
 
@@ -68,10 +96,13 @@ def save_multi_convergence_plot(
     colors: dict = None,
     filepath: str = None,
     results_folder: str = "results",
+    time_limit_ms: int = None,
 ):
-    """Draw comparison of several convergence histories on one plot and save it."""
+    """Draw comparison of several convergence histories on one plot and save it.
 
-    fig, ax = plt.subplots(figsize=(10, 6))
+    Uses constrained_layout to avoid tight_layout warnings and places legend outside.
+    """
+    fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
     if labels is None:
         labels = {}
     if colors is None:
@@ -85,35 +116,56 @@ def save_multi_convergence_plot(
             label=label,
             linewidth=2,
             marker="o",
-            markersize=5,
+            markersize=4,
             markerfacecolor="white",
-            markeredgewidth=1.5,
+            markeredgewidth=1.0,
             color=color,
         )
         if times and cmax_values:
             ax.annotate(
-                f"Final cmax: {cmax_values[-1]}",
+                f"{cmax_values[-1]}",
                 xy=(times[-1], cmax_values[-1]),
-                xytext=(10, -20),
+                xytext=(6, -10),
                 textcoords="offset points",
-                bbox=dict(boxstyle="round,pad=0.3", facecolor="lightgreen", alpha=0.7),
-                arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=0"),
-                fontsize=10,
+                fontsize=9,
+                color="black",
+                bbox=dict(boxstyle="round,pad=0.2", facecolor="white", alpha=0.55),
             )
     ax.set_xlabel("Time [ms]", fontsize=12)
     ax.set_ylabel("Cmax", fontsize=12)
     ax.set_title("Convergence comparison", fontsize=14, fontweight="bold")
-    ax.grid(True, alpha=0.3)
-    ax.legend()
-    plt.tight_layout()
+    ax.grid(True, alpha=0.25, linestyle="--", linewidth=0.7)
+    if time_limit_ms is not None:
+        try:
+            ax.axvline(x=time_limit_ms, color="red", linestyle="--", linewidth=1.2, zorder=5)
+            ax.text(
+                time_limit_ms,
+                ax.get_ylim()[1],
+                " time limit",
+                color="red",
+                fontsize=9,
+                va="top",
+                ha="left",
+                bbox=dict(boxstyle="round,pad=0.15", facecolor="white", alpha=0.6),
+            )
+        except Exception:
+            pass
+    # Legend outside on the right
+    ax.legend(
+        loc="center left",
+        bbox_to_anchor=(1.02, 0.5),
+        frameon=False,
+        fontsize=9,
+        borderaxespad=0.0,
+    )
     if filepath is None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"multi_convergence_plot_{timestamp}.png"
         filepath = os.path.join(results_folder, filename)
     else:
         _ensure_dir(os.path.dirname(filepath) or results_folder)
-    plt.savefig(filepath, dpi=300, bbox_inches="tight")
-    plt.close()
+    fig.savefig(filepath, dpi=180)
+    plt.close(fig)
     print(f"Multi convergence plot saved as: {filepath}")
 
 

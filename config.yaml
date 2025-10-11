@@ -62,13 +62,34 @@ generator:
 
 # Experiment batch mode (new)
 experiment:
-  enabled: true          # when true: run batch experiments (all instances); false -> compare mode
-  # ZAWSZE lista plików (może być jednoelementowa)
-  instance_files: [ "data/tai20_5.txt", "data/tai100_20.txt", "data/tai200_10.txt"]
-  repeats: 1              # number of seeds per (algorithm, neighborhood)
-  # Lista limitów czasowych (sekundy). Może mieć 1 element – zawsze używamy tylko tej listy.
-  # time_limits_s: [0.1, 1, 10, 100, 1000]   # przykładowa lista; usuń lub skróć według potrzeb
-  time_limits_s: [0.1, 1, 10] # for test
+  enabled: true   
+  tabu_tenure: 10       # when true: run batch experiments (all instances); false -> compare mode
+  # Always a list of files (can be single-element). Here: ALL benchmark files in /data
+  # instance_files: [
+  #   "data/tai20_5.txt", "data/tai20_10.txt", "data/tai20_20.txt",
+  #   "data/tai50_5.txt", "data/tai50_10.txt", "data/tai50_20.txt",
+  #   "data/tai100_5.txt", "data/tai100_10.txt", "data/tai100_20.txt",
+  #   "data/tai200_10.txt", "data/tai200_20.txt",
+  #   "data/tai500_20.txt"
+  # ]
+
+  # repeats: 1             # number of RNG seeds per (algorithm, neighborhood, instance, time_limit)
+  # List of time limits (seconds). Use only this list (no single value fallback!).
+  # Adjust as needed; keep ordered ascending.
+  # time_limits_s: [0.1, 0.5, 1, 2, 5, 10]
+
 
   # Optional Tabu override (applies when algorithm == tabu in runs)
-  tabu_tenure: 10
+
+
+
+  instance_files: [
+    # "data/tai20_5.txt", "data/tai20_10.txt", "data/tai20_20.txt",
+    # "data/tai50_5.txt", "data/tai50_10.txt", "data/tai50_20.txt",
+    # "data/tai100_5.txt", "data/tai100_10.txt", "data/tai100_20.txt",
+    "data/tai200_10.txt", "data/tai200_20.txt",
+    # "data/tai500_20.txt"
+  ]
+
+  repeats: 10             # number of RNG seeds per (algorithm, neighborhood, instance, time_limit)
+  time_limits_s: [0.1]

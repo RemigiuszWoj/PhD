@@ -12,7 +12,10 @@ from src.experiments.aggregate import (
     write_summary_csv,
     write_wide_gap_table,
 )
-from src.experiments.runner import ExperimentRunner, generate_plan_all_instances
+from src.experiments.runner import (
+    ExperimentRunner,
+    generate_plan_for_files,
+)
 from src.parser import parser
 from src.serach import simulated_annealing, tabu_search
 from src.taillard_gen import generate_taillard_instance
@@ -172,7 +175,7 @@ def main() -> None:
     if exp_cfg.get("enabled"):
         instance_files = exp_cfg.get("instance_files") or []
         if not instance_files:
-            raise ValueError("experiment.instance_files (lista) musi być ustawiona i niepusta")
+            raise ValueError("experiment.instance_files list must be set and non-empty")
         repeats = exp_cfg.get("repeats", 1)
         # Multi-limit list ONLY (no single fallback)
         time_limits_list = exp_cfg.get("time_limits_s") or []
@@ -182,23 +185,16 @@ def main() -> None:
             time_limits_ms = [int(float(x) * 1000) for x in time_limits_list]
         except Exception:
             time_limits_ms = [int(float(x)) for x in time_limits_list]
-        time_limit_ms = None
         print(
-            "[Main] Experiment batch mode: all instances / all algorithms / all neighborhoods. "
-            "Previous experiment results cleaned."
+            "[Main] Experiment batch mode: full enumeration over files / algorithms / "
+            "neighborhoods."
         )
-        # Zbuduj zbiorczy plan dla wielu plików
-        all_plans = []
-        for inst_file in instance_files:
-            sub_plan = generate_plan_all_instances(
-                instance_file=inst_file,
-                repeats=repeats,
-                time_limit_ms=time_limit_ms,
-                time_limits_ms=time_limits_ms,
-            )
-            all_plans.extend(sub_plan)
-        plan = all_plans
-        # Nie czyścimy już historycznych wyników – każdy run ma własny katalog timestamp
+        plan = generate_plan_for_files(
+            instance_files=instance_files,
+            repeats=repeats,
+            time_limits_ms=time_limits_ms,
+        )
+        # We no longer delete historical results – each run gets its own timestamped directory
         runner = ExperimentRunner()
         runner.run(plan)
         try:

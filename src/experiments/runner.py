@@ -22,18 +22,18 @@ NEIGHBORHOODS_ALL = (
 
 @dataclass(frozen=True)
 class RunConfig:
-    """Minimal konfiguracja pojedynczego uruchomienia.
+    """Minimal configuration of a single run.
 
-    Uproszczono: usunięto wszystkie parametry SA poza limitem czasu.
-    Parametry SA używają stałych domyślnych, Tabu ma opcjonalny tabu_tenure.
+    Simplified: removed explicit SA parameters (we rely on fixed defaults).
+    Tabu keeps an optional tabu_tenure.
     """
 
     algorithm: str  # 'tabu' | 'sa'
     neighborhood: str  # 'adjacent' | 'fibonahi_neighborhood' | 'dynasearch_neighborhood'
-    instance_file: str  # ścieżka do pliku instancji
-    instance_number: int  # numer instancji w pliku
+    instance_file: str  # path to instance file
+    instance_number: int  # instance index inside file
     seed: int  # seed RNG
-    time_limit_ms: int  # budżet czasu
+    time_limit_ms: int  # time budget in ms
     tabu_tenure: int | None = None
 
 
@@ -70,15 +70,15 @@ class RunResult:
 
 class ExperimentRunner:
     def __init__(self, base_results_dir: str = "results/experiments"):
-        """Runner nie czyści teraz całego katalogu bazowego.
+        """Runner no longer wipes the base directory.
 
-        Każdy batch dostaje własny katalog timestamp, stare pozostają.
+        Each batch gets its own timestamp directory; historical runs are preserved.
         """
         self.base_dir = Path(base_results_dir)
         self.base_dir.mkdir(parents=True, exist_ok=True)
         self.timestamp_dir = self.base_dir / datetime.utcnow().strftime("%Y%m%d_%H%M%S")
         self.timestamp_dir.mkdir(parents=True, exist_ok=True)
-        # Predefiniowana mapa dispatcherów
+        # Pre-defined dispatch map
         self._dispatch = {
             "tabu": self._run_tabu,
             "sa": self._run_sa,
@@ -140,7 +140,7 @@ class ExperimentRunner:
             json.dump(result.to_dict(), f, indent=2)
         print(f"[Experiment] Saved {path}")
 
-    # --- prywatne implementacje algorytmów dla dispatcher'a ---
+    # --- private algorithm implementations used via dispatch ---
     def _run_tabu(self, processing_times, cfg: RunConfig):
         return tabu_search(
             processing_times,
@@ -175,9 +175,9 @@ def generate_basic_plan(
 ) -> List[RunConfig]:
     """Generate plan; if algorithms/neighborhoods omitted, use full canonical sets.
 
-    NOTE: For research mode we now ALWAYS override to the full sets (ALGORITHMS_ALL,
+    NOTE: For research mode we ALWAYS override to the full sets (ALGORITHMS_ALL,
     NEIGHBORHOODS_ALL) to guarantee comprehensive coverage, ignoring any restricted
-    lists passed in config. This makes experiments comparable across runs.
+    lists passed in config. This keeps experiments comparable across runs.
     """
     # Force full coverage regardless of user-provided subsets.
     algorithms = ALGORITHMS_ALL
@@ -272,3 +272,29 @@ def generate_plan_all_instances(
                 )
             )
     return configs
+
+
+def generate_plan_for_files(
+    instance_files: Iterable[str],
+    repeats: int,
+    time_limits_ms: Iterable[int],
+    algorithms: Iterable[str] | None = None,
+    neighborhoods: Iterable[str] | None = None,
+) -> List[RunConfig]:
+    """Build a combined plan for a list of instance files.
+
+    For each file enumerate all contained instances and each time limit.
+    """
+    all_configs: List[RunConfig] = []
+    for inst_file in instance_files:
+        all_configs.extend(
+            generate_plan_all_instances(
+                instance_file=inst_file,
+                repeats=repeats,
+                time_limit_ms=None,
+                time_limits_ms=time_limits_ms,
+                algorithms=algorithms,
+                neighborhoods=neighborhoods,
+            )
+        )
+    return all_configs

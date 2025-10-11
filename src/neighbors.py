@@ -40,7 +40,7 @@ def fibonahi_neighborhood(
     base_c = c_max(pi, processing_times)
     candidates: List[Tuple[int, int]] = []  # (i, delta)
 
-    # wszystkie możliwe ruchy (i,i+1)
+    # enumerate all possible adjacent swaps (i,i+1)
     for i in range(n - 1):
         newp = pi[:]
         newp[i], newp[i + 1] = newp[i + 1], newp[i]
@@ -54,7 +54,7 @@ def fibonahi_neighborhood(
     m = len(candidates)
     memo: Dict[int, Tuple[int, Tuple[int, ...]]] = {}
 
-    # DP: wybór ruchów niekolidujących
+    # DP: choose non-overlapping moves
     def solve(pos: int) -> Tuple[int, Tuple[int, ...]]:
         if pos >= m:
             return 0, ()
@@ -67,7 +67,7 @@ def fibonahi_neighborhood(
         skip_val, skip_set = solve(pos + 1)
         best_val, best_set = skip_val, skip_set
 
-        # bierzemy ten ruch → pomijamy wszystkie nachodzące (czyli pos+1 jeśli idx+1)
+        # take this move -> skip all overlapping (i.e. next indices sharing position idx+1)
         next_pos = pos + 1
         while next_pos < m and candidates[next_pos][0] == idx + 1:
             next_pos += 1
@@ -82,12 +82,12 @@ def fibonahi_neighborhood(
 
     total_delta, chosen = solve(0)
 
-    # # jeśli nic nie wybrano, wybieramy najmniejszą deltę
+    # If nothing selected, pick the smallest delta move
     if not chosen:
         best_idx = min(candidates, key=lambda x: x[1])[0]
         chosen = (best_idx,)
 
-    # wykonujemy wybrane ruchy
+    # apply selected moves
     new_pi = pi[:]
     for idx in sorted(chosen):
         new_pi[idx], new_pi[idx + 1] = new_pi[idx + 1], new_pi[idx]

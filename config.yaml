@@ -59,3 +59,16 @@ generator:
   seed: 42
   # Taillard-only generator (no low/high)
   # type is fixed to 'taillard'
+
+# Experiment batch mode (new)
+experiment:
+  enabled: true          # when true: run batch experiments (all instances); false -> compare mode
+  # ZAWSZE lista plików (może być jednoelementowa)
+  instance_files: [ "data/tai20_5.txt", "data/tai100_20.txt", "data/tai200_10.txt"]
+  repeats: 1              # number of seeds per (algorithm, neighborhood)
+  # Lista limitów czasowych (sekundy). Może mieć 1 element – zawsze używamy tylko tej listy.
+  # time_limits_s: [0.1, 1, 10, 100, 1000]   # przykładowa lista; usuń lub skróć według potrzeb
+  time_limits_s: [0.1, 1, 10] # for test
+
+  # Optional Tabu override (applies when algorithm == tabu in runs)
+  tabu_tenure: 10

@@ -11,6 +11,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
 	# optional core runtime libs kept minimal; matplotlib only if visualization used
+    "PyYAML>=6.0"
 ]
 classifiers = [
 	"Programming Language :: Python :: 3",

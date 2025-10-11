@@ -6,11 +6,20 @@ import sys
 
 import yaml
 
+from src.experiments.aggregate import (
+    write_matrix_gap_table,
+    write_matrix_per_seed_table,
+    write_summary_csv,
+    write_wide_gap_table,
+)
+from src.experiments.runner import ExperimentRunner, generate_plan_all_instances
 from src.parser import parser
 from src.serach import simulated_annealing, tabu_search
 from src.taillard_gen import generate_taillard_instance
 from src.visualization import (
+    build_algorithm_multi_convergence_plots,
     clear_old_plots,
+    next_unique_path,
     save_gantt_chart_with_name,
     save_multi_convergence_plot,
 )
@@ -112,7 +121,11 @@ def run_compare_mode(
         )
 
     # Save multi convergence into optional out_dir
-    multi_path = os.path.join(out_dir, "multi_convergence.png") if out_dir else None
+    if out_dir:
+        base_multi = os.path.join(out_dir, "multi_convergence.png")
+        multi_path = next_unique_path(base_multi)
+    else:
+        multi_path = None
     save_multi_convergence_plot(
         results,
         labels=labels,
@@ -127,7 +140,8 @@ def run_compare_mode(
     ]:
         # Save gantt into neighborhood-specific file under out_dir if provided
         if out_dir:
-            gantt_name = os.path.join(out_dir, f"gantt_chart_{neigh_mode}.png")
+            base_gantt = os.path.join(out_dir, f"gantt_chart_{neigh_mode}.png")
+            gantt_name = next_unique_path(base_gantt)
         else:
             gantt_name = f"gantt_chart_{neigh_mode}.png"
         save_gantt_chart_with_name(
@@ -152,6 +166,51 @@ def load_config(config_file: str = "config.yaml") -> dict:
 def main() -> None:
     # Load configuration from file
     config = load_config()
+
+    # Conditional experiment batch mode
+    exp_cfg = config.get("experiment", {})
+    if exp_cfg.get("enabled"):
+        instance_files = exp_cfg.get("instance_files") or []
+        if not instance_files:
+            raise ValueError("experiment.instance_files (lista) musi być ustawiona i niepusta")
+        repeats = exp_cfg.get("repeats", 1)
+        # Multi-limit list ONLY (no single fallback)
+        time_limits_list = exp_cfg.get("time_limits_s") or []
+        if not time_limits_list:
+            raise ValueError("experiment.time_limits_s must be a non-empty list of seconds")
+        try:
+            time_limits_ms = [int(float(x) * 1000) for x in time_limits_list]
+        except Exception:
+            time_limits_ms = [int(float(x)) for x in time_limits_list]
+        time_limit_ms = None
+        print(
+            "[Main] Experiment batch mode: all instances / all algorithms / all neighborhoods. "
+            "Previous experiment results cleaned."
+        )
+        # Zbuduj zbiorczy plan dla wielu plików
+        all_plans = []
+        for inst_file in instance_files:
+            sub_plan = generate_plan_all_instances(
+                instance_file=inst_file,
+                repeats=repeats,
+                time_limit_ms=time_limit_ms,
+                time_limits_ms=time_limits_ms,
+            )
+            all_plans.extend(sub_plan)
+        plan = all_plans
+        # Nie czyścimy już historycznych wyników – każdy run ma własny katalog timestamp
+        runner = ExperimentRunner()
+        runner.run(plan)
+        try:
+            summary_path = write_summary_csv(runner.timestamp_dir)
+            write_wide_gap_table(runner.timestamp_dir, summary_path)
+            write_matrix_gap_table(runner.timestamp_dir, summary_path)
+            write_matrix_per_seed_table(runner.timestamp_dir, summary_path)
+            build_algorithm_multi_convergence_plots(runner.timestamp_dir)
+        except Exception as e:
+            print(f"[Main] Failed to write summary: {e}")
+        print("[Main] Experiment batch completed.")
+        return
 
     # Extract configuration parameters
     general_config = config["general"]

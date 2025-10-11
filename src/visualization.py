@@ -1,6 +1,9 @@
 import glob
+import json
 import os
+from collections import defaultdict
 from datetime import datetime
+from pathlib import Path
 from typing import List, Optional
 
 import matplotlib
@@ -278,3 +281,130 @@ def save_convergence_plot_to(iterations: List[int], cmax_values: List[int], file
     plt.savefig(filepath, dpi=300, bbox_inches="tight")
     plt.close()
     print(f"Convergence plot saved as: {filepath}")
+
+
+def build_algorithm_multi_convergence_plots(timestamp_dir: str | Path) -> List[Path]:
+    """Zbuduj wykresy konwergencji per algorytm z trzema sąsiedztwami równocześnie.
+
+    Szuka JSONów w katalogu `timestamp_dir` (pojedynczy eksperyment) i dla każdej trójki
+    (algorithm, instance_number, time_limit_ms) wybiera jeden seed per neighborhood:
+      - preferencyjnie seed = 0; jeśli brak, najniższy dostępny.
+
+    Zapisuje pliki: algo={alg}_inst={inst}_tl={limit}ms_multi.png w tym katalogu.
+    Zwraca listę ścieżek wygenerowanych plików.
+    """
+    td = Path(timestamp_dir)
+    if not td.exists():
+        return []
+    json_files = list(td.glob("*.json"))
+    if not json_files:
+        return []
+
+    # indeks -> (alg, inst, tl, neigh, seed) : path oraz meta per (alg, inst, tl)
+    index = {}
+    meta_dims = {}  # (alg, inst, tl) -> (jobs, machines, instance_file_stem)
+    for jf in json_files:
+        try:
+            with open(jf, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            cfg = data.get("config", {})
+            alg = cfg.get("algorithm")
+            neigh = cfg.get("neighborhood")
+            inst = cfg.get("instance_number")
+            seed = cfg.get("seed")
+            tl = cfg.get("time_limit_ms") or cfg.get("time_limit") or data.get("time_limit_ms")
+            if None in (alg, neigh, inst, seed, tl):
+                continue
+            index[(alg, inst, tl, neigh, seed)] = jf
+            # Wyciągnij wymiary tylko raz
+            key_meta = (alg, inst, tl)
+            if key_meta not in meta_dims:
+                jobs = data.get("instance_jobs") or data.get("jobs")
+                machines = data.get("instance_machines") or data.get("machines")
+                inst_file = cfg.get("instance_file") or ""
+                inst_stem = Path(inst_file).stem if inst_file else "inst"
+                meta_dims[key_meta] = (jobs, machines, inst_stem)
+        except Exception:
+            continue
+
+    if not index:
+        return []
+
+    seeds_per = defaultdict(list)
+    for alg, inst, tl, neigh, seed in index.keys():
+        seeds_per[(alg, inst, tl, neigh)].append(seed)
+
+    neigh_order = ["adjacent", "fibonahi_neighborhood", "dynasearch_neighborhood"]
+    base_colors = {
+        "adjacent": "#00FFFF",
+        "fibonahi_neighborhood": "#FF00CC",
+        "dynasearch_neighborhood": "#7CFF00",
+    }
+    group_keys = sorted({(k[0], k[1], k[2]) for k in index.keys()})
+    outputs: List[Path] = []
+    for alg, inst, tl in group_keys:
+        histories = {}
+        labels = {}
+        colors = {}
+        any_curve = False
+        for neigh in neigh_order:
+            seeds = seeds_per.get((alg, inst, tl, neigh), [])
+            if not seeds:
+                continue
+            selected_seed = 0 if 0 in seeds else min(seeds)
+            json_path = index.get((alg, inst, tl, neigh, selected_seed))
+            if not json_path:
+                continue
+            try:
+                with open(json_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                times = data.get("time_history_ms") or []
+                cmax_hist = data.get("cmax_history") or []
+                if times and cmax_hist:
+                    histories[neigh] = (times, cmax_hist)
+                    labels[neigh] = f"{alg.upper()} {neigh} (seed {selected_seed})"
+                    colors[neigh] = base_colors.get(neigh)
+                    any_curve = True
+            except Exception:
+                continue
+        if any_curve:
+            jobs, machines, inst_stem = meta_dims.get((alg, inst, tl), (None, None, "inst"))
+            dim_part = ""
+            if jobs is not None and machines is not None:
+                dim_part = f"_n{jobs}_m{machines}"
+            base_name = (
+                f"algo={alg}_file={inst_stem}_inst={inst}_tl={int(tl)}ms" f"{dim_part}_multi.png"
+            )
+            out_path = Path(next_unique_path(td / base_name))
+            try:
+                save_multi_convergence_plot(
+                    histories,
+                    labels=labels,
+                    colors=colors,
+                    filepath=str(out_path),
+                    time_limit_ms=int(tl),
+                )
+                outputs.append(out_path)
+            except Exception:
+                continue
+    print(f"[Visualization] Generated {len(outputs)} per-algorithm multi convergence plots.")
+    return outputs
+
+
+def next_unique_path(path: str | Path) -> str:
+    """Jeżeli plik istnieje, dodaj sufiks _1, _2 ... aż do znalezienia wolnej nazwy.
+
+    Zwraca ścieżkę jako string.
+    """
+    p = Path(path)
+    if not p.exists():
+        return str(p)
+    stem = p.stem
+    suffix = p.suffix
+    parent = p.parent
+    counter = 1
+    while True:
+        candidate = parent / f"{stem}_{counter}{suffix}"
+        if not candidate.exists():
+            return str(candidate)
+        counter += 1

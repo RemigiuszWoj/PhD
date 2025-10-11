@@ -4,3 +4,4 @@
 # Core: currently standard library only for algorithms
 # Visualization (uncomment if not using extras):
 matplotlib>=3.9.0
+PyYAML>=6.0

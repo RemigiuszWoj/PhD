@@ -80,6 +80,9 @@ def run_compare_mode(
                 max_time_ms=algorithm_common.get("time_limit_ms", 100000),
                 tabu_tenure=ts_config.get("tabu_tenure"),
                 neigh_mode=neigh_mode,
+                iter_log_path=(
+                    os.path.join(out_dir, f"iter_log_{neigh_mode}.csv") if out_dir else None
+                ),
             )
         else:
             best_pi, best_cmax, iteration_history, cmax_history = simulated_annealing(
@@ -92,6 +95,9 @@ def run_compare_mode(
                 reheat_factor=sa_config.get("reheat_factor"),
                 stagnation_ms=sa_config.get("stagnation_ms"),
                 temp_floor_factor=sa_config.get("temp_floor_factor"),
+                iter_log_path=(
+                    os.path.join(out_dir, f"iter_log_{neigh_mode}.csv") if out_dir else None
+                ),
             )
 
         _pad_histories_and_store(

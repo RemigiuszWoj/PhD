@@ -1,0 +1,144 @@
+% Included via \input from paper.tex inside tex/
+% No preamble here.
+
+\section{Algorithms and Neighborhood Pseudocode}
+\subsection{Notation}
+Let $m$ = machines, $n$ = jobs, processing times matrix $P=(p_{k,j})$. A permutation is $\pi$. Makespan function $C_{\max}(\pi)$. A neighbor has delta $\Delta = C_{\max}(\pi')-C_{\max}(\pi)$.
+
+\subsection{Adjacent Swap Neighborhood}
+\begin{algorithm}[h]
+  \caption{GenerateAdjacent($\pi$)}
+  \begin{algorithmic}[1]
+    \State $N \gets \emptyset$
+    \For{$i = 1$ to $n-1$}
+      \State $\pi' \gets$ swap positions $i,i+1$ in $\pi$
+      \State $N \gets N \cup \{(\pi', (i,i+1))\}$
+    \EndFor
+    \State \Return $N$
+  \end{algorithmic}
+\end{algorithm}
+
+\subsection{Composite Disjoint-Adjacent ("Fibonahi")}
+\begin{algorithm}[h]
+  \caption{CompositeDisjointAdjacent($\pi$)}
+  \begin{algorithmic}[1]
+    \State $base \gets C_{\max}(\pi)$
+    \State $cand \gets []$  \Comment store $(i, \Delta_i)$ for swap $(i,i+1)$
+    \For{$i=1$ to $n-1$}
+      \State $\pi' \gets$ apply swap $(i,i+1)$ to copy of $\pi$
+      \State $\Delta_i \gets C_{\max}(\pi') - base$
+      \State append $(i, \Delta_i)$ to $cand$
+    \EndFor
+    \If{$cand$ empty} \Return $(\pi, base, \emptyset)$ \EndIf
+    \State // DP over path of candidate indices
+    \State Initialize memo for positions $1..|cand|$
+    \Function{Solve}{$pos$}
+      \If{$pos > |cand|$} \Return $(0, \emptyset)$ \EndIf
+      \If{memo[pos] defined} \Return memo[pos] \EndIf
+      \State $(i, \Delta_i) \gets cand[pos]$
+      \State $(skipVal, skipSet) \gets$ Solve($pos+1$)
+      \State $next \gets pos+1$
+      \While{$next \le |cand|$ and $cand[next].i = i+1$} $next \gets next+1$ \EndWhile
+      \State $(takeValRest, takeSetRest) \gets$ Solve($next$)
+      \State $takeVal \gets \Delta_i + takeValRest$
+      \If{$takeVal < skipVal$}
+        \State $best \gets (takeVal, \{i\} \cup takeSetRest)$
+      \Else
+        \State $best \gets (skipVal, skipSet)$
+      \EndIf
+      \State memo[pos] $\gets best$; \Return best
+    \EndFunction
+    \State $(bestVal, chosen) \gets$ Solve(1)
+    \If{$chosen = \emptyset$}
+      \State choose $i^* = \arg\min_i \Delta_i$; $chosen = \{i^*\}$
+    \EndIf
+    \State $\pi^{new} \gets \pi$
+    \For{each $i$ in ascending $chosen$}
+      \State apply swap $(i,i+1)$ in $\pi^{new}$
+    \EndFor
+    \State $c' \gets C_{\max}(\pi^{new})$
+    \State \Return $(\pi^{new}, c', chosen)$
+  \end{algorithmic}
+\end{algorithm}
+
+\paragraph{Note.} If all $\Delta_i \ge 0$, the move degenerates to a single index; diversification or early-exit can mitigate plateaus.
+
+\subsection{Dynasearch (High-Level Sketch)}
+\begin{algorithm}[h]
+  \caption{DynasearchRecursive($\pi$, depth)}
+  \begin{algorithmic}[1]
+    \If{$depth=0$} \Return $(\pi, C_{\max}(\pi))$ \EndIf
+    \State Decompose $\pi$ into independent segments (e.g., based on critical path)
+    \State $best \gets (\pi, C_{\max}(\pi))$
+    \For{each segment pattern}
+      \State Enumerate local transformations $\theta$ in pattern
+      \For{each $\theta$}
+        \State $\pi' \gets \theta(\pi)$
+        \State $(\pi'', c'') \gets$ DynasearchRecursive($\pi'$, depth-1)
+        \If{$c'' <$ best.cost} $best \gets (\pi'', c'')$ \EndIf
+      \EndFor
+    \EndFor
+    \State \Return $best$
+  \end{algorithmic}
+\end{algorithm}
+
+\subsection{Tabu Search}
+\begin{algorithm}[h]
+  \caption{TabuSearch($P, T_{limit}, \tau_{tabu}, mode$)}
+  \begin{algorithmic}[1]
+    \State Initialize $\pi$ (identity); $best \gets \pi$; $bestC \gets C_{\max}(\pi)$
+    \State Empty tabu map $Tabu$; iteration $k \gets 0$; record start time
+    \While{elapsed < $T_{limit}$}
+      \If{$mode =$ Adjacent}
+        \State Evaluate all adjacent neighbors, select best admissible (aspiration if better than $bestC$)
+      \ElsIf{$mode =$ Composite}
+        \State $(\pi', c', chosen) \gets$ CompositeDisjointAdjacent($\pi$)
+        \State Signature $sig \gets$ hash($chosen$)
+      \ElsIf{$mode =$ Dynasearch}
+        \State $(\pi', c', \_) \gets$ DynasearchRecursive($\pi$, depth)
+        \State $sig \gets$ hash($\pi'$)
+      \EndIf
+      \If{no admissible move} $k{+}{+}$; Continue \EndIf
+      \State $\pi \gets \pi'$; insert $sig$ into $Tabu$ with expiration $k + \tau_{tabu}$
+      \If{$c' < bestC$} $bestC \gets c'$; $best \gets \pi$; log improvement \EndIf
+      \State Log iteration ($k$, elapsed, $c'$, $bestC$, $\pi$)
+      \State $k \gets k+1$
+    \EndWhile
+    \State \Return $(best, bestC)$
+  \end{algorithmic}
+\end{algorithm}
+
+\subsection{Simulated Annealing with Reheating}
+\begin{algorithm}[h]
+  \caption{SimulatedAnnealing($P, T_{limit}, T_{init}, T_{final}, \alpha, r, \tau_{stagn}, mode$)}
+  \begin{algorithmic}[1]
+    \State $\pi$ identity; $c \gets C_{\max}(\pi)$; $best \gets \pi$; $bestC \gets c$
+    \State $T \gets T_{init}$; $T_{floor} = f_{floor} T_{final}$; $lastImp \gets 0$
+    \While{elapsed < $T_{limit}$}
+      \If{$mode=$ Adjacent}
+        \State Pick random index $i$; $\pi' =$ swap $(i,i+1)$; $c' = C_{\max}(\pi')$
+      \ElsIf{$mode=$ Composite}
+        \State $(\pi', c', chosen) =$ CompositeDisjointAdjacent($\pi$)
+      \ElsIf{$mode=$ Dynasearch}
+        \State $(\pi', c', \_) =$ DynasearchRecursive($\pi$, depth)
+      \EndIf
+      \State $\Delta = c' - c$
+      \If{$\Delta < 0$ OR $\exp(-\Delta/T) > U(0,1)$}
+        \State $\pi \gets \pi'$; $c \gets c'$; \If{$c < bestC$} $bestC \gets c$; $best \gets \pi$; $lastImp \gets elapsed$; log improvement \EndIf
+      \EndIf
+      \State $T \gets \max(T_{floor}, \alpha T)$
+      \If{$(elapsed - lastImp) \ge \tau_{stagn}$ AND $T < T_{init}$}
+        \State $T \gets \min(T_{init}, r T)$; $lastImp \gets elapsed$
+      \EndIf
+      \State Log iteration (elapsed, $c$, $bestC$, $T$, $\pi$)
+    \EndWhile
+    \State \Return $(best, bestC)$
+  \end{algorithmic}
+\end{algorithm}
+
+\subsection{Complexity Summary}
+Adjacent: $O(mn)$ per evaluated swap (but may evaluate all $n{-}1$ each TS iteration).
+Composite: $O(m n^2)$ due to $(n{-}1)$ makespan computations + $O(n)$ DP.
+Dynasearch: depends on recursion depth and pattern enumeration (superlinear; empirical tuning required).
+
+\paragraph{Future Improvements.} (i) Early exit when all $\Delta_i \ge 0$; (ii) randomized tie-breaking; (iii) multi-sampling composites; (iv) incremental makespan updates.

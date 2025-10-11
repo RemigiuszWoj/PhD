@@ -1,0 +1,148 @@
+% Main LNCS paper file
+\documentclass[runningheads]{llncs}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\hypersetup{colorlinks=true,linkcolor=blue!60!black,citecolor=blue!60!black,urlcolor=blue!60!black}
+
+\title{Hybrid Neighborhood Evaluation in Tabu Search and Simulated Annealing for the Permutation Flow Shop Problem}
+\titlerunning{Hybrid Neighborhoods for Flow Shop Optimization}
+
+\author{Remigiusz Wojewódzki\inst{1}}
+\authorrunning{R. Wojewódzki}
+\institute{Affiliation (To be completed) \\ \email{youremail@example.com}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We investigate the impact of three neighborhood definitions on the performance of two classical metaheuristics (Tabu Search and Simulated Annealing) for the permutation Flow Shop Scheduling Problem (FSP) under the makespan minimization objective. Besides the standard adjacent swap neighborhood, we study (i) a composite disjoint-adjacent swap construction obtained via a dynamic programming (DP) selection of a set of non-overlapping swaps minimizing the cumulative makespan delta, and (ii) a recursive dynasearch-inspired neighborhood enabling deeper local restructuring. We additionally introduce iteration-wise logging and optional temperature reheating (time-based stagnation triggers) to analyze convergence dynamics. Experiments on Taillard benchmark instances show that the composite (``fibonahi'') neighborhood accelerates early descent but tends to plateau once all single adjacent improvements vanish, while dynasearch continues to find deeper improvements at higher computational cost per iteration. We detail the trade-offs among exploration breadth, per-iteration computational overhead, and convergence stability. 
+\keywords{Flow shop scheduling \and Metaheuristics \and Tabu search \and Simulated annealing \and Composite neighborhood \and Dynasearch}
+\end{abstract}
+
+\section{Introduction}
+The permutation Flow Shop Scheduling Problem (FSP) seeks an ordering (permutation) of $n$ jobs processed on $m$ machines in identical order, minimizing the makespan $C_{\max}$. The problem is NP-hard for $m \ge 3$ and has motivated extensive research into neighborhood-based heuristic and metaheuristic methods \cite{ref_classic_fsp,ref_metaheuristics_survey}. 
+
+This paper revisits two standard metaheuristics---Tabu Search (TS) and Simulated Annealing (SA)---through the lens of \emph{hybrid neighborhood design}. Beyond the ubiquitous adjacent swap neighborhood, we implement and compare:
+\begin{itemize}
+  \item A composite disjoint-adjacent swap neighborhood (internally nicknamed \emph{fibonahi}) built via dynamic programming to select a set of non-overlapping improving (or minimally degrading) adjacent swaps.
+  \item A dynasearch-inspired recursive neighborhood allowing deeper structured permutations.
+\end{itemize}
+We empirically examine how these neighborhoods alter convergence speed, stagnation behavior, and final solution quality under identical time budgets.
+
+\paragraph{Contributions.}
+\begin{enumerate}
+  \item A unified experimental framework (with per-iteration logging) comparing three neighborhoods inside TS and SA under common timing constraints.
+  \item A DP-based composite adjacent neighborhood balancing local intensification and mild diversification.
+  \item A time-based reheating mechanism for SA (temperature floor plus stagnation-triggered multiplicative reheats).
+  \item An empirical analysis on Taillard instances highlighting (i) rapid early exploitation by the composite neighborhood, (ii) its susceptibility to plateau once all single-swap improvements disappear, and (iii) the complementary depth of the dynasearch neighborhood.
+\end{enumerate}
+
+\section{Problem Definition}
+Given processing time matrix $P = (p_{k,j})$ for machine $k=1,\dots,m$ and job $j=1,\dots,n$, a permutation $\pi$ defines the job order. Let $C_{k,j}$ be the completion time of job $j$ (in $\pi$-order) on machine $k$:
+\[
+C_{1,j} = C_{1,j-1} + p_{1,\pi(j)},\quad
+C_{k,1} = C_{k-1,1} + p_{k,\pi(1)},\quad
+C_{k,j} = \max(C_{k,j-1},\, C_{k-1,j}) + p_{k,\pi(j)}.
+\]
+Makespan $C_{\max} = C_{m,n}$ is minimized.
+
+\section{Neighborhood Structures}
+\subsection{Adjacent Swap (Baseline)}
+Each neighbor swaps positions $(i,i{+}1)$ for $i=1,\dots,n-1$. Its per-iteration evaluation cost is low, enabling many iterations but shallow local moves.
+
+\subsection{Composite Disjoint-Adjacent (``Fibonahi'')}
+Starting from $\pi$, we enumerate all single adjacent swaps, computing $\Delta_i = C_{\max}(\pi^{(i)}) - C_{\max}(\pi)$. A dynamic program selects a subset of non-overlapping indices minimizing total $\sum \Delta_i$. If no negative $\Delta_i$ exist, the current implementation either (i) chooses the least positive swap or (ii) (optionally) halts (variant under discussion). The resulting composite move may apply multiple disjoint swaps simultaneously, approximating a bounded multi-step local descent in one iteration.
+
+\paragraph{Complexity.} Enumerating $(n{-}1)$ swaps requires $(n{-}1)$ recomputations of $C_{\max}$ (each $O(mn)$), plus $O(n)$ DP. Overall per iteration $O(m n^2)$ versus $O(m n)$ for a single adjacent swap evaluation.
+
+\subsection{Dynasearch-Inspired Recursive Neighborhood}
+Dynasearch explores structured sequences of non-conflicting moves (e.g. path decompositions) at increased computational effort, often reaching permutations unreachable by a limited number of adjacent steps. We adopt a recursive variant (details omitted for brevity) that returns an improved permutation or confirms local optimality within its search envelope.
+
+\section{Metaheuristics}
+\subsection{Tabu Search (TS)}
+We maintain a tabu list keyed either by primitive moves (adjacent swap indices) or composite signatures (for fibonahi / dynasearch). A tenure $T_{\text{tabu}}$ forbids revisits unless an aspiration criterion ($C_{\max}$ improvement) holds. At each iteration the best admissible neighbor is selected. For composite neighborhoods, the candidate set effectively collapses to a single constructed move, reducing classical tabu diversification power.
+
+\subsection{Simulated Annealing (SA)}
+We use multiplicative cooling $T \leftarrow \alpha T$ with floor $T_{\text{floor}} = f_{\text{floor}} \cdot T_{\text{final}}$ and optional time-based reheating: if no improvement for $\tau_{\text{stagn}}$ milliseconds and $T < T_{\text{init}}$, then $T \leftarrow \min(T_{\text{init}}, r \cdot T)$. Acceptance probability standard:
+\[
+\Pr(\text{accept}) =
+\begin{cases}
+1 & \Delta < 0,\\
+\exp(-\Delta/T) & \text{otherwise}.
+\end{cases}
+\]
+
+\section{Implementation Notes}
+\begin{itemize}
+  \item Unified Python codebase with per-iteration CSV logs: iteration index, elapsed time (ms), current makespan, best makespan, permutation.
+  \item Composite neighborhood currently counts one iteration regardless of internal number of applied disjoint swaps (future work: normalize by component count).
+  \item Dynasearch recursion safeguarded by increased recursion limit and enlarged thread stack.
+\end{itemize}
+
+\section{Experimental Setup}
+\subsection{Benchmarks}
+Taillard instances \cite{ref_taillard} of varying $(n,m)$ (e.g., $n\in\{50,100,200,500\}$, $m\in\{10,20\}$). Each run constrained by a wall-clock time budget (e.g., 100 s). Seeds fixed for reproducibility.
+
+\subsection{Parameters}
+Illustrative (final values to be tuned):
+\begin{itemize}
+  \item Tabu tenure: $T_{\text{tabu}} \in \{7,10,15\}$.
+  \item SA: $T_{\text{init}}=1000$, $T_{\text{final}}=1$, $\alpha=0.95$, reheating factor $r \in \{1.5,2.0\}$, stagnation threshold $\tau_{\text{stagn}}$ (ms).
+\end{itemize}
+
+\subsection{Metrics}
+\begin{itemize}
+  \item Best $C_{\max}$ vs. time.
+  \item Convergence curves (multi-neighborhood overlay).
+  \item (Planned) Effective moves per second (normalized).
+  \item Plateau detection latency.
+\end{itemize}
+
+\section{Results and Discussion}
+\subsection{Early Descent}
+Composite neighborhood outperforms adjacent in early phase (steeper initial $C_{\max}$ drop) due to ability to chain non-overlapping improvements.
+
+\subsection{Plateau Formation}
+Once all single adjacent deltas become non-negative, composite move often degenerates to size 1; absent randomization, search exhibits deterministic micro-cycles, causing prolonged plateaus.
+
+\subsection{Depth vs. Cost}
+Dynasearch achieves further improvements after plateau at the expense of higher per-iteration time, showing a trade-off between iteration throughput and structural depth.
+
+\subsection{Reheating Effects (SA)}
+Time-triggered reheating occasionally enables escape from shallow plateaus for adjacent and composite neighborhoods; gains smaller with dynasearch (already deeper exploration).
+
+\section{Threats to Validity}
+\begin{itemize}
+  \item Limited parameter grid may bias conclusions on relative neighborhood efficacy.
+  \item Lack of normalization for ``effective elementary swaps'' skews iteration-based comparisons.
+  \item Absence of incremental makespan recomputation inflates composite iteration cost (optimizations pending).
+\end{itemize}
+
+\section{Conclusions and Future Work}
+We demonstrated that hybrid (composite) neighborhood design can accelerate early exploitation in TS and SA for FSP but risks early stagnation without diversification or multi-level move composition. Dynasearch remains a strong deep-improvement tool albeit costlier.
+
+\paragraph{Future directions.}
+(i) Incremental evaluation to reduce $O(m n^2)$ cost, (ii) adaptive switch between neighborhoods guided by stagnation detectors, (iii) probabilistic selection of multiple composite variants per iteration, (iv) normalization of iteration counts by elementary moves, (v) hybrid insert or block-shift neighborhoods, (vi) learning-based move scoring.
+
+\section{Algorithms and Neighborhood Pseudocode}
+% Pseudocode extracted to a separate file for clarity.
+\input{algorithms}
+
+\begin{thebibliography}{8}
+\bibitem{ref_classic_fsp}
+(Flow shop classic reference placeholder)
+
+\bibitem{ref_metaheuristics_survey}
+(Metaheuristics survey placeholder)
+
+\bibitem{ref_taillard}
+Taillard, E.: Benchmarks for basic scheduling problems. EJOR (1993)
+
+\end{thebibliography}
+\end{document}

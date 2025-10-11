@@ -108,11 +108,24 @@ def save_multi_convergence_plot(
     if colors is None:
         colors = {}
     for key, (times, cmax_values) in histories.items():
+        # Defensive copy to avoid mutating original history structures
+        times_local = list(times)
+        cmax_local = list(cmax_values)
+        # If we have a declared time_limit_ms and the last recorded timestamp is earlier,
+        # append a flat segment so that all curves visually reach the same horizon.
+        if time_limit_ms is not None and times_local:
+            if times_local[-1] < time_limit_ms:
+                times_local.append(time_limit_ms)
+                cmax_local.append(cmax_local[-1])
+        elif time_limit_ms is not None and not times_local:
+            # Edge case: empty history (should not happen) – synthesize a flat line
+            times_local = [0, time_limit_ms]
+            cmax_local = [0, 0]
         label = labels.get(key, key)
         color = colors.get(key, None)
         ax.plot(
-            times,
-            cmax_values,
+            times_local,
+            cmax_local,
             label=label,
             linewidth=2,
             marker="o",
@@ -121,10 +134,10 @@ def save_multi_convergence_plot(
             markeredgewidth=1.0,
             color=color,
         )
-        if times and cmax_values:
+        if times_local and cmax_local:
             ax.annotate(
-                f"{cmax_values[-1]}",
-                xy=(times[-1], cmax_values[-1]),
+                f"{cmax_local[-1]}",
+                xy=(times_local[-1], cmax_local[-1]),
                 xytext=(6, -10),
                 textcoords="offset points",
                 fontsize=9,

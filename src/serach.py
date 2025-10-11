@@ -17,13 +17,24 @@ def tabu_search(
     max_time_ms: int = 100,
     tabu_tenure: int = 10,
     neigh_mode: str = "adjacent",
+    iter_log_path: str | None = None,
 ):
-    """Perform basic tabu search for flow shop scheduling problem."""
+    """Perform basic tabu search for flow shop scheduling problem.
+
+    Parameters:
+        processing_times: matrix m x n
+        max_time_ms: czas działania algorytmu
+        tabu_tenure: długość karencji dla ruchu
+        neigh_mode: rodzaj sąsiedztwa
+        iter_log_path: jeśli podane, na końcu każdej iteracji zapisuje w pliku CSV:
+            iteration,elapsed_ms,current_cmax,best_cmax,permutation (lista liczb)
+    """
     n = len(processing_times[0])
     current_pi = list(range(n))
 
     best_pi = current_pi.copy()
     best_cmax = c_max(best_pi, processing_times)
+    current_cmax = best_cmax
 
     tabu_list = {}
 
@@ -35,6 +46,16 @@ def tabu_search(
     start_time = time.time()
     max_time_seconds = max_time_ms / 1000.0
     iteration = 0
+
+    # Przygotowanie pliku logu jeśli wymagane
+    log_file = None
+    if iter_log_path:
+        try:
+            log_file = open(iter_log_path, "w", encoding="utf-8")
+            log_file.write("iteration,elapsed_ms,current_cmax,best_cmax,permutation\n")
+        except Exception as e:
+            print(f"[tabu_search] Nie udało się otworzyć pliku logu {iter_log_path}: {e}")
+            log_file = None
 
     while time.time() - start_time < max_time_seconds:
         move_selected = None
@@ -72,11 +93,18 @@ def tabu_search(
             raise ValueError(f"Unknown neigh_mode={neigh_mode}")
 
         if pi_selected is None:
-            break  # no admissible move found
+            # Brak dopuszczalnego ruchu w tym kroku – pomijamy iterację (czas steruje stopem)
+            iteration += 1
+            continue
 
         # update current solution
         current_pi = pi_selected
-        tabu_list[move_selected] = iteration + tabu_tenure
+        current_cmax = cmax_selected
+        try:
+            tabu_list[move_selected] = iteration + tabu_tenure
+        except TypeError:
+            # zabezpieczenie gdyby tabu_tenure było None
+            tabu_list[move_selected] = iteration + 10
 
         # update best solution
         if cmax_selected < best_cmax:
@@ -86,7 +114,26 @@ def tabu_search(
             elapsed_ms = int((time.time() - start_time) * 1000)
             iteration_history.append(elapsed_ms)
 
+        # Log iteracji
+        if log_file:
+            try:
+                elapsed_ms_full = int((time.time() - start_time) * 1000)
+                permutation_str = " ".join(map(str, current_pi))
+                log_file.write(
+                    f"{iteration},{elapsed_ms_full},{current_cmax},"  # part1
+                    f'{best_cmax},"{permutation_str}"\n'  # part2
+                )
+            except Exception:
+                pass
+
         iteration += 1
+
+    if log_file:
+        try:
+            log_file.flush()
+            log_file.close()
+        except Exception:
+            pass
 
     return best_pi, best_cmax, iteration_history, cmax_history
 
@@ -98,11 +145,18 @@ def simulated_annealing(
     alpha: float = 0.95,
     time_limit_ms: int = 100,
     neigh_mode: str = "adjacent",
-    reheat_factor: float | None = None,
-    stagnation_ms: int | None = None,
-    temp_floor_factor: float | None = None,
+    # Time-based reheating parameters (reverted from iteration-based on 2025-10-05):
+    reheat_factor: float | None = None,  # T *= factor (>1) on stagnation
+    stagnation_ms: int | None = None,  # ms without improvement to trigger reheat
+    temp_floor_factor: float | None = None,  # floor = final_temp * factor (>=1)
+    iter_log_path: str | None = None,
 ):
-    """Simulated Annealing for Flow Shop starting from initial_pi."""
+    """Simulated Annealing dla problemu flow shop.
+
+    Logowanie (jeśli podano iter_log_path) w formacie CSV:
+        iteration,elapsed_ms,current_cmax,best_cmax,permutation
+    Dla trybu adjacent jedna iteracja = jedno przetworzenie sąsiada (wewnątrz pętli for).
+    """
     n = len(processing_times[0])
     current_pi = list(range(n))
     current_cmax = c_max(current_pi, processing_times)
@@ -119,14 +173,24 @@ def simulated_annealing(
     time_limit = time_limit_ms / 1000
     iteration = 0
 
-    # Reheat / stagnation tracking placeholders (future config-driven)
+    # Reheat / stagnation (time-based) tracking
     last_improve_time = start_time
-    stagnation_reheat_factor = reheat_factor if (reheat_factor and reheat_factor > 1.0) else None
     stagnation_ms_threshold = stagnation_ms if (stagnation_ms and stagnation_ms > 0) else None
+    reheat_factor_norm = reheat_factor if (reheat_factor and reheat_factor > 1.0) else None
     temp_floor_factor_norm = (
         temp_floor_factor if (temp_floor_factor and temp_floor_factor >= 1.0) else 1.0
     )
     temp_floor = final_temp * temp_floor_factor_norm
+
+    # Przygotowanie pliku logu jeśli wymagane
+    log_file = None
+    if iter_log_path:
+        try:
+            log_file = open(iter_log_path, "w", encoding="utf-8")
+            log_file.write("iteration,elapsed_ms,current_cmax,best_cmax,permutation\n")
+        except Exception as e:
+            print(f"[simulated_annealing] Nie udało się otworzyć pliku logu {iter_log_path}: {e}")
+            log_file = None
 
     while (time.time() - start_time) < time_limit:
         # Okresowe logowanie temperatury (co ~5s) bez nadmiaru spamu
@@ -152,6 +216,17 @@ def simulated_annealing(
                     iteration_history.append(elapsed_ms)
                     last_improve_time = time.time()
 
+                # Log po każdej jednostkowej iteracji (po potencjalnej akceptacji / poprawie)
+                if log_file:
+                    try:
+                        elapsed_ms_full = int((time.time() - start_time) * 1000)
+                        permutation_str = " ".join(map(str, current_pi))
+                        log_file.write(
+                            f"{iteration},{elapsed_ms_full},{current_cmax},"
+                            f'{best_cmax},"{permutation_str}"\n'
+                        )
+                    except Exception:
+                        pass
                 iteration += 1
 
         elif neigh_mode == "fibonahi_neighborhood":
@@ -170,6 +245,16 @@ def simulated_annealing(
                 iteration_history.append(elapsed_ms)
                 last_improve_time = time.time()
 
+            if log_file:
+                try:
+                    elapsed_ms_full = int((time.time() - start_time) * 1000)
+                    permutation_str = " ".join(map(str, current_pi))
+                    log_file.write(
+                        f"{iteration},{elapsed_ms_full},{current_cmax},"
+                        f'{best_cmax},"{permutation_str}"\n'
+                    )
+                except Exception:
+                    pass
             iteration += 1
 
         elif neigh_mode == "dynasearch_neighborhood":
@@ -188,6 +273,16 @@ def simulated_annealing(
                 iteration_history.append(elapsed_ms)
                 last_improve_time = time.time()
 
+            if log_file:
+                try:
+                    elapsed_ms_full = int((time.time() - start_time) * 1000)
+                    permutation_str = " ".join(map(str, current_pi))
+                    log_file.write(
+                        f"{iteration},{elapsed_ms_full},{current_cmax},"
+                        f'{best_cmax},"{permutation_str}"\n'
+                    )
+                except Exception:
+                    pass
             iteration += 1
 
         else:
@@ -199,16 +294,24 @@ def simulated_annealing(
             # Keep a floor temperature to continue probabilistic acceptance
             T = temp_floor
 
-        # Optional (future): reheating if no improvement for threshold
-        if stagnation_ms_threshold is not None and stagnation_reheat_factor is not None:
-            now = time.time()
-            if (now - last_improve_time) * 1000 >= stagnation_ms_threshold:
-                old_T = T
-                T = min(T * stagnation_reheat_factor, initial_temp)
-                print(
-                    f"[SA][reheat] stagnation {(now - last_improve_time)*1000:.0f} ms | "
-                    f"T: {old_T:.2f} -> {T:.2f} (factor={stagnation_reheat_factor})"
-                )
-                last_improve_time = now  # reset stagnation window
+        # Time-based reheating: if no improvement for stagnation_ms_threshold
+        if stagnation_ms_threshold is not None:
+            since_improve_ms = (time.time() - last_improve_time) * 1000.0
+            if since_improve_ms >= stagnation_ms_threshold and reheat_factor_norm is not None:
+                if T < initial_temp:
+                    old_T = T
+                    T = min(initial_temp, T * reheat_factor_norm)
+                    print(
+                        f"[SA][reheat-time] stagnation {since_improve_ms:.0f}ms | "
+                        f"T: {old_T:.2f} -> {T:.2f} (factor={reheat_factor_norm})"
+                    )
+                last_improve_time = time.time()  # reset stagnation clock after a reheat attempt
+
+    if log_file:
+        try:
+            log_file.flush()
+            log_file.close()
+        except Exception:
+            pass
 
     return best_pi, best_cmax, iteration_history, cmax_history

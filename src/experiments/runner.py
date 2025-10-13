@@ -130,12 +130,15 @@ class ExperimentRunner:
 
     def _persist_result(self, result: RunResult) -> None:
         cfg = result.config
-        filename = (
-            f"algo={cfg.algorithm}_neigh={cfg.neighborhood}_file={Path(cfg.instance_file).stem}"
-            f"_instnum={cfg.instance_number}_n{result.instance_jobs}_m{result.instance_machines}"
-            f"_tl={cfg.time_limit_ms}ms_seed={cfg.seed}.json"
+        # Create dedicated subdirectory per run for clearer isolation.
+        run_dir_name = (
+            f"algo={cfg.algorithm}__neigh={cfg.neighborhood}__file={Path(cfg.instance_file).stem}"
+            f"__inst={cfg.instance_number}__n{result.instance_jobs}__m{result.instance_machines}"
+            f"__tl={cfg.time_limit_ms}ms__seed={cfg.seed}"
         )
-        path = self.timestamp_dir / filename
+        run_dir = self.timestamp_dir / run_dir_name
+        run_dir.mkdir(parents=True, exist_ok=True)
+        path = run_dir / "result.json"
         with open(path, "w", encoding="utf-8") as f:
             json.dump(result.to_dict(), f, indent=2)
         print(f"[Experiment] Saved {path}")

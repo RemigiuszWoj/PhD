@@ -7,8 +7,25 @@ from typing import Any, Dict, List
 
 
 def load_results_dir(timestamp_dir: Path) -> List[Dict[str, Any]]:
+    """Recursively load all JSON result files under a timestamp directory.
+
+    Supports new per-run subdirectory layout where each run is stored in its own folder
+    containing result.json (but we also accept legacy flat *.json files).
+    """
     results: List[Dict[str, Any]] = []
+    # First, legacy flat files
     for file in timestamp_dir.glob("*.json"):
+        try:
+            with open(file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                results.append(data)
+        except Exception as e:
+            print(f"[Aggregate] Failed to load {file}: {e}")
+    # Recursive search for per-run result.json
+    for file in timestamp_dir.rglob("result.json"):
+        # Avoid double-loading if flat style also named result.json at root (unlikely)
+        if file.parent == timestamp_dir:
+            continue
         try:
             with open(file, "r", encoding="utf-8") as f:
                 data = json.load(f)

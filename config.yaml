@@ -15,10 +15,10 @@ general:
   # input_file: "data/tai100_20.txt"
 
 # Od tad lepsiejsze
-  # input_file: "data/tai200_10.txt"
+  input_file: "data/tai200_10.txt"
   # input_file: "data/tai200_20.txt"
 
-  input_file: "data/tai500_20.txt"
+  # input_file: "data/tai500_20.txt"
   instance_number: 2
   # Choose exactly one compare mode:
   # - "tabu_search_compare"
@@ -33,7 +33,7 @@ visualization:
 
 algorithm_common:
   # Time limit can be specified in seconds (recommended) or milliseconds.
-  time_limit_s: 10
+  time_limit_s: 1
 
 tabu_search:
   tabu_tenure: 10
@@ -62,34 +62,25 @@ generator:
 
 # Experiment batch mode (new)
 experiment:
-  enabled: true   
-  tabu_tenure: 10       # when true: run batch experiments (all instances); false -> compare mode
-  # Always a list of files (can be single-element). Here: ALL benchmark files in /data
-  # instance_files: [
-  #   "data/tai20_5.txt", "data/tai20_10.txt", "data/tai20_20.txt",
-  #   "data/tai50_5.txt", "data/tai50_10.txt", "data/tai50_20.txt",
-  #   "data/tai100_5.txt", "data/tai100_10.txt", "data/tai100_20.txt",
-  #   "data/tai200_10.txt", "data/tai200_20.txt",
-  #   "data/tai500_20.txt"
-  # ]
-
-  # repeats: 1             # number of RNG seeds per (algorithm, neighborhood, instance, time_limit)
-  # List of time limits (seconds). Use only this list (no single value fallback!).
-  # Adjust as needed; keep ordered ascending.
-  # time_limits_s: [0.1, 0.5, 1, 2, 5, 10]
-
-
-  # Optional Tabu override (applies when algorithm == tabu in runs)
-
-
-
+  enabled: false  
+  tabu_tenure: 10   
+      # when true: run batch experiments (all instances); false -> compare mode
   instance_files: [
-    # "data/tai20_5.txt", "data/tai20_10.txt", "data/tai20_20.txt",
-    # "data/tai50_5.txt", "data/tai50_10.txt", "data/tai50_20.txt",
-    # "data/tai100_5.txt", "data/tai100_10.txt", "data/tai100_20.txt",
+    "data/tai20_5.txt", "data/tai20_10.txt", "data/tai20_20.txt",
+    "data/tai50_5.txt", "data/tai50_10.txt", "data/tai50_20.txt",
+    "data/tai100_5.txt", "data/tai100_10.txt", "data/tai100_20.txt",
     "data/tai200_10.txt", "data/tai200_20.txt",
-    # "data/tai500_20.txt"
+    "data/tai500_20.txt"
   ]
+  repeats: 1             # number of RNG seeds per (algorithm, neighborhood, instance, time_limit)
+  time_limits_s: [0.1, 0.5, 1, 2, 5, 10]
 
-  repeats: 10             # number of RNG seeds per (algorithm, neighborhood, instance, time_limit)
-  time_limits_s: [0.1]
+  # instance_files: [
+  #   # "data/tai20_5.txt", "data/tai20_10.txt", "data/tai20_20.txt",
+  #   # "data/tai50_5.txt", "data/tai50_10.txt", "data/tai50_20.txt",
+  #   # "data/tai100_5.txt", "data/tai100_10.txt", "data/tai100_20.txt",
+  #   "data/tai200_10.txt", "data/tai200_20.txt",
+  #   # "data/tai500_20.txt"
+  # ]
+  # repeats: 10             # number of RNG seeds per (algorithm, neighborhood, instance, time_limit)
+  # time_limits_s: [0.1]

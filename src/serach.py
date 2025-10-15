@@ -93,9 +93,19 @@ def tabu_search(
             raise ValueError(f"Unknown neigh_mode={neigh_mode}")
 
         if pi_selected is None:
-            # Brak dopuszczalnego ruchu w tym kroku – pomijamy iterację (czas steruje stopem)
-            iteration += 1
-            continue
+            # Brak dopuszczalnego ruchu (wszystko tabu bez aspiracji). Wymuszamy losowy ruch
+            # aby zapobiec całkowitemu zablokowaniu (prosty mechanizm dywersyfikacji).
+            if neigh_mode == "adjacent":
+                i = random.randint(0, n - 2)
+                # losowy swap sąsiadów
+                neighbor = swap_jobs(current_pi, i, i + 1)
+                pi_selected = neighbor
+                cmax_selected = c_max(neighbor, processing_times)
+                move_selected = (i, i + 1)
+            else:
+                # Dla innych trybów praktycznie zawsze mamy ruch, ale na wszelki wypadek
+                iteration += 1
+                continue
 
         # update current solution
         current_pi = pi_selected

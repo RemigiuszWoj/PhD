@@ -191,18 +191,29 @@ def _ensure_dir(path: str):
 
 
 def clear_old_plots(results_folder: str = "results"):
-    """Remove old plot files from the specified results directory."""
+    """Usuń stare pliki wykresów w podanym katalogu.
+
+    Wzorce czyszczone:
+      - gantt_chart_*.png
+      - convergence_plot_*.png
+      - multi_convergence_plot_*.png
+      - multi_convergence*.png (aby objąć plik bez sufiksu _plot_ używany w compare mode)
+    """
     results_dir = results_folder
-    if os.path.exists(results_dir):
-        # Remove old gantt charts
-        for file in glob.glob(os.path.join(results_dir, "gantt_chart_*.png")):
-            os.remove(file)
-        # Remove old convergence plots
-        for file in glob.glob(os.path.join(results_dir, "convergence_plot_*.png")):
-            os.remove(file)
-        # Remove old multi convergence plots
-        for file in glob.glob(os.path.join(results_dir, "multi_convergence_plot_*.png")):
-            os.remove(file)
+    if not os.path.exists(results_dir):
+        return
+    patterns = [
+        "gantt_chart_*.png",
+        "convergence_plot_*.png",
+        "multi_convergence_plot_*.png",
+        "multi_convergence*.png",
+    ]
+    for pat in patterns:
+        for file in glob.glob(os.path.join(results_dir, pat)):
+            try:
+                os.remove(file)
+            except Exception:
+                pass
 
 
 def calculate_schedule(pi: List[int], processing_times: List[List[int]]):

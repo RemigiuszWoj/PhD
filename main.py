@@ -64,7 +64,10 @@ def run_compare_mode(
     out_dir: str = None,
     results_folder: str = "results",
 ):
+    # Czyść katalog bazowy (historyczne zbiorcze wykresy) oraz katalog konkretnego porównania.
     clear_old_plots(results_folder)
+    if out_dir:
+        clear_old_plots(out_dir)
     results = {}
     best_pis = {}
     cmax_summary = {}

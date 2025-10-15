@@ -15,8 +15,8 @@ general:
   # input_file: "data/tai100_20.txt"
 
 # Od tad lepsiejsze
-  input_file: "data/tai200_10.txt"
-  # input_file: "data/tai200_20.txt"
+  # input_file: "data/tai200_10.txt"
+  input_file: "data/tai200_20.txt"
 
   # input_file: "data/tai500_20.txt"
   instance_number: 2
@@ -33,7 +33,7 @@ visualization:
 
 algorithm_common:
   # Time limit can be specified in seconds (recommended) or milliseconds.
-  time_limit_s: 1
+  time_limit_s: 100
 
 tabu_search:
   tabu_tenure: 10

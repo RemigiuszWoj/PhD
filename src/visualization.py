@@ -114,16 +114,37 @@ def save_multi_convergence_plot(
         # Defensive copy to avoid mutating original history structures
         times_local = list(times)
         cmax_local = list(cmax_values)
+        # Normalize: ensure lists have same length, are sorted, and start at time 0.
+        # If the very first timestamp is not 0, prepend the initial best-so-far value at t=0
+        try:
+            if times_local and cmax_local:
+                # pair and sort by time to be safe
+                paired = sorted(zip(times_local, cmax_local), key=lambda x: x[0])
+                times_local, cmax_local = zip(*paired)
+                times_local = list(times_local)
+                cmax_local = list(cmax_local)
+                if times_local[0] != 0:
+                    times_local.insert(0, 0)
+                    cmax_local.insert(0, cmax_local[0])
+            elif times_local and not cmax_local:
+                # defensive: if somehow cmax missing, synthesize flat zeros
+                cmax_local = [0 for _ in times_local]
+            elif cmax_local and not times_local:
+                # if times missing but cmax present, create a starting zero time
+                times_local = [0 + i for i in range(len(cmax_local))]
+        except Exception:
+            # fallback: leave as-is
+            times_local = list(times)
+            cmax_local = list(cmax_values)
         # If we have a declared time_limit_ms and the last recorded timestamp is earlier,
         # append a flat segment so that all curves visually reach the same horizon.
         if time_limit_ms is not None and times_local:
             if times_local[-1] < time_limit_ms:
                 times_local.append(time_limit_ms)
                 cmax_local.append(cmax_local[-1])
-        elif time_limit_ms is not None and not times_local:
-            # Edge case: empty history (should not happen) – synthesize a flat line
-            times_local = [0, time_limit_ms]
-            cmax_local = [0, 0]
+        # If times_local is empty we skip plotting this series (no data)
+        if not times_local or not cmax_local:
+            continue
         label = labels.get(key, key)
         color = colors.get(key, None)
         ax.plot(
@@ -252,9 +273,29 @@ def save_convergence_plot_to(iterations: List[int], cmax_values: List[int], file
     """Save convergence plot to a specific filepath."""
     fig, ax = plt.subplots(figsize=(10, 6))
 
+    # Defensive normalization: ensure both lists start at t=0 and are sorted
+    iter_local = list(iterations or [])
+    c_local = list(cmax_values or [])
+    try:
+        if iter_local and c_local:
+            paired = sorted(zip(iter_local, c_local), key=lambda x: x[0])
+            iter_local, c_local = zip(*paired)
+            iter_local = list(iter_local)
+            c_local = list(c_local)
+            if iter_local[0] != 0:
+                iter_local.insert(0, 0)
+                c_local.insert(0, c_local[0])
+        elif c_local and not iter_local:
+            iter_local = [0 + i for i in range(len(c_local))]
+        elif iter_local and not c_local:
+            c_local = [0 for _ in iter_local]
+    except Exception:
+        iter_local = list(iterations or [])
+        c_local = list(cmax_values or [])
+
     ax.plot(
-        iterations,
-        cmax_values,
+        iter_local,
+        c_local,
         "b-o",
         linewidth=2,
         markersize=6,

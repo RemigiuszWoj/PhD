@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterable, List, Sequence
 
+from src import visualization as viz
 from src.parser import parser
 from src.serach import simulated_annealing, tabu_search  # TODO: rename serach -> search later
 
@@ -91,6 +92,11 @@ class ExperimentRunner:
             result = self._run_single(cfg)
             results.append(result)
             self._persist_result(result)
+        # After batch, attempt to create multi-convergence plots
+        try:
+            viz.build_algorithm_multi_convergence_plots(self.timestamp_dir)
+        except Exception as e:
+            print(f"[Experiment] Failed to build multi-convergence plots: {e}")
         return results
 
     def _run_single(self, cfg: RunConfig) -> RunResult:
@@ -142,6 +148,29 @@ class ExperimentRunner:
         with open(path, "w", encoding="utf-8") as f:
             json.dump(result.to_dict(), f, indent=2)
         print(f"[Experiment] Saved {path}")
+        # Also save a flat copy at timestamp root so visualization utilities
+        # that look for <timestamp>/*.json can find per-run results.
+        flat_name = (
+            f"result__algo={cfg.algorithm}__neigh={cfg.neighborhood}"
+            f"__file={Path(cfg.instance_file).stem}__inst={cfg.instance_number}"
+            f"__tl={cfg.time_limit_ms}ms__seed={cfg.seed}.json"
+        )
+        flat_path = self.timestamp_dir / flat_name
+        try:
+            with open(flat_path, "w", encoding="utf-8") as f:
+                json.dump(result.to_dict(), f, indent=2)
+        except Exception:
+            pass
+
+        # Generate per-run convergence plot
+        try:
+            times = result.time_history_ms or []
+            c_hist = result.cmax_history or []
+            if times and c_hist:
+                conv_path = run_dir / "convergence.png"
+                viz.save_convergence_plot_to(times, c_hist, str(conv_path))
+        except Exception as e:
+            print(f"[Experiment] Failed to create convergence plot for {path}: {e}")
 
     # --- private algorithm implementations used via dispatch ---
     def _run_tabu(self, processing_times, cfg: RunConfig):

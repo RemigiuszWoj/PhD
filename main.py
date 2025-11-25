@@ -88,6 +88,7 @@ def run_compare_mode(
         "adjacent",
         "fibonahi_neighborhood",
         "dynasearch_neighborhood",
+        "motzkin_neighborhood",
     ]:
         if algorithm == "tabu_search_compare":
             best_pi, best_cmax, iteration_history, cmax_history = tabu_search(
@@ -143,6 +144,7 @@ def run_compare_mode(
         "adjacent",
         "fibonahi_neighborhood",
         "dynasearch_neighborhood",
+        "motzkin_neighborhood",
     ]:
         # Save gantt into neighborhood-specific file under out_dir if provided
         if out_dir:
@@ -158,6 +160,7 @@ def run_compare_mode(
         "adjacent",
         "fibonahi_neighborhood",
         "dynasearch_neighborhood",
+        "motzkin_neighborhood",
     ]:
         print(f"Final cmax for {labels[neigh_mode]}: {cmax_summary[neigh_mode]}")
 
@@ -257,22 +260,26 @@ def main() -> None:
             "adjacent": "Tabu: adjacent",
             "fibonahi_neighborhood": "Tabu: fibonahi_neigh",
             "dynasearch_neighborhood": "Tabu: dynasearch",
+            "motzkin_neighborhood": "Tabu: motzkin",
         }
         colors = {
             "adjacent": "#00FFFF",  # neon cyan
             "fibonahi_neighborhood": "#FF00CC",  # neon magenta (kept)
             "dynasearch_neighborhood": "#7CFF00",  # neon lime
+            "motzkin_neighborhood": "#FF9900",  # orange (high complexity warning)
         }
     elif algorithm == "simulated_annealing_compare":
         labels = {
             "adjacent": "SA: adjacent",
             "fibonahi_neighborhood": "SA: fibonahi_neigh",
             "dynasearch_neighborhood": "SA: dynasearch",
+            "motzkin_neighborhood": "SA: motzkin",
         }
         colors = {
             "adjacent": "#00FFFF",  # neon cyan
             "fibonahi_neighborhood": "#FF00CC",  # neon magenta (kept)
             "dynasearch_neighborhood": "#7CFF00",  # neon lime
+            "motzkin_neighborhood": "#FF9900",  # orange
         }
     else:
         raise ValueError(

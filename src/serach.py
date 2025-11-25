@@ -4,6 +4,7 @@ import time
 from typing import List
 
 from src.dynasearch import dynasearch_full
+from src.motzkin import motzkin_neighborhood_full
 from src.neighbors import (
     fibonahi_neighborhood,
     generate_neighbors_adjacent,
@@ -86,6 +87,22 @@ def tabu_search(
             # Zastąpiono wersję naiwną pełną implementacją dynasearch
             new_pi, new_c, _ = dynasearch_full(current_pi, processing_times)
             move_selected = tuple(new_pi)  # placeholder
+            pi_selected = new_pi
+            cmax_selected = new_c
+
+        elif neigh_mode == "motzkin_neighborhood":
+            if n > 150:
+                # Ostrzeżenie: pełna enumeracja O(m*n^3) może być kosztowna.
+                print(
+                    f"[tabu_search][motzkin] Warning: n={n} may be slow; "
+                    "consider lower time limit."
+                )
+            new_pi, new_c, selected_pairs = motzkin_neighborhood_full(
+                current_pi,
+                processing_times,
+            )
+            # Ruch w tabu: krotka wybranych par (stabilniejsze niż cała permutacja)
+            move_selected = tuple(selected_pairs) if selected_pairs else tuple(new_pi)
             pi_selected = new_pi
             cmax_selected = new_c
 
@@ -269,6 +286,42 @@ def simulated_annealing(
 
         elif neigh_mode == "dynasearch_neighborhood":
             neighbor, neighbor_cmax, _ = dynasearch_full(current_pi, processing_times)
+            delta = neighbor_cmax - current_cmax
+
+            if delta < 0 or random.random() < math.exp(-delta / T):
+                current_pi = neighbor
+                current_cmax = neighbor_cmax
+
+            if current_cmax < best_cmax:
+                best_cmax = current_cmax
+                best_pi = current_pi.copy()
+                cmax_history.append(best_cmax)
+                elapsed_ms = int((time.time() - start_time) * 1000)
+                iteration_history.append(elapsed_ms)
+                last_improve_time = time.time()
+
+            if log_file:
+                try:
+                    elapsed_ms_full = int((time.time() - start_time) * 1000)
+                    permutation_str = " ".join(map(str, current_pi))
+                    log_file.write(
+                        f"{iteration},{elapsed_ms_full},{current_cmax},"
+                        f'{best_cmax},"{permutation_str}"\n'
+                    )
+                except Exception:
+                    pass
+            iteration += 1
+
+        elif neigh_mode == "motzkin_neighborhood":
+            if n > 150:
+                print(
+                    f"[simulated_annealing][motzkin] Warning: n={n} may be slow; "
+                    "adjust time limit."
+                )
+            neighbor, neighbor_cmax, selected_pairs = motzkin_neighborhood_full(
+                current_pi,
+                processing_times,
+            )
             delta = neighbor_cmax - current_cmax
 
             if delta < 0 or random.random() < math.exp(-delta / T):

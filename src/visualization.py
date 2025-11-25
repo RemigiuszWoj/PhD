@@ -386,11 +386,17 @@ def build_algorithm_multi_convergence_plots(timestamp_dir: str | Path) -> List[P
     for alg, inst, tl, neigh, seed in index.keys():
         seeds_per[(alg, inst, tl, neigh)].append(seed)
 
-    neigh_order = ["adjacent", "fibonahi_neighborhood", "dynasearch_neighborhood"]
+    neigh_order = [
+        "adjacent",
+        "fibonahi_neighborhood",
+        "dynasearch_neighborhood",
+        "motzkin_neighborhood",
+    ]
     base_colors = {
         "adjacent": "#00FFFF",
         "fibonahi_neighborhood": "#FF00CC",
         "dynasearch_neighborhood": "#7CFF00",
+        "motzkin_neighborhood": "#FF9900",
     }
     group_keys = sorted({(k[0], k[1], k[2]) for k in index.keys()})
     outputs: List[Path] = []

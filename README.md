@@ -313,6 +313,21 @@ python -m src.main --algo benchmark --benchmark-sample 10 --runs 40 \
 	--instances-dir data/JSPLIB/instances --benchmark-dir research
 ```
 
+## Motzkin Neighborhood (Composite Non-Crossing Swaps)
+
+New high-complexity neighborhood `motzkin_neighborhood` selects a set of endpoint swaps (pairs `(i,j)`) under constraints:
+
+* No crossing arcs: pattern `i1 < i2 < j1 < j2` forbidden.
+* Strict nesting allowed: `i1 < i2 < j2 < j1` permitted.
+* No endpoint reuse across selected pairs.
+
+Algorithm enumerates all endpoint swaps and evaluates their individual `ΔCmax` using prefix boundaries, then applies an `O(n^3)` dynamic program to choose the best admissible (possibly nested) set. Complexity roughly `O(m * n^3)` (m machines, n jobs). For large `n (>150)` a warning is printed; consider lowering the time limit or using a lighter neighborhood.
+
+Fallback: if no improving composite move exists and `force_move_if_none=True` internally, it applies the best single endpoint swap.
+
+Usage in comparison mode is automatic after integration; it appears in plots alongside existing neighborhoods. Color code: orange `#FF9900`.
+
+
 ## Development Convenience Script
 
 Pełny lokalny zestaw kontroli (format, lint, typy, testy) jednym poleceniem:

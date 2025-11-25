@@ -15,11 +15,11 @@ general:
   # input_file: "data/tai100_20.txt"
 
 # Od tad lepsiejsze
-  # input_file: "data/tai200_10.txt"
+  input_file: "data/tai200_10.txt"
   # input_file: "data/tai200_20.txt"
 
-  input_file: "data/tai500_20.txt"
-  instance_number: 2
+  # input_file: "data/tai500_20.txt"
+  instance_number: 0
   # Choose exactly one compare mode:
   # - "tabu_search_compare"
   # - "simulated_annealing_compare"
@@ -33,7 +33,7 @@ visualization:
 
 algorithm_common:
   # Time limit can be specified in seconds (recommended) or milliseconds.
-  time_limit_s: 100
+  time_limit_s: 10000
 
 tabu_search:
   tabu_tenure: 10

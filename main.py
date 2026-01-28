@@ -87,9 +87,10 @@ def run_compare_mode(
     for neigh_mode in [
         "adjacent",
         "quantum_adjacent",
-        "fibonahi_neighborhood",
-        "dynasearch_neighborhood",
-        "motzkin_neighborhood",
+        "quantum_fibonahi",
+        "fibonahi",
+        "dynasearch",
+        "motzkin",
     ]:
         if algorithm == "tabu_search_compare":
             best_pi, best_cmax, iteration_history, cmax_history = tabu_search(
@@ -148,9 +149,10 @@ def run_compare_mode(
     for neigh_mode in [
         "adjacent",
         "quantum_adjacent",
-        "fibonahi_neighborhood",
-        "dynasearch_neighborhood",
-        "motzkin_neighborhood",
+        "quantum_fibonahi",
+        "fibonahi",
+        "dynasearch",
+        "motzkin",
     ]:
         # Save gantt into neighborhood-specific file under out_dir if provided
         if out_dir:
@@ -165,9 +167,10 @@ def run_compare_mode(
     for neigh_mode in [
         "adjacent",
         "quantum_adjacent",
-        "fibonahi_neighborhood",
-        "dynasearch_neighborhood",
-        "motzkin_neighborhood",
+        "quantum_fibonahi",
+        "fibonahi",
+        "dynasearch",
+        "motzkin",
     ]:
         print(f"Final cmax for {labels[neigh_mode]}: {cmax_summary[neigh_mode]}")
 
@@ -268,32 +271,36 @@ def main() -> None:
     if algorithm == "tabu_search_compare":
         labels = {
             "adjacent": "Tabu: adjacent",
-            "quantum_adjacent": "Tabu: quantum_adj",
-            "fibonahi_neighborhood": "Tabu: fibonahi_neigh",
-            "dynasearch_neighborhood": "Tabu: dynasearch",
-            "motzkin_neighborhood": "Tabu: motzkin",
+            "quantum_adjacent": "Tabu: quantum_adjacent",
+            "quantum_fibonahi": "Tabu: quantum_fibonahi",
+            "fibonahi": "Tabu: fibonahi",
+            "dynasearch": "Tabu: dynasearch",
+            "motzkin": "Tabu: motzkin",
         }
         colors = {
             "adjacent": "#00FFFF",  # neon cyan
             "quantum_adjacent": "#FF0066",  # neon pink (quantum!)
-            "fibonahi_neighborhood": "#FF00CC",  # neon magenta (kept)
-            "dynasearch_neighborhood": "#7CFF00",  # neon lime
-            "motzkin_neighborhood": "#FF9900",  # orange (high complexity warning)
+            "quantum_fibonahi": "#9900FF",  # neon purple (quantum fibonahi!)
+            "fibonahi": "#FF00CC",  # neon magenta
+            "dynasearch": "#7CFF00",  # neon lime
+            "motzkin": "#FF9900",  # orange (high complexity warning)
         }
     elif algorithm == "simulated_annealing_compare":
         labels = {
             "adjacent": "SA: adjacent",
-            "quantum_adjacent": "SA: quantum_adj",
-            "fibonahi_neighborhood": "SA: fibonahi_neigh",
-            "dynasearch_neighborhood": "SA: dynasearch",
-            "motzkin_neighborhood": "SA: motzkin",
+            "quantum_adjacent": "SA: quantum_adjacent",
+            "quantum_fibonahi": "SA: quantum_fibonahi",
+            "fibonahi": "SA: fibonahi",
+            "dynasearch": "SA: dynasearch",
+            "motzkin": "SA: motzkin",
         }
         colors = {
             "adjacent": "#00FFFF",  # neon cyan
             "quantum_adjacent": "#FF0066",  # neon pink (quantum!)
-            "fibonahi_neighborhood": "#FF00CC",  # neon magenta (kept)
-            "dynasearch_neighborhood": "#7CFF00",  # neon lime
-            "motzkin_neighborhood": "#FF9900",  # orange
+            "quantum_fibonahi": "#9900FF",  # neon purple (quantum fibonahi!)
+            "fibonahi": "#FF00CC",  # neon magenta
+            "dynasearch": "#7CFF00",  # neon lime
+            "motzkin": "#FF9900",  # orange
         }
     else:
         raise ValueError(

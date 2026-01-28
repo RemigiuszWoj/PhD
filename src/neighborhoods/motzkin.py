@@ -1,6 +1,6 @@
 from typing import List, Optional, Tuple
 
-from src.boundaries import compute_prefix_boundaries
+from src.neighborhoods.boundaries import compute_prefix_boundaries
 from src.permutation_procesing import c_max
 
 # ---------------------------------------------------------------------------

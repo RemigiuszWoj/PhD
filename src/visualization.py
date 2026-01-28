@@ -428,15 +428,19 @@ def build_algorithm_multi_convergence_plots(
 
     neigh_order = [
         "adjacent",
-        "fibonahi_neighborhood",
-        "dynasearch_neighborhood",
-        "motzkin_neighborhood",
+        "quantum_adjacent",
+        "quantum_fibonahi",
+        "fibonahi",
+        "dynasearch",
+        "motzkin",
     ]
     base_colors = {
         "adjacent": "#00FFFF",
-        "fibonahi_neighborhood": "#FF00CC",
-        "dynasearch_neighborhood": "#7CFF00",
-        "motzkin_neighborhood": "#FF9900",
+        "quantum_adjacent": "#FF0066",
+        "quantum_fibonahi": "#9900FF",
+        "fibonahi": "#FF00CC",
+        "dynasearch": "#7CFF00",
+        "motzkin": "#FF9900",
     }
     group_keys = sorted({(k[0], k[1], k[2]) for k in index.keys()})
     outputs: List[Path] = []

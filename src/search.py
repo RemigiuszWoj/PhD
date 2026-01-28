@@ -8,18 +8,15 @@ import random
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from typing import Any, Callable, Iterator, List, Tuple
+from typing import Any, Iterator, List, Tuple
 
-from src.dynasearch import dynasearch_full
-from src.motzkin import motzkin_neighborhood_full
-from src.neighbors import (
-    fibonahi_neighborhood,
-    generate_neighbors_adjacent,
-    swap_jobs,
-)
+from src.neighborhoods.dynasearch import dynasearch_full
+from src.neighborhoods.motzkin import motzkin_neighborhood_full
+from src.neighborhoods.adjacent import generate_neighbors_adjacent
+from src.neighborhoods.fibonahi import fibonahi_neighborhood
 from src.permutation_procesing import c_max
-from src.quantum_neighbors import generate_neighbors_adjacent_qubo
-
+from src.neighborhoods.quantum_adjacent import generate_neighbors_adjacent_qubo
+from src.neighborhoods.quantum_fibonahi import quantum_fibonahi_neighborhood
 
 # ---------------------------------------------------------------------------
 # Pomocnicze struktury i funkcje
@@ -40,7 +37,7 @@ class SearchState:
     iteration: int = 0
 
     def update_best(self) -> bool:
-        """Aktualizuje najlepsze rozwiązanie jeśli obecne jest lepsze. Zwraca True jeśli poprawiono."""
+        """Aktualizuje najlepsze rozwiązanie. Zwraca True jeśli poprawiono."""
         if self.current_cmax < self.best_cmax:
             self.best_cmax = self.current_cmax
             self.best_pi = self.current_pi.copy()
@@ -96,19 +93,28 @@ def get_neighbor(
     processing_times: List[List[int]],
     n: int,
 ) -> Tuple[List[int], int, Any]:
-    """Generuje sąsiada dla danego trybu.
+    """Generuje najlepszego sąsiada dla danego trybu.
 
     Zwraca: (new_pi, new_cmax, move_id)
     """
-    if neigh_mode == "fibonahi_neighborhood":
+    if neigh_mode == "adjacent":
+        # Znajdź najlepszego sąsiada (exhaustive)
+        best_pi, best_c, best_move = None, float("inf"), None
+        for neighbor, move in generate_neighbors_adjacent(current_pi):
+            c = c_max(neighbor, processing_times)
+            if c < best_c:
+                best_pi, best_c, best_move = neighbor, c, move
+        return best_pi, best_c, best_move
+
+    elif neigh_mode == "fibonahi":
         new_pi, new_c = fibonahi_neighborhood(current_pi, processing_times)
         return new_pi, new_c, tuple(new_pi)
 
-    elif neigh_mode == "dynasearch_neighborhood":
+    elif neigh_mode == "dynasearch":
         new_pi, new_c, _ = dynasearch_full(current_pi, processing_times)
         return new_pi, new_c, tuple(new_pi)
 
-    elif neigh_mode == "motzkin_neighborhood":
+    elif neigh_mode == "motzkin":
         if n > 150:
             print(f"[motzkin] Warning: n={n} may be slow; consider lower time limit.")
         new_pi, new_c, selected_pairs = motzkin_neighborhood_full(current_pi, processing_times)
@@ -119,6 +125,10 @@ def get_neighbor(
         new_pi, move = generate_neighbors_adjacent_qubo(current_pi, processing_times)
         new_c = c_max(new_pi, processing_times)
         return new_pi, new_c, move
+
+    elif neigh_mode == "quantum_fibonahi":
+        new_pi, new_c, swaps = quantum_fibonahi_neighborhood(current_pi, processing_times)
+        return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi)
 
     else:
         raise ValueError(f"Unknown neigh_mode={neigh_mode}")
@@ -169,55 +179,19 @@ def tabu_search(
 
     with open_log_file(iter_log_path, "tabu_search") as log_file:
         while time.time() - state.start_time < max_time_seconds:
-            move_selected = None
-            pi_selected = None
-            cmax_selected = float("inf")
+            # Znajdź najlepszego sąsiada
+            new_pi, new_c, move_id = get_neighbor(neigh_mode, state.current_pi, processing_times, n)
 
-            if neigh_mode == "adjacent":
-                # Wybór najlepszego dopuszczalnego sąsiada
-                for neighbor, move in generate_neighbors_adjacent(state.current_pi):
-                    c = c_max(neighbor, processing_times)
-                    tabu_active = move in tabu_list and tabu_list[move] > state.iteration
-
-                    if tabu_active and c >= state.best_cmax:
-                        continue  # ruch zabroniony (brak aspiracji)
-
-                    if c < cmax_selected:
-                        cmax_selected = c
-                        pi_selected = neighbor
-                        move_selected = move
-            else:
-                # Pozostałe sąsiedztwa: jeden ruch na iterację
-                new_pi, new_c, move_id = get_neighbor(
-                    neigh_mode, state.current_pi, processing_times, n
-                )
-                tabu_active = move_id in tabu_list and tabu_list[move_id] > state.iteration
-
-                if tabu_active and new_c >= state.best_cmax:
-                    # Ruch tabu bez aspiracji - pomiń iterację
-                    state.iteration += 1
-                    continue
-
-                pi_selected = new_pi
-                cmax_selected = new_c
-                move_selected = move_id
-
-            # Fallback: brak dopuszczalnego ruchu
-            if pi_selected is None:
-                if neigh_mode == "adjacent":
-                    i = random.randint(0, n - 2)
-                    neighbor = swap_jobs(state.current_pi, i, i + 1)
-                    pi_selected = neighbor
-                    cmax_selected = c_max(neighbor, processing_times)
-                    move_selected = (i, i + 1)
-                else:
-                    state.iteration += 1
-                    continue
+            # Sprawdź tabu z aspiracją
+            tabu_active = move_id in tabu_list and tabu_list[move_id] > state.iteration
+            if tabu_active and new_c >= state.best_cmax:
+                state.iteration += 1
+                continue
 
             # Aktualizacja stanu
-            state.current_pi = pi_selected
-            state.current_cmax = cmax_selected
-            tabu_list[move_selected] = state.iteration + tenure
+            state.current_pi = new_pi
+            state.current_cmax = new_c
+            tabu_list[move_id] = state.iteration + tenure
 
             state.update_best()
             log_iteration(log_file, state)
@@ -287,39 +261,22 @@ def simulated_annealing(
 
     with open_log_file(iter_log_path, "simulated_annealing") as log_file:
         while time.time() - state.start_time < time_limit:
-            if neigh_mode == "adjacent":
-                # Dla adjacent: n losowych prób na jedną temperaturę
-                for _ in range(n):
-                    i = random.randint(0, n - 2)
-                    neighbor = swap_jobs(state.current_pi, i, i + 1)
-                    neighbor_cmax = c_max(neighbor, processing_times)
-                    delta = neighbor_cmax - state.current_cmax
+            # Znajdź najlepszego sąsiada
+            neighbor, neighbor_cmax, _ = get_neighbor(
+                neigh_mode, state.current_pi, processing_times, n
+            )
+            delta = neighbor_cmax - state.current_cmax
 
-                    if delta < 0 or random.random() < math.exp(-delta / T):
-                        state.current_pi = neighbor
-                        state.current_cmax = neighbor_cmax
+            # Akceptacja z prawdopodobieństwem Boltzmanna
+            if delta < 0 or random.random() < math.exp(-delta / T):
+                state.current_pi = neighbor
+                state.current_cmax = neighbor_cmax
 
-                    if state.update_best():
-                        last_improve_time = time.time()
+            if state.update_best():
+                last_improve_time = time.time()
 
-                    log_iteration(log_file, state)
-                    state.iteration += 1
-            else:
-                # Pozostałe sąsiedztwa: jeden ruch na iterację
-                neighbor, neighbor_cmax, _ = get_neighbor(
-                    neigh_mode, state.current_pi, processing_times, n
-                )
-                delta = neighbor_cmax - state.current_cmax
-
-                if delta < 0 or random.random() < math.exp(-delta / T):
-                    state.current_pi = neighbor
-                    state.current_cmax = neighbor_cmax
-
-                if state.update_best():
-                    last_improve_time = time.time()
-
-                log_iteration(log_file, state)
-                state.iteration += 1
+            log_iteration(log_file, state)
+            state.iteration += 1
 
             # Chłodzenie
             T = max(T * alpha, temp_floor)

@@ -16,9 +16,11 @@ from src.search import simulated_annealing, tabu_search
 ALGORITHMS_ALL = ("tabu", "sa")
 NEIGHBORHOODS_ALL = (
     "adjacent",
-    "fibonahi_neighborhood",
-    "dynasearch_neighborhood",
-    "motzkin_neighborhood",
+    "quantum_adjacent",
+    "quantum_fibonahi",
+    "fibonahi",
+    "dynasearch",
+    "motzkin",
 )
 
 
@@ -31,7 +33,7 @@ class RunConfig:
     """
 
     algorithm: str  # 'tabu' | 'sa'
-    neighborhood: str  # 'adjacent' | 'fibonahi_neighborhood' | 'dynasearch_neighborhood'
+    neighborhood: str  # 'adjacent' | 'fibonahi' | 'dynasearch' | 'motzkin' | 'quantum_*'
     instance_file: str  # path to instance file
     instance_number: int  # instance index inside file
     seed: int  # seed RNG

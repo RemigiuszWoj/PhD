@@ -88,10 +88,10 @@ def write_wide_gap_table(timestamp_dir: Path, summary_path: Path | None = None) 
     """Create a wide table with one row per (instance_file, instance_number, time_limit_ms)
     and columns:
         instance_file, instance_number, time_limit_ms,
-        tabu_adjacent, tabu_fibonahi_neighborhood,
-        tabu_dynasearch_neighborhood, tabu_motzkin_neighborhood,
-        sa_adjacent,   sa_fibonahi_neighborhood,
-        sa_dynasearch_neighborhood,   sa_motzkin_neighborhood
+        tabu_adjacent, tabu_quantum_adjacent, tabu_quantum_fibonahi, tabu_fibonahi,
+        tabu_dynasearch, tabu_motzkin,
+        sa_adjacent, sa_quantum_adjacent, sa_quantum_fibonahi, sa_fibonahi,
+        sa_dynasearch, sa_motzkin
 
     Values = best (minimal) gap_percent over seeds for that
     (algorithm, neighborhood, instance, tl_ms).
@@ -116,9 +116,9 @@ def write_wide_gap_table(timestamp_dir: Path, summary_path: Path | None = None) 
         out = timestamp_dir / "wide_summary.csv"
         with open(out, "w", encoding="utf-8", newline="") as fw:
             fw.write(
-                "instance_number,tabu_adjacent,tabu_fibonahi_neighborhood,"
-                "tabu_dynasearch_neighborhood,sa_adjacent,sa_fibonahi_neighborhood,"
-                "sa_dynasearch_neighborhood\n"
+                "instance_number,tabu_adjacent,tabu_quantum_adjacent,tabu_quantum_fibonahi,"
+                "tabu_fibonahi,tabu_dynasearch,tabu_motzkin,sa_adjacent,sa_quantum_adjacent,"
+                "sa_quantum_fibonahi,sa_fibonahi,sa_dynasearch,sa_motzkin\n"
             )
         return out
 
@@ -164,13 +164,17 @@ def write_wide_gap_table(timestamp_dir: Path, summary_path: Path | None = None) 
         "instance_number",
         "time_limit_ms",
         "tabu_adjacent",
-        "tabu_fibonahi_neighborhood",
-        "tabu_dynasearch_neighborhood",
-        "tabu_motzkin_neighborhood",
+        "tabu_quantum_adjacent",
+        "tabu_quantum_fibonahi",
+        "tabu_fibonahi",
+        "tabu_dynasearch",
+        "tabu_motzkin",
         "sa_adjacent",
-        "sa_fibonahi_neighborhood",
-        "sa_dynasearch_neighborhood",
-        "sa_motzkin_neighborhood",
+        "sa_quantum_adjacent",
+        "sa_quantum_fibonahi",
+        "sa_fibonahi",
+        "sa_dynasearch",
+        "sa_motzkin",
     ]
     out_path = timestamp_dir / "wide_summary.csv"
     with open(out_path, "w", encoding="utf-8", newline="") as f:
@@ -189,13 +193,17 @@ def write_wide_gap_table(timestamp_dir: Path, summary_path: Path | None = None) 
                 inst,
                 tl,
                 fmt("tabu", "adjacent"),
-                fmt("tabu", "fibonahi_neighborhood"),
-                fmt("tabu", "dynasearch_neighborhood"),
-                fmt("tabu", "motzkin_neighborhood"),
+                fmt("tabu", "quantum_adjacent"),
+                fmt("tabu", "quantum_fibonahi"),
+                fmt("tabu", "fibonahi"),
+                fmt("tabu", "dynasearch"),
+                fmt("tabu", "motzkin"),
                 fmt("sa", "adjacent"),
-                fmt("sa", "fibonahi_neighborhood"),
-                fmt("sa", "dynasearch_neighborhood"),
-                fmt("sa", "motzkin_neighborhood"),
+                fmt("sa", "quantum_adjacent"),
+                fmt("sa", "quantum_fibonahi"),
+                fmt("sa", "fibonahi"),
+                fmt("sa", "dynasearch"),
+                fmt("sa", "motzkin"),
             ]
             w.writerow(row)
     print(f"[Aggregate] Wide summary written: {out_path}")

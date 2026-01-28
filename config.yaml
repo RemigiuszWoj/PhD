@@ -2,7 +2,7 @@
 
 # General settings
 general:
-  input_file: "data/tai20_5.txt"
+  # input_file: "data/tai20_5.txt"
   # input_file: "data/tai20_10.txt"
   # input_file: "data/tai20_20.txt"
 
@@ -10,7 +10,7 @@ general:
   # input_file: "data/tai50_10.txt"
   # input_file: "data/tai50_20.txt"
 
-  # input_file: "data/tai100_5.txt"
+  input_file: "data/tai100_5.txt"
   # input_file: "data/tai100_10.txt"
   # input_file: "data/tai100_20.txt"
 
@@ -35,7 +35,7 @@ visualization:
 
 algorithm_common:
   # Time limit can be specified in seconds (recommended) or milliseconds.
-  time_limit_s: 10
+  time_limit_s: 0.1
 
 tabu_search:
   tabu_tenure: 10

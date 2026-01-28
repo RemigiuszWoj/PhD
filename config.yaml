@@ -2,7 +2,7 @@
 
 # General settings
 general:
-  # input_file: "data/tai20_5.txt"
+  input_file: "data/tai20_5.txt"
   # input_file: "data/tai20_10.txt"
   # input_file: "data/tai20_20.txt"
 
@@ -15,7 +15,7 @@ general:
   # input_file: "data/tai100_20.txt"
 
 # Od tad lepsiejsze
-  input_file: "data/tai200_10.txt"
+  # input_file: "data/tai200_10.txt"
   # input_file: "data/tai200_20.txt"
 
   # input_file: "data/tai500_20.txt"
@@ -30,10 +30,12 @@ general:
 visualization:
   save_plots: true
   results_folder: "results"
+  # Czy generować wielokrotne wykresy zbieżności w trybie czarno-białym (druk)?
+  multi_convergence_grayscale: false
 
 algorithm_common:
   # Time limit can be specified in seconds (recommended) or milliseconds.
-  time_limit_s: 10000
+  time_limit_s: 10
 
 tabu_search:
   tabu_tenure: 10
@@ -65,25 +67,25 @@ experiment:
   enabled: false  
   tabu_tenure: 10   
       # when true: run batch experiments (all instances); false -> compare mode
-  # instance_files: [
-  #   "data/tai20_5.txt", "data/tai20_10.txt", "data/tai20_20.txt",
-  #   "data/tai50_5.txt", "data/tai50_10.txt", "data/tai50_20.txt",
-  #   "data/tai100_5.txt", "data/tai100_10.txt", "data/tai100_20.txt",
-  #   "data/tai200_10.txt", "data/tai200_20.txt",
-  #   "data/tai500_20.txt"
-  # ]
-  # repeats: 1             # number of RNG seeds per (algorithm, neighborhood, instance, time_limit)
-  # time_limits_s: [0.1, 1, 10]
-
-
   instance_files: [
-    # "data/tai20_5.txt",
-    # "data/tai50_20.txt",
-    # "data/tai100_5.txt", 
-    "data/tai200_20.txt",
-    # "data/tai500_20.txt"
+    "data/tai20_5.txt", "data/tai20_10.txt", "data/tai20_20.txt",
+    "data/tai50_5.txt", "data/tai50_10.txt", "data/tai50_20.txt",
+    "data/tai100_5.txt", "data/tai100_10.txt", "data/tai100_20.txt",
+    "data/tai200_10.txt", "data/tai200_20.txt",
+    "data/tai500_20.txt"
   ]
   repeats: 1             # number of RNG seeds per (algorithm, neighborhood, instance, time_limit)
-  # time_limits_s: [0.1, 1, 10]
-  time_limits_s: [1]
+  time_limits_s: [0.1, 0.5, 1, 2, 5, 10]
+
+
+  # instance_files: [
+  #   # "data/tai20_5.txt",
+  #   # "data/tai50_20.txt",
+  #   # "data/tai100_5.txt", 
+  #   "data/tai200_20.txt",
+  #   # "data/tai500_20.txt"
+  # ]
+  # repeats: 1             # number of RNG seeds per (algorithm, neighborhood, instance, time_limit)
+  # # time_limits_s: [0.1, 1, 10]
+  # time_limits_s: [1]
 

@@ -1,0 +1,27 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{k}{def}\PYG{+w}{ }\PYG{n+nf}{solve}\PYG{p}{(}\PYG{n}{n}\PYG{p}{,} \PYG{n}{p}\PYG{p}{,} \PYG{n}{w}\PYG{p}{,} \PYG{n}{d}\PYG{p}{)}\PYG{p}{:}
+
+    \PYG{c+c1}{\PYGZsh{} Utworzenie pustego modelu CQM dla JSS.}
+    \PYG{n}{model} \PYG{o}{=} \PYG{n}{TWTCQM}\PYG{p}{(}\PYG{n}{n}\PYG{p}{,} \PYG{n}{p}\PYG{p}{,} \PYG{n}{w}\PYG{p}{,} \PYG{n}{d}\PYG{p}{)}
+
+    \PYG{c+c1}{\PYGZsh{} Definicja modelu CQM.}
+    \PYG{n}{model}\PYG{o}{.}\PYG{n}{define\PYGZus{}cqm\PYGZus{}model}\PYG{p}{(}\PYG{p}{)}
+
+    \PYG{c+c1}{\PYGZsh{} Definicja zmiennych CQM.}
+    \PYG{n}{model}\PYG{o}{.}\PYG{n}{define\PYGZus{}variables}\PYG{p}{(}\PYG{p}{)}
+
+    \PYG{c+c1}{\PYGZsh{} Dodanie ograniczenia wymuszającego jedno zadanie na maszynie.}
+    \PYG{n}{model}\PYG{o}{.}\PYG{n}{add\PYGZus{}quadratic\PYGZus{}overlap\PYGZus{}constraint}\PYG{p}{(}\PYG{p}{)}
+
+    \PYG{n}{model}\PYG{o}{.}\PYG{n}{add\PYGZus{}tardiness\PYGZus{}constraint}\PYG{p}{(}\PYG{p}{)}
+
+    \PYG{n}{model}\PYG{o}{.}\PYG{n}{add\PYGZus{}tardiness\PYGZus{}constraint\PYGZus{}zero}\PYG{p}{(}\PYG{p}{)}
+
+    \PYG{n}{model}\PYG{o}{.}\PYG{n}{add\PYGZus{}makespan\PYGZus{}constraint}\PYG{p}{(}\PYG{p}{)}
+
+    \PYG{c+c1}{\PYGZsh{} Definicja funkcji celu.}
+    \PYG{n}{model}\PYG{o}{.}\PYG{n}{define\PYGZus{}objective\PYGZus{}function}\PYG{p}{(}\PYG{p}{)}
+
+    \PYG{c+c1}{\PYGZsh{} Wywołanie solvera CQM.}
+    \PYG{k}{return} \PYG{n}{model}\PYG{o}{.}\PYG{n}{call\PYGZus{}cqm\PYGZus{}solver}\PYG{p}{(}\PYG{p}{)}
+\end{MintedVerbatim}

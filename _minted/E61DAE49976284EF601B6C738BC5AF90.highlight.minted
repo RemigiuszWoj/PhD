@@ -1,0 +1,29 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{k}{def}\PYG{+w}{ }\PYG{n+nf}{call\PYGZus{}cqm\PYGZus{}solver}\PYG{p}{(}\PYG{n+nb+bp}{self}\PYG{p}{,} \PYG{n}{time\PYGZus{}limit}\PYG{o}{=}\PYG{l+m+mi}{5}\PYG{p}{)}\PYG{p}{:}
+\PYG{+w}{    }\PYG{l+s+sd}{\PYGZdq{}\PYGZdq{}\PYGZdq{}Wywołanie solvera CQM.}
+
+\PYG{l+s+sd}{    Args:}
+\PYG{l+s+sd}{        time\PYGZus{}limit: limit czasu w sekundach}
+\PYG{l+s+sd}{    \PYGZdq{}\PYGZdq{}\PYGZdq{}}
+
+    \PYG{n}{sampler} \PYG{o}{=} \PYG{n}{LeapHybridCQMSampler}\PYG{p}{(}\PYG{n}{label}\PYG{o}{=}\PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{WiTi}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{)}
+
+    \PYG{n}{raw\PYGZus{}sampleset} \PYG{o}{=} \PYG{n}{sampler}\PYG{o}{.}\PYG{n}{sample\PYGZus{}cqm}\PYG{p}{(}\PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{cqm}\PYG{p}{,} \PYG{n}{time\PYGZus{}limit}\PYG{o}{=}\PYG{n}{time\PYGZus{}limit}\PYG{p}{)}
+    \PYG{n}{feasible\PYGZus{}sampleset} \PYG{o}{=} \PYG{n}{raw\PYGZus{}sampleset}\PYG{o}{.}\PYG{n}{filter}\PYG{p}{(}\PYG{k}{lambda} \PYG{n}{d}\PYG{p}{:} \PYG{n}{d}\PYG{o}{.}\PYG{n}{is\PYGZus{}feasible}\PYG{p}{)}
+    \PYG{n}{num\PYGZus{}feasible} \PYG{o}{=} \PYG{n+nb}{len}\PYG{p}{(}\PYG{n}{feasible\PYGZus{}sampleset}\PYG{p}{)}
+    \PYG{k}{if} \PYG{n}{num\PYGZus{}feasible} \PYG{o}{\PYGZgt{}} \PYG{l+m+mi}{0}\PYG{p}{:}
+        \PYG{n}{best\PYGZus{}samples} \PYG{o}{=} \PYGZbs{}
+            \PYG{n}{feasible\PYGZus{}sampleset}\PYG{o}{.}\PYG{n}{truncate}\PYG{p}{(}\PYG{n+nb}{min}\PYG{p}{(}\PYG{l+m+mi}{10}\PYG{p}{,} \PYG{n}{num\PYGZus{}feasible}\PYG{p}{)}\PYG{p}{)}
+    \PYG{k}{else}\PYG{p}{:}
+        \PYG{n+nb}{print}\PYG{p}{(}\PYG{l+s+s2}{\PYGZdq{}}\PYG{l+s+s2}{Ostrzeżenie: Nie znaleziono rozwiązania dopuszczalnego}\PYG{l+s+s2}{\PYGZdq{}}\PYG{p}{)}
+        \PYG{n}{best\PYGZus{}samples} \PYG{o}{=} \PYG{n}{raw\PYGZus{}sampleset}\PYG{o}{.}\PYG{n}{truncate}\PYG{p}{(}\PYG{l+m+mi}{10}\PYG{p}{)}
+
+    \PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{best\PYGZus{}sample} \PYG{o}{=} \PYG{n}{best\PYGZus{}samples}\PYG{o}{.}\PYG{n}{first}\PYG{o}{.}\PYG{n}{sample}
+
+    \PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{solution} \PYG{o}{=} \PYG{p}{\PYGZob{}}
+        \PYG{n}{i}\PYG{p}{:} \PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{best\PYGZus{}sample}\PYG{p}{[}\PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{c}\PYG{p}{[}\PYG{n}{i}\PYG{p}{]}\PYG{o}{.}\PYG{n}{variables}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]}\PYG{p}{]}
+        \PYG{k}{for} \PYG{n}{i} \PYG{o+ow}{in} \PYG{n+nb}{range}\PYG{p}{(}\PYG{l+m+mi}{1}\PYG{p}{,} \PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{n} \PYG{o}{+} \PYG{l+m+mi}{1}\PYG{p}{)}\PYG{p}{\PYGZcb{}}
+    \PYG{n}{items} \PYG{o}{=} \PYG{n+nb}{list}\PYG{p}{(}\PYG{n+nb+bp}{self}\PYG{o}{.}\PYG{n}{solution}\PYG{o}{.}\PYG{n}{items}\PYG{p}{(}\PYG{p}{)}\PYG{p}{)}
+    \PYG{n}{items}\PYG{o}{.}\PYG{n}{sort}\PYG{p}{(}\PYG{n}{key}\PYG{o}{=}\PYG{k}{lambda} \PYG{n}{x}\PYG{p}{:} \PYG{n}{x}\PYG{p}{[}\PYG{l+m+mi}{1}\PYG{p}{]}\PYG{p}{)}
+    \PYG{k}{return} \PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]} \PYG{o}{+} \PYG{p}{[}\PYG{n}{i}\PYG{p}{[}\PYG{l+m+mi}{0}\PYG{p}{]} \PYG{k}{for} \PYG{n}{i} \PYG{o+ow}{in} \PYG{n}{items}\PYG{p}{]}
+\end{MintedVerbatim}

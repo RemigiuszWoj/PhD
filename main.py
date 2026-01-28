@@ -17,7 +17,7 @@ from src.experiments.runner import (
     generate_plan_for_files,
 )
 from src.parser import parser
-from src.serach import simulated_annealing, tabu_search
+from src.search import simulated_annealing, tabu_search
 from src.taillard_gen import generate_taillard_instance
 from src.visualization import (
     build_algorithm_multi_convergence_plots,
@@ -86,6 +86,7 @@ def run_compare_mode(
 
     for neigh_mode in [
         "adjacent",
+        "quantum_adjacent",
         "fibonahi_neighborhood",
         "dynasearch_neighborhood",
         "motzkin_neighborhood",
@@ -133,15 +134,20 @@ def run_compare_mode(
         multi_path = next_unique_path(base_multi)
     else:
         multi_path = None
+    # Flaga sterująca trybem czarno-białym z config.visualization.multi_convergence_grayscale
+    viz_cfg = config.get("visualization", {})
+    multi_gray = bool(viz_cfg.get("multi_convergence_grayscale", False))
     save_multi_convergence_plot(
         results,
         labels=labels,
         colors=colors,
         filepath=multi_path,
         time_limit_ms=algorithm_common.get("time_limit_ms"),
+        grayscale=multi_gray,
     )
     for neigh_mode in [
         "adjacent",
+        "quantum_adjacent",
         "fibonahi_neighborhood",
         "dynasearch_neighborhood",
         "motzkin_neighborhood",
@@ -158,6 +164,7 @@ def run_compare_mode(
     print("Comparison plot and Gantt charts saved.")
     for neigh_mode in [
         "adjacent",
+        "quantum_adjacent",
         "fibonahi_neighborhood",
         "dynasearch_neighborhood",
         "motzkin_neighborhood",
@@ -208,7 +215,10 @@ def main() -> None:
             write_wide_gap_table(runner.timestamp_dir, summary_path)
             write_matrix_gap_table(runner.timestamp_dir, summary_path)
             write_matrix_per_seed_table(runner.timestamp_dir, summary_path)
-            build_algorithm_multi_convergence_plots(runner.timestamp_dir)
+            # Batchowy generator multi-wykresów także respektuje flagę grayscale
+            viz_cfg = config.get("visualization", {})
+            multi_gray = bool(viz_cfg.get("multi_convergence_grayscale", False))
+            build_algorithm_multi_convergence_plots(runner.timestamp_dir, grayscale=multi_gray)
         except Exception as e:
             print(f"[Main] Failed to write summary: {e}")
         print("[Main] Experiment batch completed.")
@@ -258,12 +268,14 @@ def main() -> None:
     if algorithm == "tabu_search_compare":
         labels = {
             "adjacent": "Tabu: adjacent",
+            "quantum_adjacent": "Tabu: quantum_adj",
             "fibonahi_neighborhood": "Tabu: fibonahi_neigh",
             "dynasearch_neighborhood": "Tabu: dynasearch",
             "motzkin_neighborhood": "Tabu: motzkin",
         }
         colors = {
             "adjacent": "#00FFFF",  # neon cyan
+            "quantum_adjacent": "#FF0066",  # neon pink (quantum!)
             "fibonahi_neighborhood": "#FF00CC",  # neon magenta (kept)
             "dynasearch_neighborhood": "#7CFF00",  # neon lime
             "motzkin_neighborhood": "#FF9900",  # orange (high complexity warning)
@@ -271,12 +283,14 @@ def main() -> None:
     elif algorithm == "simulated_annealing_compare":
         labels = {
             "adjacent": "SA: adjacent",
+            "quantum_adjacent": "SA: quantum_adj",
             "fibonahi_neighborhood": "SA: fibonahi_neigh",
             "dynasearch_neighborhood": "SA: dynasearch",
             "motzkin_neighborhood": "SA: motzkin",
         }
         colors = {
             "adjacent": "#00FFFF",  # neon cyan
+            "quantum_adjacent": "#FF0066",  # neon pink (quantum!)
             "fibonahi_neighborhood": "#FF00CC",  # neon magenta (kept)
             "dynasearch_neighborhood": "#7CFF00",  # neon lime
             "motzkin_neighborhood": "#FF9900",  # orange

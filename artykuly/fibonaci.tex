@@ -1,0 +1,398 @@
+% Główny plik artykułu LNCS (wersja polska)
+\documentclass[runningheads]{llncs}
+
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage[utf8]{inputenc}
+\usepackage{todonotes}
+\usepackage{siunitx}
+\usepackage{subcaption}
+% Makra pomocnicze
+\newcommand{\makespan}{C_{\max}}
+\newcommand{\perm}{\pi}
+\newcommand{\best}{\perm^{*}}
+\newcommand{\Swap}{\textsc{Swap}}
+\sisetup{output-decimal-marker = {.}}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  citecolor=blue!60!black,
+  urlcolor=blue!60!black
+}
+
+% % =====================================================================
+% % Bibliografia ręczna (zamiast BibTeX). Dodano pełen zestaw pozycji.
+% % =====================================================================
+% \begin{thebibliography}{30}
+
+% \bibitem{Fibona}
+% Wojewódzki R., Bożejko W., Hybrid Neighborhood Evaluation in Tabu Search and Simulated Annealing for the Permutation Flow Shop Problem (In print 2026).
+
+% \bibitem{Bozejko2015}
+% Bożejko M., Bożejko W., Generalized Gaussian processes and relations with random matrices and positive definite functions on permutation groups. \emph{Infinite Dimensional Analysis, Quantum Probability and Related Topics} 18(3) (2015) 1550020-1--1550020-19.
+
+% \bibitem{Bozejko2007}
+% Bożejko W., Wodecki M., On the theoretical properties of swap multimoves. \emph{Operations Research Letters} 35(2) (2007) 227--231.
+
+% \bibitem{ahuja2002}
+% Ahuja R.K., Orlin J.B., Tiwari A., Very large-scale neighborhood search. \emph{Operations Research} 50(4) (2002) 686--702.
+
+% \bibitem{ref_metaheuristics_survey}
+% Blum C., Roli A., Metaheuristics in combinatorial optimization: Overview and conceptual comparison. \emph{ACM Computing Surveys} 35(3) (2003) 268--308.
+
+% \bibitem{congram2002dynasearch}
+% Congram P., Potts C., Van de Velde S., An iterated dynasearch algorithm for the single-machine total weighted tardiness scheduling problem. In: Proc. 3rd Int. Conf. on Modeling and Applied Optimization (2002) 123--132. Springer.
+
+% \bibitem{deroussi2006}
+% Deroussi L., Gourgand M., Norre S., New effective neighborhoods for the permutation flow shop problem. LIMOS Research Report RR-06-09 (2006).
+
+% \bibitem{glover1997}
+% Glover F., Laguna M., \emph{Tabu Search}. Springer, 1997.
+
+% \bibitem{glover1990deterministic}
+% Glover F., Deterministic perturbations in tabu search for the quadratic assignment problem. In: \emph{Meta-Heuristics} (1990) 59--75. Springer.
+
+% \bibitem{ref_classic_fsp}
+% Johnson S.M., Optimal two- and three-stage production schedules with setup times included. \emph{Naval Research Logistics Quarterly} 1(1) (1954) 61--68.
+
+% \bibitem{serna2000}
+% Serna N.J.E., Gambardella L.M., A global-local neighborhood search algorithm and tabu search for the permutation flow shop problem. \emph{Computers \& Operations Research} 27(11--12) (2000) 1167--1183.
+
+% \bibitem{ref_taillard}
+% Taillard E., Benchmarks for basic scheduling problems. \emph{European Journal of Operational Research} 64 (1993) 278--285.
+
+% \bibitem{vanlaarhoven1992}
+% Van Laarhoven P.J.M., Aarts E.H.L., Lenstra J.K., Job shop scheduling by simulated annealing. \emph{Operations Research} 40(1) (1992) 113--125.
+
+% \bibitem{nowicki1996fast}
+% Nowicki E., Smutnicki C., A fast tabu search algorithm for the permutation flow-shop problem. \emph{European Journal of Operational Research} 91(1) (1996) 160--175.
+
+% \bibitem{smutnicki2012}
+% Smutnicki C., \emph{Algorytmy szeregowania zadań}. Oficyna Wydawnicza Politechniki Wrocławskiej, Wrocław (2012). Dostęp online: https://www.dbc.wroc.pl/Content/74259/smutnicki_algorytmy.pdf
+
+% \end{thebibliography}
+
+\end{document}
+
+\begin{document}
+
+\title{Hybrydowa ewaluacja sąsiedztw w Tabu Search i Simulated Annealing dla problemu przepływowego typu permutation flow shop}
+\titlerunning{Hybrydowe sąsiedztwa dla optymalizacji flow shop}
+
+\author{Remigiusz Wojewódzki\inst{1} \and Wojciech Bożejko\inst{2}}
+\authorrunning{R. Wojewódzki, W. Bożejko}
+
+\institute{
+Politechnika Wrocławska, Polska\\
+\email{remigiusz.wojewodzki@gmail.com}
+\and
+Politechnika Wrocławska, Polska\\
+\email{wojciech.bozejko@pwr.edu.pl}
+}
+
+\maketitle
+
+\begin{abstract}
+Analizujemy wpływ trzech definicji sąsiedztwa na działanie dwóch klasycznych metaheurystyk (Tabu Search oraz Simulated Annealing) dla problemu przepływowego szeregowania typu permutation Flow Shop (FSP) z kryterium minimalizacji maksumu (makespanu) \(C_{\max}\). Oprócz standardowego sąsiedztwa przestawienia sąsiadów (adjacent swap), badamy: (i) kompozytową konstrukcję rozłącznych sąsiednich przestawień, wyznaczaną dynamicznie (DP) jako zbiór niepokrywających się zamian minimalizujących łączną deltę makespanu, oraz (ii) rekurencyjne sąsiedztwo inspirowane dynasearch, umożliwiające głębsze lokalne przekształcenia. Dodatkowo wprowadzamy logowanie na poziomie iteracji oraz opcjonalne „podgrzewanie” temperatury (wyzwalane przez czasową stagnację) w celu analizy dynamiki zbieżności. Eksperymenty na benchmarkach Taillarda pokazują, że kompozytowe ("fibonnacciopodobne") sąsiedztwo przyspiesza wczesny spadek wartości \(C_{\max}\), lecz ma tendencję do plateau po zaniku pojedynczych ulepszeń sąsiednich, podczas gdy dynasearch częściej znajduje głębsze ulepszenia kosztem większego nakładu obliczeń na iterację. Omawiamy kompromisy między szerokością eksploracji, kosztem obliczeniowym na iterację i stabilnością zbieżności.
+
+\keywords{Flow shop scheduling \and Metaheurystyki \and Tabu search \and Simulated annealing \and Kompozytowe sąsiedztwo \and Dynasearch}
+\end{abstract}
+
+\section{Wprowadzenie}
+Problem przepływowego szeregowania typu permutation Flow Shop (FSP) polega na wyznaczeniu permutacji \(n\) zadań przetwarzanych na \(m\) maszynach w tej samej kolejności, tak aby zminimalizować maksum \(C_{\max}\). Problem jest NP-trudny dla \(m \ge 3\) i stanowi motywację do szerokich badań metod heurystycznych i metaheurystycznych opartych na sąsiedztwach \cite{ref_metaheuristics_survey,ref_classic_fsp,vanlaarhoven1992}.
+
+W pracy ponownie rozpatrujemy dwie klasyczne metaheurystyki—Tabu Search (TS) i Simulated Annealing (SA)—z perspektywy \emph{hybrydowego projektowania sąsiedztw}. Poza powszechnym sąsiedztwem przestawienia sąsiadów implementujemy i porównujemy:
+\begin{itemize}
+  \item Kompozytowe rozłączne przestawienia sąsiednie (wewnętrznie nazywane \emph{Fibonacci}), konstruowane z użyciem programowania dynamicznego w celu wyboru zbioru niepokrywających się, poprawiających (lub minimalnie pogarszających) przestawień.
+  \item Rekurencyjne sąsiedztwo inspirowane dynasearch, pozwalające na głębsze, strukturalne permutacje.
+\end{itemize}
+Empirycznie badamy, jak te sąsiedztwa wpływają na szybkość zbieżności, zachowanie stagnacji oraz jakość rozwiązania końcowego przy identycznych limitach czasu.
+
+\paragraph{Wkład.}
+\begin{enumerate}
+  \item Ujednolicony zestaw eksperymentów (z logowaniem iteracji) porównujący trzy sąsiedztwa w TS i SA przy wspólnych ograniczeniach czasowych.
+  \item Sąsiedztwo kompozytowe oparte na DP, równoważące lokalną intensyfikację z umiarkowaną dywersyfikacją.
+  \item Mechanizm czasowego podgrzewania w SA (dolna granica temperatury oraz wyzwalane stagnacją mnożnikowe podgrzewanie).
+  \item Analiza empiryczna na instancjach Taillarda wskazująca: (i) szybkie wczesne wykorzystanie lokalnych ulepszeń przez sąsiedztwo kompozytowe, (ii) jego podatność na plateau po zaniku pojedynczych ulepszeń, oraz (iii) komplementarną „głębię” sąsiedztwa dynasearch.
+\end{enumerate}
+Celem jest sformułowanie wniosków o względnej efektywności i odporności analizowanych struktur sąsiedztw pod względem narzuconych limitów czasu oraz skali instancji, zapewniając praktyczne wskazówki dotyczące ich zastosowania.
+
+\section{Definicja problemu}
+Dla macierzy czasów przetwarzania \(P = [p_{k,j}]_{m \times n}\) (maszyna \(k=1,\dots,m\), zadanie \(j=1,\dots,n\)), permutacja \(\pi\) definiuje kolejność zadań. Permutacje i ich zależności można analizować z użyciem dodatnio określonych funkcji na grupach permutacji, co daje teoretyczne podstawy badania korelacji między sekwencjami zadań \cite{Bozejko2015}. Niech \(C_{k,j}\) oznacza czas zakończenia zadania \(j\) (w kolejności \(\pi\)) na maszynie \(k\), spełniający zależności:
+\[
+C_{1,j} = C_{1,j-1} + p_{1,\pi(j)},\quad
+C_{k,1} = C_{k-1,1} + p_{k,\pi(1)},
+\]
+\begin{equation}\label{eq_c_kj}
+C_{k,j} = \max\{C_{k,j-1},\, C_{k-1,j}\} + p_{k,\pi(j)}, \quad \text{dla } k=1,\dots,m,\; j=1,\dots,n.
+\end{equation}
+Maksum \(C_{\max} = C_{m,n}\) należy zminimalizować. Celem FSP jest znalezienie permutacji \(\pi\), która \emph{minimalizuje} \(C_{\max}\), tj. czas zakończenia ostatniego zadania na ostatniej maszynie przy przetwarzaniu w kolejności \(\pi\).
+
+\section{Struktury sąsiedztw}
+Za \cite{vanlaarhoven1992}, \emph{sąsiedztwo} rozwiązania \(x\) to zbiór rozwiązań otrzymywanych poprzez dozwoloną modyfikację \(x\). Wyznacza ono sposób eksploracji i eksploatacji przestrzeni rozwiązań w trakcie poszukiwań.
+
+Nawiązując do Ahuji i in. \cite{ahuja2002,glover1997}, można wskazać ogólne metody konstruowania bardzo dużych sąsiedztw (VLSN). Obejmują one generowanie nowych rozwiązań przez łączenie elementów z wielu rozwiązań odniesienia, co umożliwia eksplorację większych obszarów przestrzeni. Innym podejściem jest użycie programowania dynamicznego do przyspieszania obliczeń i efektywnego budowania sąsiedztw dla dużych danych. Kluczowym komponentem są grafy ulepszeń pozwalające szybko oceniać obiecujące ruchy. Metody VLSN są często integrowane z metaheurystykami (Tabu Search, Simulated Annealing), tworząc algorytmy iteracyjne zdolne skutecznie poszukiwać rozwiązań wysokiej jakości.
+
+\paragraph{Przestawienie sąsiadów (bazowe).}
+Każdy sąsiad powstaje przez zamianę pozycji \((i,i{+}1)\) dla \(i=1,\dots,n-1\). Koszt pojedynczej iteracji jest niski, co umożliwia wiele iteracji, lecz ruchy są płytkie \cite{nowicki1996fast,vanlaarhoven1992}.
+
+\paragraph{Sąsiedztwo kompozytowe rozłącznych zamian sąsiednich (dalej nazywane \emph{Fibonacci} ze względu na rozmiar struktury).}
+Startując z \(\pi\), enumerujemy wszystkie pojedyncze zamiany sąsiadów i wyznaczamy \(\Delta_i = C_{\max}(\pi^{(i)}) - C_{\max}(\pi)\). Programowanie dynamiczne wybiera podzbiór niepokrywających się indeksów minimalizujący sumę \(\sum \Delta_i\). Jeśli brak ujemnych \(\Delta_i\), bieżąca implementacja albo (i) wybiera najmniejszą dodatnią zamianę, albo (ii) zatrzymuje się (wariant w dyskusji). Kompozytowy ruch może zastosować wiele rozłącznych zamian jednocześnie, aproksymując ograniczony wieloetapowy lokalny spadek w jednej iteracji. Tło teoretyczne i własności takich wieloruchowych strategii zamian omawiają Bożejko i Wodecki~\cite{Bozejko2007}.
+
+\paragraph{Złożoność.} Wyliczenie \((n{-}1)\) zamian wymaga \((n{-}1)\) ponownych obliczeń \(C_{\max}\) (każde \(O(mn)\)), plus \(O(n)\) dla DP. Łącznie na iterację \(O(m n^2)\) względem \(O(m n)\) dla pojedynczej oceny zamiany sąsiadów.
+
+\paragraph{Sąsiedztwo rekurencyjne inspirowane dynasearch.}
+Dynasearch eksploruje strukturalne sekwencje niekonfliktowych ruchów \cite{congram2002dynasearch} (np. dekompozycje ścieżek) przy większym nakładzie obliczeniowym, często docierając do permutacji nieosiągalnych małą liczbą zamian sąsiadów. Przyjmujemy wariant rekurencyjny (szkic), który zwraca ulepszoną permutację albo potwierdza lokalną optymalność w swoim obszarze poszukiwań.
+
+\paragraph{Sąsiedztwo sześciu operatorów.}
+Deroussi i in. \cite{deroussi2006} definiują sąsiedztwo jako zbiór rozwiązań uzyskanych przez zastosowanie sześciu operatorów przekształcających bieżące rozwiązanie. Obejmują one m.in. przesunięcia pojedynczego zadania, przesunięcia bloków, wieloelementowe przesunięcia oraz ich kombinacje. W porównaniu z klasycznym podejściem (np. zamiany sąsiadów) strategia ta umożliwia szybszą i bardziej wszechstronną eksplorację, zwiększając szanse znajdowania ulepszonych permutacji.
+
+\paragraph{Sąsiedztwo globalno-lokalne.}
+Serna i Gambardella \cite{serna2000} opisują sąsiedztwo globalno-lokalne dla FSP. Składa się ono z dwóch typów ruchów. Pierwszy typ, Nopt1, obejmuje zamianę dwóch zadań lub relokację pojedynczego zadania w permutacji. Dla danego zadania \(j\) Nopt1 generuje sąsiadów przez przeniesienie \(j\) na każdą możliwą pozycję, co daje szybkie lokalne ulepszenia. Drugi typ to większe, strukturalne perturbacje przesuwające całe bloki zadań, prowadzące do globalnych zmian w permutacji. Połączenie obu typów pozwala uciekać z płytkich lokalnych minimów: małe ruchy Nopt1 zapewniają szybką lokalną poprawę, a większe perturbacje umożliwiają eksplorację regionów niedostępnych przez drobne zmiany.
+
+\section{Metaheurystyki}
+Za Gloverem i Laguną \cite{glover1997} oraz Blumem i Rolim \cite{ref_metaheuristics_survey}, metaheurystyki to wysokopoziomowe ramy algorytmiczne kierujące poszukiwaniem rozwiązań optymalnych. Nie są zdefiniowane dla konkretnego problemu; dostarczają ogólnych strategii efektywnej eksploracji i eksploatacji przestrzeni rozwiązań.
+
+\paragraph{Tabu Search (TS).}
+Utrzymujemy listę tabu, zgodnie z zaleceniami Smutnickiego \cite{smutnicki2012}, indeksowaną albo prymitywnymi ruchami (indeksy sąsiednich zamian), albo podpisami kompozytowymi (dla \emph{Fibonacci} / Dynasearch). Kadencja \(T_{\text{Tabu}}\) zabrania powrotu, chyba że spełnione jest kryterium aspiracji (poprawa \(C_{\max}\)). W każdej iteracji wybierany jest najlepszy dopuszczalny sąsiad.
+
+\paragraph{Simulated Annealing (SA).}
+Podążamy za zaleceniami Smutnickiego \cite{smutnicki2012} dla strategii iteracyjnej poprawy, stosując multiplikatywne chłodzenie \(T \leftarrow \alpha T\) z podłogą \(T_{\text{floor}} = f_{\text{floor}} \cdot T_{\text{final}}\) i opcjonalnym czasowym podgrzewaniem: jeśli brak poprawy przez \(\tau_{\text{stagn}}\) milisekund i \(T < T_{\text{init}}\), wtedy \(T \leftarrow \min(T_{\text{init}}, r \cdot T)\). Standardowa akceptacja:
+\begin{equation}\label{Pr_accept}
+    \Pr(\text{akceptacji}) =
+    \begin{cases}
+        1 & \Delta < 0,\\
+        \exp(-\Delta/T) & \text{w przeciwnym razie}.
+    \end{cases}
+\end{equation}
+
+\section{Ustawienia eksperymentów}
+Wszystkie eksperymenty wykonano na MacBooku Pro z procesorem M4 Pro, 24~GB RAM, macOS 26.0.1 (25A362) i Pythonem~3.11.
+
+\paragraph{Benchmarki.}
+Instancje Taillarda \cite{ref_taillard} o różnych \((n,m)\) (np. \(n\in\{50,100,200,500\}\), \(m\in\{10,20\}\)). Każdy bieg ograniczony budżetem czasu ściennego (np. 100 s). Ziarna losowe stałe dla odtwarzalności.
+
+\paragraph{Parametry.}
+Przykładowe (finalne wartości do strojenia):
+\begin{itemize}
+  \item Tabu tenure: \(10\)
+  \item SA: \(T_{\text{init}}=1000\), \(T_{\text{final}}=1\), \(\alpha=0.95\), współczynnik podgrzewania \(r = 1.5\), próg stagnacji \(500\) ms.
+\end{itemize}
+
+\paragraph{Metryki.}
+\begin{itemize}
+  \item Najlepszy \(C_{\max}\) w funkcji czasu.
+  \item Krzywe zbieżności (nakładka wielosąsiedztw).
+  \item Efektywne ruchy na sekundę (znormalizowane).
+  \item Latencja detekcji plateau.
+\end{itemize}
+Dobór parametrów i metryk ma na celu ocenę wpływu różnych sąsiedztw na jakość rozwiązania końcowego, a nie porównanie bezwzględnej wydajności algorytmów.
+
+\section{Eksperymenty wielkoskalowe}
+Dla każdej testowanej instancji obserwujemy, że przy przyjętych limitach czasu sąsiedztwo Dynasearch często nie jest w stanie ukończyć nawet jednej iteracji. W związku z tym jego wyniki należy wyłączyć z końcowych porównań. Dla małej skali jednak Dynasearch potrafi znaleźć najlepsze rozwiązanie w górnych limitach czasu, nawet gdy dwa pozostałe sąsiedztwa utykają w lokalnych optimum. Niemniej dla większych instancji Dynasearch często nie wykonuje choćby pojedynczej iteracji w zadanym budżecie, co istotnie ogranicza jego praktyczną przydatność w krótkich przebiegach.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{figures/tabu_100_10.png}
+  \caption{Mały zbiór, wydłużony limit czasu.}
+  \label{fig:tabu_100_10}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{figures/tabu_500_20.png}
+  \caption{Duży zbiór, wydłużony limit czasu.}
+  \label{fig:tabu_500_20}
+\end{figure}
+
+\section{Wyniki i dyskusja}
+Porównanie \emph{Fibonacci}, Adjacent i Dynasearch ujawnia odmienne zachowania i osiągi. Sąsiedztwo kompozytowe przewyższa sąsiedztwo sąsiadów we wczesnej fazie (ostrzejszy spadek \(C_{\max}\)) dzięki łączeniu niepokrywających się ulepszeń. Jednak gdy wszystkie pojedyncze delty zamian stają się niedodatnie, ruch kompozytowy degeneruje do rozmiaru 1 i może ugrzęznąć w lokalnych minimach.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{figures/algo=tabu_file=tai200_20_inst=2_tl=1000ms_n200_m20_multi.png}
+  \caption{200 zadań, 20 maszyn, limit 1000 ms.}
+  \label{fig:tabu_200_20}
+\end{figure}
+
+Dla większych zbiorów (powyżej 200$\times$10) metoda \emph{Fibonacci} znajduje lepsze rozwiązania w tych samych limitach czasu niż Adjacent. Z kolei Dynasearch uzyskuje dalsze, często najlepsze ulepszenia, lecz za dużo większy koszt obliczeń. W zależności od skali pojedyncza iteracja Dynasearch może wymagać nawet 200 razy więcej czasu niż z góry zadany limit, co oznacza, że Dynasearch daje najlepsze wyniki tylko przy odpowiednio dużych budżetach czasu, szybko rosnących wraz z rozmiarem wejścia.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.8\textwidth]{figures/algo=tabu_file=tai500_20_inst=4_tl=1000ms_n500_m20_multi.png}
+  \caption{500 zadań, 20 maszyn, limit 1000 ms.}
+  \label{fig:tabu_500_20_long}
+\end{figure}
+
+W trakcie takich wydłużonych obliczeń pozostałe dwa podejścia (\emph{Fibonacci} i Adjacent) mają tendencję do utknięcia w lokalnych optimum. W tych przypadkach sterowane czasem podgrzewanie w SA może pozwolić na opuszczenie płytkich plateau, przywracając dywersyfikację i umożliwiając dalszą eksplorację.
+
+Uśrednione wyniki w Tabelach~\ref{tab:results_tl100}--\ref{tab:results_tl10000} obejmują względne odchylenie procentowe (PRD) makespanu zdefiniowane jako:
+\begin{equation}
+\mathrm{PRD} = \frac{C_{\max}^{\text{uzyskany}} - C_{\max}^{\text{optymalny}}}{C_{\max}^{\text{optymalny}}} \times 100\% ,
+\end{equation}
+\noindent gdzie \(C_{\max}^{\text{uzyskany}}\) to wartość uzyskana przez metodę heurystyczną, a \(C_{\max}^{\text{optymalny}}\) to najlepszy znany lub optymalny maksum. PRD podsumowuje średnią jakość metody dla danego limitu czasu. Zauważmy, że Dynasearch pominięto w tabelach z uwagi na częste przekraczanie limitu już w pojedynczej iteracji na większych instancjach.
+
+\begin{table}[H]
+\centering
+\begin{minipage}{0.85\linewidth}
+\centering
+\resizebox{\linewidth}{!}{\input{tables/all_results_avg_pivot_tl100}}
+\caption{Średnie wyniki dla \(T_{\text{limit}} = 100\) ms.}
+\label{tab:results_tl100}
+\end{minipage}
+
+\\[1em]
+
+\begin{minipage}{0.85\linewidth}
+\centering
+\resizebox{\linewidth}{!}{\input{tables/all_results_avg_pivot_tl500}}
+\caption{Średnie wyniki dla \(T_{\text{limit}} = 500\) ms.}
+\label{tab:results_tl500}
+\end{minipage}
+
+\\[1em]
+
+\begin{minipage}{0.85\linewidth}
+\centering
+\resizebox{\linewidth}{!}{\input{tables/all_results_avg_pivot_tl1000}}
+\caption{Średnie wyniki dla \(T_{\text{limit}} = 1000\) ms.}
+\label{tab:results_tl1000}
+\end{minipage}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{minipage}{0.85\linewidth}
+\centering
+\resizebox{\linewidth}{!}{\input{tables/all_results_avg_pivot_tl2000}}
+\caption{Średnie wyniki dla \(T_{\text{limit}} = 2000\) ms.}
+\label{tab:results_tl2000}
+\end{minipage}
+
+\\[1em]
+
+\begin{minipage}{0.85\linewidth}
+\centering
+\resizebox{\linewidth}{!}{\input{tables/all_results_avg_pivot_tl5000}}
+\caption{Średnie wyniki dla \(T_{\text{limit}} = 5000\) ms.}
+\label{tab:results_tl5000}
+\end{minipage}
+
+\\[1em]
+
+\begin{minipage}{0.85\linewidth}
+\centering
+\resizebox{\linewidth}{!}{\input{tables/all_results_avg_pivot_tl10000}}
+\caption{Średnie wyniki dla \(T_{\text{limit}} = 10000\) ms.}
+\label{tab:results_tl10000}
+\end{minipage}
+\end{table}
+
+\section{Wnioski i dalsze prace}
+Hybrydowe sąsiedztwa kompozytowe przyspieszają wczesną eksploatację w TS i SA, lecz ryzykują stagnację bez dywersyfikacji. Dynasearch pozostaje skuteczny, ale znacząco kosztowny obliczeniowo. Przyszłe prace powinny skupić się na inkrementalnej ewaluacji, adaptacyjnym przełączaniu między sąsiedztwami, probabilistycznym próbkowaniu wariantów oraz poszukiwaniu alternatywnych definicji sąsiedztw z porównawczą analizą ich jakości i kosztu.
+
+\section*{Podziękowania}
+Autorzy odnotowują wykorzystanie dużych modeli językowych (OpenAI GPT-5) do zadań pomocniczych, w tym językowej redakcji tekstu, wstępnego wyszukiwania literatury, automatyzacji wybranych procesów eksperymentalnych (np. wstępne przetwarzanie danych i analiza logów), dyskusji idei oraz wsparcia przy generowaniu kodu eksperymentalnego. Modele nie brały udziału w tworzeniu kluczowych koncepcji badawczych ani w interpretacji wyników.
+
+\appendix
+\section{Aneks: pseudokod metaheurystyk i sąsiedztw dla permutation Flow Shop}
+Niech \(m\) oznacza liczbę maszyn, \(n\) liczbę zadań, \(P = (p_{k,j})\) czasy przetwarzania. Permutacja (sekwencja) to \(\perm\). Celem jest minimalizacja \(\makespan(\perm)\). Funkcja \textsc{Makespan}\((\perm)\) zwraca \(\makespan(\perm)\). Budżet czasu w milisekundach: \(T_{\text{limit}}\). Czas od startu: \(t\). W SA temperatura to \(T\). W TS kadencja tabu to \(\tau_{\text{Tabu}}\). Używamy \(\Delta = \makespan(\perm')-\makespan(\perm)\) dla kandydata ruchu.
+{\scriptsize
+\setlength{\textfloatsep}{4pt}
+\setlength{\intextsep}{4pt}
+\setlength{\floatsep}{4pt}
+\setlength{\abovecaptionskip}{2pt}
+\setlength{\belowcaptionskip}{2pt}
+
+\begin{algorithm}[ht!]
+  \caption{GenerateAdjacent\((\perm)\)}
+  \begin{algorithmic}[1]
+    \State $N \gets \emptyset$
+    \For{$i = 1$ to $n-1$}
+      \State $\perm' \gets \perm$ z zamienionymi pozycjami $i,i+1$
+      \State $N \gets N \cup \{(\perm', (i,i+1))\}$
+    \EndFor
+    \State \Return $N$
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[ht!]
+  \caption{Sąsiedztwo kompozytowe rozłącznych zamian (\emph{Fibonacci})}
+  \begin{algorithmic}[1]
+    \State $base \gets$ \textsc{Makespan\}$(\perm)$; $cand \gets []$
+    \For{$i=1$ to $n-1$}
+      \State $\perm' \gets$ zamień $(i,i{+}1)$ w $\perm$
+      \State $\Delta_i \gets$ \textsc{Makespan\}$(\perm') - base$
+      \State dodaj $(i,\Delta_i)$ do $cand$
+    \EndFor
+    \If{$cand$ puste} \Return $(\perm, base, \emptyset)$ \EndIf
+    \State Posortuj $cand$ po indeksie
+    \For{$k = |cand|$ w dół do $1$}
+      \State Oblicz $DP[k] =$ najlepszą krotkę $(value, chosenSet)$
+      \State Wybierz minimalną wartość (remisy: preferuj bardziej ujemne)
+    \EndFor
+    \State $(bestVal, chosen) \gets DP[1]$
+    \If{$chosen = \emptyset$}
+      \State Wybierz $i^* = \arg\min_i \Delta_i$; $chosen \gets \{i^*\}$
+    \EndIf
+    \State $\perm^{new} \gets \perm$
+    \For{każde $i \in chosen$} zastosuj zamianę $(i,i{+}1)$ \EndFor
+    \State \Return $(\perm^{new}, $ \textsc{Makespan\}$(\perm^{new}), chosen)$
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{DynasearchRecursive\$(\perm, depth)$ (szkic)}
+  \begin{algorithmic}[1]
+    \If{$depth = 0$} \Return $(\perm, $ \textsc{Makespan\}$(\perm))$ \EndIf
+    \State Zdekomponuj permutację na niezależne segmenty
+    \State $best \gets (\perm, $ \textsc{Makespan\}$(\perm))$
+    \For{każdy wzorzec segmentu i transformację $\theta$}
+      \State $(\perm'', c'') \gets$ DynasearchRecursive\$(\theta(\perm), depth-1)$
+      \If{$c'' < best.c$} $best \gets (\perm'', c'')$ \EndIf
+    \EndFor
+    \Return $best$
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{TabuSearch\$(processing\;times, T_{limit}, \tau_{tabu}, neigMode)$}
+  \begin{algorithmic}[1]
+    \State Zainicjalizuj $\perm$, $best$, $bestC$, $Tabu$, $iter$, czas
+    \While{$t < T_{limit}$}
+      \If{$neigMode =$ Adjacent}
+        \State $Candidates \gets$ GenerateAdjacent\$(\perm)$
+      \ElsIf{$neigMode =$ Composite}
+        \State $(\perm', c', chosen) \gets$ Sąsiedztwo kompozytowe\$(\perm)$
+      \ElsIf{$neigMode =$ Dynasearch}
+        \State $(\perm', c', \_) \gets$ DynasearchRecursive\$(\perm, depth)$
+      \EndIf
+      \State Aktualizuj listę tabu, zapisuj najlepsze
+    \EndWhile
+    \State \Return $(best, bestC)$
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{SimulatedAnnealing\$(P, T_{limit}, T_{init}, T_{final}, \alpha, r, \tau_{stagn}, neigMode)$}
+  \begin{algorithmic}[1]
+    \State Zainicjalizuj $\perm$, $c$, $best$, $bestC$, $T$, zegary
+    \While{$t < T_{limit}$}
+      \If{$neigMode =$ Adjacent}
+        \State Wylosuj $i$; $\perm' =$ zamiana $(i,i{+}1)$
+      \ElsIf{$neigMode =$ Composite}
+        \State $(\perm', c', chosen) \gets$ Sąsiedztwo kompozytowe\$(\perm)$
+      \ElsIf{$neigMode =$ Dynasearch}
+        \State $(\perm', c', \_) \gets$ DynasearchRecursive\$(\perm, depth)$
+      \EndIf
+      \State Zastosuj regułę akceptacji, chłodzenie, podgrzewanie
+    \EndWhile
+    \State \Return $(best, bestC)$
+  \end{algorithmic}
+\end{algorithm}
+}

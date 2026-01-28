@@ -100,16 +100,37 @@ def save_multi_convergence_plot(
     filepath: str = None,
     results_folder: str = "results",
     time_limit_ms: int = None,
+    grayscale: bool = False,
 ):
-    """Draw comparison of several convergence histories on one plot and save it.
+    """Rysuje porównanie kilku krzywych zbieżności i zapisuje do pliku.
 
-    Uses constrained_layout to avoid tight_layout warnings and places legend outside.
+    Parametry:
+      histories: {key: (times_list, cmax_list)}
+      labels: opcjonalne etykiety nadpisujące nazwy kluczy
+      colors: mapowanie klucz -> kolor (ignorowane gdy grayscale=True)
+      filepath: docelowa ścieżka; jeśli None wygenerowana automatycznie
+      results_folder: katalog bazowy wyników
+      time_limit_ms: opcjonalny limit czasu rysowany jako pionowa linia
+      grayscale: jeśli True, wykres w odcieniach czerni z zróżnicowanymi stylami linii/markerów
+
+    Uwagi:
+      - tryb grayscale ułatwia druk (brak zależności od koloru).
+      - każda krzywa otrzymuje odmienny linestyle/marker aby zachować rozróżnialność.
     """
     fig, ax = plt.subplots(figsize=(10, 6), constrained_layout=True)
     if labels is None:
         labels = {}
     if colors is None:
         colors = {}
+    # Definicja cyklu stylów dla trybu czarno-białego (powtarzalny jeśli więcej serii)
+    style_cycle = [
+        {"linestyle": "-", "marker": "o"},
+        {"linestyle": "--", "marker": "s"},
+        {"linestyle": "-.", "marker": "^"},
+        {"linestyle": ":", "marker": "d"},
+        {"linestyle": (0, (3, 1, 1, 1)), "marker": "v"},
+    ]
+    style_index = 0
     for key, (times, cmax_values) in histories.items():
         # Defensive copy to avoid mutating original history structures
         times_local = list(times)
@@ -146,18 +167,34 @@ def save_multi_convergence_plot(
         if not times_local or not cmax_local:
             continue
         label = labels.get(key, key)
-        color = colors.get(key, None)
-        ax.plot(
-            times_local,
-            cmax_local,
-            label=label,
-            linewidth=2,
-            marker="o",
-            markersize=4,
-            markerfacecolor="white",
-            markeredgewidth=1.0,
-            color=color,
-        )
+        if grayscale:
+            style = style_cycle[style_index % len(style_cycle)]
+            style_index += 1
+            ax.plot(
+                times_local,
+                cmax_local,
+                label=label,
+                linewidth=2,
+                marker=style["marker"],
+                markersize=4,
+                markerfacecolor="white",
+                markeredgewidth=1.0,
+                color="black",
+                linestyle=style["linestyle"],
+            )
+        else:
+            color = colors.get(key, None)
+            ax.plot(
+                times_local,
+                cmax_local,
+                label=label,
+                linewidth=2,
+                marker="o",
+                markersize=4,
+                markerfacecolor="white",
+                markeredgewidth=1.0,
+                color=color,
+            )
         if times_local and cmax_local:
             ax.annotate(
                 f"{cmax_local[-1]}",
@@ -172,14 +209,15 @@ def save_multi_convergence_plot(
     ax.set_ylabel("Cmax", fontsize=12)
     ax.set_title("Convergence comparison", fontsize=14, fontweight="bold")
     ax.grid(True, alpha=0.25, linestyle="--", linewidth=0.7)
+    limit_color = "black" if grayscale else "red"
     if time_limit_ms is not None:
         try:
-            ax.axvline(x=time_limit_ms, color="red", linestyle="--", linewidth=1.2, zorder=5)
+            ax.axvline(x=time_limit_ms, color=limit_color, linestyle="--", linewidth=1.2, zorder=5)
             ax.text(
                 time_limit_ms,
                 ax.get_ylim()[1],
                 " time limit",
-                color="red",
+                color=limit_color,
                 fontsize=9,
                 va="top",
                 ha="left",
@@ -335,7 +373,9 @@ def save_convergence_plot_to(iterations: List[int], cmax_values: List[int], file
     print(f"Convergence plot saved as: {filepath}")
 
 
-def build_algorithm_multi_convergence_plots(timestamp_dir: str | Path) -> List[Path]:
+def build_algorithm_multi_convergence_plots(
+    timestamp_dir: str | Path, grayscale: bool = False
+) -> List[Path]:
     """Zbuduj wykresy konwergencji per algorytm z trzema sąsiedztwami równocześnie.
 
     Szuka JSONów w katalogu `timestamp_dir` (pojedynczy eksperyment) i dla każdej trójki
@@ -441,6 +481,7 @@ def build_algorithm_multi_convergence_plots(timestamp_dir: str | Path) -> List[P
                     colors=colors,
                     filepath=str(out_path),
                     time_limit_ms=int(tl),
+                    grayscale=grayscale,
                 )
                 outputs.append(out_path)
             except Exception:

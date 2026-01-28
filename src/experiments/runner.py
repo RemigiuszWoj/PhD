@@ -10,7 +10,7 @@ from typing import Iterable, List, Sequence
 
 from src import visualization as viz
 from src.parser import parser
-from src.serach import simulated_annealing, tabu_search  # TODO: rename serach -> search later
+from src.search import simulated_annealing, tabu_search
 
 # Full canonical sets used for experiments (always applied regardless of config lists)
 ALGORITHMS_ALL = ("tabu", "sa")
@@ -18,6 +18,7 @@ NEIGHBORHOODS_ALL = (
     "adjacent",
     "fibonahi_neighborhood",
     "dynasearch_neighborhood",
+    "motzkin_neighborhood",
 )
 
 

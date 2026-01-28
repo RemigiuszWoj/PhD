@@ -11,6 +11,7 @@ from src.neighbors import (
     swap_jobs,
 )
 from src.permutation_procesing import c_max
+from src.quantum_neighbors import generate_neighbors_adjacent_qubo
 
 
 def tabu_search(
@@ -79,14 +80,26 @@ def tabu_search(
 
         elif neigh_mode == "fibonahi_neighborhood":
             new_pi, new_c = fibonahi_neighborhood(current_pi, processing_times)
-            move_selected = tuple(new_pi)  # just a placeholder to store in tabu
+            move_selected = tuple(new_pi)  # permutacja jako identyfikator ruchu
+            # Sprawdź tabu (z aspiracją)
+            tabu_active = move_selected in tabu_list and tabu_list[move_selected] > iteration
+            if tabu_active and new_c >= best_cmax:
+                # Ruch tabu i nie aspiruje - pomijamy iterację
+                iteration += 1
+                continue
             pi_selected = new_pi
             cmax_selected = new_c
 
         elif neigh_mode == "dynasearch_neighborhood":
             # Zastąpiono wersję naiwną pełną implementacją dynasearch
             new_pi, new_c, _ = dynasearch_full(current_pi, processing_times)
-            move_selected = tuple(new_pi)  # placeholder
+            move_selected = tuple(new_pi)  # permutacja jako identyfikator ruchu
+            # Sprawdź tabu (z aspiracją)
+            tabu_active = move_selected in tabu_list and tabu_list[move_selected] > iteration
+            if tabu_active and new_c >= best_cmax:
+                # Ruch tabu i nie aspiruje - pomijamy iterację
+                iteration += 1
+                continue
             pi_selected = new_pi
             cmax_selected = new_c
 
@@ -103,6 +116,26 @@ def tabu_search(
             )
             # Ruch w tabu: krotka wybranych par (stabilniejsze niż cała permutacja)
             move_selected = tuple(selected_pairs) if selected_pairs else tuple(new_pi)
+            # Sprawdź tabu (z aspiracją)
+            tabu_active = move_selected in tabu_list and tabu_list[move_selected] > iteration
+            if tabu_active and new_c >= best_cmax:
+                # Ruch tabu i nie aspiruje - pomijamy iterację
+                iteration += 1
+                continue
+            pi_selected = new_pi
+            cmax_selected = new_c
+
+        elif neigh_mode == "quantum_adjacent":
+            # Kwantowe otoczenie - wybór najlepszej zamiany przez QUBO
+            new_pi, move = generate_neighbors_adjacent_qubo(current_pi, processing_times)
+            new_c = c_max(new_pi, processing_times)
+            move_selected = move
+            # Sprawdź tabu (z aspiracją)
+            tabu_active = move_selected in tabu_list and tabu_list[move_selected] > iteration
+            if tabu_active and new_c >= best_cmax:
+                # Ruch tabu i nie aspiruje - pomijamy iterację
+                iteration += 1
+                continue
             pi_selected = new_pi
             cmax_selected = new_c
 
@@ -322,6 +355,36 @@ def simulated_annealing(
                 current_pi,
                 processing_times,
             )
+            delta = neighbor_cmax - current_cmax
+
+            if delta < 0 or random.random() < math.exp(-delta / T):
+                current_pi = neighbor
+                current_cmax = neighbor_cmax
+
+            if current_cmax < best_cmax:
+                best_cmax = current_cmax
+                best_pi = current_pi.copy()
+                cmax_history.append(best_cmax)
+                elapsed_ms = int((time.time() - start_time) * 1000)
+                iteration_history.append(elapsed_ms)
+                last_improve_time = time.time()
+
+            if log_file:
+                try:
+                    elapsed_ms_full = int((time.time() - start_time) * 1000)
+                    permutation_str = " ".join(map(str, current_pi))
+                    log_file.write(
+                        f"{iteration},{elapsed_ms_full},{current_cmax},"
+                        f'{best_cmax},"{permutation_str}"\n'
+                    )
+                except Exception:
+                    pass
+            iteration += 1
+
+        elif neigh_mode == "quantum_adjacent":
+            # Kwantowe otoczenie - wybór przez QUBO solver
+            neighbor, move = generate_neighbors_adjacent_qubo(current_pi, processing_times)
+            neighbor_cmax = c_max(neighbor, processing_times)
             delta = neighbor_cmax - current_cmax
 
             if delta < 0 or random.random() < math.exp(-delta / T):

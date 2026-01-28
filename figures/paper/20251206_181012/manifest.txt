@@ -1,0 +1,5 @@
+figures/paper/20251206_181012/gap_vs_time_tabu.png
+figures/paper/20251206_181012/gap_vs_time_sa.png
+figures/paper/20251206_181012/convergence_tabu_search_compare_tai200_20_instance0.png
+figures/paper/20251206_181012/convergence_tabu_search_compare_tai500_20_instance2.png
+figures/paper/20251206_181012/win_rate_sa_5000ms.png

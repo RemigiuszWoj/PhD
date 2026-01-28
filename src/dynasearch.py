@@ -1,65 +1,8 @@
 import copy
 from typing import Dict, Iterator, List, Optional, Tuple
 
+from src.boundaries import compute_prefix_boundaries
 from src.permutation_procesing import c_max
-
-
-# --------------------------
-# Prefix boundaries (F)
-# --------------------------
-def compute_prefix_boundaries(pi: List[int], processing_times: List[List[int]]) -> List[List[int]]:
-    """
-    Compute prefix boundary vectors F[k] for k = 0..n.
-    F[k] is a length-m vector: completion times on machines after processing
-    first k jobs (pi[0..k-1]).
-    """
-    m = len(processing_times)
-    n = len(pi)
-    F = [[0] * m for _ in range(n + 1)]
-    for k in range(1, n + 1):
-        job = pi[k - 1]
-        F[k][0] = F[k - 1][0] + processing_times[0][job]
-        for r in range(1, m):
-            F[k][r] = max(F[k][r - 1], F[k - 1][r]) + processing_times[r][job]
-    return F  # F[0]..F[n]; F[n][-1] == c_max(pi)
-
-
-# --------------------------
-# Suffix boundaries (optional)
-# --------------------------
-def compute_suffix_boundaries(pi: List[int], processing_times: List[List[int]]) -> List[List[int]]:
-    """
-    Compute suffix boundary vectors S[k] for k = 0..n where S[k] describes
-    completion times if we process suffix pi[k..n-1] on 'reversed' machines.
-    This function returns vectors such that you can reason about the tail,
-    but in our implementation we will usually continue forward from boundary,
-    so S is optional and provided for completeness / potential optimizations.
-    """
-    # We'll compute by reversing the instance: reverse job order and machine order,
-    # compute prefixes there, then map back. This yields information about tails.
-    m = len(processing_times)
-    n = len(pi)
-    # Build reversed processing times for reversed job order and reversed machines
-    # processing_times_rev[r_rev][job_index] = processing_times[m-1-r_rev][ pi[n-1-job_index] ]
-    # But for now produce simple suffix by computing completions of tails as if they
-    # were independent prefixes: compute completion vectors for suffixes directly by simulation.
-    S = [
-        [0] * m for _ in range(n + 1)
-    ]  # S[k] will be completion after processing jobs k..n-1 starting from zero
-    # compute for each k the completion vector if we start from zero and process pi[k..]
-    for k in range(n - 1, -1, -1):
-        # simulate processing of suffix pi[k..] from zero start
-        col_prev = [0] * m
-        for t in range(k, n):
-            j = pi[t]
-            col = [0] * m
-            col[0] = col_prev[0] + processing_times[0][j]
-            for r in range(1, m):
-                col[r] = max(col[r - 1], col_prev[r]) + processing_times[r][j]
-            col_prev = col
-        S[k] = col_prev[:]  # completion vector after processing suffix
-    # S[n] is zeros (empty suffix)
-    return S
 
 
 # --------------------------

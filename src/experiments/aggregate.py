@@ -85,12 +85,16 @@ def write_summary_csv(timestamp_dir: Path) -> Path:
 
 
 def write_wide_gap_table(timestamp_dir: Path, summary_path: Path | None = None) -> Path:
-    """Create a wide table with one row per instance_number and columns:
-    instance_number,
-      tabu_adjacent, tabu_fibonahi_neighborhood, tabu_dynasearch_neighborhood,
-      sa_adjacent,   sa_fibonahi_neighborhood,   sa_dynasearch_neighborhood
+    """Create a wide table with one row per (instance_file, instance_number, time_limit_ms)
+    and columns:
+        instance_file, instance_number, time_limit_ms,
+        tabu_adjacent, tabu_fibonahi_neighborhood,
+        tabu_dynasearch_neighborhood, tabu_motzkin_neighborhood,
+        sa_adjacent,   sa_fibonahi_neighborhood,
+        sa_dynasearch_neighborhood,   sa_motzkin_neighborhood
 
-    Values = best (minimal) gap_percent over seeds for that (algorithm, neighborhood, instance).
+    Values = best (minimal) gap_percent over seeds for that
+    (algorithm, neighborhood, instance, tl_ms).
     If gap unavailable -> blank.
     """
     # Load summary (create if absent)
@@ -162,9 +166,11 @@ def write_wide_gap_table(timestamp_dir: Path, summary_path: Path | None = None) 
         "tabu_adjacent",
         "tabu_fibonahi_neighborhood",
         "tabu_dynasearch_neighborhood",
+        "tabu_motzkin_neighborhood",
         "sa_adjacent",
         "sa_fibonahi_neighborhood",
         "sa_dynasearch_neighborhood",
+        "sa_motzkin_neighborhood",
     ]
     out_path = timestamp_dir / "wide_summary.csv"
     with open(out_path, "w", encoding="utf-8", newline="") as f:
@@ -185,9 +191,11 @@ def write_wide_gap_table(timestamp_dir: Path, summary_path: Path | None = None) 
                 fmt("tabu", "adjacent"),
                 fmt("tabu", "fibonahi_neighborhood"),
                 fmt("tabu", "dynasearch_neighborhood"),
+                fmt("tabu", "motzkin_neighborhood"),
                 fmt("sa", "adjacent"),
                 fmt("sa", "fibonahi_neighborhood"),
                 fmt("sa", "dynasearch_neighborhood"),
+                fmt("sa", "motzkin_neighborhood"),
             ]
             w.writerow(row)
     print(f"[Aggregate] Wide summary written: {out_path}")
@@ -225,11 +233,13 @@ def write_matrix_gap_table(timestamp_dir: Path, summary_path: Path | None = None
         out = timestamp_dir / "matrix_summary.csv"
         with open(out, "w", encoding="utf-8", newline="") as fw:
             fw.write(
-                "instance_number,tabu,tabu,tabu,sa,sa,sa,best_cmax,lower_bound,best_gap_percent\n"
+                "instance_number,tabu,tabu,tabu,tabu,sa,sa,sa,sa,"
+                + "best_cmax,lower_bound,best_gap_percent\n"
             )
             fw.write(
-                ",adjacent,fibonahi_neighborhood,dynasearch_neighborhood,adjacent,"
-                "fibonahi_neighborhood,dynasearch_neighborhood,,,,\n"
+                ",adjacent,fibonahi_neighborhood,dynasearch_neighborhood,"
+                + "motzkin_neighborhood,adjacent,fibonahi_neighborhood,"
+                + "dynasearch_neighborhood,motzkin_neighborhood,,,,\n"
             )
         return out
 
@@ -298,9 +308,11 @@ def write_matrix_gap_table(timestamp_dir: Path, summary_path: Path | None = None
                 "tabu_adjacent",
                 "tabu_fibonahi_neighborhood",
                 "tabu_dynasearch_neighborhood",
+                "tabu_motzkin_neighborhood",
                 "sa_adjacent",
                 "sa_fibonahi_neighborhood",
                 "sa_dynasearch_neighborhood",
+                "sa_motzkin_neighborhood",
             ]
         )
 
@@ -321,9 +333,11 @@ def write_matrix_gap_table(timestamp_dir: Path, summary_path: Path | None = None
                     get_gap(per, "tabu", "adjacent"),
                     get_gap(per, "tabu", "fibonahi_neighborhood"),
                     get_gap(per, "tabu", "dynasearch_neighborhood"),
+                    get_gap(per, "tabu", "motzkin_neighborhood"),
                     get_gap(per, "sa", "adjacent"),
                     get_gap(per, "sa", "fibonahi_neighborhood"),
                     get_gap(per, "sa", "dynasearch_neighborhood"),
+                    get_gap(per, "sa", "motzkin_neighborhood"),
                 ]
             )
     print(f"[Aggregate] Matrix per-run summary written: {out_path}")
@@ -430,9 +444,11 @@ def write_matrix_per_seed_table(timestamp_dir: Path, summary_path: Path | None =
                 "tabu_adjacent",
                 "tabu_fibonahi",
                 "tabu_dynasearch",
+                "tabu_motzkin",
                 "sa_adjacent",
                 "sa_fibonahi",
                 "sa_dynasearch",
+                "sa_motzkin",
                 "best_cmax_seed",
                 "lower_bound_seed",
                 "gap_best_seed",
@@ -453,6 +469,7 @@ def write_matrix_per_seed_table(timestamp_dir: Path, summary_path: Path | None =
                     "adjacent",
                     "fibonahi_neighborhood",
                     "dynasearch_neighborhood",
+                    "motzkin_neighborhood",
                 ):
                     c = inst_seed_cmax.get((inst_file, inst, seed, tl, alg, neigh))
                     if c is not None and (best_c is None or c < best_c):
@@ -472,9 +489,11 @@ def write_matrix_per_seed_table(timestamp_dir: Path, summary_path: Path | None =
                     gap_fmt(inst_file, inst, seed, tl, "tabu", "adjacent"),
                     gap_fmt(inst_file, inst, seed, tl, "tabu", "fibonahi_neighborhood"),
                     gap_fmt(inst_file, inst, seed, tl, "tabu", "dynasearch_neighborhood"),
+                    gap_fmt(inst_file, inst, seed, tl, "tabu", "motzkin_neighborhood"),
                     gap_fmt(inst_file, inst, seed, tl, "sa", "adjacent"),
                     gap_fmt(inst_file, inst, seed, tl, "sa", "fibonahi_neighborhood"),
                     gap_fmt(inst_file, inst, seed, tl, "sa", "dynasearch_neighborhood"),
+                    gap_fmt(inst_file, inst, seed, tl, "sa", "motzkin_neighborhood"),
                     best_c if best_c is not None else "",
                     lb if lb is not None else "",
                     gap_best_seed_str,

@@ -1,5 +1,6 @@
 from typing import List, Optional, Tuple
 
+from src.boundaries import compute_prefix_boundaries
 from src.permutation_procesing import c_max
 
 # ---------------------------------------------------------------------------
@@ -14,23 +15,6 @@ from src.permutation_procesing import c_max
 # Method: full enumeration of individual swap deltas + O(n^3) DP selection
 # Complexity: ~ O(m * n^3) (m = number of machines)
 # ---------------------------------------------------------------------------
-
-
-def _compute_prefix_boundaries(pi: List[int], processing_times: List[List[int]]) -> List[List[int]]:
-    """Compute prefix completion columns F[k] for k = 0..n.
-
-    F[k][r] holds the completion time on machine r after the first k jobs
-    (jobs pi[0..k-1]) are processed.
-    """
-    m = len(processing_times)
-    n = len(pi)
-    F: List[List[int]] = [[0] * m for _ in range(n + 1)]
-    for k in range(1, n + 1):
-        job = pi[k - 1]
-        F[k][0] = F[k - 1][0] + processing_times[0][job]
-        for r in range(1, m):
-            F[k][r] = max(F[k][r - 1], F[k - 1][r]) + processing_times[r][job]
-    return F
 
 
 def _delta_swap(
@@ -127,7 +111,7 @@ def motzkin_neighborhood_full(
         return pi[:], c_max(pi, processing_times), []
 
     base_c = c_max(pi, processing_times)
-    F = _compute_prefix_boundaries(pi, processing_times)
+    F = compute_prefix_boundaries(pi, processing_times)
 
     # Delta matrix for all pairs
     delta: List[List[float]] = [[float("inf")] * n for _ in range(n)]

@@ -110,11 +110,11 @@ When `--gantt-path` is omitted a window will pop up (interactive backend permitt
 
 `src/main.py` exposes multiple modes via `--algo`:
 
-- `demo` – heuristic comparison + hill climb + tabu + SA + (optional) Gantt
+- `demo` – heuristic comparison + hill climb + ils + SA + (optional) Gantt
 - `hill` – only hill climbing from SPT permutation
-- `tabu` – hill climb warm‑start then tabu search
+- `ils` – hill climb warm‑start then iterated local search
 - `sa` – simulated annealing from SPT
-- `pipeline` – multi‑start random → hill → tabu → SA summary
+- `pipeline` – multi‑start random → hill → ils → SA summary
 - `auto` – independent multi‑start (all three algorithms)
 - `benchmark` – batch over a random sample of Taillard `ta*` files
 
@@ -122,7 +122,7 @@ Common useful flags:
 
 ```bash
 --neighbor-limit 40 --max-no-improve 20 \
---tabu-iterations 150 --tabu-tenure 12 --tabu-candidate-size 60 \
+--ils-iterations 150 --tabu-tenure 12 --ils-candidate-size 60 \
 --sa-iterations 800 --sa-initial-temp 40 --sa-cooling 0.96 --sa-neighbor-moves 2 \
 --pipeline-runs 5 --gantt
 ```
@@ -135,7 +135,7 @@ python -m src.main --algo hill --log-level DEBUG
 
 ## Auto Mode (independent multi‑start)
 
-Auto mode runs each algorithm (`hill`, `tabu`, `sa`) independently `--runs` times starting every run from a fresh random permutation (algorithms do NOT seed one another). Artifacts saved into `--charts-dir` (default `charts/`):
+Auto mode runs each algorithm (`hill`, `ils`, `sa`) independently `--runs` times starting every run from a fresh random permutation (algorithms do NOT seed one another). Artifacts saved into `--charts-dir` (default `charts/`):
 
 - `progress_curves_<timestamp>.png` – overlay of best‐so‑far Cmax vs iteration/time for all algorithms (scatter / step look).
 - `gantt_<algo>_c<bestC>_<timestamp>.png` – per‑algorithm Gantt for its best run.
@@ -149,7 +149,7 @@ Example:
 ```bash
 python -m src.main --algo auto --instance data/JSPLIB/instances/ta01 --runs 50 \
 	--neighbor-limit 40 --max-no-improve 20 \
-	--tabu-iterations 150 --tabu-tenure 12 --tabu-candidate-size 60 \
+	--ils-iterations 150 --tabu-tenure 12 --ils-candidate-size 60 \
 	--sa-iterations 800 --sa-initial-temp 40 --sa-cooling 0.96 --sa-neighbor-moves 2
 ```
 
@@ -177,7 +177,7 @@ research/
 			results_hill_<timestamp>.json          # final full summary
 			progress_hill_<timestamp>.png          # best run progress
 			gantt_hill_c<bestC>.png
-		tabu/
+		ils/
 			... (analogiczne pliki)
 		sa/
 			...
@@ -195,7 +195,7 @@ Incremental schema (subset):
 ```jsonc
 {
 	"instance": "data/JSPLIB/instances/ta01",
-	"algorithm": "tabu",
+	"algorithm": "ils",
 	"runs_completed": 37,
 	"planned_runs": 60,
 	"per_run": [{"run":1,"cmax":1234,"time":0.231}, ...],
@@ -212,7 +212,7 @@ The final (non‑incremental) JSON adds a `timestamp` and retains full per‑run
 
 ### Reproducibility Tips
 
-- Provide `--seed` for deterministic permutation sampling; note that stochastic acceptance (SA) and candidate choices (Tabu) depend on this RNG state too.
+- Provide `--seed` for deterministic permutation sampling; note that stochastic acceptance (SA) and candidate choices (ILS) depend on this RNG state too.
 - Capture the exact CLI plus the contents of each `results_incremental_*.json` for resuming context.
 
 ## JSON Permutation Representations
@@ -297,7 +297,7 @@ Then re-run the checks.
 Run single algorithm once:
 
 ```bash
-python -m src.main --algo tabu --instance data/JSPLIB/instances/ta01
+python -m src.main --algo ils --instance data/JSPLIB/instances/ta01
 ```
 
 Run auto comparison (30 runs each):

@@ -192,12 +192,12 @@ def write_wide_gap_table(timestamp_dir: Path, summary_path: Path | None = None) 
                 inst_file,
                 inst,
                 tl,
-                fmt("tabu", "adjacent"),
-                fmt("tabu", "quantum_adjacent"),
-                fmt("tabu", "quantum_fibonahi"),
-                fmt("tabu", "fibonahi"),
-                fmt("tabu", "dynasearch"),
-                fmt("tabu", "motzkin"),
+                fmt("ils", "adjacent"),
+                fmt("ils", "quantum_adjacent"),
+                fmt("ils", "quantum_fibonahi"),
+                fmt("ils", "fibonahi"),
+                fmt("ils", "dynasearch"),
+                fmt("ils", "motzkin"),
                 fmt("sa", "adjacent"),
                 fmt("sa", "quantum_adjacent"),
                 fmt("sa", "quantum_fibonahi"),
@@ -214,9 +214,9 @@ def write_matrix_gap_table(timestamp_dir: Path, summary_path: Path | None = None
     """Create a matrix-style CSV showing GAP dla KAŻDEGO odpalenia (seed) zamiast minimum.
 
     Nowy format (per-run):
-        - Każdy wiersz: (instance_number, seed, TABU:3 kolumny, SA:3 kolumny,
+        - Każdy wiersz: (instance_number, seed, ILS:3 kolumny, SA:3 kolumny,
           best_cmax_seed, lower_bound, gap_best_seed)
-        - Kolumny TABU/SA zawierają gap_percent dla dokładnego (alg, neigh, seed) runu.
+        - Kolumny ILS/SA zawierają gap_percent dla dokładnego (alg, neigh, seed) runu.
         - best_cmax_seed = minimum cmax_best w tym (instance, seed) po wszystkich alg+neigh.
         - gap_best_seed = (best_cmax_seed - lower_bound)/lower_bound*100 jeśli lower_bound dostępny.
 
@@ -241,7 +241,7 @@ def write_matrix_gap_table(timestamp_dir: Path, summary_path: Path | None = None
         out = timestamp_dir / "matrix_summary.csv"
         with open(out, "w", encoding="utf-8", newline="") as fw:
             fw.write(
-                "instance_number,tabu,tabu,tabu,tabu,sa,sa,sa,sa,"
+                "instance_number,ils,ils,ils,ils,sa,sa,sa,sa,"
                 + "best_cmax,lower_bound,best_gap_percent\n"
             )
             fw.write(
@@ -338,10 +338,10 @@ def write_matrix_gap_table(timestamp_dir: Path, summary_path: Path | None = None
                     inst,
                     tl,
                     seed,
-                    get_gap(per, "tabu", "adjacent"),
-                    get_gap(per, "tabu", "fibonahi_neighborhood"),
-                    get_gap(per, "tabu", "dynasearch_neighborhood"),
-                    get_gap(per, "tabu", "motzkin_neighborhood"),
+                    get_gap(per, "ils", "adjacent"),
+                    get_gap(per, "ils", "fibonahi_neighborhood"),
+                    get_gap(per, "ils", "dynasearch_neighborhood"),
+                    get_gap(per, "ils", "motzkin_neighborhood"),
                     get_gap(per, "sa", "adjacent"),
                     get_gap(per, "sa", "fibonahi_neighborhood"),
                     get_gap(per, "sa", "dynasearch_neighborhood"),
@@ -472,7 +472,7 @@ def write_matrix_per_seed_table(timestamp_dir: Path, summary_path: Path | None =
         for inst_file, inst, seed, tl in inst_seed_tls:
             # best cmax across all alg/neigh for this inst+seed
             best_c = None
-            for alg in ("tabu", "sa"):
+            for alg in ("ils", "sa"):
                 for neigh in (
                     "adjacent",
                     "fibonahi_neighborhood",
@@ -494,10 +494,10 @@ def write_matrix_per_seed_table(timestamp_dir: Path, summary_path: Path | None =
                     inst,
                     tl,
                     seed,
-                    gap_fmt(inst_file, inst, seed, tl, "tabu", "adjacent"),
-                    gap_fmt(inst_file, inst, seed, tl, "tabu", "fibonahi_neighborhood"),
-                    gap_fmt(inst_file, inst, seed, tl, "tabu", "dynasearch_neighborhood"),
-                    gap_fmt(inst_file, inst, seed, tl, "tabu", "motzkin_neighborhood"),
+                    gap_fmt(inst_file, inst, seed, tl, "ils", "adjacent"),
+                    gap_fmt(inst_file, inst, seed, tl, "ils", "fibonahi_neighborhood"),
+                    gap_fmt(inst_file, inst, seed, tl, "ils", "dynasearch_neighborhood"),
+                    gap_fmt(inst_file, inst, seed, tl, "ils", "motzkin_neighborhood"),
                     gap_fmt(inst_file, inst, seed, tl, "sa", "adjacent"),
                     gap_fmt(inst_file, inst, seed, tl, "sa", "fibonahi_neighborhood"),
                     gap_fmt(inst_file, inst, seed, tl, "sa", "dynasearch_neighborhood"),

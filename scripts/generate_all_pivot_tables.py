@@ -54,7 +54,7 @@ def detect_neighborhoods(rows: List[dict]) -> List[str]:
 def build_avg_by_file_tl(rows: List[dict]) -> Dict[Tuple[str, int], Dict[str, Dict[str, float]]]:
     """Return dict keyed by (stem, tl_ms) with avg gaps per (neigh, alg).
 
-    Structure: keys (stem, tl_ms) map to { '<neigh>_tabu': avg_gap, '<neigh>_sa': avg_gap }.
+    Structure: keys (stem, tl_ms) map to { '<neigh>_ils': avg_gap, '<neigh>_sa': avg_gap }.
     The average is computed across instance_number for a given
     stem/algorithm/neighborhood/time limit.
     """
@@ -116,16 +116,16 @@ def write_pivot_for_tl(
             header1 += [neigh, ""]
         header2 = ["", "", "", ""]
         for _ in neighs:
-            header2 += ["tabu", "sa"]
+            header2 += ["ils", "sa"]
         w.writerow(header1)
         w.writerow(header2)
         for stem, n, m in stems_for_tl:
             row = [stem, n, m, tl]
             vals = values.get((stem, tl), {})
             for neigh in neighs:
-                tabu = vals.get(f"{neigh}_tabu")
+                ils = vals.get(f"{neigh}_ils")
                 sa = vals.get(f"{neigh}_sa")
-                row.append(f"{tabu:.2f}" if tabu is not None else "")
+                row.append(f"{ils:.2f}" if ils is not None else "")
                 row.append(f"{sa:.2f}" if sa is not None else "")
             w.writerow(row)
         # AVG row
@@ -206,7 +206,7 @@ def main():
 def write_pivot_latex_local(csv_path: str, latex_path: str) -> None:
     """Write LaTeX table (siunitx) from a pivot CSV with two header rows.
 
-    After base columns file,n,m,tl_ms, data contains pairs (neigh TABU, neigh SA).
+    After base columns file,n,m,tl_ms, data contains pairs (neigh ILS, neigh SA).
     Neighborhood set is dynamic and reflected in headers.
     """
     with open(csv_path, encoding="utf-8") as f:
@@ -224,9 +224,9 @@ def write_pivot_latex_local(csv_path: str, latex_path: str) -> None:
         neigh = (header1[i] or "").strip()
         if not neigh:
             break
-        idx_tabu = i
+        idx_ils = i
         idx_sa = i + 1 if i + 1 < len(header2) else None
-        neigh_cols.append((neigh, idx_tabu, idx_sa))
+        neigh_cols.append((neigh, idx_ils, idx_sa))
         i += 2
 
     def short(name: str) -> str:
@@ -262,7 +262,7 @@ def write_pivot_latex_local(csv_path: str, latex_path: str) -> None:
 
         left = "\\textbf{file} & {$n$} & {$m$}"
         parts = [
-            f"{{{short(name)}$_{{\\mathrm{{TABU}}}}$}} & {{"
+            f"{{{short(name)}$_{{\\mathrm{{ILS}}}}$}} & {{"
             + f"{short(name)}$_{{\\mathrm{{SA}}}}$}}"
             for name, _, _ in neigh_cols
         ]
@@ -285,20 +285,20 @@ def write_pivot_latex_local(csv_path: str, latex_path: str) -> None:
                 except Exception:
                     return None
 
-            for j, (neigh_name, idx_tabu, idx_sa) in enumerate(neigh_cols):
-                tabu_v = row[idx_tabu] if idx_tabu is not None and idx_tabu < len(row) else ""
+            for j, (neigh_name, idx_ils, idx_sa) in enumerate(neigh_cols):
+                ils_v = row[idx_ils] if idx_ils is not None and idx_ils < len(row) else ""
                 sa_v = row[idx_sa] if idx_sa is not None and idx_sa < len(row) else ""
 
                 # format displayed values
-                tabu_fmt = fmt_num(tabu_v)
+                ils_fmt = fmt_num(ils_v)
                 sa_fmt = fmt_num(sa_v)
-                cells.append(tabu_fmt)
+                cells.append(ils_fmt)
                 cells.append(sa_fmt)
 
                 # collect numeric values (rounded to 2 decimals to match display)
                 # omit dynasearch from bolding
                 if neigh_name != "dynasearch_neighborhood":
-                    tf = to_float(tabu_v)
+                    tf = to_float(ils_v)
                     sf = to_float(sa_v)
                     base_offset = 3  # file, n, m
                     if tf is not None:

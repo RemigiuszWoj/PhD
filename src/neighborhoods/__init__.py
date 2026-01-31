@@ -1,17 +1,17 @@
-"""Moduł sąsiedztw dla problemu Flow Shop.
+"""Flow Shop neighborhoods module.
 
-Struktura:
-- common.py: wspólne funkcje (swap_jobs, compute_deltas, apply_swaps)
-- adjacent.py: sąsiedztwo adjacent (klasyczne)
-- fibonahi.py: sąsiedztwo fibonahi (klasyczne, DP)
-- dynasearch.py: sąsiedztwo dynasearch
-- motzkin.py: sąsiedztwo motzkin
-- quantum_adjacent.py: kwantowe adjacent (QUBO ONE_HOT)
-- quantum_fibonahi.py: kwantowe fibonahi (QUBO NO_OVERLAP)
+Structure:
+- common.py: shared functions (swap_jobs, compute_head, compute_tail, compute_deltas, apply_swaps)
+- adjacent.py: adjacent neighborhood (classic)
+- fibonahi.py: fibonahi neighborhood (classic, DP)
+- dynasearch.py: dynasearch neighborhood
+- motzkin.py: motzkin neighborhood
+- quantum_adjacent.py: quantum adjacent (QUBO ONE_HOT)
+- quantum_fibonahi.py: quantum fibonahi (QUBO NO_OVERLAP)
 - boundaries.py: compute_prefix_boundaries
 """
 
-# Klasyczne sąsiedztwa
+# Classic neighborhoods
 from src.neighborhoods.adjacent import (
     best_adjacent_neighbor,
     generate_neighbors_adjacent,
@@ -20,15 +20,19 @@ from src.neighborhoods.adjacent import (
 # Boundaries
 from src.neighborhoods.boundaries import compute_prefix_boundaries
 
-# Wspólne funkcje
+# Shared functions
 from src.neighborhoods.common import (
     apply_swaps,
     compute_deltas,
+    compute_head,
+    compute_head_and_tail,
+    compute_tail,
+    solve_qubo,
     swap_jobs,
     validate_no_overlap,
 )
 from src.neighborhoods.dynasearch import dynasearch_full
-from src.neighborhoods.fibonahi import fibonahi_neighborhood
+from src.neighborhoods.fibonahi import fibonahi_neighborhood_topk
 from src.neighborhoods.motzkin import motzkin_neighborhood_full
 
 # Kwantowe sąsiedztwa
@@ -44,13 +48,17 @@ from src.neighborhoods.quantum_fibonahi import (
 __all__ = [
     # Common
     "swap_jobs",
+    "compute_head",
+    "compute_tail",
+    "compute_head_and_tail",
     "compute_deltas",
     "apply_swaps",
     "validate_no_overlap",
+    "solve_qubo",
     # Classic neighborhoods
     "generate_neighbors_adjacent",
     "best_adjacent_neighbor",
-    "fibonahi_neighborhood",
+    "fibonahi_neighborhood_topk",
     "dynasearch_full",
     "motzkin_neighborhood_full",
     # Quantum neighborhoods

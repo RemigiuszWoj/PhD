@@ -9,11 +9,11 @@ from pathlib import Path
 from typing import Iterable, List, Sequence
 
 from src import visualization as viz
+from src.algorithms import iterated_local_search, simulated_annealing
 from src.parser import parser
-from src.search import simulated_annealing, tabu_search
 
 # Full canonical sets used for experiments (always applied regardless of config lists)
-ALGORITHMS_ALL = ("tabu", "sa")
+ALGORITHMS_ALL = ("ils", "sa")
 NEIGHBORHOODS_ALL = (
     "adjacent",
     "quantum_adjacent",
@@ -29,10 +29,10 @@ class RunConfig:
     """Minimal configuration of a single run.
 
     Simplified: removed explicit SA parameters (we rely on fixed defaults).
-    Tabu keeps an optional tabu_tenure.
+    ILS keeps an optional tabu_tenure (for the internal tabu list mechanism).
     """
 
-    algorithm: str  # 'tabu' | 'sa'
+    algorithm: str  # 'ils' | 'sa'
     neighborhood: str  # 'adjacent' | 'fibonahi' | 'dynasearch' | 'motzkin' | 'quantum_*'
     instance_file: str  # path to instance file
     instance_number: int  # instance index inside file
@@ -84,7 +84,7 @@ class ExperimentRunner:
         self.timestamp_dir.mkdir(parents=True, exist_ok=True)
         # Pre-defined dispatch map
         self._dispatch = {
-            "tabu": self._run_tabu,
+            "ils": self._run_ils,
             "sa": self._run_sa,
         }
 
@@ -176,8 +176,8 @@ class ExperimentRunner:
             print(f"[Experiment] Failed to create convergence plot for {path}: {e}")
 
     # --- private algorithm implementations used via dispatch ---
-    def _run_tabu(self, processing_times, cfg: RunConfig):
-        return tabu_search(
+    def _run_ils(self, processing_times, cfg: RunConfig):
+        return iterated_local_search(
             processing_times,
             max_time_ms=cfg.time_limit_ms,
             tabu_tenure=cfg.tabu_tenure or 10,
@@ -229,7 +229,7 @@ def generate_basic_plan(
                     instance_number=instance_number,
                     seed=seed,
                     time_limit_ms=time_limit_ms,
-                    tabu_tenure=10 if algo == "tabu" else None,
+                    tabu_tenure=10 if algo == "ils" else None,
                 )
                 configs.append(cfg)
     return configs

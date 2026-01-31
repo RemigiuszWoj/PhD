@@ -6,6 +6,7 @@ import sys
 
 import yaml
 
+from src.algorithms import iterated_local_search, simulated_annealing
 from src.experiments.aggregate import (
     write_matrix_gap_table,
     write_matrix_per_seed_table,
@@ -17,7 +18,6 @@ from src.experiments.runner import (
     generate_plan_for_files,
 )
 from src.parser import parser
-from src.search import simulated_annealing, tabu_search
 from src.taillard_gen import generate_taillard_instance
 from src.visualization import (
     build_algorithm_multi_convergence_plots,
@@ -73,11 +73,11 @@ def run_compare_mode(
     cmax_summary = {}
 
     # Validate algorithm choice
-    if algorithm not in ("tabu_search_compare", "simulated_annealing_compare"):
+    if algorithm not in ("ils_compare", "simulated_annealing_compare"):
         raise ValueError(f"Unknown compare algorithm: {algorithm}")
 
     # Preload algorithm-specific config
-    ts_config = config.get("tabu_search", {}) if algorithm == "tabu_search_compare" else None
+    ils_config = config.get("iterated_local_search", {}) if algorithm == "ils_compare" else None
     sa_config = (
         config.get("simulated_annealing", {})
         if algorithm == "simulated_annealing_compare"
@@ -92,11 +92,11 @@ def run_compare_mode(
         "dynasearch",
         "motzkin",
     ]:
-        if algorithm == "tabu_search_compare":
-            best_pi, best_cmax, iteration_history, cmax_history = tabu_search(
+        if algorithm == "ils_compare":
+            best_pi, best_cmax, iteration_history, cmax_history = iterated_local_search(
                 processing_times,
                 max_time_ms=algorithm_common.get("time_limit_ms", 100000),
-                tabu_tenure=ts_config.get("tabu_tenure"),
+                tabu_tenure=ils_config.get("tabu_tenure"),
                 neigh_mode=neigh_mode,
                 iter_log_path=(
                     os.path.join(out_dir, f"iter_log_{neigh_mode}.csv") if out_dir else None
@@ -268,14 +268,14 @@ def main() -> None:
         else:
             algorithm_common["time_limit_ms"] = 100000
     # Only run comparison flows (neighborhood comparisons) — simplify main.
-    if algorithm == "tabu_search_compare":
+    if algorithm == "ils_compare":
         labels = {
-            "adjacent": "Tabu: adjacent",
-            "quantum_adjacent": "Tabu: quantum_adjacent",
-            "quantum_fibonahi": "Tabu: quantum_fibonahi",
-            "fibonahi": "Tabu: fibonahi",
-            "dynasearch": "Tabu: dynasearch",
-            "motzkin": "Tabu: motzkin",
+            "adjacent": "ILS: adjacent",
+            "quantum_adjacent": "ILS: quantum_adjacent",
+            "quantum_fibonahi": "ILS: quantum_fibonahi",
+            "fibonahi": "ILS: fibonahi",
+            "dynasearch": "ILS: dynasearch",
+            "motzkin": "ILS: motzkin",
         }
         colors = {
             "adjacent": "#00FFFF",  # neon cyan
@@ -303,9 +303,7 @@ def main() -> None:
             "motzkin": "#FF9900",  # orange
         }
     else:
-        raise ValueError(
-            "Unknown algorithm: use 'tabu_search_compare' or 'simulated_annealing_compare'"
-        )
+        raise ValueError("Unknown algorithm: use 'ils_compare' or 'simulated_annealing_compare'")
 
     # run_compare_mode will save plots to results_folder/out_dir
     # If generator produced the instance, use a generated-friendly name

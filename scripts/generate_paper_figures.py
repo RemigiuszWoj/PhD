@@ -65,7 +65,7 @@ NEIGHBOR_LABEL = {
 }
 
 ALGO_LABEL = {
-    "tabu": "Tabu Search",
+    "ils": "Iterated Local Search",
     "sa": "Simulated Annealing",
 }
 
@@ -295,7 +295,7 @@ def main() -> int:
     parser.add_argument(
         "--compare-root",
         default="results",
-        help="Root folder that contains `tabu_search_compare_*` directories.",
+        help="Root folder that contains `ils_compare_*` directories.",
     )
     parser.add_argument(
         "--convergence",
@@ -307,7 +307,7 @@ def main() -> int:
         default="tai200_20:0,tai500_20:2",
         help=(
             "Comma-separated instance selectors as file:inst (e.g. tai200_20:0). "
-            "Used to locate `tabu_search_compare_<file>_instance<inst>` folders."
+            "Used to locate `ils_compare_<file>_instance<inst>` folders."
         ),
     )
     parser.add_argument(
@@ -335,7 +335,7 @@ def main() -> int:
     rows = read_summary_csv(summary_path)
 
     created: list[Path] = []
-    for algo in ("tabu", "sa"):
+    for algo in ("ils", "sa"):
         created.append(
             plot_gap_vs_time_limit(
                 rows,
@@ -355,14 +355,14 @@ def main() -> int:
                     f"Bad selector '{sel}'. Expected format like 'tai200_20:0' (file:inst)."
                 )
             instance_file, inst_str = sel.split(":", 1)
-            folder = compare_root / f"tabu_search_compare_{instance_file}_instance{inst_str}"
+            folder = compare_root / f"ils_compare_{instance_file}_instance{inst_str}"
             if not folder.exists():
                 raise SystemExit(f"Missing compare folder: {folder}")
             created.append(
                 plot_convergence_from_compare_dir(
                     folder,
                     out_dir,
-                    title=f"Tabu Search convergence: {instance_file}, instance {inst_str}",
+                    title=f"ILS convergence: {instance_file}, instance {inst_str}",
                     out_format=args.format,
                     dpi=args.dpi,
                 )

@@ -7,7 +7,7 @@ def write_pivot_latex(csv_path: str, latex_path: str) -> None:
 
     Obsługuje dynamicznie zestaw sąsiedztw: odczytuje pierwsze dwa wiersze nagłówków,
     gdzie po kolumnach file,n,m,tl_ms następują pary (neigh, '') i w drugim wierszu
-    odpowiadające im (tabu, sa). Dzięki temu, jeśli pojawi się np. motzkin_neighborhood,
+    odpowiadające im (ils, sa). Dzięki temu, jeśli pojawi się np. motzkin_neighborhood,
     tabela zostanie rozszerzona o kolejne dwie kolumny S.
     """
 
@@ -27,11 +27,11 @@ def write_pivot_latex(csv_path: str, latex_path: str) -> None:
         neigh = (header1[i] or "").strip()
         if not neigh:
             break
-        # Indeksy dla TABU/SA (wg drugiego wiersza nagłówka)
-        idx_tabu = i
+        # Indeksy dla ILS/SA (wg drugiego wiersza nagłówka)
+        idx_ils = i
         idx_sa = i + 1 if i + 1 < len(header2) else None
-        # w praktyce header2[idx_tabu] == 'tabu', header2[idx_sa] == 'sa'
-        neigh_cols.append((neigh, idx_tabu, idx_sa))
+        # w praktyce header2[idx_ils] == 'ils', header2[idx_sa] == 'sa'
+        neigh_cols.append((neigh, idx_ils, idx_sa))
         i += 2
 
     def neigh_short(name: str) -> str:
@@ -82,7 +82,7 @@ def write_pivot_latex(csv_path: str, latex_path: str) -> None:
         for name, _, _ in neigh_cols:
             short = neigh_short(name)
             parts.append(
-                f"{{{short}$_{{\\mathrm{{TABU}}}}$}} & " f"{{{short}$_{{\\mathrm{{SA}}}}$}}"
+                f"{{{short}$_{{\\mathrm{{ILS}}}}$}} & " f"{{{short}$_{{\\mathrm{{SA}}}}$}}"
             )
         header_tex = header_tex_left + " & " + " & ".join(parts) + " \\ \\hline\n"
         f.write(header_tex)

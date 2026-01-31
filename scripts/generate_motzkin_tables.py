@@ -75,16 +75,16 @@ def build_motzkin_pivot(rows: List[dict]) -> Dict[int, List[List[str]]]:
         key=lambda x: (x[1], x[2], x[0]),
     )
     for stem, n, m, tl in keys:
-        # compute avg for tabu and sa
+        # compute avg for ils and sa
         def avg_for(alg: str) -> Optional[float]:
             vals = grouped.get((stem, n, m, tl, alg), [])
             return sum(vals) / len(vals) if vals else None
 
         row = [stem, str(n), str(m), str(tl)]
-        tabu_avg = avg_for("tabu")
+        ils_avg = avg_for("ils")
         sa_avg = avg_for("sa")
         row += [
-            f"{tabu_avg:.2f}" if tabu_avg is not None else "",
+            f"{ils_avg:.2f}" if ils_avg is not None else "",
             f"{sa_avg:.2f}" if sa_avg is not None else "",
         ]
         pivot.setdefault(tl, []).append(row)
@@ -98,9 +98,9 @@ def build_motzkin_pivot(rows: List[dict]) -> Dict[int, List[List[str]]]:
             except Exception:
                 return None
 
-        tabu_vals = [_parse(r[4]) for r in rows_list if _parse(r[4]) is not None]
+        ils_vals = [_parse(r[4]) for r in rows_list if _parse(r[4]) is not None]
         sa_vals = [_parse(r[5]) for r in rows_list if _parse(r[5]) is not None]
-        tabu_avg = sum(tabu_vals) / len(tabu_vals) if tabu_vals else None
+        ils_avg = sum(ils_vals) / len(ils_vals) if ils_vals else None
         sa_avg = sum(sa_vals) / len(sa_vals) if sa_vals else None
         rows_list.append(
             [
@@ -108,7 +108,7 @@ def build_motzkin_pivot(rows: List[dict]) -> Dict[int, List[List[str]]]:
                 "",
                 "",
                 str(tl),
-                f"{tabu_avg:.4f}" if tabu_avg is not None else "",
+                f"{ils_avg:.4f}" if ils_avg is not None else "",
                 f"{sa_avg:.4f}" if sa_avg is not None else "",
             ]
         )
@@ -134,7 +134,7 @@ def write_motzkin_pivot_csv_and_tex(timestamp_dir: Path) -> List[Path]:
             w = csv.writer(f)
             # header rows
             w.writerow(["file", "n", "m", "tl_ms", "motzkin_neighborhood", ""])
-            w.writerow(["", "", "", "", "tabu", "sa"])
+            w.writerow(["", "", "", "", "ils", "sa"])
             # data
             for r in rows_list:
                 w.writerow(r)
@@ -150,7 +150,7 @@ def write_pivot_latex_local(csv_path: str, latex_path: str) -> None:
     """Write LaTeX table with siunitx S columns from a pivot CSV with two header rows.
 
     Supports dynamic set of neighborhoods. After base columns file,n,m,tl_ms, expects
-    pairs of columns per neighborhood (tabu, sa)."""
+    pairs of columns per neighborhood (ils, sa)."""
     with open(csv_path, encoding="utf-8") as f:
         reader = list(csv.reader(f))
     if len(reader) < 3:
@@ -166,9 +166,9 @@ def write_pivot_latex_local(csv_path: str, latex_path: str) -> None:
         neigh = (header1[i] or "").strip()
         if not neigh:
             break
-        idx_tabu = i
+        idx_ils = i
         idx_sa = i + 1 if i + 1 < len(header2) else None
-        neigh_cols.append((neigh, idx_tabu, idx_sa))
+        neigh_cols.append((neigh, idx_ils, idx_sa))
         i += 2
 
     def short(name: str) -> str:
@@ -207,7 +207,7 @@ def write_pivot_latex_local(csv_path: str, latex_path: str) -> None:
 
         left = "\\textbf{file} & {$n$} & {$m$} & {tl$_{\\mathrm{ms}}$}"
         parts = [
-            f"{{{short(name)}$_{{\\mathrm{{TABU}}}}$}} & {{"
+            f"{{{short(name)}$_{{\\mathrm{{ILS}}}}$}} & {{"
             + f"{short(name)}$_{{\\mathrm{{SA}}}}$}}"
             for name, _, _ in neigh_cols
         ]
@@ -224,10 +224,10 @@ def write_pivot_latex_local(csv_path: str, latex_path: str) -> None:
             except Exception:
                 tl_fmt = tl
             vals = [file_name, n, m, tl_fmt]
-            for _, idx_tabu, idx_sa in neigh_cols:
-                tabu_v = row[idx_tabu] if idx_tabu is not None and idx_tabu < len(row) else ""
+            for _, idx_ils, idx_sa in neigh_cols:
+                ils_v = row[idx_ils] if idx_ils is not None and idx_ils < len(row) else ""
                 sa_v = row[idx_sa] if idx_sa is not None and idx_sa < len(row) else ""
-                vals.append(fmt_num(tabu_v))
+                vals.append(fmt_num(ils_v))
                 vals.append(fmt_num(sa_v))
             f.write(" & ".join(vals) + " \\ \n")
         f.write("\\hline\n")

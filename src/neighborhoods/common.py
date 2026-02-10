@@ -186,6 +186,76 @@ def compute_deltas(
     return deltas
 
 
+def compute_endpoint_swap_delta(
+    pi: List[int],
+    i: int,
+    j: int,
+    Head: List[List[int]],
+    Tail: List[List[int]],
+    processing_times: List[List[int]],
+    base_cmax: int,
+) -> int:
+    """Compute delta for swapping endpoints of segment [i..j] using Head+Tail.
+
+    After swap: [pi[j]] + pi[i+1..j-1] + [pi[i]]
+
+    Uses Head matrix for prefix and Tail matrix instead of propagating to end.
+    Complexity: O(m·(j-i)) instead of O(m·(n-i))
+
+    Args:
+        pi: Current permutation
+        i: Left endpoint of segment
+        j: Right endpoint of segment
+        Head: Head matrix (forward completion times)
+        Tail: Tail matrix (backward remaining times)
+        processing_times: m × n processing times matrix
+        base_cmax: Current Cmax of the permutation
+
+    Returns:
+        Delta = new_cmax - base_cmax
+    """
+    m = len(processing_times)
+    n = len(pi)
+
+    # Start from Head at position i-1 (state after i-1 jobs)
+    if i == 0:
+        col_prev = [0] * m
+    else:
+        col_prev = [Head[r][i - 1] for r in range(m)]
+
+    col = [0] * m
+
+    # First job after swap: pi[j] (at position i)
+    job = pi[j]
+    col[0] = col_prev[0] + processing_times[0][job]
+    for r in range(1, m):
+        col[r] = max(col[r - 1], col_prev[r]) + processing_times[r][job]
+    col_prev, col = col, col_prev
+
+    # Middle of segment (positions i+1 .. j-1) - unchanged
+    for t in range(i + 1, j):
+        job = pi[t]
+        col[0] = col_prev[0] + processing_times[0][job]
+        for r in range(1, m):
+            col[r] = max(col[r - 1], col_prev[r]) + processing_times[r][job]
+        col_prev, col = col, col_prev
+
+    # Last job of swapped segment: pi[i] (at position j)
+    job = pi[i]
+    col[0] = col_prev[0] + processing_times[0][job]
+    for r in range(1, m):
+        col[r] = max(col[r - 1], col_prev[r]) + processing_times[r][job]
+    col_prev, col = col, col_prev
+
+    # Use Tail instead of propagating through remaining jobs
+    if j + 1 < n:
+        new_cmax = max(col_prev[r] + Tail[r][j + 1] for r in range(m))
+    else:
+        new_cmax = col_prev[m - 1]
+
+    return new_cmax - base_cmax
+
+
 def apply_swaps(pi: List[int], indices: List[int]) -> List[int]:
     """Apply selected adjacent swaps to a permutation.
 
@@ -230,7 +300,7 @@ def validate_no_overlap(indices: List[int]) -> List[int]:
 
 def solve_qubo(
     Q: Dict[Tuple[str, str], float],
-    num_reads: int = 50,
+    num_reads: int = 5,
 ) -> Dict[str, int]:
     """Solve QUBO using Simulated Annealing.
 

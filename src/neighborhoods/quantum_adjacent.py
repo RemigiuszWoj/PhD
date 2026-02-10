@@ -1,13 +1,32 @@
 """Quantum Adjacent neighborhood - select one swap using QUBO.
 
-QUBO formulation (one-hot):
+QUBO formulation (one-hot constraint):
     H = Σᵢ δᵢ·xᵢ + P·(Σᵢ xᵢ - 1)²
 
-QUBO matrix:
-    Q[i,i] = δᵢ - P        (cost + penalty for not selecting)
-    Q[i,j] = 2P            (penalty for selecting more than 1)
+Expanding the constraint:
+    (Σᵢ xᵢ - 1)² = (Σᵢ xᵢ)² - 2(Σᵢ xᵢ) + 1
+                 = Σᵢ xᵢ² + 2Σᵢ<ⱼ xᵢ·xⱼ - 2Σᵢ xᵢ + 1
+                 = Σᵢ xᵢ + 2Σᵢ<ⱼ xᵢ·xⱼ - 2Σᵢ xᵢ + 1  (since xᵢ² = xᵢ for binary)
+                 = -Σᵢ xᵢ + 2Σᵢ<ⱼ xᵢ·xⱼ + 1
+
+Full Hamiltonian:
+    H = Σᵢ δᵢ·xᵢ + P·(-Σᵢ xᵢ + 2Σᵢ<ⱼ xᵢ·xⱼ + 1)
+      = Σᵢ (δᵢ - P)·xᵢ + 2P·Σᵢ<ⱼ xᵢ·xⱼ + P
+
+QUBO matrix Q where H = Σᵢⱼ Q[i,j]·xᵢ·xⱼ:
+    Q[i,i] = δᵢ - P        (linear term: cost + penalty for not selecting)
+    Q[i,j] = 2P  (i≠j)     (quadratic term: penalty for selecting multiple swaps)
+
+Penalty weight:
+    P = 2·max|δᵢ| + 1      (ensures one-hot constraint dominates)
 
 Complexity: n-1 variables, O(n²) coefficients
+
+Variables:
+    xᵢ ∈ {0,1} for i=0..n-2 representing swap at positions (i, i+1)
+    δᵢ = ΔCₘₐₓ after swapping positions (i, i+1)
+
+Objective: Find binary assignment minimizing H, which enforces exactly one swap
 """
 
 from typing import Dict, List, Tuple
@@ -19,7 +38,7 @@ from src.permutation_procesing import c_max
 def quantum_adjacent_neighborhood(
     pi: List[int],
     processing_times: List[List[int]],
-    num_reads: int = 50,
+    num_reads: int = 5,
 ) -> Tuple[List[int], int, Tuple[int, int]]:
     """Quantum adjacent neighborhood - selects exactly one swap via QUBO.
 
@@ -62,7 +81,7 @@ def quantum_adjacent_neighborhood(
 def generate_neighbors_adjacent_qubo(
     pi: List[int],
     processing_times: List[List[int]],
-    num_reads: int = 50,
+    num_reads: int = 5,
 ) -> Tuple[List[int], Tuple[int, int]]:
     """Alias for quantum_adjacent_neighborhood (backward compatibility)."""
     new_pi, _, move = quantum_adjacent_neighborhood(pi, processing_times, num_reads)

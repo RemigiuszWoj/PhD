@@ -1,10 +1,10 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.11.11)  27 NOV 2025 13:41
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.11.11)  10 FEB 2026 20:28
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
  %&-line parsing enabled.
-**/Users/remigiuszwojewodzki/Desktop/Doktorat/PhD/fibonaci.tex
-(/Users/remigiuszwojewodzki/Desktop/Doktorat/PhD/fibonaci.tex
+**/Users/remigiuszwojewodzki/Desktop/PhD/artykuly/fibonaci.tex
+(/Users/remigiuszwojewodzki/Desktop/PhD/artykuly/fibonaci.tex
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
 (/usr/local/texlive/2025/texmf-dist/tex/latex/llncs/llncs.cls
@@ -421,23 +421,19 @@ Document Style algorithmicx 1.2 - a greatly improved `algorithmic' style
 \ALG@tmplength=\skip59
 )
 Document Style - pseudocode environments for use with the `algorithmicx' style
-) (/usr/local/texlive/2025/texmf-dist/tex/latex/base/inputenc.sty
-Package: inputenc 2024/02/08 v1.3d Input encoding file
-\inpenc@prehook=\toks30
-\inpenc@posthook=\toks31
 ) (/usr/local/texlive/2025/texmf-dist/tex/latex/todonotes/todonotes.sty
 Package: todonotes 2024/01/05 v1.1.7 Todonotes source and documentation.
 Package: todonotes 2024/01/05
  (/usr/local/texlive/2025/texmf-dist/tex/latex/xkeyval/xkeyval.sty
 Package: xkeyval 2022/06/16 v2.9 package option processing (HA)
  (/usr/local/texlive/2025/texmf-dist/tex/generic/xkeyval/xkeyval.tex (/usr/local/texlive/2025/texmf-dist/tex/generic/xkeyval/xkvutils.tex
-\XKV@toks=\toks32
-\XKV@tempa@toks=\toks33
+\XKV@toks=\toks30
+\XKV@tempa@toks=\toks31
 )
 \XKV@depth=\count337
 File: xkeyval.tex 2014/12/03 v2.7a key=value parser (HA)
 )) (/usr/local/texlive/2025/texmf-dist/tex/latex/pgf/frontendlayer/tikz.sty (/usr/local/texlive/2025/texmf-dist/tex/latex/pgf/basiclayer/pgf.sty (/usr/local/texlive/2025/texmf-dist/tex/latex/pgf/utilities/pgfrcs.sty (/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/utilities/pgfutil-common.tex
-\pgfutil@everybye=\toks34
+\pgfutil@everybye=\toks32
 \pgfutil@tempdima=\dimen192
 \pgfutil@tempdimb=\dimen193
 ) (/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/utilities/pgfutil-latex.def
@@ -449,10 +445,10 @@ Package: pgf 2023-01-15 v3.1.10 (3.1.10)
  (/usr/local/texlive/2025/texmf-dist/tex/latex/pgf/basiclayer/pgfcore.sty (/usr/local/texlive/2025/texmf-dist/tex/latex/pgf/systemlayer/pgfsys.sty (/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/systemlayer/pgfsys.code.tex
 Package: pgfsys 2023-01-15 v3.1.10 (3.1.10)
  (/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/utilities/pgfkeys.code.tex
-\pgfkeys@pathtoks=\toks35
-\pgfkeys@temptoks=\toks36
+\pgfkeys@pathtoks=\toks33
+\pgfkeys@temptoks=\toks34
  (/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/utilities/pgfkeyslibraryfiltered.code.tex
-\pgfkeys@tmptoks=\toks37
+\pgfkeys@tmptoks=\toks35
 ))
 \pgf@x=\dimen194
 \pgf@y=\dimen195
@@ -470,9 +466,9 @@ Package: pgfsys 2023-01-15 v3.1.10 (3.1.10)
 \c@pgf@countb=\count339
 \c@pgf@countc=\count340
 \c@pgf@countd=\count341
-\t@pgf@toka=\toks38
-\t@pgf@tokb=\toks39
-\t@pgf@tokc=\toks40
+\t@pgf@toka=\toks36
+\t@pgf@tokb=\toks37
+\t@pgf@tokc=\toks38
 \pgf@sys@id@count=\count342
  (/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/systemlayer/pgf.cfg
 File: pgf.cfg 2023-01-15 v3.1.10 (3.1.10)
@@ -494,9 +490,9 @@ Package: pgfcore 2023-01-15 v3.1.10 (3.1.10)
 \pgfmath@dimen=\dimen260
 \pgfmath@count=\count345
 \pgfmath@box=\box105
-\pgfmath@toks=\toks41
-\pgfmath@stack@operand=\toks42
-\pgfmath@stack@operation=\toks43
+\pgfmath@toks=\toks39
+\pgfmath@stack@operand=\toks40
+\pgfmath@stack@operation=\toks41
 ) (/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.code.tex) (/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.basic.code.tex) (/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.trigonometric.code.tex) (/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.random.code.tex) (/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.comparison.code.tex) (/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.base.code.tex) (/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.round.code.tex) (/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.misc.code.tex) (/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.integerarithmetics.code.tex) (/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathcalc.code.tex) (/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfmathfloat.code.tex
 \c@pgfmathroundto@lastzeros=\count346
 )) (/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/math/pgfint.code.tex) (/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/basiclayer/pgfcorepoints.code.tex
@@ -579,8 +575,8 @@ Package: pgfcomp-version-1-18 2023-01-15 v3.1.10 (3.1.10)
 Package: pgffor 2023-01-15 v3.1.10 (3.1.10)
 \pgffor@iter=\dimen287
 \pgffor@skip=\dimen288
-\pgffor@stack=\toks44
-\pgffor@toks=\toks45
+\pgffor@stack=\toks42
+\pgffor@toks=\toks43
 )) (/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/frontendlayer/tikz/tikz.code.tex
 Package: tikz 2023-01-15 v3.1.10 (3.1.10)
  (/usr/local/texlive/2025/texmf-dist/tex/generic/pgf/libraries/pgflibraryplothandlers.code.tex
@@ -666,7 +662,7 @@ Package: array 2024/10/17 v2.6g Tabular extension package (FMi)
 \col@sep=\dimen305
 \ar@mcellbox=\box123
 \extrarowheight=\dimen306
-\NC@list=\toks46
+\NC@list=\toks44
 \extratabsurround=\skip63
 \backup@length=\skip64
 \ar@cellbox=\box124
@@ -703,29 +699,218 @@ Package caption Info: New subtype `subfigure' on input line 238.
 Package caption Info: New subtype `subtable' on input line 238.
 \c@subtable=\count380
 )
-Package hyperref Info: Option `colorlinks' set `true' on input line 27.
+Package translations Info: No language package found. I am going to use `english' as default language. on input line 18.
+ (/usr/local/texlive/2025/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
+File: l3backend-pdftex.def 2024-05-08 L3 backend support: PDF output (pdfTeX)
+\l__color_backend_stack_int=\count381
+\l__pdf_internal_box=\box125
+) (./fibonaci.aux)
+\openout1 = `fibonaci.aux'.
 
-/Users/remigiuszwojewodzki/Desktop/Doktorat/PhD/fibonaci.tex:81: I can't find file `fibonaci.aux'.
-\enddocument ...keatletter \@@input \jobname .aux 
-                                                  \fi \UseOneTimeHook {enddo...
-l.81 \end{document}
-                   
-(Press Enter to retry, or Control-D to exit)
-Please type another input file name
-/Users/remigiuszwojewodzki/Desktop/Doktorat/PhD/fibonaci.tex:81: Emergency stop.
-\enddocument ...keatletter \@@input \jobname .aux 
-                                                  \fi \UseOneTimeHook {enddo...
-l.81 \end{document}
-                   
-*** (job aborted, file error in nonstop mode)
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 18.
+LaTeX Font Info:    ... okay on input line 18.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 18.
+LaTeX Font Info:    ... okay on input line 18.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 18.
+LaTeX Font Info:    ... okay on input line 18.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 18.
+LaTeX Font Info:    ... okay on input line 18.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 18.
+LaTeX Font Info:    ... okay on input line 18.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 18.
+LaTeX Font Info:    ... okay on input line 18.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 18.
+LaTeX Font Info:    ... okay on input line 18.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 18.
+LaTeX Font Info:    ... okay on input line 18.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 18.
+LaTeX Font Info:    ... okay on input line 18.
+ (/usr/local/texlive/2025/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
+[Loading MPS to PDF converter (version 2006.09.02).]
+\scratchcounter=\count382
+\scratchdimen=\dimen315
+\scratchbox=\box126
+\nofMPsegments=\count383
+\nofMParguments=\count384
+\everyMPshowfont=\toks45
+\MPscratchCnt=\count385
+\MPscratchDim=\dimen316
+\MPnumerator=\count386
+\makeMPintoPDFobject=\count387
+\everyMPtoPDFconversion=\toks46
+) (/usr/local/texlive/2025/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
+Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
+Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 485.
+ (/usr/local/texlive/2025/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
+File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Live
+))
+Package hyperref Info: Link coloring OFF on input line 18.
+\@outlinefile=\write4
+\openout4 = `fibonaci.out'.
+
+ (/usr/local/texlive/2025/texmf-dist/tex/latex/translations/translations-basic-dictionary-english.trsl
+File: translations-basic-dictionary-english.trsl (english translation file `translations-basic-dictionary')
+)
+Package translations Info: loading dictionary `translations-basic-dictionary' for `english'. on input line 18.
+Package caption Info: Begin \AtBeginDocument code.
+Package caption Info: End \AtBeginDocument code.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 38.
+ (/usr/local/texlive/2025/texmf-dist/tex/latex/amsfonts/umsa.fd
+File: umsa.fd 2013/01/14 v3.01 AMS symbols A
+)
+LaTeX Font Info:    Trying to load font information for U+msb on input line 38.
+ (/usr/local/texlive/2025/texmf-dist/tex/latex/amsfonts/umsb.fd
+File: umsb.fd 2013/01/14 v3.01 AMS symbols B
+)
+Overfull \hbox (4.66255pt too wide) in paragraph at lines 42--43
+\T1/cmr/bx/n/9 Keywords:\T1/cmr/m/n/9 Flow shop schedul-ing \TS1/cmr/m/n/9 · \T1/cmr/m/n/9 Meta-heuris-tics \TS1/cmr/m/n/9 · \T1/cmr/m/n/9 It-er-ated Lo-cal Search
+ []
+
+
+LaTeX Warning: Citation `ref_bozejko_parallel' on page 1 undefined on input line 46.
+
+
+LaTeX Warning: Citation `vanlaarhoven1992' on page 1 undefined on input line 46.
+
+
+
+[1
+
+{/usr/local/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-t1.enc}{/usr/local/texlive/2025/texmf-dist/fonts/enc/dvips/cm-super/cm-super-ts1.enc}]
+
+LaTeX Warning: Citation `Motzkin_PWR' on page 2 undefined on input line 50.
+
+
+LaTeX Warning: Citation `Bozejko2015' on page 2 undefined on input line 59.
+
+
+
+[2]
+
+LaTeX Warning: Citation `vanlaarhoven1992' on page 3 undefined on input line 76.
+
+
+LaTeX Warning: Citation `Motzkin_PWR' on page 3 undefined on input line 79.
+
+
+LaTeX Warning: Citation `Motzkin_PWR' on page 3 undefined on input line 82.
+
+
+Overfull \hbox (27.28773pt too wide) in paragraph at lines 110--111
+ []\T1/cmr/m/it/10 Composite move.[] \T1/cmr/m/n/10 We de-fine it as a set of in-dex pairs $\OMS/cmsy/m/n/10 M \OT1/cmr/m/n/10 = \OMS/cmsy/m/n/10 f\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 i[]; j[]\OT1/cmr/m/n/10 )\OML/cmm/m/it/10 ; \OT1/cmr/m/n/10 (\OML/cmm/m/it/10 i[]; j[]\OT1/cmr/m/n/10 )\OML/cmm/m/it/10 ; [] ; \OT1/cmr/m/n/10 (\OML/cmm/m/it/10 i[]; j[]\OT1/cmr/m/n/10 )\OMS/cmsy/m/n/10 g$\T1/cmr/m/n/10 .
+ []
+
+
+
+[3]
+Overfull \hbox (21.36757pt too wide) in paragraph at lines 115--116
+[]\T1/cmr/bx/n/10 No cross-ings\T1/cmr/m/n/10 : The pat-tern $\OML/cmm/m/it/10 i[] < i[] < j[] < j[]$ \T1/cmr/m/n/10 is for-bid-den for any $\OT1/cmr/m/n/10 (\OML/cmm/m/it/10 i[]; j[]\OT1/cmr/m/n/10 )\OML/cmm/m/it/10 ; \OT1/cmr/m/n/10 (\OML/cmm/m/it/10 i[]; j[]\OT1/cmr/m/n/10 ) \OMS/cmsy/m/n/10 2
+ []
+
+
+
+[4]
+
+[5]
+
+[6]
+
+[7]
+
+LaTeX Warning: Citation `WojewodzkiBozejko2026' on page 8 undefined on input line 423.
+
+
+
+[8]
+
+LaTeX Warning: Citation `ref_taillard' on page 9 undefined on input line 426.
+
+
+LaTeX Warning: File `figures/gap_vs_time_ils.png' not found on input line 451.
+
+
+/Users/remigiuszwojewodzki/Desktop/PhD/artykuly/fibonaci.tex:451: Package pdftex.def Error: File `figures/gap_vs_time_ils.png' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.451 ...=\linewidth]{figures/gap_vs_time_ils.png}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+
+LaTeX Warning: File `figures/gap_vs_time_sa.png' not found on input line 457.
+
+
+/Users/remigiuszwojewodzki/Desktop/PhD/artykuly/fibonaci.tex:457: Package pdftex.def Error: File `figures/gap_vs_time_sa.png' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.457 ...h=\linewidth]{figures/gap_vs_time_sa.png}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+
+LaTeX Warning: File `figures/algo=sa_file=tai100_20_inst=3_tl=500ms_n100_m20_multi_1.png' not found on input line 471.
+
+
+/Users/remigiuszwojewodzki/Desktop/PhD/artykuly/fibonaci.tex:471: Package pdftex.def Error: File `figures/algo=sa_file=tai100_20_inst=3_tl=500ms_n100_m20_multi_1.png' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.471 ..._20_inst=3_tl=500ms_n100_m20_multi_1.png}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+
+Underfull \hbox (badness 2119) in paragraph at lines 472--472
+[]\T1/cmr/m/n/9 (a) |Sim-u-lated An-neal-ing, t=500ms,
+ []
+
+
+LaTeX Warning: File `figures/nowe.png' not found on input line 478.
+
+
+/Users/remigiuszwojewodzki/Desktop/PhD/artykuly/fibonaci.tex:478: Package pdftex.def Error: File `figures/nowe.png' not found: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.478 ...phics[width=\linewidth]{figures/nowe.png}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+
+! LaTeX Error: File `tables/all_results_avg_pivot_tl100.tex' not found.
+
+Type X to quit or <RETURN> to proceed,
+or enter new name. (Default extension: tex)
+
+Enter file name: 
+/Users/remigiuszwojewodzki/Desktop/PhD/artykuly/fibonaci.tex:495: Emergency stop.
+<read *> 
+         
+l.495 ...nput{tables/all_results_avg_pivot_tl100}}
+                                                  ^^M
+*** (cannot \read from terminal in nonstop modes)
 
  
 Here is how much of TeX's memory you used:
- 26361 strings out of 473190
- 525785 string characters out of 5715799
- 872593 words of memory out of 5000000
- 49271 multiletter control sequences out of 15000+600000
- 559600 words of font info for 37 fonts, out of 8000000 for 9000
+ 27796 strings out of 473190
+ 562265 string characters out of 5715799
+ 903922 words of memory out of 5000000
+ 50514 multiletter control sequences out of 15000+600000
+ 573357 words of font info for 70 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 99i,0n,131p,486b,152s stack positions out of 10000i,1000n,20000p,200000b,200000s
-/Users/remigiuszwojewodzki/Desktop/Doktorat/PhD/fibonaci.tex:81:  ==> Fatal error occurred, no output PDF file produced!
+ 99i,9n,131p,1790b,1111s stack positions out of 10000i,1000n,20000p,200000b,200000s
+/Users/remigiuszwojewodzki/Desktop/PhD/artykuly/fibonaci.tex:495:  ==> Fatal error occurred, no output PDF file produced!

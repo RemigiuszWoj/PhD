@@ -1,47 +1,11 @@
-import copy
-from typing import Dict, Iterator, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
-from src.neighborhoods.boundaries import compute_prefix_boundaries
+from src.neighborhoods.common import compute_endpoint_swap_delta, compute_head, compute_tail
 from src.permutation_procesing import c_max
 
 
 # --------------------------
-# compute from prefix boundary, apply local block, then continue with tail
-# --------------------------
-def compute_from_boundary_and_continue(
-    boundary: List[int],
-    local_seq: List[int],
-    tail_jobs: List[int],
-    processing_times: List[List[int]],
-) -> Tuple[int, List[int]]:
-    """
-    Start from 'boundary' (vector length m), process local_seq in order,
-    then process tail_jobs in order. Return (final_Cmax, last_col_after_local_seq).
-    Uses same recurrence as c_max but starts from boundary for column before local_seq.
-    """
-    m = len(processing_times)
-    col_prev = boundary[:]  # column at position before local segment
-    # process local sequence
-    for job in local_seq:
-        col = [0] * m
-        col[0] = col_prev[0] + processing_times[0][job]
-        for r in range(1, m):
-            col[r] = max(col[r - 1], col_prev[r]) + processing_times[r][job]
-        col_prev = col
-    last_col_after_local = col_prev[:]
-    # continue with tail
-    for job in tail_jobs:
-        col = [0] * m
-        col[0] = col_prev[0] + processing_times[0][job]
-        for r in range(1, m):
-            col[r] = max(col[r - 1], col_prev[r]) + processing_times[r][job]
-        col_prev = col
-    final_cmax = col_prev[-1]
-    return final_cmax, last_col_after_local
-
-
-# --------------------------
-# Core: Dynasearch (article-style, prefix-assisted)
+# Core: Dynasearch (Head+Tail optimized)
 # --------------------------
 def dynasearch_full(
     pi: List[int],
@@ -64,9 +28,11 @@ def dynasearch_full(
     if n < 2:
         return pi, c_max(pi, processing_times), []
 
-    # prefix boundaries (F[k]) to avoid recomputing left part for each candidate
-    F = compute_prefix_boundaries(pi, processing_times)
-    base_c = F[n][-1]  # c_max original
+    # Head+Tail matrices for O(m·(j-i)) delta computation per candidate
+    Head = compute_head(pi, processing_times)
+    Tail = compute_tail(pi, processing_times)
+    m = len(processing_times)
+    base_c = Head[m - 1][n - 1]
 
     candidates: List[Tuple[int, int, int]] = []  # (i, j, delta)
     # enumerate candidate 2-exchanges (i,j) where i<j
@@ -74,18 +40,7 @@ def dynasearch_full(
         # apply L_max constraint on interval length if provided
         j_max = n - 1 if L_max is None else min(n - 1, i + L_max - 1)
         for j in range(i + 1, j_max + 1):
-            # build local sequence for positions i..j after performing the 2-exchange
-            # Here we consider the simple 2-exchange swapping endpoints i and j.
-            local_seq = pi[i : j + 1].copy()
-            # apply swap endpoints (move pi[j] to position i, pi[i] to position j)
-            local_seq[0], local_seq[-1] = local_seq[-1], local_seq[0]
-            # tail jobs after j
-            tail_jobs = pi[j + 1 :] if j + 1 < n else []
-            # compute final Cmax by starting from prefix boundary F[i]
-            final_c, _ = compute_from_boundary_and_continue(
-                F[i], local_seq, tail_jobs, processing_times
-            )
-            delta = final_c - base_c
+            delta = compute_endpoint_swap_delta(pi, i, j, Head, Tail, processing_times, base_c)
             candidates.append((i, j, delta))
 
     if not candidates:

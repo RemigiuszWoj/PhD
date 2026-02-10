@@ -88,10 +88,10 @@ def write_wide_gap_table(timestamp_dir: Path, summary_path: Path | None = None) 
     """Create a wide table with one row per (instance_file, instance_number, time_limit_ms)
     and columns:
         instance_file, instance_number, time_limit_ms,
-        tabu_adjacent, tabu_quantum_adjacent, tabu_quantum_fibonahi, tabu_fibonahi,
-        tabu_dynasearch, tabu_motzkin,
-        sa_adjacent, sa_quantum_adjacent, sa_quantum_fibonahi, sa_fibonahi,
-        sa_dynasearch, sa_motzkin
+        tabu_adjacent, tabu_quantum_adjacent, tabu_quantum_fibonahi, tabu_quantum_dynasearch,
+        tabu_quantum_motzkin, tabu_fibonahi, tabu_dynasearch, tabu_motzkin,
+        sa_adjacent, sa_quantum_adjacent, sa_quantum_fibonahi, sa_quantum_dynasearch,
+        sa_quantum_motzkin, sa_fibonahi, sa_dynasearch, sa_motzkin
 
     Values = best (minimal) gap_percent over seeds for that
     (algorithm, neighborhood, instance, tl_ms).
@@ -117,8 +117,9 @@ def write_wide_gap_table(timestamp_dir: Path, summary_path: Path | None = None) 
         with open(out, "w", encoding="utf-8", newline="") as fw:
             fw.write(
                 "instance_number,tabu_adjacent,tabu_quantum_adjacent,tabu_quantum_fibonahi,"
-                "tabu_fibonahi,tabu_dynasearch,tabu_motzkin,sa_adjacent,sa_quantum_adjacent,"
-                "sa_quantum_fibonahi,sa_fibonahi,sa_dynasearch,sa_motzkin\n"
+                "tabu_quantum_dynasearch,tabu_quantum_motzkin,tabu_fibonahi,tabu_dynasearch,"
+                "tabu_motzkin,sa_adjacent,sa_quantum_adjacent,sa_quantum_fibonahi,"
+                "sa_quantum_dynasearch,sa_quantum_motzkin,sa_fibonahi,sa_dynasearch,sa_motzkin\n"
             )
         return out
 
@@ -166,12 +167,16 @@ def write_wide_gap_table(timestamp_dir: Path, summary_path: Path | None = None) 
         "tabu_adjacent",
         "tabu_quantum_adjacent",
         "tabu_quantum_fibonahi",
+        "tabu_quantum_dynasearch",
+        "tabu_quantum_motzkin",
         "tabu_fibonahi",
         "tabu_dynasearch",
         "tabu_motzkin",
         "sa_adjacent",
         "sa_quantum_adjacent",
         "sa_quantum_fibonahi",
+        "sa_quantum_dynasearch",
+        "sa_quantum_motzkin",
         "sa_fibonahi",
         "sa_dynasearch",
         "sa_motzkin",
@@ -195,12 +200,16 @@ def write_wide_gap_table(timestamp_dir: Path, summary_path: Path | None = None) 
                 fmt("ils", "adjacent"),
                 fmt("ils", "quantum_adjacent"),
                 fmt("ils", "quantum_fibonahi"),
+                fmt("ils", "quantum_dynasearch"),
+                fmt("ils", "quantum_motzkin"),
                 fmt("ils", "fibonahi"),
                 fmt("ils", "dynasearch"),
                 fmt("ils", "motzkin"),
                 fmt("sa", "adjacent"),
                 fmt("sa", "quantum_adjacent"),
                 fmt("sa", "quantum_fibonahi"),
+                fmt("sa", "quantum_dynasearch"),
+                fmt("sa", "quantum_motzkin"),
                 fmt("sa", "fibonahi"),
                 fmt("sa", "dynasearch"),
                 fmt("sa", "motzkin"),

@@ -25,6 +25,7 @@ def simulated_annealing(
     stagnation_ms: int | None = None,
     temp_floor_factor: float | None = None,
     iter_log_path: str | None = None,
+    quantum_config: dict | None = None,
 ) -> Tuple[List[int], int, List[int], List[int]]:
     """Simulated Annealing for flow shop scheduling problem.
 
@@ -39,6 +40,7 @@ def simulated_annealing(
         stagnation_ms: stagnation time (ms) to trigger reheating
         temp_floor_factor: multiplier for minimum temperature (floor = final_temp * factor)
         iter_log_path: path to CSV log file
+        quantum_config: optional dict with quantum params (num_reads, L_max_dynasearch, etc.)
 
     Returns:
         (best_pi, best_cmax, iteration_history, cmax_history)
@@ -72,7 +74,7 @@ def simulated_annealing(
         while time.time() - state.start_time < time_limit:
             # Find best neighbor
             neighbor, neighbor_cmax, _, _ = get_neighbor(
-                neigh_mode, state.current_pi, processing_times, n
+                neigh_mode, state.current_pi, processing_times, n, quantum_config=quantum_config
             )
             delta = neighbor_cmax - state.current_cmax
 

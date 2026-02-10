@@ -18,6 +18,8 @@ NEIGHBORHOODS_ALL = (
     "adjacent",
     "quantum_adjacent",
     "quantum_fibonahi",
+    "quantum_dynasearch",
+    "quantum_motzkin",
     "fibonahi",
     "dynasearch",
     "motzkin",

@@ -116,6 +116,7 @@ def iterated_local_search(
     tabu_tenure: int = 10,
     neigh_mode: str = "adjacent",
     iter_log_path: str | None = None,
+    quantum_config: dict | None = None,
 ) -> Tuple[List[int], int, List[int], List[int]]:
     """Iterated Local Search for flow shop scheduling problem.
 
@@ -125,6 +126,7 @@ def iterated_local_search(
         tabu_tenure: tabu tenure (move forbidden duration)
         neigh_mode: neighborhood type
         iter_log_path: path to CSV log file
+        quantum_config: optional dict with quantum params (num_reads, L_max_dynasearch, etc.)
 
     Returns:
         (best_pi, best_cmax, iteration_history, cmax_history)
@@ -153,7 +155,7 @@ def iterated_local_search(
             # Find best neighbor (for adjacent/fibonahi: pass tenure to get top_moves)
             tabu_len = tenure if neigh_mode in ("adjacent", "fibonahi") else None
             new_pi, new_c, move_id, top_moves = get_neighbor(
-                neigh_mode, state.current_pi, processing_times, n, tabu_len
+                neigh_mode, state.current_pi, processing_times, n, tabu_len, quantum_config
             )
 
             # Check tabu with aspiration

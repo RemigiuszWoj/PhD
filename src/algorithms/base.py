@@ -10,7 +10,9 @@ from src.neighborhoods.dynasearch import dynasearch_full
 from src.neighborhoods.fibonahi import fibonahi_neighborhood_topk
 from src.neighborhoods.motzkin import motzkin_neighborhood_full
 from src.neighborhoods.quantum_adjacent import quantum_adjacent_neighborhood
+from src.neighborhoods.quantum_dynasearch import quantum_dynasearch_neighborhood
 from src.neighborhoods.quantum_fibonahi import quantum_fibonahi_neighborhood
+from src.neighborhoods.quantum_motzkin import quantum_motzkin_neighborhood
 from src.permutation_procesing import c_max
 
 
@@ -84,6 +86,7 @@ def get_neighbor(
     processing_times: List[List[int]],
     n: int,
     tabu_len: int | None = None,
+    quantum_config: dict | None = None,
 ) -> Tuple[List[int], int, Any, List[dict] | None]:
     """Generate the best neighbor for a given neighborhood mode.
 
@@ -93,6 +96,7 @@ def get_neighbor(
         processing_times: m x n processing times matrix
         n: number of jobs
         tabu_len: if provided, also returns top (tabu_len + 1) moves (adjacent only)
+        quantum_config: optional dict with quantum params (num_reads, L_max_dynasearch, etc.)
 
     Returns:
         (new_pi, new_cmax, move_id, top_moves)
@@ -143,12 +147,36 @@ def get_neighbor(
         return new_pi, new_c, move_id, None
 
     elif neigh_mode == "quantum_adjacent":
-        new_pi, new_c, move = quantum_adjacent_neighborhood(current_pi, processing_times)
+        num_reads = quantum_config.get("num_reads", 5) if quantum_config else 5
+        new_pi, new_c, move = quantum_adjacent_neighborhood(
+            current_pi, processing_times, num_reads=num_reads
+        )
         return new_pi, new_c, move, None
 
     elif neigh_mode == "quantum_fibonahi":
-        new_pi, new_c, swaps = quantum_fibonahi_neighborhood(current_pi, processing_times)
+        num_reads = quantum_config.get("num_reads", 5) if quantum_config else 5
+        new_pi, new_c, swaps = quantum_fibonahi_neighborhood(
+            current_pi, processing_times, num_reads=num_reads
+        )
         return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
+
+    elif neigh_mode == "quantum_dynasearch":
+        L_max = quantum_config.get("L_max_dynasearch") if quantum_config else None
+        num_reads = quantum_config.get("num_reads", 5) if quantum_config else 5
+        new_pi, new_c, swaps = quantum_dynasearch_neighborhood(
+            current_pi, processing_times, num_reads=num_reads, L_max=L_max
+        )
+        move_id = tuple(swaps) if swaps else tuple(new_pi)
+        return new_pi, new_c, move_id, None
+
+    elif neigh_mode == "quantum_motzkin":
+        num_reads = quantum_config.get("num_reads", 5) if quantum_config else 5
+        L_max = quantum_config.get("L_max_motzkin") if quantum_config else None
+        new_pi, new_c, swaps = quantum_motzkin_neighborhood(
+            current_pi, processing_times, num_reads=num_reads, L_max=L_max
+        )
+        move_id = tuple(swaps) if swaps else tuple(new_pi)
+        return new_pi, new_c, move_id, None
 
     else:
         raise ValueError(f"Unknown neigh_mode={neigh_mode}")

@@ -1,4 +1,4 @@
-"""Wspólne funkcje obliczania granic (prefix boundaries) dla flow shop."""
+"""Common functions for computing prefix boundaries for flow shop."""
 
 from typing import List
 
@@ -10,11 +10,11 @@ def compute_prefix_boundaries(pi: List[int], processing_times: List[List[int]]) 
     first k jobs (pi[0..k-1]).
 
     Args:
-        pi: Permutacja zadań
-        processing_times: Macierz czasów m × n
+        pi: Job permutation
+        processing_times: m × n processing times matrix
 
     Returns:
-        F: Lista wektorów F[0]..F[n]; F[n][-1] == c_max(pi)
+        F: List of vectors F[0]..F[n]; F[n][-1] equals makespan (Cmax)
     """
     m = len(processing_times)
     n = len(pi)

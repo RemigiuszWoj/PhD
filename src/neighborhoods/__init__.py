@@ -1,13 +1,16 @@
 """Flow Shop neighborhoods module.
 
 Structure:
-- common.py: shared functions (swap_jobs, compute_head, compute_tail, compute_deltas, apply_swaps)
+- common.py: shared functions (swap_jobs, compute_head, compute_tail, compute_deltas,
+             compute_endpoint_swap_delta, apply_swaps)
 - adjacent.py: adjacent neighborhood (classic)
 - fibonahi.py: fibonahi neighborhood (classic, DP)
 - dynasearch.py: dynasearch neighborhood
 - motzkin.py: motzkin neighborhood
 - quantum_adjacent.py: quantum adjacent (QUBO ONE_HOT)
 - quantum_fibonahi.py: quantum fibonahi (QUBO NO_OVERLAP)
+- quantum_dynasearch.py: quantum dynasearch (QUBO INTERVAL_NO_OVERLAP)
+- quantum_motzkin.py: quantum motzkin (QUBO NO_CROSSING)
 - boundaries.py: compute_prefix_boundaries
 """
 
@@ -24,6 +27,7 @@ from src.neighborhoods.boundaries import compute_prefix_boundaries
 from src.neighborhoods.common import (
     apply_swaps,
     compute_deltas,
+    compute_endpoint_swap_delta,
     compute_head,
     compute_head_and_tail,
     compute_tail,
@@ -35,15 +39,17 @@ from src.neighborhoods.dynasearch import dynasearch_full
 from src.neighborhoods.fibonahi import fibonahi_neighborhood_topk
 from src.neighborhoods.motzkin import motzkin_neighborhood_full
 
-# Kwantowe sąsiedztwa
+# Quantum neighborhoods
 from src.neighborhoods.quantum_adjacent import (
     generate_neighbors_adjacent_qubo,
     quantum_adjacent_neighborhood,
 )
+from src.neighborhoods.quantum_dynasearch import quantum_dynasearch_neighborhood
 from src.neighborhoods.quantum_fibonahi import (
     generate_neighbors_fibonahi_qubo,
     quantum_fibonahi_neighborhood,
 )
+from src.neighborhoods.quantum_motzkin import quantum_motzkin_neighborhood
 
 __all__ = [
     # Common
@@ -52,6 +58,7 @@ __all__ = [
     "compute_tail",
     "compute_head_and_tail",
     "compute_deltas",
+    "compute_endpoint_swap_delta",
     "apply_swaps",
     "validate_no_overlap",
     "solve_qubo",
@@ -64,6 +71,8 @@ __all__ = [
     # Quantum neighborhoods
     "quantum_adjacent_neighborhood",
     "quantum_fibonahi_neighborhood",
+    "quantum_dynasearch_neighborhood",
+    "quantum_motzkin_neighborhood",
     "generate_neighbors_adjacent_qubo",
     "generate_neighbors_fibonahi_qubo",
     # Boundaries

@@ -37,6 +37,17 @@ algorithm_common:
   # Time limit can be specified in seconds (recommended) or milliseconds.
   time_limit_s: 0.1
 
+quantum:
+  # Number of samples for QUBO solver (lower = faster, higher = better quality)
+  # Reduced from 50 to 5 for performance (250x speedup vs simulated annealing)
+  num_reads: 5
+  # Optional: limit maximum segment length for quantum_dynasearch (reduces O(n²) variables)
+  # Set to constrain interval endpoints to max distance L_max apart
+  # Leave empty/commented for full O(n²) enumeration
+  L_max_dynasearch: 15
+  # Optional: same for quantum_motzkin
+  L_max_motzkin: 15
+
 iterated_local_search:
   tabu_tenure: 10
 

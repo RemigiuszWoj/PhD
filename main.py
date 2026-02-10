@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/Users/remigiuszwojewodzki/Desktop/PhD/.venv311/bin/python
 
 
 import os
@@ -88,6 +88,8 @@ def run_compare_mode(
         "adjacent",
         "quantum_adjacent",
         "quantum_fibonahi",
+        "quantum_dynasearch",
+        "quantum_motzkin",
         "fibonahi",
         "dynasearch",
         "motzkin",
@@ -101,6 +103,7 @@ def run_compare_mode(
                 iter_log_path=(
                     os.path.join(out_dir, f"iter_log_{neigh_mode}.csv") if out_dir else None
                 ),
+                quantum_config=config.get("quantum"),
             )
         else:
             best_pi, best_cmax, iteration_history, cmax_history = simulated_annealing(
@@ -116,6 +119,7 @@ def run_compare_mode(
                 iter_log_path=(
                     os.path.join(out_dir, f"iter_log_{neigh_mode}.csv") if out_dir else None
                 ),
+                quantum_config=config.get("quantum"),
             )
 
         _pad_histories_and_store(
@@ -150,6 +154,8 @@ def run_compare_mode(
         "adjacent",
         "quantum_adjacent",
         "quantum_fibonahi",
+        "quantum_dynasearch",
+        "quantum_motzkin",
         "fibonahi",
         "dynasearch",
         "motzkin",
@@ -168,6 +174,8 @@ def run_compare_mode(
         "adjacent",
         "quantum_adjacent",
         "quantum_fibonahi",
+        "quantum_dynasearch",
+        "quantum_motzkin",
         "fibonahi",
         "dynasearch",
         "motzkin",
@@ -273,6 +281,8 @@ def main() -> None:
             "adjacent": "ILS: adjacent",
             "quantum_adjacent": "ILS: quantum_adjacent",
             "quantum_fibonahi": "ILS: quantum_fibonahi",
+            "quantum_dynasearch": "ILS: quantum_dynasearch",
+            "quantum_motzkin": "ILS: quantum_motzkin",
             "fibonahi": "ILS: fibonahi",
             "dynasearch": "ILS: dynasearch",
             "motzkin": "ILS: motzkin",
@@ -281,6 +291,8 @@ def main() -> None:
             "adjacent": "#00FFFF",  # neon cyan
             "quantum_adjacent": "#FF0066",  # neon pink (quantum!)
             "quantum_fibonahi": "#9900FF",  # neon purple (quantum fibonahi!)
+            "quantum_dynasearch": "#00FF99",  # neon green (quantum dynasearch!)
+            "quantum_motzkin": "#FFFF00",  # neon yellow (quantum motzkin!)
             "fibonahi": "#FF00CC",  # neon magenta
             "dynasearch": "#7CFF00",  # neon lime
             "motzkin": "#FF9900",  # orange (high complexity warning)
@@ -290,6 +302,8 @@ def main() -> None:
             "adjacent": "SA: adjacent",
             "quantum_adjacent": "SA: quantum_adjacent",
             "quantum_fibonahi": "SA: quantum_fibonahi",
+            "quantum_dynasearch": "SA: quantum_dynasearch",
+            "quantum_motzkin": "SA: quantum_motzkin",
             "fibonahi": "SA: fibonahi",
             "dynasearch": "SA: dynasearch",
             "motzkin": "SA: motzkin",
@@ -298,6 +312,8 @@ def main() -> None:
             "adjacent": "#00FFFF",  # neon cyan
             "quantum_adjacent": "#FF0066",  # neon pink (quantum!)
             "quantum_fibonahi": "#9900FF",  # neon purple (quantum fibonahi!)
+            "quantum_dynasearch": "#00FF99",  # neon green (quantum dynasearch!)
+            "quantum_motzkin": "#FFFF00",  # neon yellow (quantum motzkin!)
             "fibonahi": "#FF00CC",  # neon magenta
             "dynasearch": "#7CFF00",  # neon lime
             "motzkin": "#FF9900",  # orange

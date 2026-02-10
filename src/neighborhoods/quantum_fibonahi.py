@@ -1,14 +1,43 @@
 """Quantum Fibonahi neighborhood - select non-overlapping swaps using QUBO.
 
-QUBO formulation (no-overlap):
+QUBO formulation (no-overlap constraint):
     H = Σᵢ δᵢ·xᵢ + P·Σᵢ xᵢ·xᵢ₊₁
 
-QUBO matrix:
-    Q[i,i] = δᵢ            (cost only)
-    Q[i,i+1] = P           (penalty for overlap)
+Where:
+    xᵢ ∈ {0,1} indicates whether to perform swap at position i
+    δᵢ = ΔCₘₐₓ after swapping positions (i, i+1)
+    P = penalty weight for overlapping swaps
 
-Complexity: n-1 variables, O(n) coefficients (chain graph)
-Number of valid swap sets = F_{n+1} (Fibonacci sequence)
+Overlap definition:
+    Swaps at positions i and i+1 are overlapping because they share
+    the element at position i+1:
+      - Swap i:   (posᵢ, posᵢ₊₁)
+      - Swap i+1: (posᵢ₊₁, posᵢ₊₂)
+    Therefore xᵢ·xᵢ₊₁ = 1 is forbidden.
+
+QUBO matrix Q where H = Σᵢⱼ Q[i,j]·xᵢ·xⱼ:
+    Q[i,i] = δᵢ                  (linear term: cost of selecting swap i)
+    Q[i,i+1] = P  for i=0..n-3   (quadratic term: penalty for adjacent pair)
+    Q[i,j] = 0    for |i-j|>1    (non-adjacent swaps don't overlap)
+
+Penalty weight:
+    P = Σᵢ |δᵢ| + 1              (ensures no-overlap constraint dominates)
+
+Complexity:
+    - Variables: n-1 binary variables
+    - Coefficients: O(n) non-zero entries (chain graph structure)
+
+Combinatorial structure:
+    The number of valid non-overlapping swap sets from n-1 positions
+    equals the Fibonacci number F_{n+1}:
+        F₀=0, F₁=1, F₂=1, F₃=2, F₄=3, F₅=5, F₆=8, F₇=13, ...
+    This is because:
+        - If we don't select swap 0: F_n solutions from positions 1..n-2
+        - If we select swap 0: can't select swap 1, so F_{n-1} solutions from 2..n-2
+        - Total: F_{n+1} = F_n + F_{n-1}
+
+Objective: Find binary assignment minimizing H, selecting non-overlapping
+           improving swaps
 """
 
 from typing import Dict, List, Tuple
@@ -25,7 +54,7 @@ from src.permutation_procesing import c_max
 def quantum_fibonahi_neighborhood(
     pi: List[int],
     processing_times: List[List[int]],
-    num_reads: int = 100,
+    num_reads: int = 5,
 ) -> Tuple[List[int], int, List[int]]:
     """Quantum fibonahi neighborhood - selects non-overlapping swaps via QUBO.
 
@@ -71,7 +100,7 @@ def quantum_fibonahi_neighborhood(
 def generate_neighbors_fibonahi_qubo(
     pi: List[int],
     processing_times: List[List[int]],
-    num_reads: int = 100,
+    num_reads: int = 5,
 ) -> Tuple[List[int], int, List[int]]:
     """Alias for quantum_fibonahi_neighborhood (backward compatibility)."""
     return quantum_fibonahi_neighborhood(pi, processing_times, num_reads)

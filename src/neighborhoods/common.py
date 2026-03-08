@@ -301,14 +301,16 @@ def validate_no_overlap(indices: List[int]) -> List[int]:
 def solve_qubo(
     Q: Dict[Tuple[str, str], float],
     num_reads: int = 5,
+    backend: str = "simulator",
+    dwave_token: str | None = None,
 ) -> Dict[str, int]:
-    """Solve QUBO using Simulated Annealing.
-
-    Can be replaced with DWaveSampler() or LeapHybridSampler() for real quantum.
+    """Solve QUBO using Simulated Annealing or real D-Wave QPU.
 
     Args:
         Q: QUBO matrix as dict {(var_i, var_j): coefficient}
         num_reads: Number of samples for the solver
+        backend: "simulator" (dimod SA) or "dwave" (real D-Wave via Leap API)
+        dwave_token: D-Wave API token (required when backend="dwave")
 
     Returns:
         Best solution as dict {variable_name: 0 or 1}
@@ -316,9 +318,21 @@ def solve_qubo(
     if not Q:
         return {}
 
-    from dimod import BinaryQuadraticModel, SimulatedAnnealingSampler
+    from dimod import BinaryQuadraticModel
 
     bqm = BinaryQuadraticModel.from_qubo(Q)
-    sampler = SimulatedAnnealingSampler()
-    result = sampler.sample(bqm, num_reads=num_reads)
+
+    if backend == "dwave":
+        if not dwave_token:
+            raise ValueError("dwave_token is required when backend='dwave'")
+        from dwave.system import DWaveSampler, EmbeddingComposite
+
+        sampler = EmbeddingComposite(DWaveSampler(token=dwave_token))
+        result = sampler.sample(bqm, num_reads=num_reads)
+    else:
+        from dimod import SimulatedAnnealingSampler
+
+        sampler = SimulatedAnnealingSampler()
+        result = sampler.sample(bqm, num_reads=num_reads)
+
     return dict(result.first.sample)

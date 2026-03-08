@@ -381,6 +381,8 @@ def quantum_motzkin_neighborhood(
     processing_times: List[List[int]],
     num_reads: int = 5,
     L_max: Optional[int] = None,
+    backend: str = "simulator",
+    dwave_token: str | None = None,
 ) -> Tuple[List[int], int, List[Tuple[int, int]]]:
     """Main function: quantum Motzkin neighborhood via QUBO.
 
@@ -512,7 +514,7 @@ def quantum_motzkin_neighborhood(
     # Current implementation: dimod.SimulatedAnnealingSampler (classical)
     # On D-Wave QPU: replace with DWaveSampler + EmbeddingComposite
     # solve_qubo returns dict {"x0": 0/1, "x1": 0/1, ...}
-    solution = solve_qubo(Q, num_reads)
+    solution = solve_qubo(Q, num_reads, backend=backend, dwave_token=dwave_token)
     selected_indices = sorted(int(v[1:]) for v, val in solution.items() if val == 1)
 
     # ══════════════════════════════════════════════════════════════════════

@@ -2,7 +2,7 @@
 
 # General settings
 general:
-  # input_file: "data/tai20_5.txt"
+  input_file: "data/tai20_5.txt"
   # input_file: "data/tai20_10.txt"
   # input_file: "data/tai20_20.txt"
 
@@ -10,7 +10,7 @@ general:
   # input_file: "data/tai50_10.txt"
   # input_file: "data/tai50_20.txt"
 
-  input_file: "data/tai100_5.txt"
+  # input_file: "data/tai100_5.txt"
   # input_file: "data/tai100_10.txt"
   # input_file: "data/tai100_20.txt"
 
@@ -38,6 +38,10 @@ algorithm_common:
   time_limit_s: 0.1
 
 quantum:
+  # Backend: "simulator" (dimod SimulatedAnnealingSampler) or "dwave" (real D-Wave QPU via Leap)
+  backend: "dwave"
+  # D-Wave API token (required only when backend: "dwave")
+  dwave_token: "fdMX-33e2e246f5df29cf5bff170adcc763d694ae4046"
   # Number of samples for QUBO solver (lower = faster, higher = better quality)
   # Reduced from 50 to 5 for performance (250x speedup vs simulated annealing)
   num_reads: 5

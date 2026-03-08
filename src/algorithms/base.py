@@ -148,23 +148,32 @@ def get_neighbor(
 
     elif neigh_mode == "quantum_adjacent":
         num_reads = quantum_config.get("num_reads", 5) if quantum_config else 5
+        backend = quantum_config.get("backend", "simulator") if quantum_config else "simulator"
+        dwave_token = quantum_config.get("dwave_token") if quantum_config else None
         new_pi, new_c, move = quantum_adjacent_neighborhood(
-            current_pi, processing_times, num_reads=num_reads
+            current_pi, processing_times, num_reads=num_reads,
+            backend=backend, dwave_token=dwave_token,
         )
         return new_pi, new_c, move, None
 
     elif neigh_mode == "quantum_fibonahi":
         num_reads = quantum_config.get("num_reads", 5) if quantum_config else 5
+        backend = quantum_config.get("backend", "simulator") if quantum_config else "simulator"
+        dwave_token = quantum_config.get("dwave_token") if quantum_config else None
         new_pi, new_c, swaps = quantum_fibonahi_neighborhood(
-            current_pi, processing_times, num_reads=num_reads
+            current_pi, processing_times, num_reads=num_reads,
+            backend=backend, dwave_token=dwave_token,
         )
         return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
 
     elif neigh_mode == "quantum_dynasearch":
         L_max = quantum_config.get("L_max_dynasearch") if quantum_config else None
         num_reads = quantum_config.get("num_reads", 5) if quantum_config else 5
+        backend = quantum_config.get("backend", "simulator") if quantum_config else "simulator"
+        dwave_token = quantum_config.get("dwave_token") if quantum_config else None
         new_pi, new_c, swaps = quantum_dynasearch_neighborhood(
-            current_pi, processing_times, num_reads=num_reads, L_max=L_max
+            current_pi, processing_times, num_reads=num_reads, L_max=L_max,
+            backend=backend, dwave_token=dwave_token,
         )
         move_id = tuple(swaps) if swaps else tuple(new_pi)
         return new_pi, new_c, move_id, None
@@ -172,8 +181,11 @@ def get_neighbor(
     elif neigh_mode == "quantum_motzkin":
         num_reads = quantum_config.get("num_reads", 5) if quantum_config else 5
         L_max = quantum_config.get("L_max_motzkin") if quantum_config else None
+        backend = quantum_config.get("backend", "simulator") if quantum_config else "simulator"
+        dwave_token = quantum_config.get("dwave_token") if quantum_config else None
         new_pi, new_c, swaps = quantum_motzkin_neighborhood(
-            current_pi, processing_times, num_reads=num_reads, L_max=L_max
+            current_pi, processing_times, num_reads=num_reads, L_max=L_max,
+            backend=backend, dwave_token=dwave_token,
         )
         move_id = tuple(swaps) if swaps else tuple(new_pi)
         return new_pi, new_c, move_id, None

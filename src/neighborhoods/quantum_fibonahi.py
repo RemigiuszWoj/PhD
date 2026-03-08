@@ -55,6 +55,8 @@ def quantum_fibonahi_neighborhood(
     pi: List[int],
     processing_times: List[List[int]],
     num_reads: int = 5,
+    backend: str = "simulator",
+    dwave_token: str | None = None,
 ) -> Tuple[List[int], int, List[int]]:
     """Quantum fibonahi neighborhood - selects non-overlapping swaps via QUBO.
 
@@ -62,6 +64,8 @@ def quantum_fibonahi_neighborhood(
         pi: Current permutation
         processing_times: m × n processing times matrix
         num_reads: Number of samples for the solver
+        backend: "simulator" or "dwave"
+        dwave_token: D-Wave API token (required when backend="dwave")
 
     Returns:
         (new_pi, new_cmax, swaps): New permutation, Cmax, list of swap positions
@@ -82,7 +86,7 @@ def quantum_fibonahi_neighborhood(
         Q[(f"x{i}", f"x{i + 1}")] = penalty
 
     # Solve QUBO
-    solution = solve_qubo(Q, num_reads)
+    solution = solve_qubo(Q, num_reads, backend=backend, dwave_token=dwave_token)
     selected = sorted(int(v[1:]) for v, val in solution.items() if val == 1)
     valid_swaps = validate_no_overlap(selected)
 

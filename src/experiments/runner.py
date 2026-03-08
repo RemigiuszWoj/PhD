@@ -8,6 +8,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterable, List, Sequence
 
+import yaml
+
 from src import visualization as viz
 from src.algorithms import iterated_local_search, simulated_annealing
 from src.parser import parser
@@ -75,7 +77,11 @@ class RunResult:
 
 
 class ExperimentRunner:
-    def __init__(self, base_results_dir: str = "results/experiments"):
+    def __init__(
+        self,
+        base_results_dir: str = "results/experiments",
+        quantum_config: dict | None = None,
+    ):
         """Runner no longer wipes the base directory.
 
         Each batch gets its own timestamp directory; historical runs are preserved.
@@ -84,6 +90,16 @@ class ExperimentRunner:
         self.base_dir.mkdir(parents=True, exist_ok=True)
         self.timestamp_dir = self.base_dir / datetime.utcnow().strftime("%Y%m%d_%H%M%S")
         self.timestamp_dir.mkdir(parents=True, exist_ok=True)
+        # Quantum config (backend, dwave_token, num_reads, etc.)
+        if quantum_config is None:
+            # Try to load from config.yaml
+            try:
+                with open("config.yaml", "r") as f:
+                    cfg = yaml.safe_load(f)
+                quantum_config = cfg.get("quantum", {})
+            except Exception:
+                quantum_config = {}
+        self.quantum_config = quantum_config
         # Pre-defined dispatch map
         self._dispatch = {
             "ils": self._run_ils,
@@ -185,6 +201,7 @@ class ExperimentRunner:
             tabu_tenure=cfg.tabu_tenure or 10,
             neigh_mode=cfg.neighborhood,
             iter_log_path=None,
+            quantum_config=self.quantum_config,
         )
 
     def _run_sa(self, processing_times, cfg: RunConfig):
@@ -199,6 +216,7 @@ class ExperimentRunner:
             stagnation_ms=None,
             temp_floor_factor=None,
             iter_log_path=None,
+            quantum_config=self.quantum_config,
         )
 
 

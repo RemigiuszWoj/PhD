@@ -87,9 +87,10 @@ def run_compare_mode(
     for neigh_mode in [
         "adjacent",
         "quantum_adjacent",
-        "quantum_fibonahi",
-        "quantum_dynasearch",
-        "quantum_motzkin",
+        # Temporarily disabled other quantum neighborhoods
+        # "quantum_fibonahi",
+        # "quantum_dynasearch",
+        # "quantum_motzkin",
         "fibonahi",
         "dynasearch",
         "motzkin",
@@ -153,9 +154,10 @@ def run_compare_mode(
     for neigh_mode in [
         "adjacent",
         "quantum_adjacent",
-        "quantum_fibonahi",
-        "quantum_dynasearch",
-        "quantum_motzkin",
+        # Temporarily disabled other quantum neighborhoods
+        # "quantum_fibonahi",
+        # "quantum_dynasearch",
+        # "quantum_motzkin",
         "fibonahi",
         "dynasearch",
         "motzkin",
@@ -173,9 +175,10 @@ def run_compare_mode(
     for neigh_mode in [
         "adjacent",
         "quantum_adjacent",
-        "quantum_fibonahi",
-        "quantum_dynasearch",
-        "quantum_motzkin",
+        # Temporarily disabled other quantum neighborhoods
+        # "quantum_fibonahi",
+        # "quantum_dynasearch",
+        # "quantum_motzkin",
         "fibonahi",
         "dynasearch",
         "motzkin",

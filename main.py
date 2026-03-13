@@ -16,6 +16,7 @@ from src.experiments.aggregate import (
 from src.experiments.runner import (
     ExperimentRunner,
     generate_plan_for_files,
+    NEIGHBORHOODS_ALL,
 )
 from src.parser import parser
 from src.taillard_gen import generate_taillard_instance
@@ -26,6 +27,7 @@ from src.visualization import (
     save_gantt_chart_with_name,
     save_multi_convergence_plot,
 )
+# NEIGHBORHOODS_ALL is imported from src.experiments.runner
 
 # main is now compare-only; run_algorithm wrapper removed to keep code minimal
 
@@ -63,6 +65,7 @@ def run_compare_mode(
     colors,
     out_dir: str = None,
     results_folder: str = "results",
+    neighborhoods: list | None = None,
 ):
     # Czyść katalog bazowy (historyczne zbiorcze wykresy) oraz katalog konkretnego porównania.
     clear_old_plots(results_folder)
@@ -84,17 +87,8 @@ def run_compare_mode(
         else None
     )
 
-    for neigh_mode in [
-        "adjacent",
-        "quantum_adjacent",
-        # Temporarily disabled other quantum neighborhoods
-        # "quantum_fibonahi",
-        # "quantum_dynasearch",
-        # "quantum_motzkin",
-        "fibonahi",
-        "dynasearch",
-        "motzkin",
-    ]:
+    neighborhoods_list = list(neighborhoods) if neighborhoods else list(NEIGHBORHOODS_ALL)
+    for neigh_mode in neighborhoods_list:
         if algorithm == "ils_compare":
             best_pi, best_cmax, iteration_history, cmax_history = iterated_local_search(
                 processing_times,
@@ -151,17 +145,7 @@ def run_compare_mode(
         time_limit_ms=algorithm_common.get("time_limit_ms"),
         grayscale=multi_gray,
     )
-    for neigh_mode in [
-        "adjacent",
-        "quantum_adjacent",
-        # Temporarily disabled other quantum neighborhoods
-        # "quantum_fibonahi",
-        # "quantum_dynasearch",
-        # "quantum_motzkin",
-        "fibonahi",
-        "dynasearch",
-        "motzkin",
-    ]:
+    for neigh_mode in neighborhoods_list:
         # Save gantt into neighborhood-specific file under out_dir if provided
         if out_dir:
             base_gantt = os.path.join(out_dir, f"gantt_chart_{neigh_mode}.png")
@@ -172,17 +156,7 @@ def run_compare_mode(
             best_pis[neigh_mode], processing_times, cmax_summary[neigh_mode], gantt_name
         )
     print("Comparison plot and Gantt charts saved.")
-    for neigh_mode in [
-        "adjacent",
-        "quantum_adjacent",
-        # Temporarily disabled other quantum neighborhoods
-        # "quantum_fibonahi",
-        # "quantum_dynasearch",
-        # "quantum_motzkin",
-        "fibonahi",
-        "dynasearch",
-        "motzkin",
-    ]:
+    for neigh_mode in neighborhoods_list:
         print(f"Final cmax for {labels[neigh_mode]}: {cmax_summary[neigh_mode]}")
 
 
@@ -220,6 +194,7 @@ def main() -> None:
             instance_files=instance_files,
             repeats=repeats,
             time_limits_ms=time_limits_ms,
+            neighborhoods=exp_cfg.get("neighborhoods"),
         )
         # We no longer delete historical results – each run gets its own timestamped directory
         runner = ExperimentRunner()
@@ -338,6 +313,8 @@ def main() -> None:
     instance_num = general_config.get("instance_number", 0)
     out_dir = os.path.join(base_results, f"{algorithm}_{data_name}_instance{instance_num}")
     os.makedirs(out_dir, exist_ok=True)
+    # Allow overriding which neighborhoods to compare from config.yaml
+    cfg_neigh = config.get("experiment", {}).get("neighborhoods")
     run_compare_mode(
         algorithm,
         processing_times,
@@ -347,6 +324,7 @@ def main() -> None:
         colors,
         out_dir=out_dir,
         results_folder=base_results,
+        neighborhoods=cfg_neigh,
     )
     return
 

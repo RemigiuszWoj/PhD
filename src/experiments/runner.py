@@ -16,7 +16,9 @@ from src.parser import parser
 
 # Full canonical sets used for experiments (always applied regardless of config lists)
 ALGORITHMS_ALL = ("ils", "sa")
-NEIGHBORHOODS_ALL = (
+
+# Default canonical neighborhoods
+_DEFAULT_NEIGHBORHOODS = (
     "adjacent",
     "quantum_adjacent",
     "quantum_fibonahi",
@@ -26,6 +28,25 @@ NEIGHBORHOODS_ALL = (
     "dynasearch",
     "motzkin",
 )
+
+
+def _load_neighborhoods_from_config() -> tuple | None:
+    """Try to read `experiment.neighborhoods` from config.yaml.
+
+    Returns tuple of names or None on any error / missing key.
+    """
+    try:
+        with open("config.yaml", "r", encoding="utf-8") as f:
+            cfg = yaml.safe_load(f) or {}
+        neigh = cfg.get("experiment", {}).get("neighborhoods")
+        if isinstance(neigh, list) and neigh:
+            return tuple(neigh)
+    except Exception:
+        pass
+    return None
+
+
+NEIGHBORHOODS_ALL = _load_neighborhoods_from_config() or _DEFAULT_NEIGHBORHOODS
 
 
 @dataclass(frozen=True)
@@ -230,13 +251,13 @@ def generate_basic_plan(
 ) -> List[RunConfig]:
     """Generate plan; if algorithms/neighborhoods omitted, use full canonical sets.
 
-    NOTE: For research mode we ALWAYS override to the full sets (ALGORITHMS_ALL,
-    NEIGHBORHOODS_ALL) to guarantee comprehensive coverage, ignoring any restricted
-    lists passed in config. This keeps experiments comparable across runs.
+    NOTE: If `algorithms` or `neighborhoods` are provided they will be used;
+    otherwise the canonical full sets (ALGORITHMS_ALL, NEIGHBORHOODS_ALL)
+    are used. (This allows overriding via `config.yaml`.)
     """
-    # Force full coverage regardless of user-provided subsets.
-    algorithms = ALGORITHMS_ALL
-    neighborhoods = NEIGHBORHOODS_ALL
+    # Use provided subsets when present, otherwise default to full sets.
+    algorithms = tuple(algorithms) if algorithms is not None else ALGORITHMS_ALL
+    neighborhoods = tuple(neighborhoods) if neighborhoods is not None else NEIGHBORHOODS_ALL
     configs: List[RunConfig] = []
     base_seeds = list(range(repeats))
     for algo in algorithms:

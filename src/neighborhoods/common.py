@@ -303,6 +303,10 @@ def solve_qubo(
     num_reads: int = 5,
     backend: str = "simulator",
     dwave_token: str | None = None,
+    solver: str | None = None,
+    annealing_time_us: int | None = None,
+    chain_strength: float | None = None,
+    num_spin_reversal_transforms: int | None = None,
 ) -> Dict[str, int]:
     """Solve QUBO using Simulated Annealing or real D-Wave QPU.
 
@@ -327,8 +331,23 @@ def solve_qubo(
             raise ValueError("dwave_token is required when backend='dwave'")
         from dwave.system import DWaveSampler, EmbeddingComposite
 
-        sampler = EmbeddingComposite(DWaveSampler(token=dwave_token))
-        result = sampler.sample(bqm, num_reads=num_reads)
+        # Instantiate sampler with optional solver id
+        if solver:
+            dw_sampler = DWaveSampler(token=dwave_token, solver=solver)
+        else:
+            dw_sampler = DWaveSampler(token=dwave_token)
+
+        sampler = EmbeddingComposite(dw_sampler)
+
+        sample_kwargs = {"num_reads": num_reads}
+        if annealing_time_us is not None:
+            sample_kwargs["annealing_time"] = annealing_time_us
+        if chain_strength is not None:
+            sample_kwargs["chain_strength"] = chain_strength
+        if num_spin_reversal_transforms is not None:
+            sample_kwargs["num_spin_reversal_transforms"] = num_spin_reversal_transforms
+
+        result = sampler.sample(bqm, **sample_kwargs)
     else:
         from dimod import SimulatedAnnealingSampler
 

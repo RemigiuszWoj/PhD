@@ -95,6 +95,10 @@ def quantum_dynasearch_neighborhood(
     L_max: Optional[int] = None,
     backend: str = "simulator",
     dwave_token: str | None = None,
+    solver: str | None = None,
+    annealing_time_us: int | None = None,
+    chain_strength: float | None = None,
+    num_spin_reversal_transforms: int | None = None,
 ) -> Tuple[List[int], int, List[Tuple[int, int]]]:
     """Quantum dynasearch neighborhood - selects non-overlapping endpoint swaps via QUBO.
 
@@ -174,7 +178,16 @@ def quantum_dynasearch_neighborhood(
                 Q[(f"x{k}", f"x{l}")] = penalty
 
     # Solve QUBO
-    solution = solve_qubo(Q, num_reads, backend=backend, dwave_token=dwave_token)
+    solution = solve_qubo(
+        Q,
+        num_reads,
+        backend=backend,
+        dwave_token=dwave_token,
+        solver=solver,
+        annealing_time_us=annealing_time_us,
+        chain_strength=chain_strength,
+        num_spin_reversal_transforms=num_spin_reversal_transforms,
+    )
     selected_indices = sorted(int(v[1:]) for v, val in solution.items() if val == 1)
 
     # Extract selected intervals and validate no-overlap

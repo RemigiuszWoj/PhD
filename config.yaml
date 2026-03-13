@@ -44,13 +44,23 @@ quantum:
   dwave_token: "fdMX-33e2e246f5df29cf5bff170adcc763d694ae4046"
   # Number of samples for QUBO solver (lower = faster, higher = better quality)
   # Reduced from 50 to 5 for performance (250x speedup vs simulated annealing)
-  num_reads: 5
+  num_reads: 1000
+  # Optional: choose a specific Leap solver (e.g. "Advantage_system1", "Advantage2_prototype")
+  # Leave empty/null to let the client pick a default solver for your token/account.
+  solver: null
+  # Optional sampler parameters forwarded to D-Wave .sample():
+  # annealing_time is in microseconds (integer)
+  annealing_time_us: null
+  # chain_strength is a float value applied to embeddings
+  chain_strength: null
+  # number of spin-reversal transforms to perform (int)
+  num_spin_reversal_transforms: null
   # Optional: limit maximum segment length for quantum_dynasearch (reduces O(n²) variables)
   # Set to constrain interval endpoints to max distance L_max apart
   # Leave empty/commented for full O(n²) enumeration
-  L_max_dynasearch: 15
+  L_max_dynasearch: null
   # Optional: same for quantum_motzkin
-  L_max_motzkin: 15
+  L_max_motzkin: null
 
 iterated_local_search:
   tabu_tenure: 10
@@ -83,24 +93,29 @@ experiment:
   tabu_tenure: 10   
       # when true: run batch experiments (all instances); false -> compare mode
   instance_files: [
-    "data/tai20_5.txt", "data/tai20_10.txt", "data/tai20_20.txt",
-    "data/tai50_5.txt", "data/tai50_10.txt", "data/tai50_20.txt",
-    "data/tai100_5.txt", "data/tai100_10.txt", "data/tai100_20.txt",
-    "data/tai200_10.txt", "data/tai200_20.txt",
-    "data/tai500_20.txt"
+    "data/tai20_5.txt", 
+    # "data/tai20_10.txt", "data/tai20_20.txt",
+    # "data/tai50_5.txt", "data/tai50_10.txt", "data/tai50_20.txt",
+    # "data/tai100_5.txt", "data/tai100_10.txt", "data/tai100_20.txt",
+    # "data/tai200_10.txt", "data/tai200_20.txt",
+    # "data/tai500_20.txt"
   ]
   repeats: 1             # number of RNG seeds per (algorithm, neighborhood, instance, time_limit)
   time_limits_s: [0.1, 0.5, 1, 2, 5, 10]
 
+  # Optional: explicitly restrict which neighborhoods to run for comparisons/experiments.
+  # If omitted, the code uses the full canonical set.
+  neighborhoods: [
+    "adjacent",
+    "quantum_adjacent",
+    "quantum_fibonahi",
+    "quantum_dynasearch",
+    "quantum_motzkin",
+    "fibonahi",
+    "dynasearch",
+    "motzkin"
+  ]
 
-  # instance_files: [
-  #   # "data/tai20_5.txt",
-  #   # "data/tai50_20.txt",
-  #   # "data/tai100_5.txt", 
-  #   "data/tai200_20.txt",
-  #   # "data/tai500_20.txt"
-  # ]
-  # repeats: 1             # number of RNG seeds per (algorithm, neighborhood, instance, time_limit)
-  # # time_limits_s: [0.1, 1, 10]
-  # time_limits_s: [1]
+
+
 

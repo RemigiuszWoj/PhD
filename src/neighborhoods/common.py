@@ -12,9 +12,6 @@ This module contains basic operations used by all neighborhoods:
 
 from typing import Dict, List, Tuple
 
-from src.neighborhoods.boundaries import compute_prefix_boundaries
-from src.permutation_procesing import c_max
-
 
 def swap_jobs(pi: List[int], i: int, j: int) -> List[int]:
     """Return a new permutation with elements at positions i and j swapped.
@@ -330,15 +327,18 @@ def solve_qubo(
         if not dwave_token:
             raise ValueError("dwave_token is required when backend='dwave'")
         from dwave.system import DWaveSampler, EmbeddingComposite
+        import logging
 
-        # Instantiate sampler with optional solver id
-        if solver:
-            dw_sampler = DWaveSampler(token=dwave_token, solver=solver)
-        else:
-            dw_sampler = DWaveSampler(token=dwave_token)
+        num_vars = bqm.num_variables
+        num_interactions = bqm.num_interactions
+        logging.debug(
+            "[solve_qubo] BQM: %d variables, %d interactions, solver=%s",
+            num_vars, num_interactions, solver or "(default)",
+        )
 
-        sampler = EmbeddingComposite(dw_sampler)
-
+        # Use a context manager to ensure the D-Wave client and its threads
+        # are properly closed after sampling. This avoids leaking threads
+        # when many sampler instances would otherwise be created.
         sample_kwargs = {"num_reads": num_reads}
         if annealing_time_us is not None:
             sample_kwargs["annealing_time"] = annealing_time_us
@@ -347,7 +347,27 @@ def solve_qubo(
         if num_spin_reversal_transforms is not None:
             sample_kwargs["num_spin_reversal_transforms"] = num_spin_reversal_transforms
 
-        result = sampler.sample(bqm, **sample_kwargs)
+        try:
+            if solver:
+                with DWaveSampler(token=dwave_token, solver=solver) as dw_sampler:
+                    sampler = EmbeddingComposite(dw_sampler)
+                    result = sampler.sample(bqm, **sample_kwargs)
+            else:
+                with DWaveSampler(token=dwave_token) as dw_sampler:
+                    sampler = EmbeddingComposite(dw_sampler)
+                    result = sampler.sample(bqm, **sample_kwargs)
+        except ValueError as e:
+            if "no embedding found" in str(e):
+                logging.warning(
+                    "[solve_qubo] No QPU embedding found for BQM with %d vars / %d interactions "
+                    "(solver=%s). Falling back to SimulatedAnnealingSampler.",
+                    num_vars, num_interactions, solver or "(default)",
+                )
+                from dimod import SimulatedAnnealingSampler
+                sa_sampler = SimulatedAnnealingSampler()
+                result = sa_sampler.sample(bqm, num_reads=num_reads)
+            else:
+                raise
     else:
         from dimod import SimulatedAnnealingSampler
 

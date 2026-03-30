@@ -1,0 +1,473 @@
+\chapterauthor{Konrad Pempera}
+\chapter[Ocena odporności \ldots]{Ocena odporności przeszukiwania tabu w wariantach stochastycznych CVRPTW}
+% \label{intro} % Always give a unique label
+% use \chaptermark{}
+% to alter or adjust the chapter heading in the running head
+
+\thispagestyle{empty}
+\vspace{-8mm} {\large Konrad Pempera} \vspace{8mm}
+
+
+\section{Wprowadzenie}
+
+Współczesne łańcuchy dostaw charakteryzują się dużą dynamiką i zmiennością, co znacząco zwiększa zapotrzebowanie na elastyczne usługi transportowe. Przewoźnicy obsługują dziś rozbudowane sieci sklepów, punkty odbioru, place budowy czy wydarzenia tymczasowe, realizując codzienne dostawy materiałów, których zapotrzebowanie często ulega zmianie z dnia na dzień. Odbiorcy określają zwykle dopuszczalne okna czasowe dla dostawy i rozładunku — na przykład ze względów operacyjnych lub bezpieczeństwa — co oznacza, że każda wizyta musi nie tylko rozpocząć się we właściwym czasie, ale również zakończyć w wyznaczonym przedziale.
+
+Okna czasowe nie muszą jednak mieć sztywnego charakteru. Mogą ulegać modyfikacjom w wyniku opóźnień, zmian zapotrzebowania czy dodatkowych próśb klientów. W takich warunkach szczególnie istotne są metody planowania zdolne do utrzymania jakości rozwiązań przy zmieniających się danych wejściowych. Choć zastosowane w niniejszej pracy podejście nie stanowi formalnej metody optymalizacji odpornej w sensie teoretycznym, to jednak wykazuje ono cechy \emph{odporności operacyjnej}. Zastosowanie analizy wielu scenariuszy losowych pozwala dodatkowo ocenić, jak zachowanie algorytmu zmienia się w zależności od zakłóceń, a~tym samym umożliwia pełniejszą ocenę jego stabilności. Zdolność algorytmu do inteligentnej eksploracji przestrzeni rozwiązań sprawia, że lepiej adaptuje się on do zakłóceń niż podejścia konstrukcyjne, co umożliwia obniżenie kosztów operacyjnych i zmniejszenie ryzyka naruszeń okien czasowych w~warunkach niepewności.
+
+Przy ograniczonej pojemności floty oraz zróżnicowanych czasach obsługi — zależnych m.in. od wielkości dostawy czy warunków rozładunku — planowanie tras i przydziału ładunku staje się problemem kombinatorycznym z~licznymi realistycznymi ograniczeniami: pojemności pojazdów, dostępności czasowej klientów oraz zmiennego zapotrzebowania. W niniejszym opracowaniu przedstawiono model matematyczny odzwierciedlający te warunki oraz porównano dwie metody jego rozwiązywania tj. podejście zachłanne oraz dostosowaną do dużych instancji metaheurystykę. Dodatkową wartością pracy jest możliwość zaobserwowania, w~jakim stopniu metody te różnią się pod względem odporności na niepewność i~jak zachowują się w warunkach skrajnych. Badania przeprowadzono na zbiorach danych wzbogaconych o stochastyczne modyfikacje okien czasowych i zapotrzebowania klientów.
+
+
+
+\begin{figure}[htbp]
+    \begin{center}
+        \includegraphics[width=0.5\linewidth]{fig/pempera/subjectVisualisationPempera_2.png}
+    \end{center}
+    \caption{Schematyczna ilustracja wyzwań związanych z elastycznym planowaniem dostaw oraz porównanie metod optymalizacyjnych (Tabu Search vs. Greedy). Źródło: grafika wygenerowana przy użyciu narzędzi AI.}
+    \label{fig:conceptual_illustration}
+\end{figure}
+
+\subsection{Hipotezy badawcze}
+
+W celu oceny skuteczności oraz stabilności w warunkach niepewnych analizowanych metod sformułowano następujące hipotezy badawcze:
+
+\begin{itemize}
+    \item[\textbf{H1.}] Metaheurystyka Tabu Search pozwala uzyskać niższy oczekiwany koszt całkowity niż podejście zachłanne w szerokim zestawie scenariuszy stochastycznych.
+    
+    \item[\textbf{H2.}] Metoda Tabu Search charakteryzuje się mniejszą zmiennością wyników pomiędzy scenariuszami, co oznacza wyższą stabilność i odporność operacyjną w odniesieniu do zmieniających się danych wejściowych.
+
+    \item[\textbf{H3.}] Metaheurystyka Tabu Search minimalizuje łączną wartość kar za naruszenia okien czasowych w porównaniu z podejściem zachłannym. Choć w pewnych konfiguracjach uniknięcie kar jest niemożliwe, celem jest ograniczenie ich skali.
+
+    \item[\textbf{H4.}] Algorytm Tabu Search redukuje tzw. ogon strat, czyli częstość i nasilenie scenariuszy o skrajnie wysokim koszcie. Mniejsza liczba przypadków skrajnych świadczy o większej wiarygodności metody w trudnych warunkach operacyjnych.
+
+\end{itemize}
+
+Powyższe hipotezy odnoszą się nie tylko do średniej jakości rozwiązań, lecz również do ich stabilności i niezawodności w warunkach niepewności. Pozwala to analizować nie tylko nominalne wyniki optymalizacji, lecz także zachowanie algorytmów w obliczu zakłóceń stochastycznych — co ma kluczowe znaczenie w~praktycznych zastosowaniach logistycznych.
+
+
+\section{Przegląd literatury}
+
+Problem trasowania pojazdów (Vehicle Routing Problem, VRP) należy do klasy problemów NP-trudnych i stanowi jedno z najintensywniej badanych zagadnień w~logistyce oraz transporcie. Jego podstawowa wersja, zaproponowana przez Dantziga i Ramsera w 1959 roku, zakłada optymalizację tras obsługujących zbiór klientów przy minimalizacji całkowitego kosztu przejazdu \cite{Dantzig1959}. Od tego czasu powstało wiele rozszerzeń modelu, uwzględniających m.in. ograniczenia pojemności pojazdów (CVRP), czasy obsługi, różne typy floty (HVRP) czy okna czasowe, w~których klienci mogą zostać obsłużeni — tworząc wariant VRPTW \cite{Toth2014, Golden2008}. Wersja z ograniczeniami pojemności i oknami czasowymi (CVRPTW) w większym stopniu odzwierciedla realia współczesnych systemów transportowych, w których dostępność zasobów oraz ograniczenia czasowe są bardzo istotne.
+
+Współczesne systemy logistyczne funkcjonują w warunkach coraz większej zmienności — zarówno pod względem zmieniających się czasów przejazdu i dostępnej floty, jak i zapotrzebowania czy granic okien czasowych. Przykładowo, w sieciach sklepów świeże produkty muszą być dostarczane regularnie i w odpowiednich ilościach, aby uniknąć strat związanych z przydatnością do spożycia tych produktów. W branży budowlanej natomiast dostawy materiałów muszą być zsynchronizowane z harmonogramem prac, ponieważ każde opóźnienie może prowadzić do przestojów i~kosztownych zakłóceń. Tego typu przypadki pokazują, że modele trasowania muszą uwzględniać zarówno zmienność, jak i niepewność danych operacyjnych.
+
+Tradycyjne modele VRPTW i CVRPTW zakładają dane deterministyczne — stałe zapotrzebowanie, czasy przejazdu oraz sztywne okna czasowe \cite{surveyBraekers, RCVRPTWreviewYernar}. W praktyce jednak parametry te często ulegają zmianom, co ogranicza skuteczność metod opartych wyłącznie na danych deterministycznych. Z tego względu obserwuje się rosnące zainteresowanie modelami stochastycznymi oraz podejściami ukierunkowanymi na zapewnienie większej odporności rozwiązań na zmienność danych.
+
+Z jednej strony, literatura dotycząca stochastycznych wariantów VRP rozwija się intensywnie — przeglądy wskazują liczne badania uwzględniające losowe zapotrzebowanie oraz stochastyczne czasy przejazdu \cite{Oyola2018, Bomboi2022}. Przykładem jest praca Pavone i in. \cite{Pavone2009}, w której model VRPTW uwzględnia napływ zleceń w sposób losowy, a początek okna czasowego zależy od momentu pojawienia się zapotrzebowania. W większości takich prac okna czasowe pozostają jednak deterministyczne, mimo że w rzeczywistych systemach mogą one się przesuwać.
+
+Z drugiej strony, w obszarze optymalizacji odpornej prowadzone są badania nad zabezpieczaniem procesu planowania przed niepewnością danych. Na przykład Munari i in. \cite{Munari2018} zaproponowali model RVRPTW z niepewnym zapotrzebowaniem i czasami przejazdu oraz algorytm typu branch-price-and-cut. Zhang i Shen \cite{Zhang2021} opracowali model odporny dystrybucyjnie dla VRPTW, minimalizujący ryzyko opóźnień przy nieznanym rozkładzie czasów przejazdu. Z kolei Shen i in. \cite{Shen2022} analizowali problem trasowania pojazdów elektrycznych z niepewnym zapotrzebowaniem oraz zużyciem energii zależnym od obciążenia i czasu.
+
+Pomimo bogatej literatury nadal widoczne są istotne luki badawcze. Wiele prac traktuje losowe zapotrzebowanie lub niepewne czasy przejazdu jako zmienne stochastyczne, natomiast niewiele uwzględnia zmienność samych okien czasowych. Bomboi i in. \cite{Bomboi2022} wykazali, że w VRPTW z losowymi czasami przejazdu niepewność silnie wpływa na wykonalność tras. Errico i~in. \cite{Errico2016} analizowali stochastyczne czasy obsługi, lecz przy deterministycznych oknach czasowych. Interesujące rozszerzenie zaproponowali Spliet i~Gabor \cite{Spliet2014}, wprowadzając problem TWAVRP, w którym granice okien czasowych stanowią decyzje podejmowane przed realizacją zapotrzebowania. W literaturze nadal brakuje jednak prac łączących zmienne, losowe okna czasowe ze stochastycznym zapotrzebowaniem w wariancie pojemnościowym CVRPTW. Rzadko spotyka się również badania wykorzystujące podejścia scenariuszowe, w których liczne losowe instancje są generowane i rozwiązywane oddzielnie, co pozwala ocenić stabilność i zachowanie metod w warunkach niepewności. Jednym z nowszych kierunków są prace wykorzystujące dane kontekstowe — np. Serrano i in. \cite{serano2024} analizowali czasy przejazdu zależne od cech otoczenia.
+
+Przegląd systematyczny Liu i in. \cite{liu2023} wskazuje, że około 86\% badań nad VRPTW wykorzystuje metody przybliżone, głównie heurystyki i metaheurystyki, przy czym większość z nich jest testowana wyłącznie na danych deterministycznych. Oznacza to, że pomimo szerokiego zastosowania zaawansowanych metod wyszukiwania, badania nad VRPTW w warunkach niepewności nadal stanowią mniejszą część literatury.
+
+Podsumowując, mimo zauważalnego postępu, można wskazać wyraźne luki badawcze w obszarze:
+\begin{itemize}
+    \item modelowania losowych granic okien czasowych jako zmiennych generowanych z rozkładów prawdopodobieństwa,
+    \item łączenia stochastycznych okien czasowych z losowym zapotrzebowaniem w~ramach jednego modelu,
+    \item stosowania podejść scenariuszowych umożliwiających analizę stabilności, ryzyka i odporności operacyjnej.
+\end{itemize}
+
+W niniejszej pracy przedstawiono metodę wpisującą się w kierunek badań nad odpornością operacyjną i analizą stochastyczną. Podejście to nie stanowi formalnej optymalizacji odpornej ale pozwala ocenić zachowanie algorytmów w szerokim zbiorze zróżnicowanych scenariuszy, dostarczając wartościowych wniosków na temat stabilności i jakości rozwiązań. Praca ta stanowi tym samym podstawę do dalszych badań, zarówno porównawczych, jak i rozwijających nowe metody radzenia sobie z niepewnością w~problemach trasowania.
+
+
+
+\section{Sformułowanie Problemu}
+
+W niniejszym rozdziale przedstawiono model matematyczny rozważanego problemu, uwzględniający kluczowe ograniczenia operacyjne, takie jak limity ładowności pojazdów, okna czasowe obsługi klientów, czasy serwisu oraz ograniczenia czasu pracy.
+
+\subsection{Definicja Problemu}
+
+Rozważono listę lokalizacji składającą się z $N$ punktów usługowych, tworzących zbiór $\mathcal{N} = \{1, 2, \dots, N\}$. Uzupełnieniem tego zbioru jest węzeł 0, oznaczający bazę (depot), co daje pełny zbiór lokalizacji $\mathcal{D} = \{0\} \cup \mathcal{N}$. Depot jest punktem początkowym oraz końcowym trasy każdego z pojazdów. Koszt przemieszczenia się pomiędzy lokalizacjami $i$ oraz $j$ określony jest przez macierz odległości $d_{i,j}$, wyznaczoną na podstawie współrzędnych poszczególnych punktów.
+
+Do obsługi zleceń wykorzystywana jest flota pojazdów oznaczona zbiorem $\mathcal{V}$, gdzie dla każdego pojazdu $v \in \mathcal{V}$ zdefiniowano maksymalną ładowność $Q_v$. Każda lokalizacja $i \in \mathcal{N}$ posiada określone zapotrzebowanie $q_i$, czas trwania obsługi $s_i$ oraz przedział czasowy $[a_i, b_i]$, w którym powinien zostać wykonany serwis. 
+Zestawienie notacji wykorzystywanej w modelu przedstawiono w Tabeli~\ref{tab:notation}.
+
+\begin{table}[ht]
+	\renewcommand{\arraystretch}{1.2}
+    \scriptsize
+	\caption{Zestawienie notacji}
+	\label{tab:notation}
+	\centering
+	\begin{tabularx}{\textwidth}{lL}
+		\toprule
+		Symbol & Opis  \\
+		\midrule
+		$\mathcal{V}$ & Zbiór dostępnych pojazdów \\ 
+        $\mathcal{D}$ & Zbiór wszystkich lokalizacji (włącznie z bazą) \\
+        $\mathcal{N}$ & Zbiór lokalizacji klientów ($\mathcal{D}\setminus\{0\}$) \\
+        $d_{i,j}$ & Koszt podróży od węzła $i$ do $j$ \\
+        $s_i$ & Czas obsługi (serwisu) w lokalizacji $i$ \\
+        $[a_i,b_i]$ & Okno czasowe dla lokalizacji $i$\\
+        $q_i$ & Wielkość zapotrzebowania klienta $i$\\
+        $Q_v$ & Ładowność pojazdu $v$ \\
+        $x_{v,i,j}$ & Zmienna binarna: 1, jeśli pojazd $v$ pokonuje łuk $i\rightarrow j$ \\
+        $z_{v,i}$ & Zmienna binarna: 1, jeśli pojazd $v$ obsługuje punkt $i$\\
+        $A_{v,i}$ & Czas przyjazdu pojazdu $v$ do lokalizacji $i$\\
+        $S_{v,i}$ & Czas rozpoczęcia obsługi przez pojazd $v$ w punkcie $i$\\
+        $w_{v,i}$ & Czas oczekiwania pojazdu $v$ w punkcie $i$ ($S_{v,i}-A_{v,i}$)\\
+        $p_{v,i}$ & Kara za przyjazd przed czasem (early arrival) pojazdu $v$ do $i$ \\ 
+        $q_{v,i}$ & Kara za spóźnienie (late arrival) pojazdu $v$ do $i$ \\
+        $y_{v,i}$ & Poziom załadowania pojazdu $v$ po obsłużeniu punktu $i$\\
+        $\alpha$ & Współczynnik kary za naruszenie okien czasowych\\
+        $M$ & Duża stała (metoda Big-M)\\
+        \bottomrule
+	\end{tabularx}
+\end{table}
+
+\subsection{Model Matematyczny}
+
+Struktura modelu opiera się na funkcji celu, której zadaniem jest minimalizacja całkowitych kosztów operacyjnych przy jednoczesnym spełnieniu szeregu ograniczeń decyzyjnych. Na funkcję celu składają się trzy główne elementy: koszty przebytej drogi, koszty związane z czasem oczekiwania oraz kary umowne za niedotrzymanie okien czasowych.
+
+\subsubsection{Funkcja Celu i ograniczenia}
+\begin{equation}\label{eq:objective}
+     \min \left( \sum_{v \in \mathcal{V}} \sum_{i \in \mathcal{D}} \sum_{j \in \mathcal{D}}  x_{v,i,j} d_{i,j} + \sum_{v \in \mathcal{V}}\sum_{i \in \mathcal{D}} w_{v,i} + \sum_{v \in \mathcal{V}}\sum_{i \in \mathcal{D}} \alpha (p_{v,i} + q_{v,i}) \right),
+\end{equation}
+
+gdzie pierwszy człon sumy odpowiada za całkowity dystans, drugi reprezentuje koszt przestojów (oczekiwanie kierowcy i pojazdu), a trzeci nalicza kary za naruszenie okien czasowych, ważone współczynnikiem $\alpha$.
+%
+Minimalizacja funkcji \eqref{eq:objective} odbywa się przy zachowaniu następujących warunków:
+
+\textbf{Ograniczenia struktury trasy:}
+
+\begin{equation}{\label{eq:one_visit}}
+     \sum_{v \in \mathcal{V}}\sum_{j \in \mathcal{D}\setminus \{i\}} x_{v,i,j}=1, \quad \forall i \in \mathcal{N}
+\end{equation}
+
+\begin{equation}{\label{eq:flow_balance}}
+    \sum_{j\in\mathcal{D}\setminus\{i\}}x_{v,i,j}-\sum_{j\in\mathcal{D}\setminus\{i\}}x_{v,j,i}=0, \quad \forall v \in \mathcal{V}, i \in \mathcal{N}
+\end{equation}
+
+\begin{equation}{\label{eq:start_end_in_depot}}
+    \sum_{j\in\mathcal{N}}x_{v,0,j}=z_v, \quad \sum_{i\in\mathcal{N}}x_{v,i,0}=z_v, \quad \forall v \in \mathcal{V}
+\end{equation}
+
+\begin{equation}{\label{eq:edgevisitcorrelation}}
+    z_{v,i} = \sum_{j\in \mathcal{D}\setminus\{i\}}x_{v,j,i} = \sum_{j\in \mathcal{D}\setminus\{i\}}x_{v,i,j}, \quad \forall v \in \mathcal{V}, i \in \mathcal{N}
+\end{equation}
+
+Warunek \eqref{eq:one_visit} gwarantuje, że każdy klient zostanie odwiedzony dokładnie raz przez pojazd. Równanie \eqref{eq:flow_balance} zapewnia zachowanie ciągłości przepływu: pojazd wjeżdżający musi go również opuścić. Ograniczenie \eqref{eq:start_end_in_depot} wymusza rozpoczęcie i zakończenie trasy każdego pojazdu w~bazie. Zależność \eqref{eq:edgevisitcorrelation} wiąże zmienną decyzyjną obsługi punktu ze zmiennymi trasowania.
+
+\textbf{Ograniczenia okien czasowych:}
+\begin{equation}{\label{eq:time_cohestion}}
+ A_{v,j} \; \ge \; S_{v,i} + s_i + d_{i,j} \;-\; M(1 - x_{v,i,j}), \quad \forall v \in \mathcal{V}, \forall i,j \in \mathcal{D}, i\neq j
+\end{equation}
+
+\begin{equation}\label{eq:start_soft}
+S_{v,i} \;\ge\; A_{v,i}, \qquad a_i \;\le\; S_{v,i} + p_{v,i}, \quad p_{v,i}\ge 0, \quad \forall v \in \mathcal{V}, i \in \mathcal{N}
+\end{equation}
+
+\begin{equation}\label{eq:penalty}
+S_{v,i} \;\le\; b_i + q_{v,i}, \quad q_{v,i}\ge 0, \quad \forall v \in \mathcal{V}, i \in \mathcal{N}
+\end{equation}
+
+\begin{equation}\label{eq:waiting_time}
+w_{v,i} \;=\; S_{v,i} - A_{v,i}, \quad w_{v,i}\ge 0, \quad \forall v \in \mathcal{V}, i \in \mathcal{N}
+\end{equation}
+
+\begin{equation}{\label{eq:notimesforvehiclenotvisit}}
+    A_{v,i}\leq M z_{v,i}, \quad S_{v,i}\leq M z_{v,i}, \quad \forall v \in \mathcal{V}, i \in \mathcal{N}
+\end{equation}
+
+Nierówność \eqref{eq:time_cohestion} odpowiada za spójność czasową: przyjazd do kolejnego punktu nie może nastąpić wcześniej niż zakończenie obsługi w punkcie poprzednim powiększone o czas dojazdu. Ograniczenia \eqref{eq:start_soft} oraz \eqref{eq:penalty} wprowadzają mechanizm tzw. miękkich okien czasowych, definiując zmienne kar $p_{v,i}$ (dla przyjazdu zbyt wczesnego) i $q_{v,i}$ (dla spóźnienia). Czas oczekiwania, zdefiniowany jako różnica między rozpoczęciem serwisu a przyjazdem, określa równanie \eqref{eq:waiting_time}. Warunek \eqref{eq:notimesforvehiclenotvisit} zeruje zmienne czasowe dla lokalizacji, które nie są odwiedzane przez dany pojazd $v$.
+
+\textbf{Ograniczenia pojemności:}
+
+\begin{equation}\label{eq:capacity_flow}
+y_{v,j} \;\ge\; y_{v,i} + q_j - Q_v(1 - x_{v,i,j}), \quad \forall v \in \mathcal{V}, i,j \in \mathcal{D}, i \neq j
+\end{equation}
+
+\begin{equation}\label{eq:capacity_limits}
+0 \;\le\; y_{v,i} \;\le\; Q_v z_{v,i}, \quad \forall v \in \mathcal{V}, i \in \mathcal{N}, \qquad y_{v,0} = 0, \forall v \in \mathcal{V}
+\end{equation}
+
+Ograniczenie \eqref{eq:capacity_flow} sprawdza skumulowany ładunek pojazdu: przejazd z węzła $i$ do $j$ zwiększa obciążenie o zapotrzebowanie punktu $j$. Zależność \eqref{eq:capacity_limits} zapewnia, że ładunek pojazdu jest nieujemny i nie przekracza jego maksymalnej pojemności.
+
+\textbf{Dziedziny zmiennych:}
+
+\begin{equation}
+     x_{v,i,j}, z_{v,i}\in\{0,1\}, \quad \forall v \in \mathcal{V}, i,j \in \mathcal{D}
+\end{equation}
+
+\begin{equation}
+     p_{v,i}, q_{v,i}, w_{v,i}, A_{v,i}, S_{v,i}, y_{v,i} \geq 0, \quad \forall v \in \mathcal{V}, i \in \mathcal{D}
+\end{equation}
+
+Powyższe sformułowanie stanowi szczegółowy model Mieszanego Programowania Liniowego Całkowitoliczbowego (MILP) dla badanego problemu RCVRPTW. Może on zostać rozwiązany przy użyciu komercyjnych solverów lub – w przypadku instancji o dużej skali – za pomocą metod metaheurystycznych, co opisano w dalszej części pracy.
+
+\section{Eksperymenty obliczeniowe}
+W niniejszym rozdziale przedstawiono środowisko eksperymentalne. Zaprezentowano w nim wykorzystane zbiory danych, procedurę generowania scenariuszy testowych, szczegóły implementacyjne oraz przyjęte miary oceny jakości rozwiązań. W dalszej części zaprezentowano wyniki badań weryfikujących postawione hipotezy badawcze.
+
+\subsection{Charakterystyka danych i implementacja}
+
+Podstawę eksperymentów stanowiły instancje testowe pochodzące ze zbioru Solomona (CVRPTW). W badaniach wykorzystano wszystkie sześć rodzajów instancji tj.
+\begin{itemize}
+    \item C101, C201 (struktura klastrowa),
+    \item R101, R201 (rozmieszczenie losowe),
+    \item RC101, RC201 (struktura mieszana).
+\end{itemize}
+Gdzie pierwsza cyfra nazwy pliku oznacza typ okien czasowych ($1$-wąskie okna czasowe, $2$-szerokie okna czasowe).
+
+Każda z instancji bazowych została poddana losowym zmianom. Dla każdej z nich wygenerowano 500 wariantów, co dało łącznie 3000 unikalnych scenariuszy testowych. Generator wprowadzał losowe perturbacje do okien czasowych oraz wielkości zapotrzebowania klientów, co miało na celu symulację niepewności operacyjnej, takiej jak opóźnienia, zmienność zamówień czy inne zakłócenia czasowe.
+
+Platformę symulacyjną zaimplementowano w języku C\#. Konfiguracja algorytmu Tabu Search obejmowała następujące parametry: liczbę iteracji ustawioną na 100, długość listy tabu wynoszącą 30 oraz operator mutacji typu \texttt{swap}. Kod przystosowano do pełnego przetwarzania równoległego. Dla każdego scenariusza uruchamiano zarówno algorytm zachłanny (Greedy), służący jako punkt odniesienia, jak i algorytm Tabu Search.
+
+Podczas każdego uruchomienia rejestrowano szereg metryk, w tym: wartości funkcji celu dla obu metod, całkowity koszt przejazdu, kary za naruszenie okien czasowych, łączny czas pracy pojazdów, liczbę tras, czas obliczeń oraz pełną strukturę tras (reprezentacja GTR). Zgromadzone dane zapisywano w formacie CSV celem dalszej obróbki statystycznej.
+
+% \subsection{Środowisko obliczeniowe}
+
+Obliczenia przeprowadzono na stacji roboczej wyposażonej w procesor Intel Core i7-13700K oraz 32~GB pamięci RAM, działającej pod systemem Ubuntu 24.04.2~LTS. Symulacje uruchamiano w środowisku .NET, korzystając z Task Parallel Library, co pozwoliło na równoczesne przetwarzanie scenariuszy na wielu rdzeniach procesora.
+
+\subsection{Eksp. A: Porównanie oczekiwanych kosztów (H1)}
+
+Pierwszy etap badań miał na celu weryfikację hipotezy H1, zakładającej, że algorytm Tabu Search pozwala na osiągnięcie niższego oczekiwanego kosztu w~porównaniu do podejścia zachłannego. Porównanie przeprowadzono na zbiorze 3000 scenariuszy stochastycznych.
+
+W Tabeli~\ref{tab:expA_summary} zestawiono statystyki opisowe uzyskanych wyników. Średnia wartość funkcji celu dla algorytmu zachłannego wynosi 10830.74, podczas gdy Tabu Search osiąga wynik znacząco lepszy, na poziomie 9096.43. Przewaga ta widoczna jest również w medianie (6935.87 dla Greedy vs. 5432.04 dla Tabu) oraz w górnych percentylach rozkładu. Tabu Search skutecznie redukuje wartości $p_{90}$ (z 20717.53 do 17797.22) oraz $p_{95}$ (z 21078.65 do 18037.84). Percentyle te wskazują na zachowanie algorytmów w trudnych warunkach operacyjnych; ich niższe wartości oznaczają większą odporność na skrajnie niekorzystne układy danych. Również w najgorszym zarejestrowanym przypadku (Max) Tabu Search (18750.35) wypada znacznie korzystniej niż algorytm zachłanny (22092.06).
+
+\begin{table}[ht]
+    \renewcommand{\arraystretch}{1.5}
+    \caption{Statystyki opisowe wartości funkcji celu dla algorytmu zachłannego (Greedy) i Tabu Search.}
+    \label{tab:expA_summary}
+    \centering
+    \scriptsize
+    \begin{tabularx}{.8\textwidth}{l*{4}{C}}
+        \toprule
+        Metoda & Średnia & Odch. std. & Min & Max \\
+        \midrule
+        Greedy & 10830.74 & 6266.17 & 5169.75 & 22092.06 \\
+        Tabu   &  9096.43 & 5838.98 & 4271.48 & 18750.35 \\ 
+        \midrule
+        Metoda & $p_{50}$ & $p_{75}$ & $p_{90}$ & $p_{95}$ \\
+        Greedy & 6935.87 & 18359.86 & 20717.53 & 21078.65 \\ 
+        Tabu   & 5432.04 & 16759.41 & 17797.22 & 18037.84 \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+Istotność statystyczną zaobserwowanych różnic zweryfikowano testem rangowanych par Wilcoxona oraz sparowanym testem t-Studenta. W obu przypadkach uzyskano wartość $p = 0.0$, co potwierdza, że różnice te są wysoce istotne statystycznie.
+
+Podsumowując, wyniki eksperymentu jednoznacznie potwierdzają hipotezę H1: zastosowanie Tabu Search prowadzi do redukcji oczekiwanych kosztów operacyjnych w całym spektrum analizowanych scenariuszy.
+
+\subsection{Eksp. B: Analiza zmienności i odporności (H2)}
+
+Celem drugiego eksperymentu była weryfikacja hipotezy H2, sugerującej, że rozwiązania generowane przez Tabu Search charakteryzują się mniejszą zmiennością niż te uzyskane metodą zachłanną. Odporność (ang. \textit{robustness}) jest kluczowa w planowaniu tras, gdzie niepewność parametrów wejściowych może drastycznie wpłynąć na jakość obsługi.
+
+Wskaźnikiem stabilności rozwiązania jest odchylenie standardowe funkcji celu. Dla algorytmu zachłannego wyniosło ono 6266.17, podczas gdy dla Tabu Search wartość ta była niższa i równa 5838.98, co świadczy o mniejszej wrażliwości na zaburzenia stochastyczne. Mniejszą dyspersję potwierdzają również rozstęp międzykwartylowy ($p_{75}-p_{50}$) oraz wartości skrajnych percentyli, które dla Tabu Search są wyraźnie niższe.
+
+Aby zilustrować odporność metod w zależności od struktury problemu, na Rys.~\ref{fig:ecdf_three_instances} przedstawiono dystrybuanty empiryczne (ECDF) dla trzech reprezentatywnych instancji: RC101, R101 oraz C101. We wszystkich przypadkach krzywa dla Tabu Search przebiega bardziej stromo i znajduje się na lewo od krzywej algorytmu Greedy. Oznacza to, że Tabu częściej generuje rozwiązania o niższym koszcie i mniejszym rozrzucie wyników. Co istotne, przewaga ta jest widoczna niezależnie od typu rozmieszczenia klientów (klastrowe, losowe czy mieszane).
+
+Zgromadzone dane potwierdzają prawdziwość hipotezy H2: Tabu Search oferuje wyższą stabilność działania, dostarczając rozwiązania o mniejszej zmienności zarówno wewnątrz poszczególnych scenariuszy, jak i w różnych rodzajach instancji problemu.
+
+
+\begin{figure*}[ht]
+    \centering
+    \includegraphics[width=\textwidth]{fig/pempera/ecdf_all.png}
+    \caption{Porównanie dystrybuant empirycznych (ECDF) dla wybranych instancji Solomona:
+    RC101 (mieszana), R101 (losowa) oraz C101 (klastrowa).  
+    Widoczna dominacja Tabu Search nad algorytmem Greedy dla wszystkich rodzin.}
+    \label{fig:ecdf_three_instances}
+\end{figure*}
+
+\subsection{Eksp. C: Analiza kar za naruszenie okien czasowych (H3)}
+
+Trzeci eksperyment skupił się na składowej funkcji celu związanej z karami za nieterminową obsługę. W przeciwieństwie do założeń hipotezy H3, wyniki pokazały, że to algorytm zachłanny generuje niższe wartości kar niż Tabu Search. Ze względu na specyfikę scenariuszy, w których czas obsługi często przekracza długość okna czasowego, kary są nieuniknione, jednak podejście Greedy minimalizuje je skuteczniej.
+
+Wynika to z natury obu algorytmów. Metoda zachłanna buduje trasy sekwencyjnie, priorytetyzując lokalną wykonalność czasową, co sprzyja dotrzymywaniu terminów kosztem efektywności trasy. Z kolei Tabu Search, eksplorując szersze otoczenie rozwiązania, dopuszcza pewne naruszenia okien czasowych (zwiększając kary), jeśli pozwala to na znaczną redukcję dystansu lub czasu pracy załogi.
+
+Dekompozycję funkcji celu przedstawiono w Tabeli~\ref{tab:expC_penalty_components}. Mimo że Greedy osiąga niższe kary (1414.67 - 1598.55), Tabu Search skutecznie redukuje koszt podróży (2722.83 - 1826.93) oraz czas operacyjny (6693.24 - 5670.95). Ponieważ funkcja celu jest sumą tych składników, oszczędności w logistyce z nawiązką kompensują wyższe kary za spóźnienia.
+
+Eksperyment C dostarcza zatem ważnego spostrzeżenia: wyższe kary w~Tabu Search są efektem kompromisu, który prowadzi do globalnie lepszego rozwiązania. Jest to typowa cecha podejść metaheurystycznych, gdzie lokalne poluzowanie ograniczeń (np. spóźnienie) umożliwia znalezienie bliżej optymalnego planu całościowego.
+
+% Eksperyment C wskazuje więc, że wyższe kary obserwowane w Tabu Search są konsekwencją świadomego kompromisu, który pozwala algorytmowi uzyskać lepsze globalnie rozwiązanie. Jest to charakterystyczne dla metaheurystyk, gdzie chwilowe naruszenia ograniczeń — na przykład niewielkie opóźnienia — mogą otworzyć drogę do bardziej efektywnego planu trasy jako całości. Jednocześnie warto zauważyć, że wpływ takich naruszeń można kontrolować: zwiększenie wagi odpowiadającej za kary w funkcji celu ograniczyłoby skłonność algorytmu do dopuszczania opóźnień, prowadząc do bardziej rygorystycznego przestrzegania okien czasowych kosztem mniejszej elastyczności eksploracji.
+
+\begin{table}[ht]
+\renewcommand{\arraystretch}{1.3}
+\centering
+\scriptsize
+\caption{Porównanie składowych funkcji celu dla metod Greedy i Tabu Search w Eksperymencie C.}
+\label{tab:expC_penalty_components}
+\begin{tabularx}{\textwidth}{l*{4}{C}}
+\toprule
+Metoda & Koszt podróży & Suma kar & Czas operacyjny & Funkcja celu \\
+\midrule
+Greedy & 2722.83 & 1414.67 & 6693.24 & 10830.74 \\
+Tabu   & 1826.93 & 1598.55 & 5670.95 & 9096.43 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+
+\subsection{Eksp. D: Redukcja ogona strat (H4)}
+
+Ostatni eksperyment weryfikował hipotezę H4, dotyczącą zdolności Tabu Search do redukcji tzw. ogona strat (ang. \textit{loss tail}), czyli częstości i dotkliwości występowania scenariuszy o skrajnie wysokich kosztach. Ograniczenie ryzyka wystąpienia takich sytuacji jest kluczowe z punktu widzenia bezpieczeństwa operacyjnego i~gwarancji jakości realizowanych usług.
+
+Już analiza percentyli w Tabeli~\ref{tab:expA_summary} wskazuje na istotne różnice w górnych rejonach rozkładu kosztów. Tabu Search znacząco obniża wartość 90. percentyla (20717.53 vs. 17797.22) oraz 95. percentyla (21078.65 vs. 18037.84) w porównaniu do metody zachłannej. Oznacza to, że Tabu generuje znacznie mniej scenariuszy o ekstremalnie wysokich kosztach. Potwierdza to również różnica w maksymalnym obserwowanym koszcie (Max), który dla Tabu jest o ponad 3000 jednostek niższy.
+
+Wnioski te wzmacnia analiza wykresów ECDF. Krzywe dla Tabu Search szybciej osiągają wartość 1 (są bardziej strome), co świadczy o krótszym i~lżejszym ogonie rozkładu. W przypadku algorytmu zachłannego obserwuje się długi ogon wysokich kosztów, podczas gdy Tabu Search skutecznie ogranicza degradację jakości rozwiązania w najgorszych przypadkach.
+
+Wyniki te silnie wspierają hipotezę H4. Tabu Search nie tylko poprawia średnią wydajność, ale przede wszystkim minimalizuje ryzyko wystąpienia skrajnie niekorzystnych wyników, co czyni go narzędziem bardziej przewidywalnym i bezpiecznym w zastosowaniach praktycznych.
+
+\section{Podsumowanie i wnioski}
+
+W niniejszym opracowaniu przedstawiono analizę problemu trasowania pojazdów z ograniczoną pojemnością i oknami czasowymi (CVRPTW), ze szczególnym naciskiem na ocenę stabilności rozwiązań w warunkach niepewności danych wejściowych. Zaproponowany model matematyczny uwzględnia kluczowe ograniczenia, takie jak ładowność floty, czasy obsługi oraz miękkie okna czasowe, a funkcja celu łączy koszty transportu, czasu pracy załogi oraz kary za nieterminowość. Głównym celem badań była weryfikacja, jak metaheurystyka Tabu Search radzi sobie z zaburzeniami stochastycznymi w porównaniu do klasycznego podejścia konstrukcyjnego.
+
+\subsection{Kluczowe wyniki}
+Analiza eksperymentalna, przeprowadzona na zbiorze 3000 scenariuszy stochastycznych wygenerowanych na bazie instancji Solomona, pozwoliła na weryfikację postawionych hipotez badawczych. Wyniki potwierdziły kluczowe założenia dotyczące efektywności i stabilności rozwiązań, a w przypadku hipotezy H3 wyniki pokazały, że zwiększone kary czasowe są elementem strategii poszukiwania lepszych rozwiązań globalnych. Metaheurystyka lepiej zarządza tym kompromisem niż podejście zachłanne, co przekłada się na wyższą odporność operacyjną w~analizowanych scenariuszach.
+
+\begin{itemize}
+    \item \textbf{Wyższa średnia efektywność (H1):} Algorytm Tabu Search osiągnął znacząco niższą średnią wartość funkcji celu (9096.43) w porównaniu do algorytmu zachłannego (10830.74), co stanowi poprawę o~około 16\%. Istotność statystyczną tej różnicy potwierdzono testami Wilcoxona oraz t-Studenta ($p = 0.0$).
+    
+    \item \textbf{Zwiększona stabilność wyników (H2):} Metaheurystyka wykazała mniejszą zmienność wyników pomiędzy poszczególnymi scenariuszami losowymi (odchylenie standardowe: 5838.98 wobec 6266.17) oraz bardziej skupiony rozkład. Analiza ECDF potwierdziła, że algorytm ten zachowuje większą stabilność we wszystkich badanych klasach instancji (klastrowych, losowych i mieszanych), co świadczy o jego wyższej odporności na zmienność danych.
+    
+    \item \textbf{Redukcja kar za przekroczenie okien czasowych (H3):} Wyniki wykazały, że Tabu Search generował nieco wyższe kary za naruszenie okien czasowych (1598.55 wobec 1414.67), co jednak pozwoliło na drastyczną redukcję kosztów transportu (1826.93 wobec 2722.83) oraz całkowitego czasu pracy (5670.95 wobec 6693.24). Potwierdza to zdolność algorytmu do inteligentnej eksploracji przestrzeni rozwiązań i akceptacji lokalnych, kontrolowanych naruszeń w celu uzyskania globalnie lepszego wyniku.
+    
+    \item \textbf{Redukcja ogona strat (H4):} Zastosowana metoda skutecznie ograniczyła skutki najgorszych scenariuszy (worst-case), obniżając wartość 90. percentyla z 20717.53 do 17797.22, a 95. percentyla z 21078.65 do 18037.84. Maksymalny zarejestrowany koszt spadł z 22092.06 do 18750.35. Jest to kluczowe dla niezawodności operacyjnej, sugerując, że Tabu Search jest bezpieczniejszym wyborem w warunkach dużej niepewności.
+\end{itemize}
+
+
+\subsection{Zastosowanie praktyczne}
+
+Uzyskane wyniki mają bezpośrednie przełożenie na praktykę logistyczną, gdzie dane rzadko są w pełni deterministyczne. Zastosowanie algorytmu Tabu Search w~planowaniu tras przy zmiennych warunkach oferuje:
+\begin{itemize}
+    \item Znaczące oszczędności kosztów całkowitych (średnio o 16\%) w zróżnicowanych scenariuszach operacyjnych.
+    \item Bardziej przewidywalne działanie systemu transportowego dzięki mniejszej wrażliwości planu na drobne odchylenia parametrów wejściowych.
+    \item Lepsze zabezpieczenie przed scenariuszami krytycznymi, co ułatwia dotrzymywanie umów o poziomie świadczenia usług (SLA).
+    \item Możliwość skalowania do rzeczywistych rozmiarów problemów dzięki wydajnej implementacji równoległej.
+\end{itemize}
+
+\subsection{Ograniczenia i kierunki dalszych badań}
+
+Mimo że badania dostarczają istotnych wniosków na temat zachowania algorytmów w środowisku stochastycznym, istnieje kilka obszarów wymagających dalszej eksploracji:
+
+\begin{itemize}
+    \item \textbf{Udoskonalenie algorytmów:} Badanie hybrydowych metaheurystyk, łączących Tabu Search z innymi operatorami (np. algorytmami genetycznymi), może przynieść dalszą poprawę stabilności rozwiązań.
+    
+    \item \textbf{Pełna dynamika i czas rzeczywisty:} Rozszerzenie modelu o aspekt dynamicznego napływu zleceń w trakcie realizacji tras, co wymagałoby re-optymalizacji w trybie online.
+    
+   \item \textbf{Podejście wielokryterialne:} Rozdzielenie sprzecznych celów — takich jak koszt, czas i kary — i traktowanie ich jako osobnych kryteriów w analizie Pareto, zamiast łączenia ich w jedną funkcję celu. Pozwoliłoby to na bardziej elastyczny wybór preferowanej strategii.
+    
+    \item \textbf{Integracja z uczeniem maszynowym:} Wykorzystanie modeli predykcyjnych do przewidywania wzorców popytu i naruszeń okien czasowych, co umożliwiłoby proaktywne, a nie tylko reaktywne planowanie tras.
+\end{itemize}
+
+Podsumowując, praca ta dowodzi, że w obliczu niepewności danych, metody optymalizacji metaheurystycznej (w szczególności Tabu Search) stanowią narzędzie bardziej niezawodne niż proste heurystyki konstrukcyjne. Połączenie modelu matematycznego z szeroko zakrojonymi eksperymentami scenariuszowymi dostarczyło dowodów na to, że zaawansowane algorytmy potrafią skutecznie ograniczać ryzyko operacyjne w procesach logistycznych.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\begin{thebibliography}{99}
+\bibitem{Dantzig1959}
+G.~B.~Dantzig and J.~H.~Ramser, 
+``The Truck Dispatching Problem,'' 
+\textit{Management Science}, vol.~6, no.~1, pp.~80--91, 1959. 
+doi: 10.1287/mnsc.6.1.80.
+\bibitem{Toth2014}
+P.~Toth and D.~Vigo, 
+\textit{Vehicle Routing: Problems, Methods, and Applications}, 
+SIAM, 2014.
+\bibitem{Golden2008}
+B.~L.~Golden, S.~Raghavan, and E.~A.~Wasil, 
+\textit{The Vehicle Routing Problem: Latest Advances and New Challenges}, 
+Springer, 2008.
+\bibitem{surveyBraekers}
+K.~Braekers, K.~Ramaekers, and I.~Nieuwenhuyse,
+``The Vehicle Routing Problem: State of the Art Classification and Review,''
+\textit{Computers \& Industrial Engineering}, vol.~99, 2015.
+doi: 10.1016/j.cie.2015.12.007.
+\bibitem{RCVRPTWreviewYernar}
+A.~Yernar and C.~Turan, 
+``Recent developments in vehicle routing problem under time uncertainty: a comprehensive review,'' 
+\textit{Bulletin of Electrical Engineering and Informatics}, vol.~14, pp.~1263--1275, 2025.
+\bibitem{Oyola2018}
+J.~Oyola, H.~Arntzen, and D.~L.~Woodruff, 
+``The stochastic vehicle routing problem, a literature review, part I: models,'' 
+\textit{EURO Journal on Transportation and Logistics}, vol.~7, no.~3, pp.~193--221, 2018.
+\bibitem{Bomboi2022}
+F.~Bomboi, C.~Buchheim, and J.~Pruente, 
+``On the stochastic vehicle routing problem with time windows, correlated travel times, and time dependency,'' 
+\textit{4OR}, vol.~20, 2022. 
+doi: 10.1007/s10288-021-00476-z.
+\bibitem{Pavone2009}
+M.~Pavone, N.~Bisnik, E.~Frazzoli, and V.~Isler, 
+``A Stochastic and Dynamic Vehicle Routing Problem with Time Windows and Customer Impatience,'' 
+\textit{MONET}, vol.~14, pp.~350--364, 2009.
+\bibitem{Munari2018}
+P.~Munari et al., 
+``The robust vehicle routing problem with time windows: compact formulation and branch-price-and-cut method,'' 
+2018. doi: 10.13140/RG.2.2.24775.39847.
+\bibitem{Zhang2021}
+Y.~Zhang, Z.~Zhang, A.~Lim, and M.~Sim,
+``Robust Data-Driven Vehicle Routing with Time Windows,''
+\textit{Operations Research}, vol.~69, pp.~469--485, 2021.
+doi: 10.1287/opre.2020.2043.
+\bibitem{Shen2022}
+Y.~Shen, L.~Yu, and J.~Li, 
+``Robust Electric Vehicle Routing Problem with Time Windows under Demand Uncertainty and Weight-Related Energy Consumption,'' 
+\textit{Complex System Modeling and Simulation}, vol.~2, no.~1, pp.~18--34, 2022.
+\bibitem{Errico2016}
+F.~Errico, G.~Desaulniers, M.~Gendreau, W.~Rei, and L.-M.~Rousseau, 
+``The Vehicle Routing Problem with Hard Time Windows and Stochastic Service Times,'' 
+\textit{Transportation Science}, vol.~50, no.~2, pp.~607--626, 2016. 
+doi: 10.1287/trsc.2015.0625.
+\bibitem{Spliet2014}
+R.~Spliet and A.~F.~Gabor, 
+``The Time Window Assignment Vehicle Routing Problem,'' 
+\textit{Transportation Science}, 2014.
+\bibitem{serano2024}
+B.~Serrano et al., 
+``Contextual Stochastic Vehicle Routing with Time Windows,'' 
+arXiv:2402.06968, 2024.
+
+\bibitem{liu2023}
+X.~Liu, Y.-L.~Chen, L.~Y.~Por, and C.~S.~Ku, 
+``A Systematic Literature Review of Vehicle Routing Problems with Time Windows,'' 
+\textit{Sustainability}, vol.~15, 12004, 2023.
+
+
+
+\end{thebibliography}
+

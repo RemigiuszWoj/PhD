@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Warstwa_2" data-name="Warstwa 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 130.88 90">
+  <defs>
+    <style>
+      .cls-1 {
+        stroke-dasharray: 0 0 0 0 0 0 4 4 4 4 4 4;
+      }
+
+      .cls-1, .cls-2 {
+        stroke-width: .25px;
+      }
+
+      .cls-1, .cls-2, .cls-3, .cls-4 {
+        fill: #fff;
+        stroke: #1d1d1b;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-5 {
+        fill: #1d1d1b;
+        font-family: TimesNewRomanPS-ItalicMT, 'Times New Roman';
+        font-size: 12px;
+        font-style: italic;
+      }
+
+      .cls-4 {
+        stroke-width: .5px;
+      }
+    </style>
+  </defs>
+  <g id="Warstwa_1-2" data-name="Warstwa 1">
+    <g>
+      <line class="cls-4" x1="65.73" y1="47.22" x2="65.73" y2="72.26"/>
+      <line class="cls-3" x1="56.73" y1="42.78" x2="74.73" y2="42.78"/>
+      <line class="cls-3" x1="56.73" y1="47.22" x2="74.73" y2="47.22"/>
+      <line class="cls-4" x1="65.73" y1="17.87" x2="65.73" y2="42.91"/>
+      <g>
+        <path class="cls-3" d="m84.35,17.96c0-5,1.36-9.06,3.04-9.06s3.05,4.06,3.05,9.06"/>
+        <path class="cls-3" d="m90.62,17.96c0-5,1.36-9.06,3.04-9.06s3.05,4.06,3.05,9.06"/>
+        <path class="cls-3" d="m96.7,17.96c0-5,1.36-9.06,3.04-9.06s3.05,4.06,3.05,9.06"/>
+        <path class="cls-3" d="m102.79,17.96c0-5,1.36-9.06,3.04-9.06s3.05,4.06,3.05,9.06"/>
+      </g>
+      <g>
+        <path class="cls-3" d="m22.59,17.96c0-5,1.36-9.06,3.04-9.06s3.05,4.06,3.05,9.06"/>
+        <path class="cls-3" d="m28.86,17.96c0-5,1.36-9.06,3.04-9.06s3.05,4.06,3.05,9.06"/>
+        <path class="cls-3" d="m34.94,17.96c0-5,1.36-9.06,3.04-9.06s3.05,4.06,3.05,9.06"/>
+        <path class="cls-3" d="m41.03,17.96c0-5,1.36-9.06,3.04-9.06s3.05,4.06,3.05,9.06"/>
+      </g>
+      <line class="cls-4" x1="46.56" y1="18" x2="84.91" y2="18"/>
+      <line class="cls-4" x1="65.73" y1="72" x2="128.47" y2="72"/>
+      <line class="cls-4" x1="2.73" y1="72" x2="65.47" y2="72"/>
+      <line class="cls-4" x1="108.26" y1="18" x2="128.47" y2="18"/>
+      <line class="cls-4" x1="2.41" y1="18" x2="22.62" y2="18"/>
+    </g>
+    <text class="cls-5" transform="translate(79.61 49.34)"><tspan x="0" y="0">C</tspan></text>
+    <text class="cls-5" transform="translate(87.61 51.34) scale(.58)"><tspan x="0" y="0">p</tspan></text>
+    <text class="cls-5" transform="translate(93.66 30.39)"><tspan x="0" y="0">L</tspan></text>
+    <text class="cls-5" transform="translate(100.33 32.39) scale(.58)"><tspan x="0" y="0">s2</tspan></text>
+    <text class="cls-5" transform="translate(31.9 30.39)"><tspan x="0" y="0">L</tspan></text>
+    <text class="cls-5" transform="translate(38.57 32.39) scale(.58)"><tspan x="0" y="0">s1</tspan></text>
+    <line class="cls-1" x1="2.41" y1="0" x2="2.41" y2="90"/>
+    <line class="cls-1" x1="128.47" x2="128.47" y2="90"/>
+    <circle class="cls-2" cx="2.41" cy="18" r="2.28"/>
+    <circle class="cls-2" cx="128.47" cy="18" r="2.28"/>
+    <circle class="cls-2" cx="2.73" cy="72" r="2.28"/>
+    <circle class="cls-2" cx="128.47" cy="72" r="2.28"/>
+  </g>
+</svg>

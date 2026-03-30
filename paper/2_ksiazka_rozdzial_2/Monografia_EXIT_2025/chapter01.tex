@@ -1,0 +1,825 @@
+\chapterauthor{Igor Dudkiewicz}
+\chapter[Rozwiązanie 5-miastowego \ldots]{Rozwiązanie 5-miastowego problemu TSP z użyciem minimalnej możliwej liczby kubitów w algorytmie QAOA}
+\thispagestyle{empty}
+\vspace{-8mm} {\large Igor Dudkiewicz} \vspace{8mm}
+
+\section{Wprowadzenie}
+Problem efektywnego kodowania zadań optymalizacji kombinatorycznej — takich jak problem komiwojażera (TSP) — na potrzeby wariacyjnych algorytmów kwantowych pozostaje jednym z kluczowych wyzwań w rozwoju metod optymalizacji przeznaczonych dla \textbf{obecnych urządzeń kwantowych}. Szczególnie istotny wkład w tej dziedzinie stanowi praca \textbf{A. Glosa, A. Krawca i Z. Zimborása} zatytułowana \textit{„Space-efficient binary optimization for variational quantum computing”} (\textit{npj Quantum Information}, t.~8, 2022)~\cite{glos2022space}, w której autorzy przedstawiają i porównują kilka schematów kodowania permutacji przeznaczonych dla komputerów kwantowych. Omawiają oni zalety i wady poszczególnych metod w kontekście wariacyjnej optymalizacji kwantowej, dochodząc do wniosku, że \textbf{schemat hybrydowy}, łączący kompaktowość \textbf{binarnych kodów permutacji} z prostotą strukturalną \textbf{kodowania typu one-hot}, zapewnia korzystny kompromis między \textbf{liczbą wymaganych kubitów} a złożonością obwodu.
+Choć autorzy krótko wspominają o \textbf{kodowaniu Lehmera}, nie analizują go szczegółowo — co jest w pełni zrozumiałe, biorąc pod uwagę jego dużą złożoność oraz ograniczoną praktyczność w~przypadku większych instancji problemu. Niemniej jednak \textbf{kodowanie Lehmera} stanowi interesujący obiekt badań teoretycznych, ponieważ reprezentuje ono \textbf{najbardziej oszczędny pod względem liczby kubitów sposób reprezentacji permutacji}, co czyni je wartościowym tematem do dalszej analizy. Pomimo trudności implementacyjnych jego struktura może inspirować projektowanie \textbf{schematów hybrydowych}, łączących wysoką efektywność kubitową z łatwiejszą realizacją obliczeniową — analogicznie do podejścia zaproponowanego przez Glosa \textit{et al.}
+W niniejszej pracy analizujemy kodowanie Lehmera w kontekście \textbf{5-miastowego problemu komiwojażera (TSP)} oraz oceniamy jego przydatność w implementacji w ramach \textbf{Quantum Approximate Optimization Algorithm (QAOA)}~\cite{farhi2014qaoa}. Choć kodowanie to należy do najbardziej oszczędnych pod względem wymaganej liczby kubitów metod reprezentacji permutacji, jego głębokość obwodowa i złożoność algebraiczna sprawiają, że w praktyce trudno je zastosować. Niemniej jednak, w zależności od przyszłego rozwoju sprzętu kwantowego, może ono okazać się korzystne w sytuacjach, gdy ta sama struktura problemu musi być rozwiązywana wielokrotnie dla wielu instancji o tej samej liczbie miast — szczególnie jeśli poprawa wierności bramek kwantowych będzie przebiegać szybciej niż zwiększanie dostępnej liczby kubitów. W takich scenariuszach — na przykład w \textbf{problemie trasowania pojazdów (VRP)}, obejmującym wiele pojazdów odwiedzających niewielką, stałą liczbę lokalizacji — wysiłek związany z konstrukcją kompaktowej formulacji opartej na kodowaniu Lehmera mógłby zostać „zamortyzowany” przez dużą liczbę instancji problemu, co potencjalnie czyniłoby to podejście opłacalnym.
+Ograniczenia, które nakładamy na naszą formulację, wynikają naturalnie z przedstawionej perspektywy. Ponieważ naszym celem jest skonstruowanie jednego, wielokrotnie używalnego modelu zdolnego do zakodowania \emph{dowolnej} instancji TSP o ustalonej liczbie miast, wynikowa formulacja \textbf{QUBO (Quadratic Unconstrained Binary Optimization)} musi być \textbf{uniwersalna}: musi być zdefiniowana niezależnie od konkretnych odległości między miastami w momencie kodowania. W tych warunkach badamy \textbf{minimalną liczbę kubitów wymaganą} do reprezentacji oraz rozwiązania ogólnej instancji 5-miastowego TSP za pomocą QAOA.
+Pozostała część artykułu jest zorganizowana następująco:
+\begin{itemize}
+\item \textbf{Sekcja~2} przedstawia ogólną charakterystykę problemu TSP oraz uproszczenia zastosowane w celu umożliwienia implementacji kwantowej.
+\item \textbf{Sekcja~3} wprowadza proponowane przez nas kodowanie oparte na liczbach Lehmera i prezentuje działające rozwiązanie wykorzystujące sześć kubitów.
+\item \textbf{Sekcja~4} przedstawia dowód, że problemu nie można uniwersalnie reprezentować, korzystając jedynie z pięciu kubitów, co ustanawia teoretyczną dolną granicę liczby kubitów dla tego schematu kodowania.
+\item \textbf{Sekcja~5} zawiera wyniki uzyskane zarówno z symulacji idealnych (bezszumowych), jak i z eksperymentów przeprowadzonych na rzeczywistym sprzęcie kwantowym.
+\item \textbf{Sekcja~6} zamyka artykuł dyskusją na temat implikacji, ograniczeń oraz możliwych kierunków przyszłych badań.
+\end{itemize}
+
+\section{Problem komiwojażera}
+
+\subsection{Opis ogólny problemu}
+
+\textbf{Problem komiwojażera (TSP)} jest jednym z najbardziej klasycznych problemów optymalizacyjnych, szeroko badanych w informatyce, matematyce stosowanej i~badaniach operacyjnych. Mając dany zbiór $n$ miast oraz macierz odległości pomiędzy każdą parą, celem jest znalezienie najkrótszej trasy, która odwiedza każde miasto dokładnie raz i powraca do punktu startowego. Pomimo prostej definicji, TSP jest problemem \textbf{NP-trudnym}~\cite{garey1979computers}, a jego złożoność rośnie wykładniczo wraz z liczbą miast.
+
+TSP odgrywa istotną rolę w logistyce, projektowaniu układów scalonych oraz harmonogramowaniu. Służy także jako standardowy problem testowy dla nowych metod optymalizacyjnych. Przez lata opracowano liczne algorytmy dokładne i heurystyczne. Algorytmy dokładne, takie jak \textbf{branch-and-bound} czy metody \textbf{cutting plane} stosowane m.in. w solverze Concorde~\cite{applegate2006concorde}, potrafią znajdować rozwiązania optymalne, jednak często wymagają bardzo dużych zasobów obliczeniowych. Heurystyki — m.in. \textbf{algorytm Lin–Kernighan}~\cite{lin1973effective}, algorytmy genetyczne czy symulowane wyżarzanie — pozwalają znaleźć przybliżone rozwiązania wysokiej jakości w~znacznie krótszym czasie.
+
+\subsection{Podejścia kwantowe}
+
+W ostatnich latach TSP ponownie stał się istotnym przykładem w badaniach nad \textbf{kwantowymi algorytmami optymalizacyjnymi}. Komputery kwantowe umożliwiają eksplorację dużych przestrzeni kombinatorycznych dzięki superpozycji oraz interferencji stanów kwantowych. Wczesne podejścia polegały na mapowaniu TSP na \textbf{model Isinga} i rozwiązywaniu go za pomocą obliczeń adiabatycznych lub wyżarzania kwantowego~\cite{lucas2014ising}. Urządzenia typu quantum annealer, takie jak systemy firmy D-Wave, były wykorzystywane do przybliżania rozwiązań TSP poprzez reprezentowanie połączeń między miastami jako zmiennych binarnych z kwadratowymi ograniczeniami.
+
+W przypadku komputerów bramkowych obiecującym podejściem jest \textbf{Quantum Approximate Optimization Algorithm (QAOA)}~\cite{farhi2014qaoa}. Pozwala on przybliżać rozwiązania problemów kombinatorycznych poprzez naprzemienne stosowanie operatora kosztu i operatora mieszającego. TSP można przedstawić w postaci QUBO (Quadratic Unconstrained Binary Optimization) i zaimplementować w~ramach QAOA, co umożliwia badanie przestrzeni rozwiązań na obecnych urządzeniach kwantowych, podatnych na szum~\cite{herrman2021quantum}.
+
+\subsection{Symetria cykliczna w TSP}
+
+Celem problemu komiwojażera jest znalezienie najkrótszej trasy odwiedzającej wszystkie miasta dokładnie raz i powracającej do punktu startowego. Ważną obserwacją upraszczającą analizę przestrzeni rozwiązań jest to, że trasy TSP wykazują symetrię cykliczną.
+
+Weźmy permutację opisującą trasę, np. $(0, 1, 2, 3, 4)$. Odpowiada ona przejściu $0 \to 1 \to 2 \to 3 \to 4 \to 0$. Cykliczne przesunięcie tej permutacji, np. $(1, 2, 3, 4, 0)$, opisuje tę samą trasę, jedynie przedstawioną z innego punktu początkowego. Każda z $n$ rotacji cyklicznych opisuje dokładnie tę samą trasę.
+
+W związku z tym możemy bez utraty ogólności ustalić pierwszą pozycję permutacji jako miasto 0, redukując liczbę możliwych tras z $n!$ do $(n-1)!$. Dla przykładu 5-miastowego oznacza to zmniejszenie przestrzeni z $120$ do $24$ permutacji.
+
+\subsection{Symetria odwrócenia}
+
+% \begin{figure}[ht]
+%     \centering
+%     \includegraphics[width=1\textwidth]{24.png}
+%     \caption{Wszystkie 24 permutacje z miastem 0 na pierwszej pozycji, pogrupowane w pary tras odwrotnych.}
+%     \label{fig:permutations}
+% \end{figure}
+
+Oprócz symetrii cyklicznej TSP posiada również \textbf{symetrię odwrócenia}. Trasa przebiegana w przeciwnym kierunku ma dokładnie tę samą długość.
+
+Na przykład permutacja $(0, 1, 2, 3, 4)$ odpowiada dokładnie tej samej trasie co $(0, 4, 3, 2, 1)$, ponieważ obie przechodzą te same krawędzie, lecz w~przeciwnych kierunkach. Ponieważ macierz odległości jest symetryczna, obie trasy mają identyczny koszt.
+%
+W efekcie każda trasa ma dokładnie jedną trasę odwrotną. Spośród 24 permutacji, po uwzględnieniu symetrii odwrócenia pozostaje 12 unikalnych tras.
+
+% W efekcie każda trasa ma dokładnie jedną trasę odwrotną. Spośród 24 permutacji przedstawionych na Rys.~\ref{fig:permutations}, po uwzględnieniu symetrii odwrócenia pozostaje 12 unikalnych tras.
+
+\section{Kodowanie 6-kubitowe}
+\subsection{Strategiczny wybór reprezentantów permutacji}
+
+Po zredukowaniu przestrzeni przeszukiwań do 12 odrębnych tras dzięki symetrii cyklicznej i odwrotnej, pojawia się pytanie, który konkretny reprezentant należy wybrać z każdej z 12 par odwracanych permutacji. Ponieważ każda para zawiera dwa równoważne uporządkowania, istnieje $2^{12} = 4096$ możliwych sposobów wybrania zestawu 12 reprezentantów.
+
+Wybór ten nie jest arbitralny — staranne ustalenie reprezentantów znacząco upraszcza zarówno reprezentację kwantową, jak i późniejszą konstrukcję QUBO. Naszą strategią jest wybór takich reprezentantów, które pozwalają na efektywne zakodowanie permutacji przy użyciu jedynie 4 kubitów.
+
+Przyjmujemy następujące kryterium: z każdej pary wybieramy tę permutację, w której miasto znajdujące się na pozycji drugiej ma mniejszy numer niż miasto na pozycji trzeciej. Na przykład dla pary $(1, 2, 3, 4)$ i~$(4, 3, 2, 1)$ wybieramy $(1, 2, 3, 4)$, ponieważ $2 < 3$.
+
+Taki systematyczny wybór umożliwia kompaktowe, 4-kubitowe kodowanie: wykorzystujemy 2 kubity do zakodowania miasta na pozycji pierwszej oraz kolejne 2 kubity do zakodowania miasta na pozycji czwartej. Przykładowo permutacja $(1, 2, 3, 4)$ jest kodowana jako $|0011\rangle$, gdzie dwa pierwsze kubity reprezentują miasto 1 (binarnie 00), a dwa ostatnie reprezentują miasto 4 (binarnie 11). Kluczowe jest to, że takie kodowanie jednoznacznie określa całą permutację — znajomość miast na pozycjach 1 i 4, przy jednoczesnym zastosowaniu przyjętego kryterium wyboru reprezentanta, pozwala jednoznacznie ustalić miasta na pozycjach 2 i 3. Gwarantuje to odwzorowanie jeden-do-jednego między stanami 4-kubitowymi a~poprawnymi konfiguracjami tras.
+
+\subsection{Sformułowanie QUBO}
+
+Aby rozwiązać 5-miastowy problem TSP przy użyciu QAOA, musimy skonstruować formulację QUBO składającą się z trzech części. Po pierwsze, wprowadzamy człon kary wymuszający, by 4-kubitowe kodowanie reprezentowało poprawną trasę — konkretnie, warunek ten wymaga, aby miasto zakodowane kubitami $q_0q_1$ (pozycja pierwsza) różniło się od miasta zakodowanego kubitami $q_2q_3$ (pozycja czwarta). Po drugie, uwzględniamy odległości dotyczące miasta 0, którego pozycję ustaliliśmy na początku trasy — obejmuje to krawędź od miasta 0 do jego następcy oraz krawędź od poprzednika z powrotem do miasta 0. Po trzecie, kodujemy odległości pomiędzy wszystkimi pozostałymi miastami w trasie. Razem te trzy składniki tworzą pełną funkcję celu, której minimalizacja prowadzi do optymalnej konfiguracji trasy.
+
+\subsubsection{Stała kary}
+
+Aby wymusić, że dwa 2-bitowe kodowania $q_0q_1$ i $q_2q_3$ reprezentują różne miasta, konstruujemy funkcję, która przyjmuje wartość niezerową wtedy i~tylko wtedy, gdy obie wartości 2-bitowe są identyczne. Niech
+\[
+a = 2q_0 + q_1, \qquad b = 2q_2 + q_3.
+\]
+
+Chcemy zdefiniować funkcję $f(q_0,q_1,q_2,q_3)$ taką, że $f=0$ gdy $a \neq b$ oraz $f\neq 0$ gdy $a=b$.
+
+Ponieważ dwa bity $x,y$ są równe wtedy i tylko wtedy, gdy $(x-y)^2=0$, możemy zapisać ich równość jako $1-(x-y)^2$. W przypadku 2 bitów oba bity muszą być zgodne:
+\begin{equation}
+f = \bigl[1 - (q_0 - q_2)^2\bigr]\bigl[1 - (q_1 - q_3)^2\bigr]
+\end{equation}
+
+Po rozwinięciu otrzymujemy
+\begin{equation}
+\begin{aligned}
+f(q_0,q_1,q_2,q_3) &= 1 - q_0 - q_1 - q_2 - q_3 \\
+&\quad + q_0q_1 + q_0q_3 + q_1q_2 + q_2q_3 + 2q_0q_2 + 2q_1q_3 \\
+&\quad - 2(q_0q_1q_3 + q_1q_2q_3 + q_0q_1q_2 + q_0q_2q_3) \\
+&\quad + 4q_0q_1q_2q_3
+\end{aligned}
+\end{equation}
+
+Definiujemy człon kary:
+\begin{equation}
+H_{\text{penalty}} = M\,f(q_0,q_1,q_2,q_3),
+\end{equation}
+gdzie $M$ jest dużą dodatnią stałą wymuszającą spełnienie ograniczenia.
+
+\subsubsection{Odległości obejmujące miasto 0}
+
+Odległość do pierwszego sąsiada (zakodowanego przez $q_0,q_1$):
+\begin{equation}
+D(0,1)(1-q_0)(1-q_1)
++ D(0,2)(1-q_0)q_1
++ D(0,3)q_0(1-q_1)
++ D(0,4)q_0q_1.
+\end{equation}
+
+Analogicznie odległość do ostatniego sąsiada:
+\begin{equation}
+D(0,1)(1-q_2)(1-q_3)
++ D(0,2)(1-q_2)q_3
++ D(0,3)q_2(1-q_3)
++ D(0,4)q_2q_3.
+\end{equation}
+
+Po dodaniu i zebraniu wyrazów:
+\begin{equation}
+\begin{aligned}
+E(q_0,q_1,q_2,q_3) =\;& 2D(0,1) \\
+&+ \big(-D(0,1)+D(0,3)\big)q_0 \\
+&+ \big(-D(0,1)+D(0,2)\big)q_1 \\
+&+ \big(D(0,1)-D(0,2)-D(0,3)+D(0,4)\big)q_0q_1 \\
+&+ \big(-D(0,1)+D(0,3)\big)q_2 \\
+&+ \big(-D(0,1)+D(0,2)\big)q_3 \\
+&+ \big(D(0,1)-D(0,2)-D(0,3)+D(0,4)\big)q_2q_3.
+\end{aligned}
+\end{equation}
+Stałą $2D(0,1)$ pomijamy przy minimalizacji QUBO.
+
+\subsubsection{Odległości niezawierające miasta 0}
+
+Znajomość miast zajmujących pierwszą i czwartą pozycję w permutacji czterech miast jednoznacznie wyznacza całą permutację, gdy przyjmujemy regułę wyboru reprezentanta: miasto na pozycji~2 to mniejsze z dwóch pozostałych indeksów, zaś miasto na pozycji~3 to większe. W niniejszym podrozdziale wyprowadzamy zwartą, opartą na wskaźnikach postać długości trasy
+\begin{equation}
+\mathcal{L} = D(a,b)+D(b,c)+D(c,d),
+\end{equation}
+gdzie permutacja ma postać $(a,b,c,d)$, wartości $a$ i $d$ są zakodowane w dwóch 2-bitowych blokach $q_0q_1$ oraz $q_2q_3$, a $D(x,y)$ oznacza odległość pomiędzy miastem $x$ a miastem $y$.
+
+\paragraph{Wielomiany wskaźnikowe dla zakodowanych miast końcowych.}
+
+Korzystając z przedstawionego wyżej 2-bitowego kodowania, definiujemy wielomiany wskaźnikowe, które przyjmują wartość \(1\) dokładnie wtedy, gdy dany blok odpowiada określonemu numerowi miasta:
+\begin{equation}
+\begin{aligned}
+A_1 &= (1-q_0)(1-q_1), & A_2 &= (1-q_0)\,q_1, & A_3 &= q_0(1-q_1), & A_4 &= q_0 q_1,\\[4pt]
+L_1 &= (1-q_2)(1-q_3), & L_2 &= (1-q_2)\,q_3, & L_3 &= q_2(1-q_3), & L_4 &= q_2 q_3.
+\end{aligned}
+\end{equation}
+Z konstrukcji wynika, że \(\sum_{i=1}^4 A_i = 1\) oraz \(\sum_{i=1}^4 L_i = 1\); ponadto \(A_i = 1\) wtedy i tylko wtedy, gdy \(a = i\), a \(L_i = 1\) wtedy i tylko wtedy, gdy \(d = i\).
+
+\paragraph{Wskaźniki dla pozostałych pozycji.}
+
+Zbiór indeksów zajmujących środkowe pozycje \(\{b,c\}\) jest dopełnieniem zbioru \(\{a,d\}\) w obrębie \(\{1,2,3,4\}\). Definiujemy więc wskaźnik „pozostałości”
+\begin{equation}
+R_i := 1 - A_i - L_i \qquad (i=1,\dots,4),
+\end{equation}
+tak że \(R_i = 1\) dokładnie wtedy, gdy \(i \in \{b,c\}\), a ponadto \(\sum_i R_i = 2\).
+
+Ponieważ narzucona reguła wyboru reprezentanta wymaga, aby \(b < c\), możemy zapisać wskaźniki odpowiadające drugiej i trzeciej pozycji (mniejszemu i~większemu z pozostałej pary) jako
+\begin{equation}
+\begin{aligned}
+B_i &= R_i \cdot \sum_{m=1}^4 R_m\,\mathbf{1}_{\{i<m\}},\\[4pt]
+C_i &= R_i \cdot \sum_{m=1}^4 R_m\,\mathbf{1}_{\{i>m\}},
+\end{aligned}
+\end{equation}
+gdzie \(\mathbf{1}_{\{i<m\}}\) jest standardowym wskaźnikiem porządku (równa się 1, gdy \(i<m\), w przeciwnym razie 0). Intuicyjnie: \(B_i = 1\) wtedy i tylko wtedy, gdy \(i\) należy do pozostałych indeksów oraz drugi pozostały indeks jest większy niż \(i\); analogicznie dla \(C_i\). Łatwo sprawdzić, że \(\sum_i B_i = \sum_i C_i = 1\) oraz że \(B_i C_i = 0\) dla każdego \(i\).
+
+\paragraph{Dokładna postać długości trasy we wskaźnikach.}
+
+Korzystając z powyższych wskaźników, możemy zapisać długość trasy \(\mathcal{L}\) w postaci sumy po wszystkich indeksach:
+\begin{equation}
+\boxed{%
+\mathcal{L} \;=\; \sum_{i,j,k,\ell=1}^4 A_i\,B_j\,C_k\,L_\ell \;\bigl[\,D(i,j)+D(j,k)+D(k,\ell)\,\bigr].%
+}
+\end{equation}
+Ponieważ czynniki wskaźnikowe są wzajemnie rozłączne, powyższa czterokrotna suma redukuje się do jednego jedynego składnika, który odpowiada faktycznie wybranej permutacji $(a,b,c,d)$.
+
+
+\subsubsection{Uwagi}
+
+W otrzymanym sformułowaniu pojawiają się wyrazy stopnia 4, podczas gdy poprawna forma QUBO może zawierać jedynie wyrazy stopnia co najwyżej 2. Ograniczenie to można obejść poprzez wprowadzenie zmiennych pomocniczych reprezentujących iloczyny par kubitów, np. $a_1 = q_0 q_1$, $a_2 = q_2 q_3$. Alternatywnie można użyć innych par, takich jak $a_1 = q_0 q_2$, $a_2 = q_1 q_3$, lub $a_1 = q_0 q_3$, $a_2 = q_1 q_2$. W~każdym przypadku końcowe QUBO wymaga łącznie sześciu kubitów.
+
+
+\section{Dowód niemożliwości na 5 kubitach}
+
+Rozpoczynamy od wykazania niemożliwości sformułowania QUBO realizującego przypisanie jeden-do-jednego pomiędzy dozwolonymi reprezentacjami tras a bitstringami kubitów. QUBO w tym kontekście składa się z~dwóch komponentów: funkcji kary oraz funkcji odległości. Pokażemy, że funkcja kary nie może być zrealizowana na 5 kubitach; jednakże, ponieważ 4 kubity stanowią teoretyczne minimum, samo w sobie nie wyklucza możliwości poprawnego sformułowania QUBO. Dlatego najpierw udowodnimy, że nie istnieje uniwersalne sformułowanie funkcji odległości na 4 kubitach, następnie pokażemy, że funkcja kary nie może być sformułowana w przypadku 5 kubitów. Wreszcie, aby uwzględnić potencjalną alternatywę wykorzystania przypisania wiele-do-jednego — co wyeliminowałoby potrzebę funkcji kary — zakończymy sekcję dowodem, że uniwersalne sformułowanie QUBO pozostaje niemożliwe nawet w przypadku takiego złagodzonego ograniczenia.
+
+\subsection{Niemożliwość reprezentowania dowolnych 12-war\-to\-ścio\-wych przypisań za pomocą czterech bitów}
+
+W tej podsekcji pokazujemy, że żadna funkcja wielomianowa stopnia co najwyżej~2 w czterech zmiennych binarnych nie może realizować wszystkich możliwych przypisań wartości do dwunastu różnych punktów wejściowych. Ustanawia to fakt, że takie funkcje nie są uniwersalne dla problemów wymagających dwunastu niezależnie specyfikowalnych wyników.
+
+\paragraph{Argument wymiarowy.}
+Wielomian rzeczywisty w $n$ zmiennych binarnych o~stopniu co najwyżej~2 ma postać
+\begin{equation}
+f(x) \;=\; c \;+\; \sum_{i=1}^{n} c_i x_i \;+\; \sum_{1 \le i < j \le n} c_{ij} x_i x_j,
+\end{equation}
+a zatem zawiera
+\begin{equation}
+1 + n + \binom{n}{2}
+\end{equation}
+dowolnych współczynników.  
+Dla $n = 4$ przestrzeń ta ma wymiar
+\begin{equation}
+1 + 4 + \binom{4}{2} \;=\; 11.
+\end{equation}
+
+Ewaluacja funkcji $f$ na $k$ różnych wejściach definiuje odwzorowanie liniowe
+\begin{equation}
+T : \mathbb{R}^{11} \longrightarrow \mathbb{R}^{k},
+\end{equation}
+wysyłające wektor współczynników na $k$ wartości ewaluacji.  
+Jeśli $k > 11$, to $\dim(\mathrm{range}(T)) \le 11 < k$, a zatem $T$ nie może być „na” (surjektywne). W konsekwencji istnieją takie przypisania $k$ wartości docelowych, które leżą poza obrazem~$T$.
+
+\paragraph{Wniosek.}
+Ustawiając $k = 12$ widzimy, że odwzorowanie ewaluacyjne nie może generować wszystkich możliwych $12$-elementowych wektorów wartości. Zatem:
+
+\begin{quote}
+\emph{Istnieją takie wybory dwunastu wartości docelowych — nawet wszystkie dodatnie — których nie można zrealizować żadną funkcją wielomianową stopnia~2 w czterech zmiennych binarnych.}
+\end{quote}
+
+Dowodzi to, że takie funkcje nie mogą uniwersalnie reprezentować problemów, których sformułowanie wymaga dwunastu niezależnie określonych wartości wyjściowych, gdy dostępne są jedynie cztery bity.
+
+\subsection{Nieistnienie funkcji boolowskiej stopnia~2 o wadze~12}
+
+Pokazujemy, że nie istnieje funkcja wielomianowa $f: \{0,1\}^5 \to \{A, B\}$ taka, że $f$ zawiera jedynie jednomiany stopnia co najwyżej~2 oraz $|f^{-1}(A)| = 12$.
+
+\begin{theorem}[{\cite[Ch.~15]{macwilliams1977theory}}]
+\label{thm:quadratic-weight}
+Niech $f: \{0,1\}^n \to \mathbb{F}_2$ będzie funkcją wielomianową zawierającą tylko jednomiany stopnia co najwyżej~2. Wtedy waga Hamminga funkcji $f$, zdefiniowana jako
+\begin{equation}
+\mathrm{wt}(f) := |\{x \in \{0,1\}^n : f(x) = 1\}|,
+\text{ spełnia}
+\end{equation}
+\begin{equation}
+    \mathrm{wt}(f) \equiv 0 \pmod{2^{\lceil n/2 \rceil}}.
+\end{equation}
+\end{theorem}
+
+\begin{corollary}
+Nie istnieje funkcja wielomianowa $f: \{0,1\}^5 \to \{A, B\}$ stopnia co najwyżej~2 taka, że $|f^{-1}(A)| = 12$.
+\end{corollary}
+
+
+\begin{proof}
+Z Twierdzenia~\ref{thm:quadratic-weight} dla $n = 5$ wynika, że każda kwadratowa funkcja boolowska musi mieć wagę podzielną przez $2^{\lceil 5/2 \rceil} = 8$. Ponieważ $12$ nie jest podzielne przez $8$, taka funkcja nie istnieje.
+\end{proof}
+
+
+\subsection{Niemożliwość realizacji pewnych 12-elementowych zbiorów wyjściowych}
+
+Niech $f:\{0,1\}^5 \to \mathbb{R}$ będzie dowolnym wielomianem stopnia co najwyżej $2$ w~pięciu zmiennych binarnych $x_1,\dots,x_5$. Każdy taki wielomian ma postać
+\begin{equation}
+f(x) = c_0 + \sum_{i=1}^5 c_i x_i + \sum_{1\le i<j\le 5} c_{ij} x_i x_j,
+\end{equation}
+więc przestrzeń wektorowa $V$ wszystkich takich funkcji ma wymiar $16$.
+
+Ponumerujmy $32$ wejścia binarne jako $x^{(1)},\dots,x^{(32)}$.  
+Ewaluacja definiuje liniowe odwzorowanie
+\[
+E : V \longrightarrow \mathbb{R}^{32}, \qquad 
+E(f) = \big(f(x^{(1)}),\dots,f(x^{(32)})\big).
+\]
+Niech $W = E(V)$ będzie obrazem wszystkich wektorów ewaluacyjnych.  
+Ponieważ $\dim(V)=16$, mamy $\dim(W)\le 16$, a zatem
+$W^\perp \subset \mathbb{R}^{32}$ jest nie trywialną podprzestrzenią o
+$\dim(W^\perp)\ge 16$.
+
+Zatem istnieje niezerowy wektor całkowity 
+$w=(w_1,\dots,w_{32}) \in W^\perp \cap \mathbb{Z}^{32}$.  
+Dla każdego wielomianu kwadratowego $f$ zachodzi więc tożsamość liniowa
+\begin{equation}
+\sum_{i=1}^{32} w_i\, f(x^{(i)}) = 0.
+\label{eq:orth}
+\end{equation}
+
+\paragraph{Konstrukcja zbioru niemożliwego.}
+Niech 
+\[
+M = \sum_{i=1}^{32} |w_i|
+\qquad\text{i wybierzmy liczbę całkowitą } B > M.
+\]
+Zdefiniujmy 12-elementowy zbiór
+\[
+S = \{1, B, B^2, \dots, B^{11}\}.
+\]
+
+Załóżmy dla sprzeczności, że istnieje wielomian kwadratowy $f$, którego
+obrazy to dokładnie $S$.  
+Wtedy dla każdego wejścia $x^{(i)}$ istnieje wykładnik $t_i\in\{0,\dots,11\}$ taki, że
+\begin{equation}
+f(x^{(i)}) = B^{t_i}.
+\end{equation}
+Podstawiając to do \eqref{eq:orth} otrzymujemy
+\begin{equation}
+0=\sum_{i=1}^{32} w_i\, B^{t_i}
+   = \sum_{k=0}^{11} 
+      \Big( \sum_{i:\, t_i=k} w_i \Big) B^k.
+\end{equation}
+Niech $c_k=\sum_{i:\,t_i=k} w_i$.  
+Każde $c_k$ jest liczbą całkowitą i spełnia $|c_k|\le M < B$.  
+Stąd reprezentacja liczby całkowitej $\sum_{k=0}^{11} c_k B^k$ w systemie
+o podstawie $B$ jest jednoznaczna, a jedynym sposobem, aby powyższy
+wyraz był zerem, jest aby wszystkie współczynniki $c_k$ były zerowe:
+\begin{equation}
+c_0 = c_1 = \cdots = c_{11} = 0.
+\end{equation}
+
+Ale to implikuje, że $\sum_{i:\,t_i=k} w_i = 0$ dla każdego $k$.  
+Ponieważ $w\neq 0$, istnieje pewne $w_i \neq 0$, a więc istnieje wykładnik
+$t_i$, dla którego odpowiadająca suma nie może być zerowa.  
+Ta sprzeczność pokazuje, że żaden wielomian stopnia $2$ nie może mieć obrazu $S$.
+
+\paragraph{Wniosek.}
+Istnieją 12-elementowe zbiory (np.\ $\{1, B, B^2, \dots, B^{11}\}$ z
+$B>M$), które nie mogą być obrazem żadnego wielomianu stopnia co najwyżej $2$ 
+na $\{0,1\}^5$. W ogólności, aby zbiór $S$ był osiągalny, pewne przyporządkowanie
+32 punktów wejściowych do wartości w $S$ musi dawać wektor ewaluacyjny leżący
+w 16-wymiarowej podprzestrzeni $W$.
+
+W szczególności, dla typowego przypadku 5-miastowego TSP, 12 długości tras można dobrać tak, aby spełniały powyższe warunki. W związku z~tym, żaden wielomian stopnia 2 w 5 zmiennych binarnych nie może uniwersalnie zakodować funkcji celu TSP.
+
+\section{Praktyczna implementacja}
+
+W niniejszej sekcji pokazujemy, w jaki sposób opracowane wcześniej ramy teoretyczne można zastosować do konkretnego przykładu problemu komiwojażera (TSP). W tym celu wybraliśmy zestaw danych benchmarkowych z kolekcji \texttt{TSPLIB}, utrzymywanej przez Uniwersytet w Heidelbergu. W~szczególności wykorzystaliśmy plik \texttt{gr17.tsp}, który zawiera dane o odległościach geograficznych między 17 miastami. Na potrzeby implementacji ograniczyliśmy tę instancję do pierwszych pięciu miast (indeksowanych od 0 do 4), uzyskując następującą macierz odległości:
+\[
+D=\begin{pmatrix}
+0 & 633 & 257 & 91 & 412\\
+633 & 0 & 390 & 661 & 227\\
+257 & 390 & 0 & 228 & 169\\
+91 & 661 & 228 & 0 & 383\\
+412 & 227 & 169 & 383 & 0
+\end{pmatrix}.
+\]
+
+Korzystając z konstrukcji przedstawionej w Sekcji~3.2, utworzyliśmy model QUBO odpowiadający tej instancji TSP. Otrzymana macierz QUBO \(Q\) (z zmiennymi \(q_0,q_1,q_2,q_3\) oraz zmiennymi pomocniczymi \(a_1,a_2\)) ma postać:
+\[
+\text{Q} =
+\begin{pmatrix}
+-9918 & 100000 & 18434 & 9220 & -200000 & -18059 \\
+100000 & -9538 & 9220 & 17949 & -200000 & -17574 \\
+18434 & 9220 & -9600 & 100000 & -18809 & -200000 \\
+9220 & 17949 & 100000 & -9163 & -18324 & -200000 \\
+-200000 & -200000 & -18809 & -18324 & 310293 & 35884 \\
+-18059 & -17574 & -200000 & -200000 & 35884 & 309543
+\end{pmatrix}.
+\]
+
+Kod w~języku Python, użyty do automatycznego wygenerowania tego modelu QUBO na podstawie macierzy odległości, został zamieszczony w~Aneksie A. Skrypt ten można w~łatwy sposób dostosować do dowolnej innej macierzy odległości.
+
+\subsection{Przygotowanie implementacji}
+
+Po ustaleniu postaci modelu QUBO przystąpiliśmy do konstrukcji obwodu kwantowego rozwiązującego dane zadanie optymalizacyjne. Obwód został zbudowany w oparciu o ramy QAOA, które naprzemiennie stosują hamiltoniany problemowe oraz mieszające w celu eksploracji przestrzeni rozwiązań. Na Rysunku~\ref{fig:circuit} przedstawiono architekturę obwodu kwantowego uzyskaną dla naszej 6-kubitowej implementacji.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=1\textwidth]{output-modified.png}
+    \caption{Implementacja obwodu kwantowego.}
+    \label{fig:circuit}
+\end{figure}
+
+Na podstawie analizy głębokości obwodu oraz naszego wcześniejszego doświadczenia z rzeczywistym sprzętem kwantowym przewidujemy, że najlepszą wydajność osiągniemy przy małych głębokościach obwodu. W szczególności, dla implementacji QAOA o takiej wielkości i strukturze spodziewamy się najlepszych rezultatów przy liczbie warstw $p=2$ lub $p=3$, gdzie $p$ oznacza liczbę powtórzeń QAOA. Głębsze obwody mają tendencję do akumulowania dekoherencji oraz błędów bramkowych na obecnych urządzeniach kwantowych klasy NISQ, co często prowadzi do pogorszenia jakości wyników.
+
+Aby zweryfikować tę hipotezę i zbadać charakterystykę wydajności, zaprojektowaliśmy następujący protokół eksperymentalny:
+\begin{itemize}
+    \item \textbf{Badania symulacyjne:} Uruchomimy symulacje bezszumowe dla $p=2$, $p=3$ oraz $p=10$, aby zrozumieć teoretyczne zachowanie zbieżności i ustanowić punkt odniesienia w warunkach pozbawionych szumów sprzętowych.
+    \item \textbf{Eksperymenty sprzętowe:} Wykonamy obwód na rzeczywistym komputerze kwantowym dla $p=2$ oraz $p=3$, gdzie oczekujemy, że kompromis między zdolnością optymalizacyjną a akumulacją błędów będzie zapewniał najbardziej wiarygodne wyniki.
+\end{itemize}
+
+Takie trójstopniowe podejście pozwala oddzielić wydajność algorytmiczną od ograniczeń sprzętowych oraz dostarcza wglądu w to, jak szum wpływa na jakość rozwiązania wraz ze wzrostem głębokości obwodu.
+
+\subsection{Wyniki symulacji}
+
+Aby wyznaczyć optymalne parametry QAOA dla naszego obwodu, zastosowaliśmy algorytm optymalizacyjny COBYLA w iteracyjnej pętli. Zmienne optymalizacyjne sterujące parametrami obwodu zostały przeskalowane do przedziału $[-1, 1]$ w celu poprawy kształtu przestrzeni optymalizacji oraz usprawnienia procesu zbieżności podczas wyszukiwania parametrów.
+
+Przeprowadziliśmy symulacje dla trzech różnych głębokości obwodu: $p=2$, $p=3$ oraz $p=10$, zgodnie z opisem w poprzedniej podsekcji. Wyniki symulacji ujawniły kilka istotnych prawidłowości wspólnych dla wszystkich konfiguracji głębokości.
+
+
+\subsubsection*{Wspólne obserwacje dla wszystkich głębokości}
+
+Konsekwentnie we wszystkich trzech symulacjach pojawiała się silna preferencja dla bitstringu $|000000\rangle$. Choć bitstring ten reprezentuje rozwiązanie nielegalne (narusza ograniczenia TSP), odpowiada on wartości energii równej 0 w przyjętym sformułowaniu QUBO. Wynik ten odzwierciedla właściwość zastosowanej struktury kar: stan samych zer, mimo że nie spełnia ograniczeń, znajduje się w obszarze o niskiej energii w przestrzeni optymalizacyjnej. W konsekwencji proces optymalizacji kwantowej naturalnie dąży do tego stanu we wszystkich testowanych głębokościach obwodu, równocześnie eksplorując stany będące prawidłowymi rozwiązaniami.
+
+
+\subsubsection*{Wyniki dla dwóch warstw ($p=2$)}
+
+W implementacji $p=2$, poza dominującym stanem $|000000\rangle$, nie zaobserwowaliśmy silnej preferencji dla żadnego innego bitstringu. Rozkład prawdopodobieństw dla pozostałych stanów był stosunkowo równomierny, co wskazuje, że tak płytka głębokość obwodu była niewystarczająca, aby skutecznie eksplorować przestrzeń rozwiązań i zbiegać do rozwiązań optymalnych lub bliskich optymalnym. Średnia oczekiwana energia (obliczona jako wartość oczekiwana funkcji celu QUBO) wynosiła około $78{,}000$, co jest wartością znacząco odbiegającą od kosztu optymalnej trasy i odzwierciedla niską jakość otrzymanych rozwiązań.
+
+\subsubsection*{Wyniki dla trzech warstw ($p=3$)}
+
+Konfiguracja $p=3$ wykazała wyraźną poprawę. W tym przypadku cztery bitstringi osiągały wysokie i porównywalne prawdopodobieństwa: nielegalny stan $|000000\rangle$, dwa legalne rozwiązania (w tym optymalna trasa TSP) oraz jedna dodatkowa konfiguracja nielegalna. Wszystkie pozostałe bitstringi charakteryzowały się prawdopodobieństwami bliskimi zeru, co wskazuje, że krajobraz optymalizacji został skuteczniej skupiony wokół niewielkiego podzbioru kandydatów. Średnia oczekiwana energia spadła znacząco do około $27{,}000$, co oznacza wyraźnie lepszą jakość rozwiązania w porównaniu z przypadkiem $p=2$.
+
+\subsubsection*{Wyniki dla dziesięciu warstw ($p=10$)}
+
+Przy głębokości $p=10$, choć bitstring $|000000\rangle$ nadal pozostawał wysoce prawdopodobny, tylko dwa inne bitstringi były próbkowane z dużym prawdopodobieństwem, z których oba reprezentowały legalne rozwiązania spełniające ograniczenia TSP. Co szczególnie istotne, wśród stanów o najwyższym prawdopodobieństwie najczęściej obserwowany był bitstring odpowiadający rozwiązaniu optymalnemu. Średnia oczekiwana energia poprawiła się dodatkowo do około $830$, co stanowi wartość mieszczącą się w niewielkiej odległości od rzeczywistego kosztu optymalnej trasy. Wynik ten pokazuje, że głębsze obwody mogą osiągać niemal optymalną zbieżność w środowisku bezszumowym, skutecznie koncentrując masę prawdopodobieństwa na prawidłowych trasach oraz identyfikując globalne optimum.
+
+\subsubsection*{Implikacje dla eksperymentów sprzętowych}
+
+Na podstawie tych wyników symulacyjnych nie oczekujemy wysokiej jakości wyników na rzeczywistym sprzęcie kwantowym. Konfiguracja $p=2$ nie była w~stanie zapewnić dobrych rezultatów nawet w idealnym, pozbawionym szumów środowisku, co sugeruje, że posiada niewystarczającą ekspresywność dla tej instancji problemu. Choć wersja $p=3$ wykazała obiecujące rezultaty w symulacji, obwód wymaga znacznej liczby bramek dwukubitowych, które są szczególnie podatne na szum i dekoherencję na obecnych urządzeniach NISQ. Rodzi to istotne wątpliwości co do tego, czy korzystne właściwości symulacyjne przełożą się na realizację sprzętową. Niemniej jednak kontynuujemy eksperymenty sprzętowe dla $p=2$ oraz $p=3$, aby empirycznie zweryfikować te oczekiwania, co omawiamy w~kolejnej podsekcji.
+
+\subsection{Wyniki eksperymentów sprzętowych}
+
+Zaimplementowane obwody QAOA uruchomiliśmy na komputerze IQM Garnet, 20-kubitowym nadprzewodzącym procesorze kwantowym zainstalowanym w centrum IQM w Aalto w Finlandii, testując konfiguracje o głębokościach $p=2$ oraz $p=3$, zgodnie z planem. Dla każdej głębokości obwodu przeprowadziliśmy trzy niezależne uruchomienia optymalizacji COBYLA, inicjalizowane losowymi wartościami parametrów, aby uwzględnić stochastyczny charakter procesu optymalizacji oraz możliwość utknięcia w minimach lokalnych przestrzeni parametrów.
+
+\subsubsection*{Wyniki dla trzech warstw ($p=3$)}
+
+Implementacja $p=3$ na rzeczywistym sprzęcie przyniosła rozczarowujące rezultaty. Nie zaobserwowaliśmy wyraźnej preferencji dla żadnego konkretnego bitstringu; zamiast tego wyniki pomiarów były w dużej mierze równomiernie rozłożone wśród stanów bazy obliczeniowej, co sprawiało wrażenie zachowania w~istocie losowego. Zjawisko to można przypisać kumulacji szumu oraz błędów dekoherencji w trakcie wykonywania głębszego obwodu. Znaczna liczba bramek dwukubitowych wymagana przez trzy warstwy QAOA okazała się zbyt podatna na błędy bramek i szum środowiskowy na obecnym sprzęcie, co w praktyce wygasiło wszelki sensowny sygnał optymalizacyjny.
+
+\subsubsection*{Wyniki dla dwóch warstw ($p=2$)}
+
+Co zaskakujące, konfiguracja $p=2$ dała zauważalnie lepsze rezultaty na sprzęcie. Optymalne rozwiązanie TSP pojawiło się jako najczęściej mierzony bitstring, a spośród 12 najczęściej obserwowanych wyników aż 7 odpowiadało legalnym rozwiązaniom spełniającym wszystkie ograniczenia TSP. Wynik ten pozostaje w~wyraźnym kontraście do słabej wydajności obserwowanej w symulacji bezszumowej przy tej samej głębokości obwodu.
+
+Należy jednak interpretować te wyniki z odpowiednią ostrożnością. Żadne rozwiązanie nie zostało zmierzone z wysokim prawdopodobieństwem — najczęściej pojawiający się bitstring osiągnął zaledwie minimalnie ponad 5\% udziału w~wynikach — a wyniki symulacji sugerują, że obwód dwuwarstwowy nie posiada wystarczającej głębokości, aby w sposób niezawodny zbiegać do rozwiązań optymalnych w warunkach idealnych. W tym kontekście skłaniamy się do przypisania korzystnego wyniku sprzętowego w dużej mierze przypadkowi, a nie rzeczywistej skuteczności algorytmu. Stochastyczny charakter zarówno pomiarów kwantowych, jak i klasycznego procesu optymalizacji może sporadycznie prowadzić do pozornie dobrych rezultatów, które nie odzwierciedlają stabilnych możliwości optymalizacyjnych.
+
+\section{Wnioski}
+
+W niniejszej pracy przeanalizowaliśmy zastosowanie kodowania permutacji Lehmara do 5-miastowego problemu komiwojażera w ramach algorytmu QAOA. Inspirowani pracą Glosa, Krawca i Zimborása dotyczącą oszczędnych reprezentacji danych w wariacyjnych algorytmach kwantowych, zbadaliśmy, czy teoretycznie minimalne zapotrzebowanie na kubity oferowane przez kodowanie Lehmara można efektywnie wykorzystać w praktycznej optymalizacji kwantowej.
+
+Udało nam się zaprezentować działającą implementację 5-miastowego TSP na 6 kubitach, opartą na kodowaniu Lehmara, a także wykazać teoretyczną dolną granicę, z której wynika, że nie istnieje uniwersalne rozwiązanie wykorzystujące jedynie 5 kubitów. Oznacza to, że nasza implementacja osiąga teoretyczne minimum liczby kubitów.
+
+Uzyskane wyniki eksperymentalne uwidaczniają jednak istotne trudności związane z realizacją tak zwartego kodowania na współczesnym sprzęcie NISQ. Symulacje bezszumowe pokazały, że zbieżność do rozwiązań optymalnych wymaga znacznej głębokości obwodu, natomiast eksperymenty sprzętowe na komputerze IQM Garnet wykazały, że nawet umiarkowane wartości $p=3$ prowadzą do utraty sygnału optymalizacyjnego wskutek kumulacji szumów.
+
+Wyniki te sugerują, że choć kodowanie Lehmara stanowi eleganckie i bardzo oszczędne pod względem liczby kubitów podejście do problemów permutacyjnych, jego praktyczna użyteczność na sprzęcie dostępnym w erze NISQ jest silnie ograniczona przez wymaganą złożoność obwodów. Zysk wynikający z redukcji liczby kubitów jest niwelowany przez dużą głębokość i złożoność bramek koniecznych do implementacji odpowiadającego im QUBO, co czyni to podejście szczególnie podatnym na szumy i dekoherencję.
+
+Jednocześnie należy podkreślić, że krajobraz obliczeń kwantowych dynamicznie się zmienia. Przyszła wartość różnych schematów kodowania będzie zależeć od relatywnego tempa poprawy jakości bramek oraz dostępności większej liczby kubitów. Jeżeli to wierność bramek będzie rosła szybciej, a~liczba kubitów pozostanie ograniczona, kompaktowe kodowania — takie jak kodowanie Lehmara — mogą ponownie zyskać na znaczeniu.
+
+Ponadto nasza praca wpisuje się w szerszą dyskusję dotyczącą kompromisów w projektowaniu algorytmów kwantowych. Napięcie między oszczędnością kubitową a złożonością obwodu jest jednym z fundamentalnych wyzwań obliczeń kwantowych w najbliższych latach. Systematyczne badanie różnych schematów kodowania pomaga lepiej zrozumieć przestrzeń możliwych rozwiązań oraz sprzyja opracowywaniu podejść hybrydowych, łączących zalety różnych reprezentacji.
+
+W przyszłych pracach warto zbadać hybrydowe schematy kodowania, które łączyłyby kompaktowość kodowania Lehmara z elementami bardziej przyjaznymi implementacyjnie, potencjalnie prowadząc do praktycznych rozwiązań równoważących niewielką liczbę kubitów z kontrolowaną złożonością obwodu.
+
+Podsumowując, choć kodowanie Lehmara dla 5-miastowego TSP realizuje swoją teoretyczną obietnicę minimalnego zużycia kubitów, to w obecnych warunkach praktycznych bariery związane z głębokością obwodów i~szumem sprzętowym przewyższają tę korzyść. Niemniej samo kodowanie stanowi wartościowe studium przypadku w kontekście strategii optymalizacji kwantowej, a przyszłe ulepszenia sprzętowe mogą ostatecznie umożliwić wykorzystanie jego teoretycznej elegancji w praktyce.
+
+\begin{thebibliography}{9}
+\bibitem{glos2022space}
+A.~Glos, A.~Krawiec, and Z.~Zimborás,
+\newblock ``Space-efficient binary optimization for variational quantum computing,''
+\newblock \textit{npj Quantum Information}, vol.~8, 2022.
+
+\bibitem{farhi2014qaoa}
+E.~Farhi, J.~Goldstone, and S.~Gutmann,
+\newblock ``A Quantum Approximate Optimization Algorithm,''
+\newblock \textit{arXiv preprint arXiv:1411.4028}, 2014.
+
+\bibitem{garey1979computers}
+M.~R. Garey and D.~S. Johnson.
+\newblock \emph{Computers and Intractability: A Guide to the Theory of NP-Completeness}.
+\newblock W. H. Freeman, 1979.
+
+\bibitem{applegate2006concorde}
+D.~Applegate, R.~Bixby, V.~Chvátal, and W.~Cook.
+\newblock \emph{The Traveling Salesman Problem: A Computational Study}.
+\newblock Princeton University Press, 2006.
+
+\bibitem{lin1973effective}
+S.~Lin and B.~W. Kernighan.
+\newblock An effective heuristic algorithm for the traveling-salesman problem.
+\newblock \emph{Operations Research}, 21(2):498–516, 1973.
+
+\bibitem{lucas2014ising}
+A.~Lucas.
+\newblock Ising formulations of many NP problems.
+\newblock \emph{Frontiers in Physics}, 2:5, 2014.
+
+\bibitem{herrman2021quantum}
+H.~Herrman, D.~Wecker, and K.~Svore.
+\newblock Quantum approximate optimization of the traveling salesman problem.
+\newblock \emph{Physical Review A}, 104(6):062416, 2021.
+
+\bibitem{macwilliams1977theory}
+F.~J. MacWilliams and N.~J.~A. Sloane.
+\newblock The Theory of Error-Correcting Codes.
+\newblock \emph{North-Holland Mathematical Library}, vol. 16, North-Holland, 1977.
+
+\end{thebibliography}
+
+\clearpage
+% \section{Aneks A: Kod do konstrukcji QUBO}
+% \begin{lstlisting}
+% import sympy as sp
+% from sympy import symbols, expand, simplify
+% import numpy as np
+
+% q0, q1, q2, q3, a1, a2 = symbols('q0 q1 q2 q3 a1 a2')
+
+% # Macierz Odleglosci
+% D = np.array([
+%     [0, 633, 257, 91, 412],
+%     [633, 0, 390, 661, 227],
+%     [257, 390, 0, 228, 169],
+%     [91, 661, 228, 0, 383],
+%     [412, 227, 169, 383, 0]
+% ])
+
+% # Wartosci kar za ograniczenia
+% # M okolo 10-cio krotnosc maksymalnej odleglosci w macierzy D
+% # P okolo 10-cio krotnosc M
+% M = 10000   # Kara za niepoprawne kodowanie miast
+% P = 100000  # Kara za niepoprawne wartosci zmiennych pomocniczych
+
+% print("="*80)
+% print("FUNKCJA QUBO DLA PROBLEMU TSP Z 5 MIASTAMI")
+% print("="*80)
+% print()
+% print(f"Wartosci funkcji kary: M = {M}, P = {P}")
+% print(f"Maksymalna odleglosc w macierzy {np.max(D)}")
+% print()
+
+% # CZESC 1: Funcja kary
+% print("CZESC 1: Kara za niepoprawne kodowanie") 
+% print("-" * 80)
+
+% # Orginalna funkcja kary:
+% H_penalty = M * (1 - q0 - q1 - q2 - q3 
+%                  + a1 + q0*q3 + q1*q2 + a2 
+%                  + 2*q0*q2 + 2*q1*q3
+%                  - 2*a1*q3 - 2*q1*a2 - 2*a1*q2 - 2*q0*a2
+%                  + 4*a1*a2)
+
+% # Kary za zmienne pomocnicze
+% H_aux1 = P * (3*a1 + q0*q1 - 2*a1*q0 - 2*a1*q1)
+% H_aux2 = P * (3*a2 + q2*q3 - 2*a2*q2 - 2*a2*q3)
+
+% H_part1 = H_penalty + H_aux1 + H_aux2
+% H_part1_expanded = expand(H_part1)
+
+% print("H_penalty (z a1, a2 podmienionymi):")
+% print(f"  = M * [1 - q0 - q1 - q2 - q3")
+% print(f"         + a1 + q0*q3 + q1*q2 + a2 + 2*q0*q2 + 2*q1*q3")
+% print(f"         - 2*a1*q3 - 2*q1*a2 - 2*a1*q2 - 2*q0*a2 + 4*a1*a2]")
+% print()
+% print("H_aux1 (kara za a1 = q0*q1):")
+% print(f"  = P * [3*a1 + q0*q1 - 2*a1*q0 - 2*a1*q1]")
+% print()
+% print("H_aux2 (kara za a2 = q2*q3):")
+% print(f"  = P * [3*a2 + q2*q3 - 2*a2*q2 - 2*a2*q3]")
+% print()
+% print("Razem H_part1:")
+% print(H_part1_expanded)
+% print()
+
+% # CZESC 2: Dystanse z udzialem miasta 0
+% print("CZESC 2: Dystanse z udzialem miasta 0")
+% print("-" * 80)
+
+% d01, d02, d03, d04 = D[0][1], D[0][2], D[0][3], D[0][4]
+
+% H_city0 = ((-d01 + d03) * q0 
+%            + (-d01 + d02) * q1 
+%            + (d01 - d02 - d03 + d04) * a1
+%            + (-d01 + d03) * q2 
+%            + (-d01 + d02) * q3 
+%            + (d01 - d02 - d03 + d04) * a2)
+% print()
+% print(f"H_city0 = {(-d01 + d03)} q0 + {(-d01 + d02)} q1 + {(d01 - d02 - d03 + d04)} a1")
+% print(f"        + {(-d01 + d03)} q2 + {(-d01 + d02)} q3 + {(d01 - d02 - d03 + d04)} a2")
+% print(f"        = {H_city0}")
+% print()
+
+% # CZESC 3: Dystanse miedzy pozostalymi miastami
+% print("CZESC 3: Dystanse miedzy pozostalymi miastami")
+% print("-" * 80)
+
+% A = {
+%     1: (1 - q0) * (1 - q1),
+%     2: (1 - q0) * q1,
+%     3: q0 * (1 - q1),
+%     4: a1
+% }
+
+% L = {
+%     1: (1 - q2) * (1 - q3),
+%     2: (1 - q2) * q3,
+%     3: q2 * (1 - q3),
+%     4: a2
+% }
+
+% R = {
+%     1: 1 - A[1] - L[1],
+%     2: 1 - A[2] - L[2],
+%     3: 1 - A[3] - L[3],
+%     4: 1 - A[4] - L[4]
+% }
+
+% B = {
+%     1: R[1] * (R[2] + R[3] + R[4]),
+%     2: R[2] * (R[3] + R[4]),
+%     3: R[3] * R[4],
+%     4: 0
+% }
+
+% C = {
+%     1: 0,
+%     2: R[2] * R[1],
+%     3: R[3] * (R[1] + R[2]),
+%     4: R[4] * (R[1] + R[2] + R[3])
+% }
+
+% H_remaining = 0
+
+% for i in range(1, 5):
+%     for j in range(1, 5):
+%         for k in range(1, 5):
+%             for ell in range(1, 5):
+%                 cities = {i, j, k, ell}
+%                 if len(cities) != 4:
+%                     continue
+%                 if i == ell: 
+%                     continue
+                
+%                 remaining = [c for c in cities if c != i and c != ell]
+%                 remaining.sort()
+%                 if len(remaining) == 2 and remaining[0] == j and remaining[1] == k:
+%                     tour_dist = D[i][j] + D[j][k] + D[k][ell]
+%                     indicator_product = A[i] * B[j] * C[k] * L[ell]
+                    
+%                     if indicator_product != 0:
+%                         H_remaining += tour_dist * indicator_product
+
+% H_remaining_expanded = expand(H_remaining)
+
+% # Redukcja QUBO
+
+% def reduce_binary_polynomial(poly, binary_vars, aux_vars_forward, aux_vars_reverse):
+%     """
+%     Zredukuj wielomian dla zmiennych binarnych, gdzie x^n = x dla wszystkich n >= 1
+%     Nastepnie podstawiaj zmienne pomocnicze w OBU kierunkach, wielokrotnie
+
+%     aux_vars_forward: {a1: q0*q1, a2: q2*q3} - rozwijaj a1, a2
+%     aux_vars_reverse: {q0*q1: a1, q2*q3: a2} - zwijaj iloczyny z powrotem do zmiennych pomocniczych
+%     """
+
+%     poly = expand(poly)
+    
+%     for var in binary_vars:
+%         for power in range(10, 1, -1):
+%             poly = poly.subs(var**power, var)
+    
+%     poly = expand(poly)
+    
+%     max_iterations = 20
+%     for iteration in range(max_iterations):
+%         print(f"  Iteracja {iteration + 1}...")
+        
+%         poly = poly.subs(aux_vars_forward)
+%         poly = expand(poly)
+        
+%         all_vars = binary_vars
+%         for var in all_vars:
+%             for power in range(10, 1, -1):
+%                 poly = poly.subs(var**power, var)
+%         poly = expand(poly)
+        
+%         poly = poly.subs(aux_vars_reverse)
+%         poly = expand(poly)
+        
+%         poly_dict = poly.as_coefficients_dict()
+%         max_degree = 0
+%         for term in poly_dict.keys():
+%             if term != 1 and not term.is_symbol:
+%                 factors = term.as_ordered_factors()
+%                 max_degree = max(max_degree, len(factors))
+        
+        
+%         if max_degree <= 2:
+%             print(f"  OK Redukcja zakonczona po: {iteration + 1} iteracjach!")
+%             break
+%     else:
+%         print(f"  UWAGA: Stopien > 2 po {max_iterations} iteracjach")
+    
+%     return poly
+
+% binary_vars = [q0, q1, q2, q3]
+% aux_vars_forward = {a1: q0*q1, a2: q2*q3}
+% aux_vars_reverse = {q0*q1: a1, q2*q3: a2}
+
+% H_remaining_reduced = reduce_binary_polynomial(
+%     H_remaining_expanded, 
+%     binary_vars, 
+%     aux_vars_forward, 
+%     aux_vars_reverse
+% )
+
+% print()
+% print("="*80)
+% print("ZREDUKOWANA FORMULA: H_REMAINING ")
+% print("="*80)
+% print()
+% print("H_remaining_reduced =")
+% print(H_remaining_reduced)
+% print()
+
+% print("-"*80)
+% print("Wspolczynniki w H_REMAINING:")
+% print("-"*80)
+
+% remaining_dict = H_remaining_reduced.as_coefficients_dict()
+
+% const_terms = []
+% linear_terms = []
+% quad_terms = []
+% higher_terms = []
+
+% for term, coeff in remaining_dict.items():
+%     if term == 1:
+%         const_terms.append((term, coeff))
+%     elif term.is_symbol:
+%         linear_terms.append((term, coeff))
+%     elif len(term.free_symbols) <= 2:
+%         try:
+%             factors = term.as_ordered_factors()
+%             if len(factors) == 1:
+%                 linear_terms.append((term, coeff))
+%             elif len(factors) == 2:
+%                 quad_terms.append((term, coeff))
+%             else:
+%                 higher_terms.append((term, coeff))
+%         except:
+%             higher_terms.append((term, coeff))
+%     else:
+%         higher_terms.append((term, coeff))
+
+% if const_terms:
+%     print("\nStopien 0:")
+%     for term, coeff in const_terms:
+%         print(f"  {coeff}")
+
+% if linear_terms:
+%     print("\nStopien 1:")
+%     for term, coeff in sorted(linear_terms, key=lambda x: str(x[0])):
+%         print(f"  {coeff:8.0f} * {term}")
+
+% if quad_terms:
+%     print("\nStopien 2:")
+%     for term, coeff in sorted(quad_terms, key=lambda x: str(x[0])):
+%         print(f"  {coeff:8.0f} * {term}")
+
+% if higher_terms:
+%     print("\nUWAGA: Stopnie wyzsze niz 2:")
+%     for term, coeff in higher_terms:
+%         print(f"  {coeff} * {term}")
+
+% print()
+
+% H_remaining_expanded = H_remaining_reduced
+
+% # Calkowity Hamiltonian
+% print("="*80)
+% print("Calkowity Hamiltonian")
+% print("="*80)
+% print()
+
+% H_total = H_part1 + H_city0 + H_remaining_expanded
+% H_total_expanded = expand(H_total)
+
+
+% vars_list = [q0, q1, q2, q3, a1, a2]
+% var_names = ['q0', 'q1', 'q2', 'q3', 'a1', 'a2']
+
+% const_term = H_total_expanded.as_coeff_add()[0]
+% print(f"Wyraz Staly: {const_term}")
+% print()
+
+% print("Zmienne liniowe:")
+% linear_coeffs = {}
+% for var, name in zip(vars_list, var_names):
+%     coeff = H_total_expanded.coeff(var, 1)
+%     for other_var in vars_list:
+%         if other_var != var:
+%             coeff = coeff.subs(other_var, 0)
+%     linear_coeffs[name] = float(coeff)
+%     print(f"  {name}: {coeff}")
+% print()
+
+% print("Zmienne kwadratowe:")
+% quad_coeffs = {}
+% for i in range(len(vars_list)):
+%     for j in range(i+1, len(vars_list)):
+%         var_i, var_j = vars_list[i], vars_list[j]
+%         name_i, name_j = var_names[i], var_names[j]
+        
+%         temp = H_total_expanded.coeff(var_i, 1)
+%         coeff = temp.coeff(var_j, 1)
+        
+%         for k, other_var in enumerate(vars_list):
+%             if k != i and k != j:
+%                 coeff = coeff.subs(other_var, 0)
+        
+%         if coeff != 0:
+%             quad_coeffs[f"{name_i}{name_j}"] = float(coeff)
+%             print(f"  {name_i}{name_j}: {coeff}")
+
+% # Macierz QUBO
+% print("="*80)
+% print("Macierz QUBO Q (6x6)")
+% print("="*80)
+% print()
+
+% Q = np.zeros((6, 6))
+
+% for i, name in enumerate(var_names):
+%     Q[i][i] = linear_coeffs[name]
+
+% for i in range(len(vars_list)):
+%     for j in range(i+1, len(vars_list)):
+%         name_i, name_j = var_names[i], var_names[j]
+%         key = f"{name_i}{name_j}"
+%         if key in quad_coeffs:
+%             Q[i][j] = quad_coeffs[key]
+%             Q[j][i] = quad_coeffs[key] 
+
+% print("       ", "  ".join(var_names))
+% for i, name in enumerate(var_names):
+%     print(f"{name:4s}  ", end="")
+%     for j in range(6):
+%         print(f"{Q[i][j]:9.0f} ", end="")
+%     print()
+
+% print()
+% print("="*80)
+% print("Aby uzyc w QAOA, skopiuj te wspolczynniki do swojego obwodu.")
+% print("="*80)
+% \end{lstlisting}
+

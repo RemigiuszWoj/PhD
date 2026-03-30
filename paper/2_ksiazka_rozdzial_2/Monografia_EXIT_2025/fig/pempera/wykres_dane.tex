@@ -1,0 +1,26 @@
+
+
+\begin{tikzpicture}
+\pie[
+    radius=2,
+    rotate=90,
+    color={
+        gray!20,
+        gray!35,
+        gray!50,
+        gray!65,
+        gray!80,
+        gray!55
+    },
+    text=pin,                % <-- etykiety NA sektorach
+    before number={},        % bez domyślnego tekstu
+    after number={}          % bez %
+]{
+    52/Obrazy medyczne,
+    4/Dane demograficzne,
+    20/Dane kliniczne,
+    4/Dane z biopsji,
+    16/Dane genomowe,
+    4/Wirtualne dane pacjenta
+}
+\end{tikzpicture}

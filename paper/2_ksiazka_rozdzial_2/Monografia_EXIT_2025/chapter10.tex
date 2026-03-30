@@ -1,0 +1,175 @@
+\chapterauthor{Marek Kopel}
+\chapter[Przegląd metod AI \ldots]{Przegląd metod AI i obliczeń kwantowych w tworzenia muzyki}
+\thispagestyle{empty}
+\vspace{-8mm} {\large Marek Kopel} \vspace{8mm}
+
+\section{Wprowadzenie}
+
+Zastosowanie sztucznej inteligencji (AI) i obliczeń kwantowych w tworzeniu muzyki na nowo definiuje granice artystycznej ekspresji. Algorytmy są już nie tylko narzędziami analitycznymi, ale grają kluczową rolę w procesie twórczym, potrafiąc generować złożone i poruszające kompozycje. Rozdział prezentuje przegląd kluczowych technologii, które mogą wytyczyć przyszłość kompozycji i produkcji muzycznej – od  modeli głębokiego uczenia, napędzających popularne platformy, po zastosowania komputerów kwantowych. Technologie te stanowią podstawę dla obecnych innowacji.
+
+Algorytmy głębokiego uczenia na sieciach neuronowych stanowią podstawę współczesnej GenAI (generatywnej sztucznej inteligencji) w muzyce. Ich zdolność do analizowania ogromnych zbiorów danych, rozpoznawania złożonych wzorców i generowania nowych treści z coraz większą precyzją jest obecnie siłą napędową wielu nowych projektów zarówno komercyjnych jak i open source-owych. 
+Modele GenAI są trenowane na ogromnych zbiorach istniejących danych — w tym przypadku utworów muzycznych — aby nauczyć się rozpoznawać i replikować złożone wzorce, takie jak melodia, harmonia, rytm i struktura. W procesie generowania sieć neuronowa wykorzystuje zdobytą wiedzę do tworzenia całkowicie nowych kompozycji, które naśladują styl danych treningowych, ale pozostają unikalne.
+Takie rozwiązania obniżają dla nowych twórców próg wejścia zarówno w kontekście dostępności profesjonalnych narzędzi jak i umiejętności potrzebnych do wyprodukowania profesjonalnie brzmiącej muzyki. Niektórzy mówią wręcz o demokratyzacji procesu twórczego. 
+
+
+\section{Rys historyczny}
+
+Ewolucja zastosowań AI doskonale ilustruje przejście od prostych zadań klasyfikacyjnych do złożonych procesów twórczych. Wczesne sukcesy projektu Google Brain, utworzonego w 2011 roku, pokazały jej potencjał i przyczyniły się do intensyfikacji badań nad tą technologią. W jednym z przełomowych eksperymentów \cite{markoff2012how} sieć neuronowa, analizując 10 milionów klatek z filmów na YouTube, samodzielnie nauczyła się rozpoznawać wizerunek kota, demonstrując zdolność do identyfikacji wzorców bez nadzoru człowieka. Ten sam fundament technologiczny został rozwinięty i zastosowany w późniejszych zadaniach. Przykładem jest system Google Neural Machine Translation (GNMT), który zrewolucjonizował działanie Tłumacza Google. W przeciwieństwie do wcześniejszych metod, które analizowały tekst słowo po słowie, GNMT ocenia całe zdania w kontekście, co pozwala na znacznie bardziej naturalne i precyzyjne tłumaczenia. Ta zmiana paradygmatu – od statystycznej analizy pojedynczych elementów do holistycznego rozumienia struktur – stanowi bezpośrednią analogię do ewolucji AI w muzyce. Zaczynając od naśladowania prostych wzorców melodycznych AI ewoluowała do generowania złożonych progresji harmonicznych i struktur utworów, które traktują kompozycję jako spójną całość.
+
+Kluczową inicjatywą Google Brain, która bezpośrednio skierowała potencjał AI w stronę artystycznej kreacji, jest projekt Magenta. Jego głównym celem jest zbadanie, w jaki sposób sztuczna inteligencja może być wykorzystywana do tworzenia nowej sztuki, a nie tylko do analizy czy klasyfikacji istniejących zbiorów. Stanowi to przesunięcie akcentu – z AI jako narzędzie analitycznego na AI jako narzędzia twórczego. Oczywiście dziś jeszcze ciągle budzi kontrowersje fakt na ile powinno ono być tylko narzędziem w rękach artysty, a na ile - mieć autonomię w tworzeniu, jako niezależny artysta.
+
+Oparty na otwartej bibliotece TensorFlow, Projekt Magenta dostarczył narzędzi i modeli, które pozwoliły użytkownikom aktywnie kierować procesem twórczym sieci neuronowej. Zamiast pasywnie otrzymywać gotowy wynik, artyści zyskali możliwość interaktywnego wpływania na generowanie obrazów i muzyki. Był to ważny krok w kierunku używania twórczości AI jako kontrolowalnego narzędzia, który otworzył drogę dla nowoczesnych platform muzycznych GenAI.
+
+\section{Metody i narzędzia AI}
+
+Obecnie w dziedzinie generowania muzyki kluczową rolę odgrywa kilka fundamentalnych architektur sieci neuronowych\cite{vaswani2017all}. Wśród nich można wyróżnić:
+\begin{itemize}
+    \item \textbf{transformer} -- architektura opracowana pierwotnie przez badaczy z~Google Brain, na potrzeby przetwarzania języka naturalnego. Jej kluczowym mechanizmem jest tzw. „uwaga”, która pozwala modelowi ważyć znaczenie różnych części danych wejściowych. Umożliwia to modelowi uchwycenie długodystansowych zależności w utworze muzycznym, zapewniając, że na przykład motyw melodyczny wprowadzony w pierwszej zwrotce może być spójnie przywołany w ostatnim refrenie;
+    \item \textbf{rekurencyjna sieć neuronowa (RNN)} -- model zaprojektowany do pracy z danymi sekwencyjnymi. Przetwarza informacje krok po kroku, zachowując wewnętrzną „pamięć” o poprzednich elementach. Pamięć ta jest kluczowa dla utrzymania kontekstu muzycznego w krótszych sekwencjach, na przykład dla zapewnienia progresji harmonicznej w~obrębie jednej frazy muzycznej;
+    \item \textbf{WaveNet} -- głęboka sieć neuronowa opracowana przez DeepMind (wcześniej Google Brain), która modeluje bezpośrednio surowe próbki fali dźwiękowej. Działając na tym granularnym poziomie, WaveNet unika potencjalnej utraty wierności związanej z pośrednimi reprezentacjami, takimi jak MIDI, co skutkuje bogatszą i bardziej realistyczną teksturą dźwięku.
+\end{itemize}
+
+Obecnie najpopularniejszymi platformami GenAI w muzyce są Suno i~Udio. Choć na pierwszy rzut oka oferują podobną funkcjonalność, reprezentują one odmienne filozofie techniczne i podejścia do procesu twórczego. Ich porównanie pozwala zrozumieć nie tylko aktualny stan technologii, ale także różne drogi, jakimi może podążać przyszłość maszynowej kreatywności\cite{ventura1999quantum}.
+
+Suno opiera swoje działanie na architekturze Transformer, tej samej fundamentalnej technologii, która stoi za sukcesem wielkich modeli językowych i która pierwotnie została opracowana w laboratoriach Google Brain. Wybór tej architektury nie jest przypadkowy: jej zdolność do przetwarzania długich sekwencji danych i rozumienia kontekstu sprawia, że doskonale nadaje się do modelowania złożonych struktur muzycznych. Podstawową metodą generowania muzyki przez Suno jest Autoregresja. Polega ona na tworzeniu utworu sekwencyjnie, gdzie każdy nowo wygenerowany fragment (np. nuta, akord, próbka dźwięku) zależy od fragmentów go poprzedzających. CEO Suno, Mikey Shulman, opisuje to w intuicyjny sposób, stwierdzając, że model "rozwiązuje to krok po kroku" ("figures it out bit by bit"). Według niego, takie podejście sprzyja tworzeniu bardziej interesującej muzyki (choć gorszej "jakości nagrania"), w przeciwieństwie do modelu dyfuzyjnego, który stworzy "wysokiej jakości nudną muzykę windową”\footnote{https://www.amplifypartners.com/barrchives/how-suno-builds-ai-models-for-musicians}. Ta sekwencyjna generacja jest potężnym narzędziem do utrzymania spójności, ale jest również z~natury podatna na propagację błędów. Niewielkie odchylenie na wczesnym etapie sekwencji może kaskadowo narastać, potencjalnie przyczyniając się do „robotycznych” artefaktów lub utraty jakości zgłaszanej przez użytkowników w dłuższych fragmentach.
+
+
+Udio, jako alternatywa dla Suno, koncentruje się na innych aspektach procesu twórczego i oferuje odmienną filozofię pracy. Narzędzie to przyciąga użytkowników poszukujących większej kontroli nad kompozycją i wyższej jakości dźwięku, nawet kosztem szybkości i prostoty. W przeciwieństwie do twórców Suno, autorzy Udio traktują informacje o architekturze swojego modelu jak tajemnicę handlową. W związku z tym możemy co najwyżej oprzeć się na obserwowalnych cechach funkcjonalnych i charakterystyce generowanych utworów, które odróżniają te narzędzia od siebie.
+
+Najbardziej charakterystyczną cechą Udio jest unikalny, iteracyjny przepływ pracy. Zamiast generować cały utwór za jednym razem, proces twórczy jest zbudowany wokół tworzenia 30- lub 32-sekundowych segmentów. Takie podejście daje użytkownikowi znacznie większą, granularną kontrolę nad każdym elementem kompozycji, pozwalając na budowanie utworu "kawałek po kawałku". Chociaż to modularne podejście zapewnia użytkownikom niezrównaną kontrolę twórczą, przenosi ono ciężar zapewnienia długodystansowej spójności strukturalnej z modelu na użytkownika. Może to prowadzić do efektu "posklejania", gdzie segmenty, choć indywidualnie wysokiej jakości, pozbawione są płynnych przejść charakterystycznych dla kompozycji generowanej jako jedna, ciągła sekwencja.
+Ten iteracyjny model pracy jest wspierany przez zestaw zaawansowanych narzędzi kreatywnej kontroli, które użytkownicy wymieniają jako kluczowe dla pełnego wykorzystania potencjału platformy:
+\begin{itemize}
+    \item \textbf{rozszerzanie (\textit{extend})} -- umożliwia dodawanie kolejnych sekcji, a~także tworzenie dedykowanego intro i outro, co pozwala na świadome budowanie struktury utworu;
+    \item \textbf{remiksowanie (\textit{remix})} -- daje możliwość modyfikowania istniejących, wygenerowanych fragmentów w celu uzyskania pożądanego brzmienia lub melodii;
+    \item \textbf{szczegółowa edycja (\textit{inpainting})} -- funkcja opisywana przez zaawansowanych użytkowników jako "decydujący czynnik". Pozwala na precyzyjne wprowadzanie poprawek wewnątrz istniejącego segmentu audio, co przypomina pracę w profesjonalnej cyfrowej stacji roboczej (DAW);
+    \item \textbf{przesyłanie własnych próbek audio} -- otwiera możliwość wykorzystania własnych melodii czy dźwięków jako punktu wyjścia do dalszego generowania.
+\end{itemize}
+
+Oczywiście użytkownicy w większości nie mają pojęcia o szczegółach implementacji sieci neuronowych i użytych parametrach metod generujących muzykę w odpowiedzi na prompty. W związku z tym opisują swoje doświadczenia z serwisami suno.com i udio.com na poziomie dostępnym z ich perspektywy. Głownie na podstawie ich opinii wyłania się obraz różniący oba narzędzia w kilku aspektach, zagregowanych w postaci tabeli \ref{tab:compareSA}.
+
+\begin{table}
+\caption{Porównanie platform Suno i Udio}
+\label{tab:compareSA}
+% \begin{tabularx}{\textwidth}{@{}l X X@{}}
+\begin{tabular}{p{59pt}p{129pt}p{129pt}}
+\hline
+kryterium                             & Suno                                                                                                                   & Udio                                                                                                                  \\ \hline
+\textbf{Architektura modelu}          & Transformer                                                                                                            & Nieujawniona                                                                                                         \\ \hline
+\textbf{Metoda generowania}      & Autoregresyjna (generowanie "krok po kroku")                                                                           & Iteracyjna (32-sekundowe segmenty)                                                                  \\ \hline
+\textbf{Sposób pracy}                 & Generowanie kompletnego utworu za jednym razem                                                                         & Budowanie utworu sekcja po sekcji                                                                                     \\ \hline
+\textbf{Jakość dźwięku}               & Niższa, często opisywana jako "lo-fi", "blaszana", "skompresowana"                                                     & Wyższa, często opisywana jako "studyjna", "profesjonalnie zmasterowana"                                               \\ \hline
+\textbf{Jakość i różnorodność wokali} & Mniejsza różnorodność, skłonność do brzmienia "robotycznego", "białego" lub z auto-tune. Lepsze dopasowanie do tekstu. & Większa różnorodność, bardziej naturalne i unikalne głosy, lepsze dopasowanie do niszowych gatunków (np. soul, R\&B). \\ \hline
+\textbf{Kreatywna kontrola}           & Ograniczona; główne narzędzia to cover i extend. Mniejsza precyzja.                                                    & Wysoka; zaawansowane funkcje takie jak extend, remix, inpainting i przesyłanie własnych audio.                        \\ \hline
+\textbf{Struktura utworu}             & Mocna strona; generuje spójne utwory z intro, zwrotkami i refrenami.                                                   & Słabsza strona przy generowaniu długich fragmentów; utwory mogą wydawać się "posklejane" z bloków.                    \\ \hline
+\textbf{Prędkość działania}         & Bardzo wysoka.                                                                                                         & Znacznie wolniejsza.                                                                                                 \\ \hline
+\textbf{Wierność promptom}            & Generalnie wysoka, choć v5 jest postrzegana jako bardziej "skomercjalizowana".                                         & Zmienna; potrafi precyzyjnie zrealizować podpowiedź, ale czasem ignoruje instrukcje lub pomija tekst.  
+\\ \hline
+
+\end{tabular}
+
+\end{table}
+
+Podsumowując te podobieństwa i różnice można stwierdzić, że Suno nadaje się do szybkiego tworzenia muzyki komercyjnej, podkładów dźwiękowych i utworów, gdzie liczy się przewidywalna, solidna struktura (intro, zwrotki, refreny) przy generowaniu jednorazowym. Użytkownicy określają Suno jako "potęgę muzyki pop", która jednak brzmi jak "nagrana w słabych warunkach", ma "blaszane" brzmienie i wokale, które mogą wydawać się "robotyczne". Natomiast Udio jest lepiej przystosowane do poszukiwania niekonwencjonalnych inspiracji, tworzenia bardziej artystycznych i organicznie brzmiących kompozycji. Wygenerowany przez nie dźwięk jest często opisywany jako "profesjonalnie zmasterowany". Z drugiej strony, użytkownicy zgłaszają problemy z wiernością wskazówkom, takie jak okazjonalne ignorowanie instrukcji czy pomijanie fragmentów tekstu podczas generowania.
+
+\section{Podejście kwantowe}
+
+Obliczenia kwantowe, choć wciąż znajdują się w początkowej fazie rozwoju, stanowią potencjalną rewolucję dla uczenia maszynowego i sztucznej inteligencji. Ich unikalna zdolność do przetwarzania informacji, oparta na prawach mechaniki kwantowej, otwiera nowe możliwości analityczne i obliczeniowe, wykraczające poza ograniczenia klasycznych komputerów.
+Podstawową różnicą między klasycznym komputerem, a kwantowym jest użycie kubitów, w miejsce klasycznych bitów. Klasycznie bity mogą przyjmować jedną z dwóch wartości: 0 lub 1. Komputery kwantowe wykorzystują kubity, które istnieją w superpozycji stanów 0 i 1, co pozwala na kodowanie znacznie większej ilości informacji i wykonywanie bardziej złożonych obliczeń.
+Obok zjawiska superpozycji, która pozwala kubitom istnieć w wielu stanach naraz, równie ważne jest splątanie kwantowe. To zjawisko, w którym dwa lub więcej kubitów staje się ze sobą połączonych w taki sposób, że stan jednego natychmiast wpływa na stan drugiego, niezależnie od odległości między nimi. Ta nielokalna korelacja znajduje fascynującą metaforę w~doświadczeniu muzycznym. Harmonie i wspólne częstotliwości tworzą niewidzialną, emocjonalną więź między muzykiem a słuchaczem, która zdaje się przekraczać czas i przestrzeń fizyczną. To zjawisko rezonansu, w którym muzyka wywołuje spójne odczucia u różnych osób w różnych miejscach, koncepcyjnie odzwierciedla nielokalne powiązania charakterystyczne dla systemów splątanych\cite{miranda2021quantum}.
+
+Komputery kwantowe programuje się poprzez aplikowanie sekwencji operacji zwanych bramkami kwantowymi do kubitów. Taka sekwencja tworzy obwód kwantowy. Jednak w przeciwieństwie do programowania klasycznego, kompozycja kwantowa jest z natury probabilistyczna, a nie deterministyczna. Ze względu na naturę algorytmów kwantowych, kompozytor nie pisze stałej, niezmiennej partytury. Zamiast tego jego rola przesuwa się w kierunku "rzeźbienia" amplitud prawdopodobieństwa – współczynników alfa i beta – które sterują systemem kwantowym w stronę pożądanych rezultatów muzycznych. Oznacza to, że wielokrotne uruchomienie tego samego kwantowego obwodu kompozycyjnego może generować różne, choć powiązane ze sobą, wariacje muzyczne, czyniąc komputer kwantowy partnerem w~generatywnej eksploracji, a nie deterministycznym narzędziem\cite{lee2024application}.
+
+Głównym wyzwaniem technologicznym obliczeń kwantowych jest dekoherencja, ponieważ kubity są niezwykle wrażliwe na czynniki środowiskowe, takie jak wahania temperatury czy drgania. Dekoherencja to proces degradacji ich stanu kwantowego pod wpływem tych zakłóceń, co prowadzi do utraty informacji i błędów w obliczeniach.
+
+Połączenie zasad mechaniki kwantowej z algorytmami uczenia maszynowego, czyli \textit{Quantum Machine Learning} (QML), oferuje szereg teoretycznych przewag nad klasycznymi podejściami \cite{ventura1999quantum}:
+\begin{itemize}
+    \item \textbf{prędkość} - zdolność do rozwiązywania problemów, których obliczenie na najpotężniejszych klasycznych superkomputerach zajęłoby tysiące lat;
+
+    \item \textbf{wymiarowość} - komputery kwantowe są naturalnie przystosowane do wyszukiwania wzorców i korelacji w danych wielowymiarowych, co jest niezwykle trudne dla klasycznych algorytmów;
+
+    \item \textbf{złożoność} - algorytmy kwantowe mogą rozwiązywać problemy w mniejszej liczbie kroków niż ich klasyczne odpowiedniki, co świadczy o ich większej efektywności;
+
+    \item \textbf{próbkowanie} - komputery kwantowe mogą w naturalny sposób dokonywać próbkowania rozkładów prawdopodobieństwa dla szerokiego zakresu zastosowań, w tym dla algorytmów generatywnych;
+
+    \item \textbf{kompresja} - możliwość zakodowania ogromnych zbiorów danych, wymagających olbrzymiej pamięci klasycznej, w stosunkowo niewielkiej liczbie kubitów;
+
+    \item \textbf{zakłócenia} - zarówno konstruktywne, jak i destrukcyjne zakłócenia mogą zostać wykorzystane do zwiększenia prawdopodobieństwa znalezienia prawidłowych rozwiązań i zmniejszenia prawdopodobieństwa znalezienia rozwiązań nieprawidłowych.
+\end{itemize}
+
+
+Te teoretyczne zalety już teraz znajdują pionierskie zastosowania w dziedzinie twórczości muzycznej, otwierając zupełnie nowe ścieżki dla kompozytorów i artystów.
+
+W pracy \cite{miranda2022quantum} autorzy wykorzystali dwie główne metody kompozytorskie, które demonstrują wszechstronność podejścia kwantowego:
+\begin{itemize}
+
+    \item \textbf{Podzielone kwantowe automaty komórkowe (PQCA)}. Ta technika służy do proceduralnego generowania spójnych, ewoluujących struktur muzycznych. PQCA pozwala tworzyć wzorce, które rozwijają się w czasie w sposób uporządkowany, co w przełożeniu na język muzyki przypomina klasyczną formę "wariacji na temat". Jest to idealne narzędzie do budowania dłuższych, koherentnych fragmentów kompozycji.
+
+    \item \textbf{Kwantowe uczenie maszynowe do interakcji}. W celu realizacji improwizacji na żywo, Miranda zastosował QML. System "słucha" partii granej przez muzyka (np. na skrzypcach), a następnie koduje zasady sekwencjonowania nut (np. prawdopodobieństwo wystąpienia jednej nuty po drugiej) w obwodach kwantowych. Na podstawie tych reguł komputer generuje muzyczne odpowiedzi w czasie rzeczywistym. Co fascynujące, do wykonania tego złożonego zadania wystarczyło zaledwie 5 kubitów, co doskonale demonstruje niezwykłą efektywność i potencjał kompresji danych w kwantowym uczeniu maszynowym.
+\end{itemize}
+
+Alternatywnym podejściem do kwantowej muzyki komputerowej jest sformalizowanie procesu kompozycji jako problemu optymalizacyjnego. W~tej metodologii celem jest znalezienie sekwencji elementów muzycznych (nut, rytmów, akordów), która minimalizuje "koszt" lub "energię" systemu. Koszt ten jest zdefiniowany jako odchylenie od z góry określonych reguł stylistycznych, harmonicznych lub estetycznych\cite{salehi2025music}. Innymi słowy, algorytm poszukuje kompozycji, która najlepiej spełnia zestaw narzuconych ograniczeń.
+Model obliczeniowy, który doskonale nadaje się do tego typu zadań, to wyżarzanie kwantowe (\textit{quantum annealing}). W przeciwieństwie do modelu bramkowego, który operuje na sekwencjach dyskretnych bramek, wyżarzanie jest procesem ciągłym, inspirowanym zjawiskami fizycznymi. W praktyce problemy optymalizacyjne są mapowane na model matematyczny znany jako model Isinga, który opisuje energię systemu fizycznego\cite{arya2022music}. Celem jest znalezienie konfiguracji o najniższej energii, która odpowiada optymalnemu rozwiązaniu problemu kompozycyjnego.
+
+Metodologia ta jest stosowana do generowania różnych aspektów muzyki w następujący, ustrukturyzowany sposób:
+\begin{itemize}
+    \item \textbf{formułowanie problemu} -- problemy muzyczne są kodowane w postaci Kwadratowej Nieograniczonej Optymalizacji Binarnej (\textit{Quadratic Unconstrained Binary Optimization} -- QUBO). Jest to format matematyczny, w którym funkcja celu składa się z liniowych i kwadratowych członów zmiennych binarnych (przyjmujących wartości 0 lub 1). Każda reguła muzyczna jest tłumaczona na odpowiedni człon w tej funkcji, a jej naruszenie dodaje "karę" do całkowitego kosztu;
+
+    \item \textbf{generowanie melodii} -- aby wygenerować melodię, definiuje się binarne zmienne $ x_{i,j} $, gdzie $i$ oznacza pozycję nuty w sekwencji, a $j$ jej wysokość. Zmienna $ x_{i,j} $ przyjmuje wartość 1, jeśli nuta na pozycji $i$ ma wysokość $j$, a 0 w przeciwnym razie \cite{glover2019quantum}. Reguły muzyczne są następnie wprowadzane jako ograniczenia. Na przykład, aby uniknąć dysonujących interwałów, takich jak tryton, dodaje się karę za jednoczesne wystąpienie nut odległych o 6 półtonów;
+
+    \item \textbf{generowanie rytmu} -- sekwencje rytmiczne można generować w analogiczny sposób. Definiuje się binarne zmienne $ x_{i,j} $, gdzie $i$ to pozycja w sekwencji, a $j$ to czas trwania nuty (np. ćwierćnuta, ósemka). Dodatkowe ograniczenia mogą wymuszać, aby całkowita długość taktu lub całej frazy sumowała się do określonej wartości, co zapewnia spójność metryczną;
+
+    \item \textbf{generowanie harmonii} -- progresje akordów mogą być generowane na dwa główne sposoby. Pierwszy wykorzystuje sieci Markowa do modelowania prawdopodobieństw przejść między akordami, faworyzując typowe progresje, takie jak kadencja doskonała (V-I). Drugi sposób polega na bezpośrednim zdefiniowaniu ograniczeń w modelu QUBO, np. narzucając, że akordy mają być trójdźwiękami zbudowanymi z~określonych interwałów (tercji).
+\end{itemize}
+
+Podejście to jest wysoce ustrukturyzowane i oferuje precyzyjną kontrolę nad formalnymi aspektami kompozycji. Przez to jest kontrastującą alternatywą dla podejścia z \cite{miranda2022quantum}.
+
+\section{Podsumowanie}
+
+Przegląd technologii stosowanych w kreacji muzycznej wykazuje pewną asymetrię: z jednej strony mamy dojrzałe i szeroko dostępne platformy AI, takie jak Suno i Udio, które demokratyzują proces tworzenia muzyki; z drugiej strony, na horyzoncie rysuje się wciąż eksperymentalny, potencjał muzyki tworzonej z użyciem komputerów kwantowych.
+
+Pomijając wyzwania etyczne i prawne, problemy związane z odróżnieniem muzyki stworzonej przez człowieka od tej wygenerowanej przez maszynę przybiera formę "wyścigu zbrojeń". Z jednej strony modele generatywne ewoluują, by stać się nieodróżnialne od ludzkich kreacji, z drugiej zaś technologie detekcji są nieustannie rozwijane w celu identyfikacji ich cyfrowych artefaktów.
+
+Choć komputery kwantowe oferują fascynujący potencjał dla muzyki, ich praktyczne zastosowanie jest na bardzo wczesnym etapie. Dalszy postęp w tej dziedzinie jest nierozerwalnie związany z rozwojem samego sprzętu kwantowego, oprogramowania i algorytmów, co czyni tę ścieżkę obiecującą, ale długoterminową.
+
+Ostatecznie, zarówno sztuczna inteligencja, jak i obliczenia kwantowe nie powinny być postrzegane jako substytut ludzkiej kreatywności. Stają się one raczej nowymi, potężnymi instrumentami w rękach artystów. Podobnie jak syntezator zrewolucjonizował muzykę elektroniczną, tak te technologie otwierają niezbadane dotąd przestrzenie dla ekspresji, interakcji i samej definicji tego, czym może być kompozycja muzyczna.
+
+\begin{thebibliography}{12}
+
+\bibitem{arya2022music}
+Arya, A., Botelho, L., Cañete, F., Kapadia, D., Salehi, Ö. (2022). Music composition using quantum annealing. arXiv preprint arXiv:2201.10557.
+
+\bibitem{casini2025data}
+Casini, L., Vila, L. C., Dalmazzo, D., Kaila, A. K., Sturm, B. L. (2025). Data-Driven Analysis of Text-Conditioned AI-Generated Music: A Case Study with Suno and Udio. arXiv preprint arXiv:2509.11824.
+
+\bibitem{glover2019quantum}
+Glover, F., Kochenberger, G., Du, Y. (2019). Quantum Bridge Analytics I: a tutorial on formulating and using QUBO models. 4or, 17(4), 335-371.
+
+\bibitem{kirke2018programming}
+Kirke, A. (2018). Programming gate-based hardware quantum computers for music. Musicology, (24), 21–37.
+
+\bibitem{kirke2019applying}
+Kirke, A. (2019). Applying quantum hardware to non-scientific problems: Grover’s algorithm and rule-based algorithmic music composition. arXiv preprint arXiv:1902.04237.
+
+\bibitem{markoff2012how}
+Markoff, J. (2012). How many computers to identify a cat? 16,000. New York Times, 26.
+
+\bibitem{miranda2021quantum}
+Miranda, E. R. (2021). Quantum computer: Hello, music!. In Handbook of artificial intelligence for music: Foundations, advanced approaches, and developments for creativity (pp. 963-994). Cham: Springer International Publishing.
+
+\bibitem{miranda2022quantum}
+Miranda, E. R., Basak, S. (2022). Quantum computer music: Foundations and initial experiments. In Quantum Computer Music: Foundations, Methods and Advanced Concepts (pp. 43-67). Cham: Springer International Publishing.
+
+\bibitem{salehi2025music}
+Salehi, Ö., de la Ossa, P. F. L. (2025). Music Composition Using Quantum Annealing. W: E. R. Miranda (Red.), Quantum Computer Music.
+
+\bibitem{lee2024application}
+Lee, J., Yang, W. (2024). The application of quantum computing in music composition. Online Journal of Music Sciences, 9(2), 415-429.
+
+\bibitem{vaswani2017all}
+Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Polosukhin, I. (2017). Attention is all you need. Advances in neural information processing systems, 30.
+
+\bibitem{ventura1999quantum}
+Ventura, D., Martinez, T. (1999). A quantum associative memory based on Grover’s algorithm. In Artificial Neural Nets and Genetic Algorithms: Proceedings of the International Conference in Portorož, Slovenia, 1999 (pp. 22-27). Vienna: Springer Vienna.
+
+\end{thebibliography}
+

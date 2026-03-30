@@ -1,0 +1,559 @@
+\newcommand{\R}{\mathds{R}}
+\newcommand{\N}{\mathds{N}}
+\newcommand{\vareps}{\varepsilon}
+\newcommand{\even}{\mathcal{E}}
+\newcommand{\odd}{\mathcal{O}}
+\newcommand{\PP}{\mathds{P}}
+\newcommand{\EE}{\mathds{E}}
+\newcommand{\HH}{\mathds{H}}
+\newcommand{\GG}{\mathds{G}}
+\newcommand{\set}[1]{\mathcal{#1}}
+\newcommand{\one}{\mathds{1}}
+\newcommandx{\bkq}[2]{\mathcal{B}^{#1}_{#2}}
+\newcommandx{\bkqp}[2]{(\mathcal{B}^{#1}_{#2})_+}
+\newcommand{\ising}{\bkqp{k}{2}}
+\numberwithin{equation}{section}
+\newcommand*{\thmproofname}{Proof}
+\newcommand*{\lemproofname}{Proof}
+\newenvironment{lemproof}[1][\lemproofname]{\begin{proof}[#1]\renewcommand*{\qedsymbol}{\(\square\)}}{\end{proof}}
+
+\chapterauthor{Tomasz Skalski }
+\chapter[Oszacowania rozmiaru próby \ldots]{Oszacowania rozmiaru próby gwarantującej istnienie estymatora największej wiarogodności}
+\thispagestyle{empty}
+\vspace{-8mm} {\large Tomasz Skalski } \vspace{8mm}
+
+
+\section{Wstęp}
+\noindent
+Klasa rodzin wykładniczych rozkładów prawdopodobieństwa jest jedną z najważniejszych w statystyce matematycznej, głównie ze względu na ich własności, które pozwalają na wydajniejszą estymację parametrów [12]. Pochodzenie danych z~rozkładu z rodziny wykładniczych ułatwia też rozwiązanie problemu optymalizacyjnego polegającego na wyznaczeniu estymatora największej wiarogodności dla nieznanych parametrów. 
+
+
+\noindent
+Estymator największej wiarogodności (maximum likelihood estimator, MLE) nieznanego parametru $\theta\in\Theta$ jest zdefiniowany jako wartość parametru, która maksymalizuje funkcję wiarogodności, tj. gęstość łączną rozkładu braną w punktach z zadanej próby $x_1,\ldots,x_n\in\set{X}$ i traktowaną jako funkcję parametru $\theta$. Ma on wiele przydatnych własności, m.in. jest asymptotycznie nieobciążony oraz jego wariancja dąży do wariancji estymatora minimalizującego wariancję wśród estymatorów nieobciążonych, por.[10, Rozdz. 3.2.1]. Mimo to, estymator największej wiarogodności może nie istnieć.
+
+\noindent
+W klasie dyskretnych rodzin wykładniczych, rozumianych jako określonych na skończonym zbiorze wartości $\set{X}$, problem istnienia MLE został opisany przez Barndorff-Nielsena [1, Ch. 9]. Przystępniejsze kryterium zostało wprowadzone w pracy Bogdana, Bosego i Skalskiego [3], które wykorzystuje pojęcie zbioru jednoznaczności. 
+
+\noindent
+Niech $\set{B}$ będzie liniową podprzestrzenią $\R^{\set{X}}$. Wtedy $\set{B}_+$ oznacza klasę wszystkich funkcji nieujemnych z $\set{B}$ [3, Sec. 2.].
+
+\begin{definition} [3, Sec. 2.]
+Niech $U\subset \set{X}$. Mówimy, że $U$ jest zbiorem jednoznaczności dla $\set{B}$, jeżeli funkcja $\phi=0$ jest jedyną funkcją z klasy $\set{B}$ taką, że $\phi = 0$ na zbiorze $U$. Analogicznie, zbiór $U$ jest jednoznaczności dla $\set{B}_+$, jeżeli $\phi=0$ jest jedyną funkcją z $\set{B}_+$ spełniającą $\phi = 0$ na $U$.    
+\end{definition}
+
+\noindent
+W praktycznych sytuacjach zbieranie dużego zbioru danych może być drogie, czasochłonne, a w niektórych sytuacjach nawet niemożliwe. Dlatego ważne jest oszacowanie czasu potrzebnego do zebrania wystarczająco dużej i różnorodnej próby, żeby istniał dla niej estymator największej wiarogodności. W klasie modeli log-liniowych często istotne jest, żeby każda z możliwych wartości wystąpiła przynajmniej jeden raz [6, str. 7]. Ten warunek sprowadza istnienie MLE do problemu zbieracza kuponów. Problem ten był badany już przez de Moivre'a oraz Laplace'a [11, 5]. Polega on na oszacowaniu liczby obserwacji niezależnych i~pochodzących z tego samego rozkładu, które są potrzebne do zebrania obserwacji z całego zbioru $\set{X}$. Jedną z uogólnionych wersji tego zagadnienia jest zebranie wystarczająco ,,dobrego'' podzbioru $\set{X}$, który u nas będzie zdefiniowany jako zbiór jednoznaczności.
+
+\noindent
+W wielu sytuacjach zbieranie danych jest procesem ciągłym, w którym obserwacje są zbierane w czasie ciągłym. Dzięki temu można modelować je za pomocą procesu Poissona, w którym każda próbka $x$ jest przyjmowana z intensywnością $\lambda>0$ [10, str. 108--109]. Wtedy liczba obserwacji punktu $x$ w czasie $t$ jest zmienną losową o rozkładzie Poissona z parametrem intensywności $\lambda t$. Czas oczekiwania $T$ na zaobserwowanie $x$ ma wtedy rozkład wykładniczy  $T\sim \mathcal{E}xp(\lambda)$ o gęstości 
+$$
+f(x) = \lambda e^{-\lambda x}\one_{\{x>0\}}.
+$$
+
+\noindent
+Powyższy problem będzie dalej nazywany ciągłym problem zbieracza kuponów.
+
+\noindent
+Struktura rozdziału jest następująca: Rozdział~\ref{sec:pre} wprowadza potrzebne pojęcia i definicje. W rozdziale~\ref{sec:rad} znajdują się oszacowania czasu potrzebnego do otrzymania zbioru jednoznaczności w przestrzeni rozpiętej przez funkcje Rademachera. Rozdział~\ref{sec:ising} wprowadza analogiczne oszacowania (dyskretne i ciągłe) dla modelu Isinga na podstawie niedawnych wyników z artykułu Skalskiego i~Stroi\'nskiego [13]. W rozdziale~\ref{sec:funny} rozważany jest przypadek niejednorodnego prawdopodobieństwa, w którym wykorzystuje się tzw. zbiory wagowe, por. [13].
+
+\section{Definicje i pojęcia}\label{sec:pre}
+
+\begin{definition}[Liczba harmoniczna]
+Niech $n\geq 1$. Wtedy $n$-ta liczba harmoniczna jest definiowana jako suma odwrotności liczb naturalnych ze zbioru $\{1,\ldots,n\}$: 
+$$H_n=\sum\limits_{j=1}^n\frac{1}{j}.$$
+\end{definition}
+
+\begin{remark} [5, str. 5]
+$$H_n = \ln n + \gamma + \frac{1}{2n} + O\left(\frac{1}{n^2}\right),$$
+gdzie $\gamma\approx 0.5772$ jest stałą Eulera-Mascheroniego.
+\end{remark}
+
+\begin{definition}[Problem zbieracza kuponów] [5, Sec. 2]
+Niech $\set{X}=\{x_1,\ldots,x_n\}$ będzie zbiorem kuponów, które losowane są według rozkładu jednostajnego, tj. każdy z prawdopodobieństwem $\PP(X=x)=\frac{1}{n}$. Niech $\tau_\set{X}$ oznacza najmniejszą losową liczbę kuponów potrzebną do zebrania całego zbioru $\set{X}$. Wtedy
+$$
+\EE(\tau_{\set{X}}) = 1 + \frac{n}{n-1} + \ldots + \frac{n}{2} + n = n \sum\limits_{j=1}^{n}\frac{1}{j} = nH_n.
+$$
+\end{definition}
+\noindent
+Ciągła wersja problemu zbieracza kuponów różni się od dyskretnej tym, że zamiast zliczania obserwacji mierzy się czas potrzebny do zebrania całego zbioru przy założeniu, że każda z obserwacji przychodzi w sposób modelowany procesem Poissona.
+
+\begin{definition}[Proces Poissona] [8, Def. 3.1.]
+Procesem Poissona o intensywności $\lambda>0$ jest rodzina nieujemnych zmiennych losowych $\{X_t:\ t\geq 0\}$, jeżeli
+\begin{enumerate}
+    \item $\PP(X_0=0)=1$,
+    \item przyrosty na rozłącznych przedziałach są niezależne,
+    \item dla każdego $t\geq 0$ oraz $h\geq 0$ zmienna losowa $X_{t+h} - X_{t}$ ma rozkład Poissona z intensywnością $h\lambda$.
+\end{enumerate}
+\end{definition}
+
+% \begin{definition}[Problem zbieracza kuponów w wersji ciągłej]
+    
+% \end{definition}
+
+\noindent
+W ciągłej wersji problemu zbieracza kuponów wartość oczekiwaną oraz wariancję momentu zatrzymania można obliczyć odpowiednio za pomocą tożsamości Walda oraz tożsamości Blackwella-Girshicka. W poniższym wyniku, jak i w innych wynikach dotyczących próby losowej, zakłada się, że obserwacje są niezależne i~pochodzą z tego samego rozkładu, co dalej jest oznaczane skrótem iid.
+
+
+
+\begin{theorem}[Tożsamość Walda] [16]\label{thm:wald}
+Niech $X_1,X_2,\ldots$ będą iid zmiennych losowymi spełniającymi $\EE|X_1|<\infty$. Niech $T$ będzie momentem zatrzymania niezależnym od wszystkich $X_i$, dla którego $\EE T<\infty$. Wtedy
+$$
+\EE\left(\sum\limits_{i=1}^T X_i\right) = \EE (T) \cdot \EE (X_1).
+$$
+\end{theorem}
+
+\begin{theorem}[Tożsamość Blackwella-Girschicka][2]
+Niech $X_1,X_2,\ldots$ będą iid zmiennymi losowymi, dla których $\EE|X_1|<\infty$ oraz ${\rm{Var}}(X)<\infty$. Niech $T$ będzie momentem zatrzymania niezależnym od wszystkich $X_i$ i spełniającym $\EE T<\infty$ oraz ${\rm{Var}}(T)<\infty$. Wtedy
+$$
+{\rm{Var}}\left(\sum\limits_{i=1}^T X_i\right) = \EE (T) \cdot {\rm{Var}}(X_1) +  (\EE (X_1))^2 \cdot {\rm{Var}}(T).
+$$
+\end{theorem}
+
+
+
+\begin{lemma}[Maksimum $n$ zmiennych z rozkładu wykładniczego] [4]~\label{lem:maxexp}
+\leavevmode
+\makeatletter
+\@nobreaktrue
+\makeatother
+Niech $X_1,\ldots,X_n$ będą zmiennymi iid z rozkładu wykładniczego $\set{E}xp(\lambda)$ i niech $M_n = \max\{X_1,\ldots,X_n\}$. Wtedy
+\begin{enumerate}
+\item $\EE(M_n) = \frac{H_n}{\lambda},$
+\item ${\rm Var}(M_n) = \frac{\sum\limits_{j=1}^{n} (1/j^2)}{\lambda^2} < \frac{\pi^2}{6\lambda^2}$.
+\end{enumerate}
+\end{lemma}
+
+
+
+\section{Funkcje Rademachera: proces ciągły}\label{sec:rad}
+
+
+\noindent
+Poniżej znajdują się oszacowania czasu zbierania obserwacji, który jest potrzebny do otrzymania zbioru jednoznaczności dla przestrzeni wszystkich nieujemnych funkcji rzeczywistych $(\R^{\set{X}})_+$. Następnie rozważany jest analogiczny wynik dla nieujemnych funkcji z przestrzeni $\bkq{k}{1}$ rozpiętej przez funkcje Rademachera.\\
+
+\noindent
+Przypadek dyskretny, czyli dotyczący oszacowania liczby potrzebnych obserwacji, został rozpatrzony w publikacji Bogdana, Bosego i Skalskiego [3, Section 3.]. Poniższa dyskusja dotyczy przypadku ciągłego.\\
+
+\noindent
+Rozpoczynamy od problemu istnienia MLE dla rodziny wykładniczej generowanej przez funkcje rzeczywiste na $\set{X}$. W tym przypadku jedynym zbiorem jednoznaczności jest cała przestrzeń $\set{X}$ [3, Lemma 3.1]. Ten zbiór jest osiągnięty wtedy i~tylko wtedy, gdy każdy z $2^k$ punktów zbioru $\set{X}$ został zaobserwowany. Jako że każda z~obserwacji jest niezależna, to czas potrzebny do osiągnięcia zbioru jednoznaczności ma rozkład będący rozkładem maksimum spośród $2^k$ iid zmiennych losowych o rozkładzie wykładniczym $\set{E}xp(\lambda)$.
+
+\noindent
+Zauważmy, że skoro każdy z punktów $x\in\set{X}$ pojawia się z intensywnością $\lambda$, to wszystkie punkty przychodzą łącznie z intensywnością $2^k\lambda$.
+
+\begin{lemma}
+Niech $\tau_{\set{X}}$ będzie momentem zatrzymania odpowiadającym pokryciu całego zbioru $\set{X}$ przez obserwacje pochodzące z procesów Poissona o intensywności $\lambda$. Wtedy
+\begin{enumerate}
+    \item $\EE(\tau_{\set{X}}) = \frac{1}{\lambda} 2^k H_{2^k} = \frac{1}{\lambda} (2^k k \ln 2 + \gamma + o(1))$,
+    \item ${\rm Var}(\tau_{\set{X}}) < \frac{\pi^2}{ 6\lambda^2}$.
+\end{enumerate}
+\end{lemma}
+\begin{proof}
+Moment zatrzymania $\tau_{\set{X}}$ jest w tym przypadku równy maksimum z $2^k$ iid zmiennych z rozkładu $\set{E}xp(\lambda)$. Otrzymane wyniki pochodzą z bezpośredniego zastosowania Lematu~\ref{lem:maxexp}.   
+\end{proof}
+
+\noindent
+Kolejnym omawianym przykładem dyskretnej rodziny wykładniczej jest rodzina $\bkq{k}{1}$ generowana przez kombinacje liniowe funkcji Rademachera na hipersześcianie $\set{X}=\{-1,+1\}^k$. Każdą z nich można traktować jako funkcję charakterystyczną połówki zbioru $\set{X}$ definiowanej przez ustalenie konkretnej wartości na jednej z~$k$ współrzędnych. W [3] udowodniono, że w tym przypadku zbiór $U\subset\set{X}$ jest zbiorem jednoznaczności wtedy i tylko wtedy, gdy $U$ ma niepusty przekrój z~każdą z~$2k$ połówek $\set{X}$. Innymi słowy, każda wartość każdej ze współrzędnych musi być zaobserwowana przynajmniej jeden raz. Zauważmy, że w podanym przypadku wartości współrzędnych są wzajemnie niezależne. Wynika stąd, że mając obserwacje $X_1,\ldots,X_{\tau_1}$ pochodzące z rozkładu jednostajnego na $\set{X}$, ich liczba $\tau_1$ potrzebna do osiągnięcia zbioru jednoznaczności jest o jeden większa od maksimum z $k$ iid zmiennych losowych o rozkładzie geometrycznym $\set{G}eom(\frac12)$ [3, Lemma 3.13]{MLE}. Zatem w przypadku ciągłym otrzymujemy następujący wynik.
+
+
+
+\begin{remark}
+Załóżmy, że każda z obserwacji $x_j$, $j=1,2,\ldots$, przychodzi w~czasie $T(x_j)$ według procesu Poissona z intensywnością $\lambda>0$. Niech 
+$$
+\tau_1:={\rm{inf}}_{t>0}(\{x_j:\ T(x_j)\leq t\}\ {\rm{jest\ jednoznaczno{\textrm{\'s}}ci\ dla\ }} \bkqp{k}{1}).
+$$
+Wtedy $\tau_1$ ma rozkład gamma $\set{G}(\alpha,\lambda)$, w którym parametr $\alpha$ jest zmienną losową równą według rozkładu ($1$ + maksimum z $k$ iid zmiennych o rozkładzie $\set{G}eom(\frac12)$.
+\end{remark}
+\begin{corollary}
+\leavevmode
+\makeatletter
+\@nobreaktrue
+\makeatother
+$$
+\EE \tau_1 = \frac{\EE\alpha}{\lambda} = \frac{k\ \ln(k) + \gamma}{\lambda\ \ln(2)} + \frac{c}{\lambda} + o(1),
+$$
+gdzie $c\in[1;2)$.
+\end{corollary}
+\noindent
+Powyższa uwaga i wniosek wynikają bezpośrednio z~[Lemma 3.13]{MLE} oraz faktu, że dla $\alpha\in\N$ rozkład gamma $\set{G}(\alpha,\lambda)$ jest rozkładem sumy $\alpha$ iid zmiennych losowych z rozkładu wykładniczego $\set{E}xp(\lambda)$. Równość $\EE\tau_1 = \frac{1}{\lambda} \cdot \EE\alpha$ wynika z~tożsamości Walda (Twierdzenie~\ref{thm:wald}).
+
+
+\section{Oszacowania w modelu Isinga}\label{sec:ising}
+\noindent
+Po rozważeniu skrajnych przypadków $\bkqp{k}{k}$ oraz $\bkqp{k}{1}$ nasuwa się pytanie, co da się zrobić w przypadku pozostałych $\bkqp{k}{q}$. Jest to klasa funkcji nieujemnych rozpiętych przez iloczyny co najwyżej $q$ funkcji Rademachera i jest równoważna z klasą nieujemnych kombinacji liniowych $(k-q)$-podkości zdefiniowanych przez ustalenie wartości na dokładnie $q$ współrzędnych. Przypadek $q=2$ jest związany z modelem Isinga z mechaniki statystycznej [15,Ex. 3.1]. Ze względu na wzajemną zależność między zbiorami współrzędnych potrzebne są bardziej wyrafinowane techniki do rozwiązania zagadnienie. Częściowe wyniki dotyczące zbiorów jednoznaczności dla $\ising$ oraz $\bkqp{k}{3}$ zostały przedstawione w niedawnej pracy Skalskiego i Stroińskiego [13]. 
+
+\noindent
+Opierają się one na pojęciu zbioru wagowego, czyli zbioru wszystkich punktów, których liczba dodatnich współrzędnych należy do ustalonego zbioru $D$. Pojęcie to jest wykorzystywane zarówno w teorii kodów [14, Def. 3.1.1.], jak i~w~kombinatoryce ekstremalnej [13].
+\begin{definition} [13, Sec. 2.1]
+Niech $\set{X}=\{-1,+1\}^k$ oraz $D\subset\{0,1,\ldots,k\}$. Wtedy zbiorem wagowym punktu $x\in\set{X}$ nazywany jest zbiór wszystkich punktów odległych w metryce Hamminga od $x$ o $d$ współrzędnych dla pewnego $d\in D$:
+$$
+W_D^{(x)} = \left\{y\in\{-1,+1\}^k:\ dist(x,y)\in D\right\}.
+$$
+\end{definition}
+\noindent
+Dla uproszczenia konwencji, dla $x=(-1,-1,\ldots,-1)$ zbiór $W_D^{(x)}$ oznaczany jest jako $W_D$.
+
+\noindent
+W szczególności pokazano, że zbiory wagowe postaci $W_{\{1,k\}}$ oraz $W_{\{1,k-1\}}$ są zbiorami jednoznaczności odpowiednio dla $\ising$ oraz dla $\bkqp{k}{3}$. 
+
+
+\begin{theorem} [13, Theorem 3.6]\label{thm:bound:ising}
+Niech $u(k,q)$ będzie liczbą elementów najmniejszego zbioru jednoznaczności dla $\bkqp{k}{q}$. Wtedy
+\begin{enumerate}
+\setcounter{enumi}{1}
+    \item $\ln k + \frac12 \ln \ln k + O(1) \leq u(k,2) \leq k+1$.
+    \item $2 \ln (k-1) + \ln \ln (k-1) + O(1) \leq u(k,3) \leq 2k$.
+\end{enumerate}
+\end{theorem}
+\noindent
+Oszacowania lewostronne pochodzą z prac dotyczących ograniczeń mocy zbioru krojącego się niepusto z każdą podkością. Jest to jeden z problemów typu Tur\'ana z kombinatoryki ekstremalnej [7, 9].
+
+\noindent
+Dzięki temu można oszacować czas potrzebny do uzyskania zbioru jednoznaczności przez czas potrzebny do uzyskania powyższych zbiorów wagowych lub izomorficznych do nich. W przypadku ciągłym czas potrzebny do otrzymania zbioru $W_{\{1,k\}}$ jest równy maksimum $k+1$ iid zmiennych losowych z rozkładu wykładniczego $\set{E}xp(\lambda)$. Analogicznie, do zbioru $W_{\{1,k-1\}}$ potrzebne jest maksimum $2k$ iid zmiennych z tego samego rozkładu.
+
+\noindent
+\begin{theorem}\label{thm:ising:dys}
+Załóżmy, że każda z obserwacji $x_j$, $j=1,2,\ldots$, przychodzi w czasie $T(x_j)$ według procesu Poissona z intensywnością $\lambda>0$. Niech 
+$$
+\tau_2:={\rm{inf}}_{t>0}(\{x_j:\ T(x_j)\leq t\}\ {\rm{jest\ jednoznaczno{\textrm{\'s}}ci\ dla\ }} \bkqp{k}{2})
+$$    
+oraz
+$$
+\tau_3:={\rm{inf}}_{t>0}(\{x_j:\ T(x_j)\leq t\}\ {\rm{jest\ jednoznaczno{\textrm{\'s}}ci\ dla\ }} \bkqp{k}{3}).
+$$ 
+Wtedy
+$$
+\EE(\tau_2) \leq \frac{H_{k+1}}{\lambda} = \frac{1}{\lambda} \left(\ln(k+1)+\gamma+\frac{1}{2k+2}+O\left(\frac{1}{k^2}\right)\right)
+$$
+oraz
+$$
+\EE(\tau_3) \leq \frac{H_{2k}}{\lambda} = \frac{1}{\lambda} \left(\ln(k)+\ln(2)+\gamma+\frac{1}{4k}+O\left(\frac{1}{k^2}\right)\right).
+$$
+\end{theorem}
+\begin{proof}
+Na mocy Twierdzenia~\ref{thm:bound:ising} istnieje $(k+1)$-elementowy zbiór jednoznaczności dla $\ising$ oraz $2k$-elementowy zbiór jednoznaczności dla $\bkqp{k}{3}$. Wynika stąd, że czas potrzebny do otrzymania zbioru jednoznaczności w rozważanych przypadkach nie przekracza czasu potrzebnego do otrzymania konkretnych zbiorów o podanych wielkościach. Ten czas jest równy maksimum z odpowiednio $(k+1)$ oraz $2k$ iid zmiennych z rozkładu wykładniczego z parametrem intensywności $\lambda$.
+\end{proof}
+
+
+
+\noindent
+Żeby otrzymać lepsze przybliżenia, można zauważyć, że wystarczy, aby próba $\{x_1,x_2,\ldots\}$ pokryła przynajmniej jeden ze zbiorów izomorficznych do rozważanego zbioru wagowego.
+\begin{lemma}
+Istnieje przynajmniej $2\lfloor\frac{k}{3}\rfloor$ rozłącznych podzbiorów $\set{X}=\{-1,+1\}^k$, które są izomorficzne do $W_{\{1,k\}}$.
+\end{lemma}\label{lem:kule2}
+\begin{proof}
+Rozważmy rodzinę zbiorów postaci $W^{(x)}_{\{1,k\}}$, gdzie punkty $x$ mają dodatnie współrzędne dokładnie na miejscach ze zbioru indeksów $I$, gdzie $I$ należy do klasy $\set{I} = \set{I}' \cup \set{I}''$, where
+$$
+\set{I}' := \{\emptyset, \{1,2,3\}, \{1,2,3,4,5,6\}, \ldots, \{1,2,3,\ldots,3\lfloor\frac{k}{3}\rfloor-3\}\}
+$$
+oraz 
+$$
+\set{I}'' = \{z\subset\{1,\ldots,k\}:\ \{1,\ldots,k\}\setminus z \in \set{I}' \}.
+$$
+Zauważmy, że każda z par zbiorów indeksów $z\in\set{I}'$ oraz $\{1,\ldots,k\}\setminus z\in\set{I}''$ jest parą zbiorów indeksów, na których dodatnie współrzędne mają odpowiednio punkty $x$ oraz $-x$ dla pewnych $x\in\set{X}$. Ponadto, sumę zbiorów $W^{(x)}_{\{1,k\}} \cup W^{(-x)}_{\{1,k\}}$ można rozdzielić na rozłączne kule domknięte w metryce Hamminga o środkach w punktach $x$ oraz $-x$ i promieniu równym $1$.
+
+\noindent
+Teraz pozostaje zauważyć, że dowolne dwie kule domknięte $B(x,1)$ oraz $B(y,1)$ są rozłączne wtedy i tylko wtedy, gdy $dist(x,y)\geq 3$. Ta równoważność jest wykorzystywana m.in. przy analizie kodów korekcyjnych (error-correcting codes) [14, Sec. 2.2]. Wynika z niej, że $\{W^{(x)}_{\{1,k\}}:\ x\in\set{I}\}$ jest rodziną zbiorów parami rozłącznych.
+\end{proof}
+% \noindent
+% For $k=11$ we should be able to improve the result with the Gilbert-Varshamov bound, which bounds the largest number of disjoint Hamming balls of radius $1$. However, its proof relies on the probabilistic method and may not succeed for the sets $W_{\{1,k\}}$.
+\begin{remark}\label{rem:kule3}
+Istnieje przynajmniej $\lfloor\frac{k}{3}\rfloor$ rozłącznych podzbiorów $\set{X}=\{-1,+1\}$, które są izomorficzne do $W_{\{1,k-1\}}$.
+\end{remark}
+\begin{proof}
+Rozważmy tę samą rodzinę indeksów $\set{I}$, co w Lemacie~\ref{lem:kule2}. Tym razem każdy zbiór izomorficzny do $W_{\{1,k-1\}}$ można sprząc z jedną z $\lfloor\frac{k}{3}\rfloor$ par zbiorów indeksów $\{z, \{1,\ldots,k\}\setminus z\}$ for $z\in\set{I}'$, co kończy dowód.
+\end{proof}
+
+\begin{corollary}
+\leavevmode
+\makeatletter
+\@nobreaktrue
+\makeatother
+$$
+\tau_2 \leq T_{min}:=\min\{T_1,\ldots,T_{2\lfloor\frac{k}{3}\rfloor}\},
+$$
+gdzie $T_1,\ldots,T_{2\lfloor\frac{k}{3}\rfloor}$ są momentami zatrzymania dla pokrycia konkretnych $(k+1)$-elementowych podzbiorów $\set{X}$ w problemie zbieracza kuponów.
+\end{corollary}
+
+\begin{corollary}
+\leavevmode
+\makeatletter
+\@nobreaktrue
+\makeatother
+$$
+\tau_3 \leq T_{min}:=\min\{T_1,\ldots,T_{\lfloor\frac{k}{3}\rfloor}\},
+$$
+gdzie $T_1,\ldots,T_{\lfloor\frac{k}{3}\rfloor}$ są momentami zatrzymania dla pokrycia konkretnych $(2k)$-elementowych podzbiorów $\set{X}$ w problemie zbieracza kuponów.
+\end{corollary}
+
+% \begin{shaded*}
+% \begin{align*}
+% &\EE T_1 = H_{2^k} - H_{2^k-k-1}\ (\rm{przypadek\ dyskretny})\\
+% &\mathds{P}(T_1 \leq t)= (1 - e^{-\lambda t})^{k-1}\\
+% &\mathds{P}(T_{min}\leq t) = 1 - \mathds{P}(T_{min}> t) = 1-(1-(1 - e^{-\lambda t})^{k-1})^{2\lfloor\frac{k}{3}\rfloor}\ {\rm{(przypadek\ {\textrm{ciągły}})}}. 
+% \end{align*}
+% \end{shaded*}
+
+\noindent
+Dla dyskretnej wersji problemu zbieracza kuponów otzymujemy następujące wyniki:
+
+\noindent
+\begin{theorem}\label{thm:ising:cia}
+Niech $X_j$, $j=1,2,\ldots$, będą obserwacjami z rozkładu jednostajnego na zbiorze $\set{X}=\{-1,+1\}^k$. Wprowadźmy 
+$$
+\tau^*_2:={\rm{inf}}_{N\geq 1}(\{x_1,\ldots,x_N\}\ {\rm{jest\ jednoznaczno{\textrm{\'s}}ci\ dla\ }} \bkqp{k}{2})
+$$    
+oraz
+$$
+\tau^*_3:={\rm{inf}}_{N\geq 1}(\{x_1,\ldots,x_N\}\ {\rm{jest\ jednoznaczno{\textrm{\'s}}ci\ dla\ }} \bkqp{k}{2}).
+$$ 
+Wtedy
+$$
+\EE(\tau^*_2) \leq 2^k{H_{k+1}} = 2^k \left(\ln(k+1)+\gamma+\frac{1}{2k+2}+O\left(\frac{1}{k^2}\right)\right)
+$$
+oraz
+$$
+\EE(\tau^*_3) \leq 2^k{H_{2k}} = 2^k \left(\ln(k)+\ln(2)+\gamma+\frac{1}{4k}+O\left(\frac{1}{k^2}\right)\right).
+$$
+\end{theorem}
+\begin{proof}
+Podobnie jak w Twierdzeniu~\ref{thm:ising:cia}, wykorzystujemy Twierdzenie~\ref{thm:bound:ising}, na mocy którego istnieje $(k+1)$-elementowy zbiór jednoznaczności dla $\ising$ oraz $2k$-elementowy zbiór jednoznaczności dla $\bkqp{k}{3}$. Zatem liczba obserwacji potrzebnych do otrzymania zbioru jednoznaczności w rozważanych przypadkach nie przekracza liczby obserwacji potrzebnych do otrzymania konkretnych zbiorów o podanych wielkościach. Ich wartość oczekiwana jest równa
+$$
+\frac{2^k}{k+1} + \frac{2^k}{k} + \ldots + \frac{2^k}{1} = 2^k H_{k+1}
+$$
+dla $\ising$ oraz
+$$
+\frac{2^k}{2k} + \frac{2^k}{2k-1} + \ldots + \frac{2^k}{1} = 2^k H_{2k}
+$$
+dla $\bkqp{k}{3}$.
+\end{proof}
+
+\section{Model niejednorodny}\label{sec:funny}
+
+\noindent
+Ponownie jak poprzednio, niech $X=(\vareps_1,\ldots,\vareps_k)\in\{-1,+1\}^k$. W tym rozdziale przyjmuje się model, w którym każda współrzędna $i=1,\ldots,k$ przyjmuje wartość dodatnią z prawdopodobieństwem $p\in(0, 1)$ niezależnie od pozostałych.
+$$
+\mathds{P}(\vareps_i = +1) = p.
+$$
+\noindent
+Zauważmy, że w niniejszym modelu prawdopodobieństwo osiągnięcia każdego punktu zależy jedynie od liczby jego dodatnich współrzędnych.
+\subsection{Model dyskretny}
+\begin{corollary}
+$$
+\PP(X\in W_j) = \binom{k}{j} p^j (1-p)^{k-j}.
+$$
+Ponadto, każdy $x\in W_j$ wypada w pojedynczej obserwacji z prawdopodobieństwem
+$$
+\PP(X=x\ |\
+ x\in W_j) = p^j (1-p)^{k-j}.
+$$
+\end{corollary}
+
+\noindent
+Dzięki tej obserwacji można ująć problem zaobserwowania wszystkich punktów z danego zbioru wagowego $W_j$ w języku problemu zbieracza kuponów. 
+
+\begin{example}[Przypadek dyskretny]
+Żeby zaobserwować każdy z $\binom{k}{j}$ elementów zbioru wagowego $W_j$, potrzebne jest średnio $\binom{k}{j} H_{\binom{k}{j}}$ obserwacji elementu ze zbioru $W_j$. Ponadto, liczba obserwacji potrzebnych do trafienia w zbiór $W_j$ jest zmienną z rozkładu geometrycznego z prawdopodobieństwem sukcesu $\PP(X\in W_j)$, co daje wartość oczekiwaną równą $\frac{1}{\PP(X\in W_j)}$. Na mocy nierówności Walda dostajemy: 
+$$
+\EE(\tau_{W_j}) = \frac{H_{\binom{k}{j}}}{\PP(X=x\ |\
+ x\in W_j)} = H_{\binom{k}{j}}p^{-j}(1-p)^{j-k}.
+$$   
+\end{example}
+
+\noindent
+Poniżej podane są przykłady zbiorów wagowych, które będą szczególnie istotne w dalszych oszacowaniach dotyczących rodzin $\ising$ oraz $\bkqp{k}{3}$:
+
+\begin{corollary}
+\leavevmode
+\makeatletter
+\@nobreaktrue
+\makeatother
+\begin{enumerate}
+    \item $\EE \tau_{W_0} = (1-p)^{-k}$,
+    \item $\EE \tau_{W_1} = \frac{kH_k}{p(1-p)^{k-1}}$,
+    \item $\EE \tau_{W_{k-1}} = \frac{kH_k}{p^{k-1}(1-p)}$,
+    \item $\EE \tau_{W_k} = p^{-k}$.    
+\end{enumerate}
+\end{corollary}
+
+\noindent
+Dzięki temu, że zbiór $W_{\{1,k\}}$ jest jednoznaczności dla $\ising$, a zbiór $W_{\{1,k-1\}}$ jest jednoznaczności dla $\bkqp{k}{3}$, dostajemy następujące oszacowania na liczbę obserwacji potrzebnych do otrzymania zbioru jednoznaczności.
+\begin{remark}
+\leavevmode
+\makeatletter
+\@nobreaktrue
+\makeatother
+\begin{enumerate}
+\item $\tau^*_2 \leq \max\{\tau_{W_1},\tau_{W_k}\}$.
+\item $\tau^*_3 \leq \max\{\tau_{W_1},\tau_{W_{k-1}}\}$.
+\end{enumerate}
+Wynika stąd, że dla $p<\frac12$
+\begin{enumerate}
+\item $\EE(\tau^*_2) \leq \EE(\max\{\tau_{W_1},\tau_{W_k}\}) \approx \EE(\tau_{W_1}) = \frac{kH_k}{p(1-p)^{k-1}}$.
+\item $\EE(\tau^*_3) \leq \EE\left(\max\{\tau_{W_1},\tau_{W_{k-1}}\}\right)$.
+\end{enumerate}
+\end{remark}
+
+
+% \noindent
+% Dla przestrzeni $\bkqp{k}{1}$ generowanej przez funkcje Rademachera otrzymujemy następujące oszacowanie na liczbę obserwacji potrzebnych do otrzymania zbioru jednoznaczności.
+% \begin{remark}\label{rem:pnp1}
+% Niech $t\geq 2$. Wtedy
+% $$
+% \PP\left(\tau^*_1 \leq t\right) = \left( 1 - p^t - (1-p)^t \right)^k.
+% $$    
+% \end{remark}
+% \begin{proof}
+% Tak samo jak w 
+% \end{proof}
+
+% \begin{shaded*}
+% \noindent
+% To add the results on the variance for above sets and maybe the tail probabilities.
+% \end{shaded*}
+\subsection{Model ciągły}
+\noindent
+W przypadku, w którym każda obserwacja wypada zgodnie z procesem Poissona o intensywności $\lambda$, czas potrzebny do otrzymania każdego $x\in\set{X}$ ma rozkład wykładniczy z parametrem intensywności, który intensywność zależy od liczby dodatnich współrzędnych punktu $x$.
+\begin{proposition}
+Niech $x\in W_j$. Wtedy oczekiwany czas potrzebny do otrzymania $x$ ma rozkład
+$$
+T_x \sim \set{E}xp\left( {2^k \lambda}{p^j (1-p)^{k-j}} \right).
+$$
+\end{proposition}
+\noindent
+Wynika stąd, że oczekiwany czas potrzebny do zaobserwowania każdego punktu ze zbioru wagowego $W_j$ jest równy
+$$
+\EE(\tau_{W_j}) = \frac{p^{-j}(1-p)^{j-k}}{\lambda}H_{\binom{k}{j}},
+$$   
+co wynika z powyższego rozkładu oraz z nierówności Walda.
+
+
+\begin{corollary}
+\leavevmode
+\makeatletter
+\@nobreaktrue
+\makeatother
+\begin{enumerate}
+    \item $\EE \tau_{W_0} = \frac{1}{\lambda}(1-p)^{-k}$,
+    \item $\EE \tau_{W_1} = \frac{H_k}{\lambda p(1-p)^{k-1}}$,
+    \item $\EE \tau_{W_{k-1}} = \frac{H_k}{\lambda p^{k-1}(1-p)}$,
+    \item $\EE \tau_{W_k} = \frac{1}{\lambda}p^{-k}$,    
+\end{enumerate}
+\end{corollary}
+% \begin{shaded*}
+% \noindent
+% Przerobić powyższy wniosek na poprawny. Czyli przerobić $\lambda$.
+% \end{shaded*}
+
+
+\noindent
+Zauważmy, że zbiory wagowe są wzajemnie rozłączne, zatem ich obserwacje są wzajemnie niezależne. Dlatego czas potrzebny do zaobserwowania każdego punktu $x\in\set{X}$ jest zmienną losową o następującej dystrybuancie:
+$$
+\PP\left(\tau_{\set{X}}\leq t\right) = \prod\limits_{j=0}^{k} \PP\left(\tau_{W_j}\leq t\right).
+$$
+
+
+
+% \noindent
+% Funkcje Rademachera $\bkqp{k}{1}$, przypadek ciągły:\\
+% Tutaj wykorzystana zostanie nierówność Walda. Różnica z przypadkiem jednorodnym jest taka, że nie można już wybrać dowolnej pierwszej obserwacji bez straty ogólności w dalszym obliczaniu prawdopodobieństw. Dlatego $\alpha$ będzie maksimum z $k$ iid zmiennych z rozkładu geometrycznego $\set{G}eom(\frac{1}{p})$ oraz z pojedynczej zmiennej o rozkładzie $\set{G}eom(...)$
+% $$
+% ...
+% $$
+
+\noindent
+Podobnie, jak w przypadku dyskretnym, można zastosować następujące oszacowania dla $\ising$ oraz dla $\bkqp{k}{3}$:
+\begin{align*}
+&\tau^{(2)}_{uniq} \leq \max\{\tau_{W_1},\tau_{W_k}\}\\
+&\tau^{(3)}_{uniq} \leq \max\{\tau_{W_1},\tau_{W_{k-1}}\}.
+\end{align*}
+Wynika stąd, że dla $p<\frac12$ 
+\begin{enumerate}
+\item $\EE(\tau_2) \leq \EE(\max\{\tau_{W_1},\tau_{W_k}\}) \approx \EE(\tau_{W_1}) =  \frac{H_k}{\lambda p(1-p)^{k-1}}$.
+\item $\EE(\tau_3) \leq \EE\left(\max\{\tau_{W_1},\tau_{W_{k-1}}\}\right)$.
+\end{enumerate}
+
+
+%\bibliographystyle{abbrv}
+%\bibliography{mle}
+\begin{thebibliography}{99}
+
+\bibitem{BarndorffNielsen1978}
+O.~Barndorff-Nielsen.
+\newblock \emph{Information and exponential families in statistical theory}.
+\newblock John Wiley \& Sons Ltd., Chichester, 1978. Wiley Series in Probability and Mathematical Statistics.
+
+\bibitem{BlackwellGirshick1946}
+D.~Blackwell and M.~A. Girshick.
+\newblock On functions of sequences of independent chance vectors with applications to the problem of the “random walk” in k dimensions.
+\newblock \emph{Ann. Math. Statistics}, 17:310--317, 1946.
+
+\bibitem{BogdanBosySkalski2022}
+K.~Bogdan, M.~Bosy, and T.~Skalski.
+\newblock Maximum likelihood estimation for discrete exponential families and random graphs.
+\newblock \emph{ALEA Lat. Am. J. Probab. Math. Stat.}, 19(1):1045--1070, 2022.
+
+\bibitem{Eisenberg2008}
+B.~Eisenberg.
+\newblock On the expectation of the maximum of IID geometric random variables.
+\newblock \emph{Statist. Probab. Lett.}, 78(2):135--143, 2008.
+
+\bibitem{FerranteSaltalamacchia1812}
+M.~Ferrante and M.~Saltalamacchia.
+\newblock \emph{Théorie analytique des probabilités}, 1812.
+
+\bibitem{FienbergRinaldo2007}
+S.~E. Fienberg and A.~Rinaldo.
+\newblock Three centuries of categorical data analysis: log-linear models and maximum likelihood estimation.
+\newblock \emph{J. Statist. Plann. Inference}, 137(11):3430--3445, 2007.
+
+\bibitem{GrahamHarary1993}
+N.~Graham, F.~Harary, M.~Livingston, and Q.~F. Stout.
+\newblock Subcube fault-tolerance in hypercubes.
+\newblock \emph{Inform. and Comput.}, 102(2):280--314, 1993.
+
+\bibitem{IwanikMisiewicz2015}
+A.~Iwanik and J.~K. Misiewicz.
+\newblock \emph{Wykłady z procesów stochastycznych z zadaniami. Część pierwsza: Procesy Markowa}.
+\newblock SCRIPT, Warszawa, 2015.
+
+\bibitem{KleitmanSpencer1973}
+D.~J. Kleitman and J.~Spencer.
+\newblock Families of k-independent sets.
+\newblock \emph{Discrete Math.}, 6:255--262, 1973.
+
+\bibitem{KoronackiMielniczuk2001}
+J.~Koronacki and J.~Mielniczuk.
+\newblock \emph{Statystyka dla studentów kierunków technicznych i przyrodniczych}.
+\newblock Wydawnictwa Naukowo-Techniczne, Warszawa, 2001, 2006.
+
+\bibitem{Laplace1812}
+P.~Laplace.
+\newblock \emph{Théorie analytique des probabilités}.
+\newblock Courcier, Paris, 1812.
+
+\bibitem{LehmannCasella1998}
+E.~L. Lehmann and G.~Casella.
+\newblock \emph{Theory of point estimation}.
+\newblock Springer Texts in Statistics. Springer-Verlag, New York, 2nd edition, 1998.
+
+\bibitem{SkalskiStroinski2025}
+T.~Skalski and T.~Stroiński.
+\newblock Level sets and maximum likelihood estimation for the ising model, 2025.
+\newblock \emph{arXiv}:\url{ https://arxiv.org/abs/2511.20925.}.
+
+\bibitem{vanLint1971}
+J.~H. van Lint.
+\newblock \emph{Coding theory}.
+\newblock Lecture Notes in Mathematics, Vol. 201. Springer-Verlag, Berlin–New York, 1971.
+
+\bibitem{WainwrightJordan2008}
+M.~J. Wainwright and M.~I. Jordan.
+\newblock \emph{Graphical Models, Exponential Families, and Variational Inference}, volume~1.
+\newblock Foundations and Trends in Machine Learning, 2008.
+
+\bibitem{Wald1944}
+A.~Wald.
+\newblock On cumulative sums of random variables.
+\newblock \emph{Ann. Math. Statistics}, 15:283--296, 1944.
+
+\end{thebibliography}

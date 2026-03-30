@@ -1,0 +1,864 @@
+\chapterauthor{Lech Tuzinkiewicz}
+\chapter[Projektowanie baz \ldots]{Projektowanie baz danych sterowane jakością}
+\thispagestyle{empty}
+\vspace{-8mm} {\large Lech Tuzinkiewicz} \vspace{8mm}
+
+% chapter_projektowanie.tex
+
+
+\section{Wprowadzenie}
+
+Obecnie działalność naukowa i gospodarka zdominowane są przez procesy cyfryzacji i~transformacji. Na naszych oczach dokonuje się fundamentalna zmiana paradygmatu danych, przy czym paradygmat należy rozumieć jako koncepcję, perspektywę lub zbiór idei, które wpływają na sposób rozumienia i interpretacji wycinka rzeczywistości w określonej dziedzinie. W tym kontekście dane, które jeszcze kilkanaście lat temu traktowano jako element działalności operacyjnej, obecnie uważane są za produkt o znacznej wartości i mający ogromne znaczenie w kształtowaniu strategii konkurencyjnej. Dane nie są już jedynie zasobem gromadzonym w bazach danych i wykorzystywanym w operacjach biznesowych, ale stanowią zarówno źródło pozyskiwania informacji, jak i istotny zasób majątkowy, czyli walor w postaci aktywu o znaczeniu często przewyższającym tradycyjne aktywa materialne, takie jak środki trwałe czy kapitał finansowy. Aktualnie również uważa się, że dane można postrzegać jako najcenniejszy aktyw we współczesnym świecie.
+
+W erze sztucznej inteligencji i uczenia maszynowego, jakościowo dobre dane mają istotne znaczenie dla osób oraz systemów informatycznych wykorzystywanych w~podejmowaniu decyzji strategicznych w oparciu o analitykę. Znaczenie jakości danych w kontekście ich wartości jest absolutnie fundamentalne. Wyraża się to między innymi powszechnym stwierdzeniem w postaci GIGO, tzn.\ \emph{Garbage In, Garbage Out}, czyli jakość podejmowanych decyzji odpowiada jakości danych, które w danym procesie są wykorzystywane. Podsumowując, jakość danych ma wpływ na decyzje biznesowe oraz modele AI i tym samym mogą być one tylko tak dobre, jak dane, na których się opierają.
+
+Dane gromadzone są w różnych bazach danych (np.\ relacyjnych, NoSQL, dokumentowych itd.), a proces ich projektowania musi uwzględniać aspekt oceny jakości danych, które mają być gromadzone i udostępniane w trakcie realizacji procesów biznesowych.
+
+W dalszej części rozdziału zostanie przedstawiony krótki przegląd literatury obejmujący wybrane aspekty oceny jakościowej procesu projektowania baz danych oraz przykładowe modele jakości mające zastosowanie w tym procesie.
+
+\section{Przegląd literatury}
+
+Projektowanie baz danych jest procesem wieloetapowym, obejmującym tworzenie modeli konceptualnych, logicznych i fizycznych. Jakość tych modeli ma kluczowe znaczenie dla poprawnego działania systemów informatycznych, ponieważ błędy popełnione na etapie projektowania skutkują kosztownymi problemami w implementacji i utrzymaniu. Literatura podkreśla, że ocena jakości powinna być prowadzona iteracyjnie na każdym etapie projektowania, a nie dopiero po wdrożeniu systemu \cite{Dubielewicz2007SPoQE,ISO25012}.
+
+Badania nad jakością modeli danych i baz danych prowadzone są od wielu lat, a ich znaczenie rośnie wraz ze wzrostem roli danych w procesach informatycznych i biznesowych. W literaturze można wyróżnić kilka głównych nurtów badań.
+
+\subsection{Modele jakości danych i ich podstawy normatywne}
+
+Podstawowym punktem odniesienia dla oceny jakości danych są standardy ISO/IEC, w szczególności model jakości danych ISO/IEC 25012:2014 \cite{ISO25012}, który definiuje zestaw charakterystyk jakościowych odnoszących się zarówno do jakości wewnętrznej, jak i zewnętrznej produktu programistycznego. Model ten jest szeroko stosowany w procesach specyfikacji wymagań oraz ewaluacji jakości.
+
+\subsection{Metryki jakości modeli danych}
+
+Gosain w pracy \cite{Gosain2015} przedstawił przegląd metryk jakości modeli danych, wskazując potrzebę ich systematyzacji i dostosowania do praktyki projektowej. Heinrich wraz z zespołem \cite{Heinrich2018} zaproponowali wymagania wobec metryk jakości danych, podkreślając konieczność ich jednoznaczności i powtarzalności. Natomiast Helskyaho i~współautorzy \cite{Helskyaho2024} rozwinęli te zagadnienia w~kontekście Data Vault 2.0, definiując zestaw metryk jakościowych dla tego podejścia.
+
+\subsection{Jakość schematów baz danych}
+
+Sharma i współautorzy \cite{Sharma2018} skupili się na problemie tzw.\ \emph{schema smells}, czyli defektów w~schematach baz danych, które mogą obniżać ich jakość i~utrudniać dalszy rozwój systemu. Podobne zagadnienia były podejmowane w pracach \cite{Kedzia2011,Tuzinkiewicz2013}, gdzie autorzy analizowali kryteria oceny jakości baz danych w kontekście praktycznych zastosowań.
+
+\subsection{Model-Driven Architecture (MDA) jako podstawa projektowania baz danych}
+
+Literatura jednoznacznie wskazuje na zastosowanie podejścia MDA do strukturyzacji procesu projektowania baz danych \cite{Dubielewicz2007Eval,Quad2010,Tuzinkiewicz2013}. MDA dzieli proces wytwarzania oprogramowania na transformacje między modelami:
+
+\begin{itemize}
+  \item \textbf{Model konceptualny (PIM -- Platform Independent Model):} Odpowiednik pierwszego etapu, niezależny od technologii. Obejmuje semantyczną zgodność z~dziedziną problemu i poprawność składniową (np.\ zgodność z~notacją ERD/UML).
+  \item \textbf{Model logiczny (PSM 1 -- Platform Specific Model 1):} Otrzymywany przez zastosowanie reguł transformacji z modelu PIM. Ten etap wymaga oceny jakości, ponieważ to na nim podejmowane są decyzje rzutujące na wydajność i utrzymanie. Autorzy \cite{Dubielewicz2007Eval} podkreślają, że wybór najlepszego modelu logicznego (z wielu możliwych) powinien opierać się na kryteriach jakościowych, takich jak wydajność czy łatwość utrzymania.
+  \item \textbf{Model fizyczny (PSM 2):} Finalny artefakt, gotowy do implementacji w~konkretnym środowisku bazodanowym, który jest produktem końcowym wymagającym oceny jakościowej \cite{Kedzia2011}.
+\end{itemize}
+
+Zasady modelowania danych w kontekście MDA oraz identyfikacja kluczowych artefaktów towarzyszących procesowi są szeroko omawiane m.in.  w~\cite{Tuzinkiewicz2013}.
+
+\subsection{Metodyki oceny jakości modeli MDA}
+
+Ważnym nurtem badań są prace dotyczące oceny jakości modeli baz danych w~podejściu MDA. Autorzy w pracy \cite{Dubielewicz2007Eval} opisali opracowaną metodykę QUAD oraz przedstawili przykłady oceny jakości modeli fizycznych powstałych w wyniku transformacji modeli konceptualnych. Wskazali oni, że ocena jakości powinna uwzględniać zarówno wymagania funkcjonalne, jak i niefunkcjonalne.
+
+\subsection{Zarządzanie wymaganiami jakościowymi}
+
+GuerraGarcía i współautorzy \cite{GuerraGarcia2023} zaproponowali metodykę opartą na ISO/IEC 25012 \cite{ISO25012}, która wspiera zarządzanie wymaganiami jakościowymi w~procesach projektowych. Ich podejście łączy perspektywę normatywną z~praktycznymi narzędziami oceny.
+
+\medskip
+
+Podsumowując, analiza literatury wskazuje, że problematyka jakości danych i~modeli danych jest szeroko dyskutowana zarówno w kontekście norm ISO, jak i~praktycznych metryk oraz metod oceny jakości. Istnieje wyraźna tendencja do wykorzystania teoretycznego podejścia (modele jakości, standardy) w praktycznych zastosowaniach. Wnioski z~dotychczasowych badań podkreślają potrzebę dalszej integracji tych podejść, aby zapewnić spójne i~powtarzalne metody oceny jakości baz danych jako produktów końcowych.
+
+\section{Model jakości projektowania baz danych}
+
+Ocena jakości projektowania baz danych łączy perspektywę inżynierii oprogramowania (modele jakości, zgodność ze standardami) z perspektywą bazodanową (normalizacja, integralność, wydajność i utrzymanie). W tym zakresie ma zastosowanie norma jakości SQuaRE (Software Quality Requirements and Evaluation), która jest serią międzynarodowych standardów dotyczących jakości oprogramowania i składa się z sekcji odpowiadających etapom cyklu życia produktu informatycznego:
+
+\begin{itemize}
+  \item \textbf{Modele jakości} (np.\ ISO/IEC 25010/25012) -- definiują zbiór charakterystyk i~podcharakterystyk, które opisują kontekst oceny jakościowej. Perspektywa oceny obejmuje:
+  \begin{itemize}
+    \item \emph{Jakość w użytkowaniu (Quality in Use)} -- ocena z punktu widzenia użytkownika produktu,
+    \item \emph{Model jakości (Product Quality Model)} -- opisuje wewnętrzne i~zewnętrzne właściwości ocenianego produktu/artefaktu.
+  \end{itemize}
+  \item \textbf{Metryki jakości} (np.\ ISO/IEC 25020) -- definiują metryki do pomiaru każdej z~charakterystyk zdefiniowanych w modelu, np.\ „wydajność” poprzez metrykę \emph{czas wykonania zapytania}.
+  \item \textbf{Wymagania jakości} (np.\ ISO/IEC 25030) -- przedstawiają zasady definiowania i specyfikowania wymagań jakościowych dla produktu (oprogramowania, bazy danych) na etapie zamawiania i późniejszego rozwoju.
+  \item \textbf{Ocena jakości} (np.\ ISO/IEC 25040) -- definiuje proces przeprowadzenia oceny jakości produktu na podstawie zdefiniowanych wymagań i metryk.
+  \item \textbf{Dokumentacja oceny} (np.\ ISO/IEC 25041) -- dostarcza szablonów i wymagań dotyczących dokumentowania procesu oceny i jego wyników.
+\end{itemize}
+
+Analizując możliwości wykorzystania tej normy do oceny procesu projektowania baz danych, warto przyjrzeć się normie ISO/IEC 25010/25012, która jest podstawowym elementem specyfikacji zakresu oceny jakości produktu, definiując osiem podstawowych charakterystyk:
+
+\begin{itemize}
+  \item funkcjonalność (functional suitability),
+  \item niezawodność (reliability),
+  \item wydajność (performance efficiency),
+  \item użyteczność (usability),
+  \item bezpieczeństwo (security),
+  \item kompatybilność (compatibility),
+  \item łatwość utrzymania (maintainability),
+  \item przenośność (portability).
+\end{itemize}
+
+Normę jakości należy traktować jako zalecenie/podstawę do zdefiniowania sposobu i~zakresu oceny jakości procesu i/lub produktu, wybierając jedynie odpowiednie charakterystyki jakości do rozpatrywanej dziedziny. Opracowując model jakości oceny procesu projektowania baz danych, można wykorzystać strukturę charakterystyk jakości i metody pomiaru, dostosowując je do specyfiki projektowania baz danych.
+
+W tabeli~\ref{tab:iso25000-stages} przedstawiono główne etapy projektowania baz danych wraz z~charakterystykami ISO/IEC 25000 (SQuaRE) oraz przykładowymi miarami i~wagami.
+
+
+\renewcommand{\arraystretch}{0.9} % giảm chiều cao dòng ~10%
+\begin{table}[!ht]
+  \centering
+  \caption{Charakterystyki ISO/IEC 25000, miary i wagi w kontekście etapów projektowania baz danych}
+  \label{tab:iso25000-stages}
+  \scriptsize
+  \begin{tabularx}{\textwidth}{LLp{5cm}c}
+    \toprule
+    \textbf{Etap} & \textbf{Charakterystyka (ISO/IEC 25012)} & \textbf{Przykładowa miara} & \textbf{Waga} \\
+    \midrule
+    Opis rzeczywistości &
+    Funkcjonalność &
+    \% wymagań zidentyfikowanych &
+    0.40 \\
+    &
+    Niezawodność &
+    Liczba sprzecznych reguł biznesowych &
+    0.20 \\
+    Model konceptualny (UML) &
+    Funkcjonalność &
+    \% klas odwzorowujących wymagania &
+    0.30 \\
+    &
+    Użyteczność &
+    Ocena czytelności diagramu (skala 1--5) &
+    0.20 \\
+    &
+    Niezawodność &
+    Liczba konfliktów w modelu &
+    0.20 \\
+    % \hline
+    Model logiczny (SQL) &
+    Kompatybilność &
+    \% tabel odpowiadających klasom UML &
+    0.40 \\
+    &
+    Łatwość utrzymania &
+    Liczba zależności między tabelami &
+    0.30 \\
+    Implementacja fizyczna (DBMS) &
+    Wydajność &
+    Średni czas wykonania zapytań (ms) &
+    0.30 \\
+    &
+    Bezpieczeństwo &
+    Implementacja mechanizmów kontroli dostępu (np.\ role, uprawnienia) &
+    0.20 \\
+    Testowanie i walidacja &
+    Niezawodność &
+    \% przypadków testowych zakończonych sukcesem &
+    0.40 \\
+    &
+    Funkcjonalność &
+    Liczba niespełnionych reguł &
+    0.30 \\
+    &
+    Bezpieczeństwo &
+    Liczba nieautoryzowanych dostępów &
+    -- \\
+    Optymalizacja indeksów &
+    Wydajność &
+    Poprawa czasu odpowiedzi po optymalizacji (\%) &
+    0.40 \\
+    &
+    Łatwość utrzymania &
+    Liczba błędów w strukturze indeksów &
+    0.30 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+
+
+Analizując propozycję modelu jakości określonego w tabeli~\ref{tab:iso25000-stages}, można zauważyć, że wiele elementów istotnych w kontekście projektowania baz danych nie ma swojego odzwierciedlenia w powiązaniu etapów projektowania oraz przypisanych do nich charakterystyk jakościowych i metryk.
+
+Próba dopasowania modelu jakości do założonego celu wiąże się z modyfikacją zbioru charakterystyk oraz miar. Efekt tego typu działania przedstawia zawartość tabeli~\ref{tab:quality-perspective-mod}. Dodatkowe charakterystyki zostały wyróżnione w opisie i stanowią uzupełnienie poprzedniego modelu.
+
+\begin{table}[!ht]
+  \centering
+  \caption{Przykładowa modyfikacja perspektywy modelu oceny jakościowej}
+  \label{tab:quality-perspective-mod}
+  \scriptsize
+  \begin{tabularx}{\textwidth}{Lp{6cm}L}
+    \toprule
+    \textbf{Charakterystyka} & \textbf{Opis} & \textbf{Przykładowa miara} \\
+    \midrule
+    Dokładność &
+    Stopień, w jakim dane poprawnie odzwierciedlają wartości rzeczywiste &
+    Wskaźnik błędów w danych (\%) \\
+    Kompletność &
+    Kompletność atrybutów i ich wartości &
+    Procent brakujących wartości \\
+    Spójność &
+    Brak sprzeczności w danych &
+    Liczba niespójnych rekordów \\
+    Wiarygodność (źródła) &
+    Stopień zaufania do źródła danych &
+    Ocena wiarygodności źródła (skala 1--5) \\
+    Interpretowalność / użyteczność &
+    Łatwość rozumienia i interpretacji danych &
+    Ocena interpretowalności (skala 1--5) \\
+    Pochodzenie danych (data lineage) &
+    Możliwość prześledzenia pochodzenia danych &
+    Procent danych z pełnymi metadanymi \\
+    Zgodność regulacyjna &
+    Zgodność z wymogami prawnymi i regulacyjnymi &
+    Liczba naruszeń regulacyjnych \\
+    Bezpieczeństwo &
+    Ochrona przed nieautoryzowanym dostępem &
+    Liczba incydentów bezpieczeństwa \\
+    Integralność danych &
+    Ochrona integralności i poufności danych &
+    Liczba naruszeń integralności \\
+    Przenośność &
+    Łatwość przenoszenia danych między systemami &
+    Czas wymagany na migrację danych \\
+    Łatwość utrzymania &
+    Możliwość przywrócenia danych po awarii &
+    Średni czas odzyskiwania danych \\
+    Aktualność &
+    Świeżość danych względem czasu użycia &
+    Średni interwał odświeżania danych \\
+    Wydajność &
+    Łatwość uzyskania danych z systemu &
+    Średni czas dostępu do danych; czas działania systemu \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Dokładna analiza modelu jakości przedstawionego w tabeli~\ref{tab:quality-perspective-mod} jest bliższa celowi, ale w dalszym ciągu nie uwzględnia specyfiki projektowania baz danych. Zatem przystępując do opracowania modelu jakości, należy określić perspektywę oceny, tzn.\ przedstawić kluczowe elementy mające wpływ na jakość projektowanego artefaktu. Z punktu widzenia projektowania baz danych możemy rozpatrywać następujące elementy:
+
+\begin{itemize}
+  \item \textbf{Jakość opisu wycinka rzeczywistości i wymagań biznesowych}
+  \begin{itemize}
+    \item Czy opis wycinka rzeczywistości jest kompletny i interpretowalny (zrozumiały) przez uczestników procesu projektowania?
+    \item Czy można uzyskać odpowiedzi na pytania „DLACZEGO?” i~„JAKI JEST CEL PRZEDSIĘWZIĘCIA?”.
+    \item Czy podstawowe pojęcia biznesowe są poprawnie zdefiniowane w~słowniku (np.\ „Zamówienie”, „Produkt”)?
+    \item Czy zdefiniowano klasy obiektów dziedziny wraz z atrybutami, których wartości gwarantują rozróżnialność obiektów?
+    \item Czy zdefiniowano reguły biznesowe i ograniczenia dziedzinowe?
+    \item Czy uwzględniono planowane modyfikacje modelu danych w bliskiej perspektywie czasowej (w przeciągu 2--3 lat)?
+  \end{itemize}
+  \item \textbf{Kryteria transformacji konceptualnego modelu danych w środowisku SQL}
+  \begin{itemize}
+    \item Czy klasy (encje) reprezentują obiekty dziedziny przedmiotowej?
+    \item Czy relacje pomiędzy obiektami klas (asocjacje) oraz liczności końców asocjacji wynikają z reguł biznesowych?
+    \item Czy klasy asocjacyjne zawierają tylko atrybuty charakteryzujące związek między obiektami?
+    \item Czy atrybuty klas wynikają z definicji obiektów wycinka rzeczywistości i~umożliwiają realizację wymagań funkcjonalnych?
+  \end{itemize}
+  \item \textbf{Kryteria związane z zarządzaniem jakością danych (Data Governance, Quality by Design)}
+  \begin{itemize}
+    \item Czy definicje i domyślne wartości pól są zgodne z biznesowymi regułami walidacji?
+    \item Czy poprawność danych wymuszona jest na poziomie schematu bazy danych poprzez definicję kluczy głównych i obcych, unikalnych indeksów, typów danych, ograniczeń \texttt{CHECK}, \texttt{NOT NULL}?
+    \item Czy model zawiera metadane?
+    \item Czy dostępność danych zdefiniowana jest na poziomie schematu bazy danych?
+    \item Czy uwzględniono mechanizmy kontroli dostępu?
+    \item Czy dane wrażliwe są logicznie oddzielone?
+    \item Czy określono, które tabele przechowują dane wrażliwe (kluczowe dla bezpieczeństwa i RODO)?
+    \item Czy uwzględniono szyfrowanie kolumn lub tabel z danymi poufnymi?
+    \item Czy możliwe jest śledzenie, skąd dane pochodzą i jak są przetwarzane (data lineage)?
+    \item Czy transakcje gwarantują spójność? Czy ograniczenia integralności zapobiegają pojawianiu się „osieroconych” rekordów?
+    \item Czy model danych minimalizuje redundancję poprzez odpowiedni poziom normalizacji i zapobiega powstawaniu niespójności, gdy ta sama informacja jest przechowywana w wielu miejscach?
+  \end{itemize}
+  \item \textbf{Kryteria związane z wydajnością i dostępnością (Performance by Design)}
+  \begin{itemize}
+    \item Czy tabele, które będą często łączone, mają zdefiniowane odpowiednie klucze i indeksy?
+    \item Czy wybór typów danych jest zgodny z własnościami atrybutów obiektów świata rzeczywistego?
+  \end{itemize}
+\end{itemize}
+
+\section{Model jakości -- przykład konstrukcji}
+
+Podsumowując wcześniejsze rozważania dotyczące możliwości oceny jakości procesu projektowania bazy danych, można --- bazując na wnioskach z~przeprowadzonej analizy --- zaproponować model porównawczej oceny procesu projektowania baz danych, który łączy kolejne etapy tego procesu, od opisu rzeczywistości do testowania implementacji bazy danych w środowisku SQL. Poniżej zostały określone podstawowe etapy podlegające ocenie jakościowej w procesie projektowania baz danych:
+
+\begin{enumerate}
+  \item \textbf{Opis wycinka rzeczywistości (etap analityczny)} \\
+  Wejście: narracyjny opis dziedziny lub przypadków użycia. \\
+  Wyjście: zbiór pojęć, relacji, reguł biznesowych i ograniczeń dziedzinowych. \\
+  Cel: uchwycenie istotnych bytów i zależności.
+  \item \textbf{Model konceptualny (np.\ diagram klas UML)} \\
+  Wejście: zidentyfikowane pojęcia, relacje, reguły i ograniczenia. \\
+  Wyjście: diagram klas UML (z atrybutami, asocjacjami, dziedziczeniem). \\
+  Cel: formalizacja pojęć w modelu niezależnym od technologii.
+  \item \textbf{Model logiczny i fizyczny (implementacja SQL)} \\
+  Wejście: diagram klas lub model logiczny. \\
+  Wyjście: schemat relacyjny, tabele, klucze, ograniczenia, widoki. \\
+  Cel: odwzorowanie modelu konceptualnego w SQL.
+  \item \textbf{Testowanie i walidacja} \\
+  Wejście: implementacja + zestaw przypadków testowych (danych). \\
+  Wyjście: wyniki testów, ocena zgodności z wymaganiami i semantyką. \\
+  Cel: sprawdzenie poprawności, spójności i jakości danych.
+\end{enumerate}
+
+Dla każdego etapu zostały określone charakterystyki oraz przykładowe miary jakości (tabela~\ref{tab:etapy-char-miary}).
+
+\begin{table}[!ht]
+  \centering
+  \caption{Charakterystyki oraz przykładowe miary oceny jakości etapów projektowania}
+  \label{tab:etapy-char-miary}
+  \scriptsize
+  \begin{tabularx}{\textwidth}{LLp{5cm}}
+    \toprule
+    \textbf{Etap} & \textbf{Charakterystyki} & \textbf{Przykładowe miary} \\
+    \midrule
+    Opis rzeczywistości &
+    Pełność, spójność pojęciowa, jednoznaczność &
+    Liczba zidentyfikowanych bytów w stosunku do oczekiwanych; liczba sprzeczności lub niejednoznacznych definicji \\
+    % \hline
+    Model konceptualny (diagram klas UML) &
+    Poprawność semantyczna, złożoność modelu, pokrycie pojęć &
+    Liczba klas/asocjacji; wskaźnik pokrycia pojęć (\%); liczba błędnych relacji (np.\ asocjacji bez ról) \\
+    % \hline
+    Model logiczny (SQL) &
+    Zgodność z modelem UML, normalizacja, złożoność implementacji &
+    Miary zgodności (mapowanie klas$\rightarrow$tabel, asocjacji$\rightarrow$FK); poziom normalizacji (np.\ \% tabel w 3NF); liczba obiektów SQL \\
+    % \hline
+    Testowanie &
+    Zgodność wyników z oczekiwaniami, wydajność, spójność danych &
+    Liczba błędnych wyników; czas uzyskania danych z bazy danych \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Zaproponowane charakterystyki stanowią zarys modelu oceny jakości procesu projektowania baz danych. Ocena końcowa jakości $Q$ jest wyrażona za pomocą funkcji agregującej oceny cząstkowe dla każdego etapu:
+\begin{equation}
+  Q = f(Q_{\mathrm{opis}}, Q_{\mathrm{UML}}, Q_{\mathrm{SQL}}, Q_{\mathrm{test}}),
+\end{equation}
+gdzie:
+\begin{itemize}
+  \item $Q_{\mathrm{opis}}$ -- jakość opisu rzeczywistości,
+  \item $Q_{\mathrm{UML}}$ -- jakość modelu UML,
+  \item $Q_{\mathrm{SQL}}$ -- jakość schematu SQL,
+  \item $Q_{\mathrm{test}}$ -- jakość testowania,
+  \item wagi etapów spełniają warunek: suma wag $=1$.
+\end{itemize}
+
+Dla każdego etapu procesu projektowania należy przeprowadzić jakościową ocenę tworzonych artefaktów, biorąc pod uwagę charakterystyki, miary i sposób ich interpretacji.
+
+\subsection*{Etap 1: Opis wycinka rzeczywistości}
+
+\subsubsection*{Cel etapu}
+
+Przygotowanie zrozumiałego i kompletnego opisu dziedziny problemowej, który stanowi punkt wyjścia do modelowania konceptualnego danych i obejmuje:
+\begin{itemize}
+  \item identyfikację bytów świata rzeczywistego (encji),
+  \item ich cechy (atrybuty),
+  \item relacje i ograniczenia dziedzinowe,
+  \item reguły biznesowe określające dopuszczalne stany i operacje.
+\end{itemize}
+
+Opis może mieć formę:
+\begin{itemize}
+  \item narracyjną (tekstową),
+  \item zestawu przypadków użycia,
+  \item dokumentacji wymagań,
+  \item scenariuszy procesów biznesowych.
+\end{itemize}
+
+Główne charakterystyki jakości opisu rzeczywistości zostały przedstawione w~tabeli~\ref{tab:opis-char}.
+
+\begin{table}[!ht]
+  \centering
+  \caption{Charakterystyki jakości opisu rzeczywistości}
+  \label{tab:opis-char}
+  \scriptsize
+  \begin{tabularx}{\textwidth}{cLLp{5cm}}
+    \toprule
+    \textbf{Nr} & \textbf{Charakterystyka} & \textbf{Znaczenie} & \textbf{Przykład} \\
+    \midrule
+    O1 &
+    Pełność bytów i atrybutów &
+    Czy opis identyfikuje wszystkie istotne obiekty oraz ich cechy. &
+    Opis zawiera byty: Klient, Zamówienie, Produkt oraz ich atrybuty, np.\ „nazwa”, „cena”. \\
+    % \hline
+    O2 &
+    Identyfikowalność bytów &
+    Czy każdy byt ma naturalny identyfikatór jednoznacznie rozróżniający obiekty. &
+    Klient: PESEL lub e-mail; Produkt: kod EAN. \\
+    % \hline
+    O3 &
+    Reguły biznesowe &
+    Czy opis zawiera zdefiniowane reguły określające poprawne stany, relacje i ograniczenia. &
+    „Każde zamówienie musi mieć co najmniej jeden produkt”; „Cena nie może być ujemna”. \\
+    % \hline
+    O4 &
+    Ograniczenia dziedzinowe &
+    Czy wartości atrybutów są ograniczone zgodnie z dziedziną (zakresy, typy, dopuszczalne wartości). &
+    Wiek 0--120, status: \{„aktywne”, „zawieszone”\}. \\
+    % \hline
+    O5 &
+    Spójność i jednoznaczność &
+    Czy opis nie zawiera sprzecznych lub niejasnych reguł i terminów. &
+    Brak sprzecznych założeń typu: „Klient może mieć jedno zamówienie” vs „Klient może mieć wiele zamówień”. \\
+    % \hline
+    O6 &
+    Strukturalność i czytelność &
+    Czy opis ma uporządkowaną formę i jest zrozumiały. &
+    Użyto sekcji, glosariusza, przypadków użycia. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+
+
+
+
+W tabeli~\ref{tab:opis-metryki} zostały zaproponowane miary jakości dotyczące etapu charakterystyki dziedziny przedmiotowej.
+
+\begin{table}[!ht]
+  \centering
+  \caption{Przykładowe miary jakości (metryki) dla etapu opisu rzeczywistości}
+  \label{tab:opis-metryki}
+  \scriptsize
+  \begin{tabularx}{\textwidth}{cLp{5cm}C}
+    \toprule
+    \textbf{Kod} & \textbf{Miara} & \textbf{Opis pomiaru} & \textbf{Zakres / interpretacja} \\
+    \midrule
+    M1 &
+    Wskaźnik pełności bytów &
+    Liczba bytów zidentyfikowanych / liczba bytów oczekiwanych &
+    0--1 \\
+    % \hline
+    M2 &
+    Wskaźnik identyfikowalności &
+    Liczba bytów z określonym naturalnym identyfikatorem / liczba wszystkich bytów &
+    0--1 \\
+    % \hline
+    M3 &
+    Wskaźnik pokrycia reguł biznesowych &
+    Liczba reguł opisanych / liczba reguł oczekiwanych (np.\ na podstawie specyfikacji domeny) &
+    0--1 \\
+    % \hline
+    M4 &
+    Wskaźnik określenia ograniczeń dziedzinowych &
+    Liczba atrybutów z określoną dziedziną wartości / liczba wszystkich atrybutów &
+    0--1 \\
+    % \hline
+    M5 &
+    Wskaźnik spójności semantycznej &
+    Liczba sprzeczności lub niejednoznaczności / liczba elementów (przeliczany na 1$-\frac{\text{błędy}}{\text{liczba elementów}}$) &
+    0--1 \\
+    % \hline
+    M6 &
+    Zrozumiałość i strukturalność &
+    Ocena ekspercka (skala 1--5) lub automatyczna analiza struktury (znormalizowana) &
+    0--1 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+
+Funkcja oceny jakości etapu reprezentowana jest w postaci wyrażenia:
+\begin{equation}
+  Q_{\mathrm{opis}} = g(w_1 M1, w_2 M2, \dots, w_6 M6),
+\end{equation}
+gdzie $w_i$ stanowią propozycję wartości wag poszczególnych miar (np.\ $w_1 = \dots = w_6 = \frac{1}{6}$), a wynik $Q_{\mathrm{opis}}$ reprezentuje jakość semantyczną opisu dziedziny.
+
+Wartość funkcji oceny można interpretować w kontekście przykładowych wartości progowych:
+\begin{itemize}
+  \item $Q_{\mathrm{opis}} \ge 0.85$: opis kompletny, jednoznaczny, dobrze ustrukturyzowany;
+  \item $0.70 \le Q_{\mathrm{opis}} < 0.85$: część pojęć brak lub niejasne zależności;
+  \item $Q_{\mathrm{opis}} < 0.70$: opis wymaga poważnej rekonstrukcji przed modelowaniem UML.
+\end{itemize}
+
+\subsection*{Etap 2: Model konceptualny (diagram klas UML/ERD)}
+
+\subsubsection*{Cel etapu}
+
+Zbudowanie formalnego, spójnego i wystarczająco szczegółowego modelu pojęciowego, który wiernie odwzorowuje rzeczywistość, a zarazem może być podstawą zdefiniowania modelu logicznego bazy danych SQL. Model powinien zagwarantować:
+\begin{itemize}
+  \item poprawne odwzorowanie pojęć i reguł z etapu 1,
+  \item zawieranie klas z określonymi atrybutami i naturalnymi identyfikatorami,
+  \item uwzględnienie ograniczeń dziedzinowych i reguł biznesowych w strukturze diagramu klas UML (asocjacje, liczności, OCL itp.).
+\end{itemize}
+
+Wybrane charakterystyki zostały przedstawione w tabeli~\ref{tab:uml-char}.
+
+\begin{table}[!ht]
+  \centering
+  \caption{Główne charakterystyki w kontekście oceny jakości modelu UML}
+  \label{tab:uml-char}
+  \scriptsize
+  \begin{tabularx}{\textwidth}{cLp{4cm}p{4cm}}
+    \toprule
+    \textbf{Nr} & \textbf{Charakterystyka} & \textbf{Znaczenie} & \textbf{Przykład} \\
+    \midrule
+    C1 &
+    Poprawność semantyczna (semantic correctness) &
+    Zgodność modelu z opisem rzeczywistości -- czy klasy, atrybuty i relacje odpowiadają rzeczywistym pojęciom i powiązaniom. &
+    Czy zidentyfikowane klasy (np.\ Klient, Zamówienie) odpowiadają pojęciom z opisu dziedziny? \\
+    C2 &
+    Poprawność odwzorowania reguł biznesowych &
+    Reguły opisane w etapie 1 są poprawnie odwzorowane w UML (np.\ poprzez kardynalności, ograniczenia, OCL). &
+    Reguła „Każde zamówienie ma co najmniej jeden produkt” odwzorowana jako relacja 1..* między Zamówieniem a Produktem. \\
+    C3 &
+    Złożoność modelu (complexity) &
+    Stopień skomplikowania struktury modelu (liczba klas, relacji, poziomy dziedziczenia). &
+    Czy model jest wystarczająco szczegółowy, ale nie przeładowany? \\
+    C4 &
+    Zgodność z ograniczeniami dziedzinowymi &
+    Określono typy i zakresy atrybutów zgodnie z opisem dziedziny. &
+    Atrybut „płeć: znak [K, M]”. \\
+    C5 &
+    Pokrycie pojęć (concept coverage) &
+    W jakim stopniu model UML odwzorowuje pojęcia i relacje z opisu rzeczywistości. &
+    Czy wszystkie kluczowe elementy z opisu zostały ujęte w modelu? \\
+    C6 &
+    Czytelność i przejrzystość (readability) &
+    Łatwość interpretacji modelu przez człowieka. &
+    Czy diagram jest logicznie pogrupowany, a nazwy są jednoznaczne? \\
+    C7 &
+    Identyfikowalność obiektów &
+    Każda klasa posiada naturalne atrybuty jednoznacznie identyfikujące obiekty klas. &
+    Klient $\rightarrow$ PESEL; Zamówienie $\rightarrow$ (numer zamówienia, rok). \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+
+
+Przykładowe miary przedstawiono w tabeli~\ref{tab:uml-metryki}.
+
+\begin{table}[!ht]
+  \centering
+  \caption{Przykładowe miary jakości (metryki) dla modelu UML}
+  \label{tab:uml-metryki}
+  \scriptsize
+  \begin{tabularx}{\textwidth}{cLp{4.5cm}p{3.5cm}}
+    \toprule
+    \textbf{Kod} & \textbf{Miara} & \textbf{Opis sposobu pomiaru} & \textbf{Zakres / interpretacja} \\
+    \midrule
+    M1 &
+    Wskaźnik zgodności semantycznej &
+    Liczba pojęć poprawnie odwzorowanych / liczba pojęć z opisu rzeczywistości &
+    0--1 \\
+    % \hline
+    M2 &
+    Pokrycie reguł biznesowych &
+    Liczba reguł z etapu 1 odwzorowanych w UML (asocjacje, ograniczenia, OCL) / liczba wszystkich reguł &
+    0--1 (po przeliczeniu na „poprawność”) \\
+    % \hline
+    M3 &
+    Miara złożoności modelu &
+    Liczba klas + liczba asocjacji + liczba atrybutów (lub złożona miara, np.\ Halsteada) &
+    Znormalizowana do [0,1] (np.\ optymalny zakres 20--40 klas) \\
+    % \hline
+    M4 &
+    Wskaźnik spójności wewnętrznej &
+    Liczba niespójnych relacji / liczba wszystkich relacji (przeliczany na 1$-\frac{\text{niespójności}}{\text{liczba relacji}}$) &
+    0--1 \\
+    % \hline
+    M5 &
+    Pokrycie pojęć &
+    Liczba pojęć z opisu rzeczywistości odwzorowanych w UML / liczba pojęć z opisu &
+    0--1 \\
+    % \hline
+    M6 &
+    Czytelność modelu &
+    Ocena ekspercka (skala 1--5) lub metryka automatyczna (np.\ stosunek etykiet tekstowych do linii) &
+    0--1 \\
+    % \hline
+    M7 &
+    Wskaźnik identyfikowalności klas &
+    Liczba klas z naturalnym identyfikatorem / liczba wszystkich klas &
+    0--1 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+
+Funkcja oceny jakości konceptualnego modelu danych $Q_{\mathrm{UML}}$ może być przedstawiona jako:
+\begin{equation}
+  Q_{\mathrm{UML}} = h(w_1 M1, w_2 M2, \dots, w_7 M7),
+\end{equation}
+gdzie przykładowo $w_1, w_2, w_5$ mają większe znaczenie (np.\ $w_1 = w_2 = w_5 = 0{.}18$), a~pozostałe są niższe (np.\ $w_3 = w_4 = w_6 = w_7 = 0{.}115$), przy zachowaniu sumy wag równej 1.
+
+Przykładowa interpretacja jakości konceptualnego modelu danych przedstawiona jest w tabeli~\ref{tab:uml-ocena}.
+
+\begin{table}[ht]
+  \centering
+  \caption{Interpretacja jakości konceptualnego modelu danych}
+  \label{tab:uml-ocena}
+  \scriptsize
+  \begin{tabularx}{\textwidth}{LLp{5cm}}
+    \toprule
+    \textbf{Zakres} & \textbf{Ocena jakości} & \textbf{Charakterystyka} \\
+    \midrule
+    0.85--1.00 & Wysoka jakość & Model pełny, poprawny, czytelny \\
+    0.70--0.85 & Dobra jakość & Drobne braki, możliwe uproszczenia \\
+    0.50--0.70 & Średnia jakość & Częściowa niezgodność lub złożoność \\
+    $< 0.50$ & Niska jakość & Model wymaga przebudowy \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Etap 2 można dodatkowo zweryfikować względem etapu 1, np.\ biorąc pod uwagę następujące kryteria:
+\begin{itemize}
+  \item każda klasa UML $\leftrightarrow$ byt z etapu 1,
+  \item każdy atrybut UML $\leftrightarrow$ cecha z etapu 1,
+  \item każda asocjacja $\leftrightarrow$ relacja lub reguła biznesowa,
+  \item każda reguła OCL $\leftrightarrow$ ograniczenie dziedzinowe.
+\end{itemize}
+
+Wymienione kryteria pozwalają zdefiniować wskaźnik zgodności między etapami $Q_{\mathrm{zgod}}$.
+
+\subsection*{Etap 3: Model logiczny / fizyczny (SQL)}
+
+Zakładając akceptowalny poziom jakości konceptualnego modelu danych, można przystąpić do opracowania modelu logicznego i fizycznego danych (w tym przypadku modelu relacyjnego reprezentowanego na poziomie SQL). W modelu należy zaimplementować reguły biznesowe, ograniczenia dziedzinowe i elementy wyspecyfikowane w poprzednich etapach oraz zdefiniować mierzalne kryteria oceny jakości implementacji.
+
+\subsubsection*{Cel etapu}
+
+Odwzorowanie konceptualnego modelu danych (diagram klas UML) w poprawny, spójny i wydajny schemat relacyjny zawierający definicje tabel wraz z ograniczeniami, indeksy, widoki danych, zapytania SQL, procedury, zapewniając:
+\begin{itemize}
+  \item identyfikowalność bytów (klucze główne z naturalnych identyfikatorów, gdy to możliwe),
+  \item implementację reguł biznesowych i ograniczeń dziedzinowych (\texttt{CHECK}, \texttt{FK}, \texttt{UNIQUE}, triggery, procedury),
+  \item zgodność z wymaganiami wydajnościowymi i operacyjnymi.
+\end{itemize}
+
+Ocenę jakości modelu logicznego/fizycznego można zrealizować, wykorzystując charakterystyki jakości określone w tabeli~\ref{tab:sql-char}.
+
+\begin{table}[!ht]
+  \centering
+  \caption{Podstawowe charakterystyki jakości implementacji w SQL}
+  \label{tab:sql-char}
+  \scriptsize
+  \begin{tabularx}{\textwidth}{cLp{7cm}}
+    \toprule
+    \textbf{Nr} & \textbf{Charakterystyka} & \textbf{Znaczenie} \\
+    \midrule
+    S1 & Zgodność semantyczna z UML & Schemat SQL wiernie odwzorowuje klasy, atrybuty, relacje, identyfikatory i reguły biznesowe. \\
+    S2 & Integralność referencyjna & Wszystkie relacje z UML są reprezentowane przez klucze obce lub tabele pośrednie. \\
+    S3 & Egzekwowanie ograniczeń dziedzinowych i reguł biznesowych &
+    \texttt{CHECK}, \texttt{NOT NULL}, \texttt{UNIQUE}, triggery implementują zdefiniowane ograniczenia. \\
+    S4 & Poziom normalizacji / redukcja redundancji &
+    Tabele są właściwie znormalizowane (zwykle 3NF) lub celowo zdenormalizowane w uzasadnionych przypadkach. \\
+    S5 & Wydajność i skalowalność &
+    Schemat i indeksy umożliwiają akceptowalną szybkość zapytań i przetwarzania. \\
+    S6 & Bezpieczeństwo i separacja uprawnień &
+    Odpowiednie role, uprawnienia, maskowanie danych. \\
+    S7 & Utrzymywalność i rozszerzalność &
+    Schemat jest czytelny, udokumentowany i łatwy do modyfikacji (zmiana wymagań, migracje). \\
+    S8 & Odporność na błędy i transakcyjność &
+    Mechanizmy transakcyjne, ograniczenia, backup/restore. \\
+    S9 & Testowalność &
+    Zdefiniowane testy (jednostkowe, integracyjne, dane) sprawdzające reguły i jakość danych. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Zaproponowane poniżej miary jakości (metryki) zostały podzielone na metryki strukturalne (statyczne) i dynamiczne (wynikające z testów/pomiarów). Każda metryka jest znormalizowana do [0,1].
+
+\paragraph{Metryki strukturalne}
+
+\begin{itemize}
+  \item M1 -- wskaźnik poprawnego mapowania: liczba elementów poziomu poprawnie odwzorowanych w SQL (klasy$\rightarrow$tabele, atrybuty$\rightarrow$kolumny, identyfi\-katory$\rightarrow$PK/\texttt{UNIQUE}, relacje$\rightarrow$FK/tabele asocjacyjne) / liczba elementów UML.
+  \item M2 -- pokrycie reguł biznesowych: liczba reguł biznesowych i ograniczeń dziedzinowych zrealizowanych w schemacie (\texttt{CHECK}/\texttt{FK}/triggery/procedury) / liczba reguł z etapu 1.
+  \item M3 -- pokrycie ograniczeń dziedzinowych: liczba atrybutów z zadeklarowanymi typami i ograniczeniami / liczba atrybutów.
+  \item M4 -- stopień normalizacji: indeks opisujący, ile tabel spełnia 3NF (lub inny docelowy poziom normalizacji).
+  \item M5 -- unikalność i identyfikowalność: odsetek klas, dla których naturalny identyfikator z etapu 1.\ został odwzorowany jako PK lub \texttt{UNIQUE}.
+\end{itemize}
+
+\paragraph{Metryki dynamiczne / testowe}
+
+\begin{itemize}
+  \item M6 -- wskaźnik integralności danych: $1 - \frac{\text{liczba naruszeń integralności}}{\text{liczba testów integralności}}$.
+  \item M7 -- wskaźnik sukcesu testów funkcjonalnych: liczba testów funkcjonalnych zakończonych sukcesem / liczba wszystkich testów.
+  \item M8 -- wydajność zapytań: znormalizowana metryka złożona (średni czas zapytania, 95.\ percentyl, przepustowość).
+  \item M9 -- wskaźnik jakości danych: $1 - \frac{\text{liczba rekordów niezgodnych z ograniczeniami}}{\text{liczba sprawdzonych rekordów}}$.
+  \item M10 -- czas wykonania migracji/wdrożenia: znormalizowana miara (niższy czas $\rightarrow$ wyższa ocena).
+  \item M11 -- pokrycie testów: \% przypadków reguł biznesowych pokrytych testami automatycznymi.
+\end{itemize}
+
+Przykładowe wartości wag dla metryk strukturalnych i dynamicznych można dobrać tak, aby preferować poprawność odwzorowania i implementację ograniczeń.
+
+\subsection*{Etap 4: Testowanie i walidacja modelu danych (SQL)}
+
+Na etapie testowania brane są pod uwagę następujące rodzaje testów:
+\begin{itemize}
+  \item testy jednostkowe schematu -- sprawdzenie ograniczeń kolumn (typy, \texttt{NOT NULL}, \texttt{UNIQUE}, \texttt{CHECK}),
+  \item testy integracyjne -- tworzenie/aktualizacja rekordów zgodnie ze scenariuszami (sprawdzanie \texttt{FK}, reguł, transakcji),
+  \item testy regresyjne reguł biznesowych -- sprawdzanie wszystkich reguł z~etapu 1,
+  \item testy wydajnościowe -- pomiar latencji, przepustowości, 95.\ percentyla,
+  \item testy jakości danych (data quality) -- skrypty sprawdzające zgodność typów, zakresów, duplikaty,
+  \item testy migracyjne -- odtwarzanie migracji na podstawie kopii danych testowych,
+  \item testy bezpieczeństwa i uprawnień -- role, \texttt{GRANT}/\texttt{REVOKE}, widoczność danych,
+  \item testy regresyjne/automatyczne w ramach CI/CD.
+\end{itemize}
+
+Na podstawie metryk M6--M11 dla każdej kategorii testów można zdefiniować wskaźniki oraz miary umożliwiające określenie poziomu jakości etapu 4 (tabela~\ref{tab:testy-metryki}).
+
+\begin{table}[ht]
+  \centering
+  \caption{Wskaźniki oraz miary jakości etapu testów}
+  \label{tab:testy-metryki}
+  \scriptsize
+  \begin{tabularx}{\textwidth}{cLp{4.5cm}L}
+    \toprule
+    \textbf{Nr} & \textbf{Wskaźnik} & \textbf{Miara} & \textbf{Komentarz} \\
+    \midrule
+    T1 &
+    Wskaźnik zgodności strukturalnej &
+    Odsetek poprawnych typów, kluczy, relacji &
+    Poprawność typów, kluczy, \texttt{FK}, nazw \\
+    T2 &
+    Pokrycie reguł biznesowych &
+    Odsetek reguł z etapu 1 egzekwowanych w SQL &
+    Ile reguł z etapu 1 działa w SQL \\
+    T3 &
+    Integralność danych &
+    Odsetek danych spełniających ograniczenia &
+    Naruszenia PK, \texttt{FK}, zakresów, obowiązkowości atrybutów \\
+    T4 &
+    Wydajność &
+    Znormalizowany czas wykonania zapytań &
+    Im mniejszy czas, tym wyższa ocena (do 1.0) \\
+    T5 &
+    Jakość danych (DQ) &
+    Procent poprawnych rekordów &
+    Jakość danych testowych/importowanych \\
+    T6 &
+    Migracja &
+    Czas wdrożenia względem limitu &
+    Walidacja procesu wdrożenia i migracji \\
+    T7 &
+    Bezpieczeństwo &
+    Odsetek poprawnych reguł dostępu i uprawnień &
+    Role, \texttt{GRANT}/\texttt{REVOKE}, maskowanie \\
+    T8 &
+    Regresja / automatyzacja &
+    Pokrycie testów automatycznych &
+    CI/CD -- stabilność w czasie \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+
+Funkcja oceny jakości etapu testowania może być zapisana jako:
+\begin{equation}
+  Q_{\mathrm{test}} = k(v_1 T1, v_2 T2, \dots, v_8 T8),
+\end{equation}
+gdzie $v_i$ to wagi przypisane poszczególnym wskaźnikom (np.\ większa waga dla T2, T3, T4, T5).
+
+\subsection*{Łączna ocena całego procesu projektowego}
+
+Po uzyskaniu ocen cząstkowych z etapów 1--4 możemy obliczyć ocenę końcową projektu:
+\begin{equation}
+  Q_{\mathrm{projekt}} = F(\alpha_1 Q_{\mathrm{opis}}, \alpha_2 Q_{\mathrm{UML}}, \alpha_3 Q_{\mathrm{SQL}}, \alpha_4 Q_{\mathrm{test}}),
+\end{equation}
+gdzie:
+\begin{itemize}
+  \item $Q_{\mathrm{opis}}$ -- jakość charakterystyki dziedziny przedmiotowej,
+  \item $Q_{\mathrm{UML}}$ -- jakość konceptualnego modelu danych,
+  \item $Q_{\mathrm{SQL}}$ -- jakość implementacji w środowisku SQL,
+  \item $Q_{\mathrm{test}}$ -- jakość etapu testowania i walidacji,
+  \item $\alpha_i$ -- wagi etapów (suma wag $=1$).
+\end{itemize}
+
+\section{Podsumowanie i wnioski}
+
+Projektowanie baz danych zapewniające uzyskanie dobrej jakości bazy danych jest poważnym problemem. Przedstawiona w pracy metoda analizy i~oceny jakościowej procesu i produktu, bazująca na normie jakości ISO/IEC 25012:2014, daje szansę weryfikowania i oceny artefaktów na wszystkich etapach procesu projektowania. Wymaga to jednak konsekwentnego przestrzegania zdefiniowanych zasad.
+
+Poprawny jakościowo proces projektowania baz danych powinien zapewnić pozytywne odpowiedzi na następujące pytania:
+\begin{itemize}
+  \item Czy model danych jest zrozumiały dla biznesu i czy bezpośrednio wspiera jego cele?
+  \item Czy jakość danych jest uwzględniona w schemacie bazy danych poprzez implementację ograniczeń i reguł biznesowych?
+  \item Czy schemat bazy danych na poziomie definicyjnym uwzględnia integralność i~poufność danych?
+  \item Czy uwzględniony jest aspekt wydajności na poziomie schematu bazy danych w~kontekście zbioru operacji na danych?
+  \item Czy możliwe jest zarządzanie metadanymi?
+  \item Czy projekt bazy danych jest przygotowany na potencjalne zmiany?
+\end{itemize}
+
+Ponadto istotne jest wykonywanie iteracyjnej oceny jakości na każdym etapie projektowania (konceptualnym, logicznym, fizycznym), a nie tylko po wdrożeniu. Ramy MDA oferują strukturę transformacji, a normy ISO zapewniają ustandaryzowane wymiary jakości. Główna luka badawcza leży w standaryzacji metryk i~procesu walidacji modeli, co jest niezbędne, aby obiektywna ocena mogła stanowić podstawę do wyboru optymalnej ścieżki transformacji (np.\ z PIM do PSM).
+
+\section{Kierunki dalszych badań i prac}
+
+Pierwszym kierunkiem badań jest opracowanie zintegrowanego, wielowarstwowego modelu jakości, obejmującego zarówno modele konceptualne, jak i logiczne oraz fizyczne. Model ten powinien być zgodny z ISO/IEC 25012 oraz jednocześnie powiązany z procesami transformacji MDA, umożliwiając śledzenie jakości w sposób ciągły i powtarzalny.
+
+Drugim kierunkiem jest budowa uniwersalnego zestawu metryk, możliwego do stosowania niezależnie od używanej notacji (ERD, UML, Data Vault) czy technologii docelowej. Zestaw taki powinien obejmować zarówno metryki strukturalne, semantyczne, jak i~transformacyjne, a także umożliwiać adaptację do specyfiki różnych domen danych.
+
+Kolejnym kierunkiem rozwoju jest automatyzacja oceny jakości, obejmująca narzędzia CASE zdolne do:
+\begin{itemize}
+  \item automatycznej detekcji \emph{schema smells},
+  \item szacowania jakości transformacji PIM$\rightarrow$PSM,
+  \item monitorowania zgodności modeli z wymaganiami ISO,
+  \item generowania raportów jakościowych na podstawie metryk.
+\end{itemize}
+
+Automatyzacja ta mogłaby stworzyć podstawę do pełnej integracji jakości z~procesem DevOps/DataOps, co jest kierunkiem szczególnie istotnym w systemach o wysokiej dynamice zmian (np.\ hurtownie danych).
+
+Czwartym kierunkiem jest rozwój metryk empirycznych, weryfikowanych w~dużych, przemysłowych środowiskach danych. Badania takie umożliwiłyby weryfikację praktycznej przydatności zaproponowanych metryk oraz ich wpływu na jakość wdrażanych systemów.
+
+Piątym kierunkiem jest dalszy rozwój badań nad \emph{smell-based metrics}, czyli metrykami wyprowadzonymi z identyfikowanych wzorców błędów w~schematach. W połączeniu z uczeniem maszynowym mogłoby to umożliwić predykcyjną ocenę jakości modeli danych na podstawie ich struktury oraz historii zmian.
+
+Ostatni kierunek badań dotyczy kwalifikacji jakości danych w kontekście jakości modeli. Potrzebne są badania, które umożliwią powiązanie jakości struktury danych (modelu) z jakością instancji danych operacyjnych i analitycznych. Może to doprowadzić do powstania pełnego, holistycznego modelu jakości obejmującego zarówno artefakty projektowe, jak i dane produkcyjne.
+
+
+% =====================
+% References
+% =====================
+% \section*{References}
+% \addcontentsline{toc}{section}{References}
+
+\begin{thebibliography}{99}
+
+\bibitem{Dubielewicz2007SPoQE}
+Dubielewicz, I., Hnatkowska, B., Huzar, Z., Tuzinkiewicz, L.:
+An approach to software quality specification and evaluation (SPoQE).
+In: IFIP International Federation for Information Processing, vol. 227,
+pp. 155--166 (2007)
+
+\bibitem{Dubielewicz2007Eval}
+Dubielewicz, I., Hnatkowska, B., Huzar, Z., Tuzinkiewicz, L.:
+Evaluation of MDA/PSM database model quality in the context of selected non-functional requirements.
+In: Second International Conference on Dependability of Computer Systems (DepCoS-RELCOMEX 2007),
+Szklarska Poręba, Polska, pp. 19--26 (2007)
+
+\bibitem{Quad2010}
+Dubielewicz, I., Hnatkowska, B., Huzar, Z., Tuzinkiewicz, L.:
+Metodyka QUAD. Sterowanie jakością, wytwarzanie aplikacji bazodanowych.
+Oficyna Wydawnicza Politechniki Wrocławskiej, Wrocław (2010)
+
+\bibitem{Gosain2015}
+Gosain, A.:
+Literature review of data model quality metrics.
+Procedia Computer Science 48, 236--243 (2015).
+https://doi.org/10.1016/j.procs.2015.04.056
+
+\bibitem{GuerraGarcia2023}
+GuerraGarcía, C., Nikiforova, A., Jiménez, S., PérezGonzalez, H., RamírezTorres, M., OntañonGarcía, L.:
+ISO/IEC 25012-based methodology for managing data quality requirements.
+Information Systems (2023).
+https://doi.org/10.1016/j.is.2023.101123
+
+\bibitem{Heinrich2018}
+Heinrich, B., Hristova, D., Klier, M., Schiller, A., Szubartowicz, M.:
+Requirements for data quality metrics.
+Journal of Data and Information Quality 9(2), 1--32 (2018).
+https://doi.org/10.1145/3148238
+
+\bibitem{Helskyaho2024}
+Helskyaho, H., Ruotsalainen, L., Männistö, T.:
+Defining data model quality metrics for Data Vault 2.0.
+Inventions 9(1), 21 (2024).
+https://doi.org/10.3390/inventions9010021
+
+\bibitem{ISO25012}
+ISO/IEC 25012:2014 Software engineering --- Software product Quality Requirements and Evaluation (SQuaRE) --- Data quality model.
+Edition 1, confirmed current 2025.
+International Organization for Standardization (2014)
+
+\bibitem{Kedzia2011}
+Kędzia, P., Tuzinkiewicz, L.:
+Ocena jakości baz danych.
+Studia Informatica 32(2A), 131--142 (2011)
+
+\bibitem{Sharma2018}
+Sharma, T., Fragkoulis, M., Rizou, S., Bruntink, M., Spinellis, D.:
+Smelly relations: Measuring and understanding database schema quality.
+In: Proc. 40th International Conference on Software Engineering (ICSE 2018) (2018).
+https://doi.org/10.1145/3183519.3183540
+
+\bibitem{Tuzinkiewicz2013}
+Tuzinkiewicz, L.:
+Ocena jakości baz danych.
+Computer Science (2013)
+
+
+
+\end{thebibliography}
+
+

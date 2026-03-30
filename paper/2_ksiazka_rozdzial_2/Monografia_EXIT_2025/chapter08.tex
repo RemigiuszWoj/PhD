@@ -1,0 +1,404 @@
+\chapterauthor{Pawel Kotzbach}
+\chapter[Przegląd metod kwantowych \ldots]{Przegląd metod rozwiązywania problemu marszrutyzacji przy użyciu technologii kwantowych}
+\thispagestyle{empty}
+\vspace{-8mm} {\large Pawel Kotzbach} \vspace{8mm}
+
+\section{Wstęp}
+Wśród problemów optymalizacji kombinatorycznej szczególną rolę, ze względu na swoje szerokie zastosowanie w logistyce i łańcuchach dostaw, odgrywają Problem Komiwojażera (TSP) oraz jego uogólnienie – Problem Trasowania Pojazdów (VRP). Są to problemy klasy NP-trudnej, co oznacza, że czas potrzebny na znalezienie dokładnego rozwiązania za pomocą klasycznych komputerów rośnie wykładniczo wraz z liczbą obsługiwanych punktów. Informatyka kwantowa jawi się jako obiecująca alternatywa, mogąca potencjalnie zaoferować przewagę obliczeniową nad informatyką klasyczną.
+
+Obecny stan rozwoju technologii kwantowej, określany mianem ery NISQ (Noisy Intermediate-Scale Quantum), wiąże się z istotnymi ograniczeniami, takimi jak niewielka liczba dostępnych kubitów, krótki czas koherencji oraz wysoki poziom szumów. Wymusza to poszukiwanie efektywnych sposobów kodowania problemów, które minimalizują zapotrzebowanie na zasoby sprzętowe, a także stosowanie metod hybrydowych, łączących algorytmy klasyczne z kwantowymi.
+
+Model kwadratowej optymalizacji binarnej bez ograniczeń (Quadratic Unconstrained Binary Optimization - QUBO) jest obecnie najczęściej stosowanym modelem optymalizacji w dziedzinie informatyki kwantowej, który ujednolica bogatą gamę kombinatorycznych problemów optymalizacyjnych i~jest stosowany w ich rozwiązaniach \cite{glover2019tutorialformulatingusingqubo}.
+Problemy QUBO można bezpośrednio odwzorować na model Isinga \cite{Lucas_2014}. Odwzorowanie to pozwala komputerowi kwantowemu zakodować problem optymalizacji w stanie fizycznym swoich kubitów, gdzie każdy kubit odpowiada zmiennej binarnej. Model Isinga stanowi naturalny pomost między problemami optymalizacji kombinatorycznej a sprzętem kwantowym, umożliwiając poszukiwanie optymalnych rozwiązań poprzez minimalizację energii.
+
+Niniejsza praca stanowi przegląd metod rozwiązywania problemów TSP i~VRP przy użyciu technologii kwantowych.
+
+\section{Sformułowania problemu komiwojażera}
+Problem komiwojażera (Traveling Salesman Problem - TSP) polega na znalezieniu najkrótszej możliwej trasy, która pozwoli odwiedzić wszystkie wskazane miasta dokładnie raz i wrócić do punktu startowego.
+Formalnie, dla grafu $G = (V, E)$, w~którym każdej krawędzi $uv \in E$ przypisana jest waga $W_{uv}$, TSP polega na znalezieniu cyklu Hamiltona takiego, że suma wag krawędzi w cyklu jest minimalna. Typowo problem komiwojażera zakłada graf pełny, co również przyjmujemy w~niniejszej pracy.
+Istnieją różne sformułowania QUBO dla TSP, ponieważ ten sam problem można opisać na wiele sposobów za pomocą różnych zestawów zmiennych i ograniczeń. W kontekście obliczeń kwantowych, autorzy starają się znaleźć równowagę między ograniczeniami liczby kubitów, ograniczeniami łączności i~głębokością obwodu.
+
+\subsection{sformułowanie oparta na pozycjach (na węzłach)}
+Najbardziej powszechną sformułowanie problemu komiwojażera z określonym modelem QUBO, stosowanym w obliczeniach kwantowych, można znaleźć w~pracy Lucasa \cite{Lucas_2014}. Wiele publikacji korzysta z tego sformułowania m.in. \cite{padmasola2025solvingtravelingsalesmanproblem}, \cite{DWaveProblemFormulation2022}, \cite{Qian_2023}. Jest ona również rozwijana w wariantach TSP z dodatkowymi ograniczeniami, np. dla TSPTW w \cite{a12110224}. Sformułowanie dla grafu niepełnego jest również zdefiniowana w pracy Lucasa.
+W tym podejściu używa się $N^2$ kubitów $x_{ui}$, gdzie $u$ oznacza wierzchołek, a $i$ oznacza jego pozycję w potencjalnym cyklu. Wizualizacja  sformułowania została przedstawiona na Rysunku \ref{fig:ch8_tsp}. Aby zmniejszyć przestrzeń poszukiwań, można wprowadzić proste usprawnienie poprzez ustalenie miasta początkowego, co redukuje liczbę kubitów do $(N-1)^2$. Przy tym kodowaniu opartym na pozycjach nie są potrzebne ograniczenia eliminujące podtrasy — już same ograniczenia je uniemożliwiają.
+Funkcję kosztu można zdefiniować w formie kwadratowej (w poniższych wyrażeniach $N + 1$ należy rozumieć jako 1, ponieważ rozwiązujemy problem cyklów):
+\begin{figure}
+\centering
+\includegraphics[width=0.4\linewidth]{fig/ch8/tsp.png}
+\caption{Sformułowanie oparte na pozycjach}
+\label{fig:ch8_tsp}
+\end{figure}
+
+
+\begin{equation}
+C_{TSP} = \sum_{u=1}^N \sum_{v=1}^N W_{uv} \sum_{i=1}^N x_{ui} x_{v(i+1)}
+\label{eq:TSP_cost}
+\end{equation}
+
+Funkcja kosztu podlega dwóm ograniczeniom:
+
+Każde miasto pojawia się na ścieżce dokładnie raz; zatem dla każdego miasta $u \in V$ suma jego pozycji odwiedzenia powinna wynosić 1 — jest to pierwsze ograniczenie jednoznaczności:
+
+\begin{equation}
+\sum_{i=1}^{N} x_{ui} = 1, \quad \forall u \in V
+\label{eq:TSP_constraint1}
+\end{equation}
+
+Podobnie, każdej pozycji w sekwencji odpowiada dokładnie jedno odwiedzone miasto — jest to drugie ograniczenie jednoznaczności:
+
+\begin{equation}
+\sum_{u=1}^{N} x_{ui} = 1, \quad \forall i \in {1, \ldots, N}
+\label{eq:TSP_constraint2}
+\end{equation}
+
+\subsubsection*{QUBO}
+Ograniczenia te są zakodowane w Hamiltonianie:
+
+\begin{equation}
+H_A^{TSP} = A \sum_{u=1}^N (1 - \sum_{i=1}^N x_{ui})^2 + A \sum_{i=1}^N (1 - \sum_{u=1}^N x_{ui})^2
+\end{equation}
+
+Stała $A > 0$. Łatwo zauważyć, że stan podstawowy tego systemu ma $H_A = 0$ tylko wtedy, gdy istnieje uporządkowanie wierzchołków, w którym każdy wierzchołek występuje dokładnie raz, a więc mamy cykl Hamiltona.
+
+Z równania \ref{eq:TSP_cost} konstruujemy następny Hamiltonian:
+\begin{equation}
+H_B^{TSP} = B\sum_{u=1}^N \sum_{v=1}^N W_{uv} \sum_{i=1}^N x_{ui} x_{v(i+1)}
+\end{equation}
+gdzie $B$ jest na tyle małe, aby nigdy nie było korzystne naruszenie ograniczeń $H_A^{TSP}$.
+
+Całkowity Hamiltonian można zapisać jako $H^{TSP} = H_A^{TSP} + H_B^{TSP}$, co bezpośrednio odpowiada sformułowaniu QUBO tego problemu.
+
+\subsection{Inne sformułowania}
+
+W sformułowaniu opartym na krawędziach zmienna $x_{ij}$ oznacza, że krawędź między lokalizacjami $i$ i $j$ jest używana w trasie. Następnie za pomocą tych zmiennych formułuje się ograniczenia zapewniające, że każda krawędź jest użyta dokładnie raz. Dwa klasyczne ograniczenia eliminujące podtrasy opisano w sformułowaniu MTZ \cite{mtzformulation} oraz sformułowaniu DFJ \cite{dantzig1954solution}. Autorzy \cite{cattelan2022modelingroutingproblemsqubo} argumentują, że sformułowania te są nieodpowiednie do rozwiązywania metodą QUBO, ponieważ ograniczenia podtras prowadzą do liczby wyrażeń rosnącej kombinatorycznie.
+
+W pracy \cite{ramezani2024reducingnumberqubitsn2} autorzy zredukowali liczbę kubitów z $N^2$ do $N \log_2(N)$ kosztem zwiększenia złożoności bramkowej.
+W pracy \cite{amplitude} autorzy drastycznie zmniejszyli liczbę kubitów (do wartości logarytmicznej względem liczby miast) poprzez zastosowanie kodowania amplitudowego, lecz w zamian przyjęli bardziej złożoną ocenę kosztu: zamiast prostego wartościowania operatora kwantowego obliczają koszt na podstawie zmierzonych rozkładów prawdopodobieństwa — co przenosi część obciążenia obliczeniowego z powrotem na klasyczne przetwarzanie i próbkowanie oraz rodzi pytania o skalowalność i odporność na szum.
+
+\section{Sformułowania problemu marszrutyzacji}
+Szeroko uznanym rozszerzeniem problemu komiwojażera jest problem marszrutyzacji (Vehicle Routing Problem - VRP) \cite{dantzig1959truck}. Ten problem NP-trudny, szeroko analizowany w literaturze, polega na wyznaczeniu tras dla floty pojazdów, które wszystkie wyruszają z tego samego magazynu (depozytu). Każdy pojazd musi odbyć trasę odwiedzającą dokładnie raz pewien podzbiór lokalizacji i wrócić do magazynu, jednocześnie optymalizując zadaną funkcję celu oraz spełniając ograniczenia operacyjne, takie jak różne pojemności pojazdów czy okna czasowe dostaw. Ograniczenia te definiują różne warianty VRP. TSP można traktować jako szczególny przypadek VRP, w~którym wykorzystywany jest tylko jeden pojazd, co można zauważyć na Rysunku \ref{fig:ch8_tspvsvrp}.
+
+Warto zauważyć, że podstawowa wersja VRP rozumiana w literaturze to zazwyczaj problem marszrutyzacji z ograniczeniami pojemnościowymi (Capacitated VRP - CVRP). Innym ważnym wariantem jest wielopojazdowy problem komiwojażera (Multiple Traveling Salesman Problem - mTSP), który można traktować jako uproszczoną formę VRP — pozbawioną między innymi ograniczeń pojemnościowych — w której wiele pojazdów musi obsłużyć wszystkie lokalizacje, rozpoczynając i kończąc trasę w tym samym depozycie.
+
+\begin{figure}
+\centering
+\includegraphics[width=0.5\linewidth]{fig/ch8/tspvrp.png}
+\caption{Różnica między TSP a VRP}
+\label{fig:ch8_tspvsvrp}
+\end{figure}
+
+Najczęściej spotykane warunki dodatkowe to \cite{LAPORTE1992345}:
+\begin{enumerate}
+\item \textbf{ograniczenia całkowitego czasu (DVRP)}: długość dowolnej trasy nie może przekroczyć zadanego limitu $L$; długość ta składa się z czasów przejazdów między miastami $c_{ij}$ oraz czasów postoju $\delta_i$ w każdym mieście $i$ na trasie;
+\item \textbf{okna czasowe (TWVRP)}: miasto $i$ musi zostać odwiedzone w przedziale czasowym $[a_i, b_i]$, a oczekiwanie w mieście $i$ jest dozwolone;
+\item \textbf{relacje precedencji} między parami miast: miasto $i$ może wymagać odwiedzenia przed miastem $j$.
+\end{enumerate}
+
+\subsection{Pełne sformułowanie}
+
+Pełną (bez rozbijania na podproblemy) i formalną sformułowanie VRP można zbudować, ponownie wykorzystując wiele elementów wprowadzonych dla TSP — możemy wydzielić podproblem TSP dla każdego pojazdu oraz nałożyć globalne ograniczenia zapewniające poprawność rozwiązania. Taka definicja jest stosowana w wielu pracach, m.in.  \cite{cattelan2022modelingroutingproblemsqubo}, \cite{Borowski2020}.
+
+Niech $G = (V, E)$ będzie pełnym grafem skierowanym, gdzie $V = {0, 1, \dots, n}$,
+przy czym węzeł $d$ reprezentuje magazyn (depozyt), a pozostałe węzły reprezentują klientów. Każdej krawędzi $uv \in E$ przypisana jest waga $W_{uv}$.
+
+Zmienna decyzyjna jest zdefiniowana jako:
+
+\begin{equation}
+x_{kui} =
+    \begin{cases}
+        1, & \text{jeśli pojazd } k \text{ jest w lokalizacji } u \text{ podczas kroku } i, \\
+        0, & \text{w pozostałych przypadkach.}
+    \end{cases}
+\end{equation}
+
+Indeks $k$ enumeruje pojazdy we flocie, gdzie $K$ jest ich liczbą. Indeks $u$ oznacza wierzchołek, a $i$ oznacza jego pozycję w potencjalnym cyklu (indeksy są ponownie modulo $N$).
+
+Funkcja kosztu ma postać:
+\begin{equation}
+C_{VRP} = \sum_{k=1}^K \sum_{u=1}^N \sum_{v=1}^N W_{uv} \sum_{i=1}^N x_{kui} x_{kv(i+1)}
+\label{eq:VRP_cost}
+\end{equation}
+
+Łatwo zauważyć, że jeśli rozważymy przypadek $K=1$, otrzymamy dokładnie tę samą funkcję kosztu, co w TSP w \ref{eq:TSP_cost}. Ograniczenia są również uogólnieniem ograniczeń TSP, z tą różnicą, że sumują się po wszystkich pojazdach:
+
+Każde miasto pojawia się w ścieżce dokładnie raz, dzielone pomiędzy wszystkie pojazdy, podobnie jak w \ref{eq:TSP_constraint1}. Magazyn jest wyłączony z tego ograniczenia, ponieważ nie znamy a priori długości optymalnych tras dla poszczególnych pojazdów. Musimy umożliwić im pozostanie w magazynie tak długo, jak potrzebują — każdy pojazd może mieć inną długość trasy.
+
+\begin{equation}
+\sum_{k=1}^{K} \sum_{i=1}^{N} x_{kui} = 1, \quad \forall u \in V - {d}
+\label{eq:VRP_constraint1}
+\end{equation}
+
+Każdej pozycji w sekwencji odpowiada dokładnie jedno odwiedzone miasto — jest to drugie ograniczenie jednoznaczności, analogiczne do \ref{eq:TSP_constraint2}:
+
+\begin{equation}
+\sum_{u=1}^{N} x_{kui} = 1, \quad \forall k \in {1, \ldots, K}, \forall i \in {1, \ldots, N}
+\label{eq:VRP_constraint2}
+\end{equation}
+
+Ze względu na nierówność trójkąta rozważanie VRP w 2-wymiarowej przestrzeni euklidesowej bez ograniczeń pojemności jest formalnie identyczne z TSP. Dlatego oryginalna sformułowanie VRP zawiera ograniczenia pojemności \cite{dantzig1959truck}. W związku z tym, oprócz funkcji celu i ograniczeń trasowania, VRP posiada dodatkowe ograniczenie nierównościowe, które gwarantuje, że pojazd nie przekroczy swojej ograniczonej pojemności na trasie:
+
+\begin{equation}
+\sum_{u=1}^{N} \sum_{i=1}^{N} q_u x_{kui} \le Q, \quad \forall k \in {1, \ldots, K}
+\label{eq:VRP_constraint3}
+\end{equation}
+
+gdzie $q_u$ oznacza zapotrzebowanie miasta $u$, a $Q$ jest limitem pojemności jednego pojazdu. Zwykle w VRP zakłada się tę samą pojemność dla wszystkich pojazdów, co również będzie przyjęte w niniejszej pracy.
+
+\subsubsection*{QUBO}
+Węzeł magazynu jest ustalony jako $d=1$. $A > 0$ jest stałą.
+Pierwsze dwa ograniczenia są zakodowane w następującym hamiltonianie:
+
+\begin{equation}
+H_A^{VRP} = A \sum_{u=2}^N (1 - \sum_{k=1}^K \sum_{i=1}^{N} x_{kui})^2 + A \sum_{k=1}^K \sum_{i=1}^{N} (1 - \sum_{u=1}^N x_{kui})^2
+\end{equation}
+
+Z równania \ref{eq:VRP_cost} konstruujemy hamiltonian kosztu:
+\begin{equation}
+H_B^{VRP} = B \sum_{k=1}^K \sum_{u=1}^N \sum_{v=1}^N W_{uv} \sum_{i=1}^N x_{kui} x_{kv(i+1)}
+\end{equation}
+gdzie $B$ jest wystarczająco małe, aby nigdy nie było korzystne naruszenie ograniczeń.
+
+Autorzy pracy \cite{Palackal_2023} konstruują hamiltonian ograniczenia pojemności, korzystając z \ref{eq:VRP_constraint3}. Przekształcają nierówność w równanie, wprowadzając zmienne pomocnicze (slack variables) $y_{kb} \in {0, 1}$, które reprezentują sumę żądań klientów odwiedzonych przez pojazd $k$. Przy logarytmicznym kodowaniu wymaga to dodatkowych $K * [\log_2(Q + 1)]$ kubitów dla ograniczenia pojemności, co prowadzi do następującego członu QUBO:
+
+\begin{equation}
+H_{C}^{VRP} = A\sum_{k=1}^{K} \Big[ \Big(\sum_{u=1}^{N} \sum_{i=1}^{N} x_{kui} q_u\Big) + \Big(\sum_{b=0}^{\lceil \log_2(Q+1) \rceil - 1} 2^b y_{bk}\Big) - C \Big]^2 .
+\end{equation}
+
+Całkowity hamiltonian można zapisać jako
+$H^{VRP} = H_A^{VRP} + H_B^{VRP} + H_C^{VRP}$,
+co bezpośrednio odpowiada sformułowaniu QUBO danego problemu.
+
+\subsection{Sformułowanie kubitów pojemności}
+Ograniczenie pojemności może być również włączone bezpośrednio do zmiennych decyzyjnych poprzez ich rozszerzenie o dyskretny indeks pojemności, zgodnie z~kodowaniem przedstawionym w \cite{irie2019quantumannealingvehiclerouting}.
+Zamiast sprawdzać całkowite zapotrzebowanie na końcu trasy, pozostała pojemność pojazdu jest śledzona na każdym kroku. Zmienna trasy zostaje więc rozszerzona do postaci
+
+\begin{equation}
+x_{kui|c} =
+\begin{cases}
+1, & \text{gdy pojazd } k \text{ znajduje się w mieście } u \text{ na kroku } i \\ & \text{z pozostałą pojemnością } c, \\
+0, & \text{w przeciwnym razie},
+\end{cases}
+\end{equation}
+
+gdzie $c \in {c_1, c_2, \ldots, c_{B}}$ oznacza zbiór skwantowanych poziomów pojemności, a $B$ jest liczbą dyskretnych przedziałów. To rozwiązanie wymaga dodatkowych $N * B$ kubitów na pojemność.
+Ograniczenia trasowania uogólniają się w naturalny sposób poprzez sumowanie po wszystkich poziomach pojemności $c$. Oprócz tego konieczne są dodatkowe ograniczenia związane z~kubitami pojemności.
+
+\section{Dekompozycja VRP}
+Zastosowanie obliczeń kwantowych do problemu trasowania pojazdów (VRP) jest obecnie ograniczone możliwościami urządzeń kwantowych klasy NISQ (Noisy Intermediate-Scale Quantum) \cite{maciejunes2025solvinglargescalevehiclerouting}. Standardowe sformułowania QUBO dla VRP, przedstawione w poprzedniej sekcji, wymagają liczby kubitów rosnącej co najmniej kwadratowo wraz z liczbą węzłów. Biorąc pod uwagę, że obecny sprzęt kwantowy oferuje jedynie ograniczoną liczbę kubitów oraz ograniczoną łączność, autorzy często stosują dekompozycję dużych instancji VRP na mniejsze, łatwiejsze do rozwiązania podproblemy.
+
+Strategie dekompozycji zwykle dzielą się na dwie kategorie: heurystyczną dekompozycję przestrzenną (Cluster-First, Route-Second) oraz dokładną/hybrydową dekompozycję (Column Generation).
+
+\subsection{Cluster-First, Route-Second (CFRS)}
+Ta strategia dekompozycji odpowiada na problem skalowalności kubitów w~urządzeniach NISQ, dzieląc globalny VRP na mniejsze, niezależne problemy komiwojażera (TSP). W pierwszej fazie (klastrowanie) klienci zieleni są na klastry — zazwyczaj na podstawie bliskości przestrzennej oraz ograniczeń pojemności pojazdów. W drugiej fazie (trasowanie) algorytmy kwantowe wykorzystywane są do optymalizacji tras (TSP) w poszczególnych klastrach \cite{Feld_2019}.
+
+Feld et al. w pracy \cite{Feld_2019} odwzorowują fazę klastrowania na wariant problemu plecakowego (Knapsack Problem), kolejnego problemu NP-zupełnego, w którym klienci są przypisywani do pojazdów przy ograniczeniach pojemności, z dodatkowym minimalizowaniem odległości pomiędzy klientami mającymi trafić do tego samego klastra. Autorzy analizują trzy strategie dekompozycji: obie fazy rozwiązywane kwantowo (Q2Q), pojedyncze sformułowanie QUBO obejmującą obie fazy (Q1Q) oraz preferowaną hybrydową metodę, w której klastrowanie wykonywane jest klasycznie, a trasowanie – na kwantowym annealerze (HS). Wyniki pokazują, że czysto kwantowe dekompozycje mają trudności (z powodu embedingu, strojenia parametrów, interferencji między fazami), natomiast klasyczne klastrowanie połączone z~kwantowym trasowaniem daje stabilniejsze wyniki dla średnich rozmiarów instancji.
+
+Maciejunes et al. w pracy \cite{maciejunes2025solvinglargescalevehiclerouting} uzyskali do $95\%$ redukcji głębokości obwodu, $96\%$ redukcji liczby kubitów oraz $99.5\%$ redukcji liczby bramek dwukubitowych. Zastosowali dwupoziomową dekompozycję: na poziomie problemu, gdzie dekomponują VRP na wiele TSP (klastrowanie), oraz na poziomie obwodu, gdzie dekomponują obwody każdego TSP dla wykonania na urządzeniu NISQ. Klastrowanie przeprowadzają przy użyciu METIS \cite{metis}, wielopoziomowego algorytmu partycjonowania grafów. METIS minimalizuje liczbę krawędzi przecinanych między partycjami, wykorzystując proces trójfazowy — koarsening, partycjonowanie i rafinację. Autorzy zauważają, że METIS nie jest projektowany bezpośrednio pod VRP, jednak może być wykorzystywany w sprytny sposób, aby zwiększyć skuteczność dekompozycji.
+
+W pracy \cite{Borowski2020} Borowski wraz ze współautorami przedstawia kilka metod dla fazy klastrowania. DBSCAN Solver (DBSS) wykonuje dekompozycję przestrzenną poprzez grupowanie sąsiadujących zleceń z wykorzystaniem rekurencyjnego DBSCAN, a następnie rozwiązuje każdy klaster jako niezależny podproblem TSP za pomocą kwantowego wyżarzania, po czym rekursywnie łączy klastry w~pełne trasy. Average Partition Solver (APS) dekomponuje problem poprzez ograniczenie liczby dostaw przypadających na każdy pojazd, zmniejszając rozmiar QUBO przez wymuszenie niemal równych podziałów między pojazdami. Solution Partitioning Solver (SPS) dzieli rozwiązanie TSP znalezione przez inny algorytm (np. DBSS) na segmenty zgodne z ograniczeniami pojemności, używając programowania dynamicznego, efektywnie dzieląc jedną długą trasę na wiele tras zgodnych z CVRP.
+
+\subsection{Generowanie kolumn (CG)}
+Inną powszechnie stosowaną metodą dekompozycji dla VRP jest generowanie kolumn (column generation, CG) \cite{desaulniers2006column}. Generowanie kolumn rozpoczyna się od rozwiązania ograniczonego problemu głównego (Restricted Master Problem, RMP), który zawiera jedynie podzbiór zmiennych (kolumn) pełnej sformułowaniu. Po rozwiązaniu RMP rozwiązywany jest podproblem (problem wyceny), którego celem jest identyfikacja nowych zmiennych mogących potencjalnie poprawić wartość funkcji celu. Jeśli taka zmienna zostanie znaleziona, jest dodawana do RMP i proces powtarza się. Algorytm kończy działanie, gdy podproblem nie jest w stanie wygenerować żadnej kolumny o ujemnym koszcie zredukowanym, co oznacza, że dalsza poprawa nie jest możliwa.
+CG opiera się więc na dwóch komponentach: problemie głównym, będącym ograniczoną wersją sformułowaniu, oraz podproblemie, który generuje nowe potencjalne zmienne.
+
+W przypadku CVRP problem główny optymalizuje wybór aktualnie dostępnych tras, natomiast podproblem generuje nowe, poprawne trasy, które mogą polepszyć rozwiązanie. Proces powtarza się naprzemiennie: klasyczny optymalizator rozwiązuje RMP, zaś generator tras — kwantowy — tworzy nową kolumnę. Iteracje trwają, dopóki nie można znaleźć kolejnych poprawiających kolumn.
+
+W pracy Huanga \cite{huang2025solvingcapacitatedvehiclerouting} podproblem ten rozwiązywany jest z wykorzystaniem Quantum Alternating Operator Ansatz (QAOA+), który używa specyficznego Hamiltonianu miksującego do efektywnego znajdowania tras o ujemnych kosztach zredukowanych.
+Podobnie Wagner i Liers w \cite{wagner2024quantumsubroutinesbranchpriceandcutvehicle} zastosowali generowanie kolumn w ramach frameworku Branch-Price-and-Cut, gdzie podproblem był rozwiązywany za pomocą kwantowego wyżarzania.
+
+\section{Metody}
+Istnienie wielu różnych metod rozwiązywania VRP w dziedzinie informatyki kwantowej wynika przede wszystkim z fundamentalnych różnic w architekturze sprzętu kwantowego, poważnych ograniczeń obecnej technologii oraz nieodłącznej złożoności odwzorowywania klasycznych problemów logistycznych na systemy kwantowe. W przeciwieństwie do informatyki klasycznej, gdzie niezależnie od konkretnego procesora stosuje się zazwyczaj standardową logikę, informatyka kwantowa funkcjonuje obecnie w rozdrobnionym ekosystemie, w którym fizyczna realizacja kubitu dyktuje podejście algorytmiczne.
+
+Najbardziej znacząca rozbieżność w metodologii wynika z podziału między kwantowym wyżarzaniem, a uniwersalnym kwantowym przetwarzaniem opartym na bramkach. Wyżarzanie kwantowe, promowane przez firmy takie jak D-Wave, to podejście sprzętowe zaprojektowane specjalnie do problemów optymalizacji. Działa ono poprzez zakodowanie VRP w stanie niskiej energii systemu fizycznego i umożliwienie systemowi naturalnego ustabilizowania się w tym stanie minimalnej energii, reprezentującym optymalną trasę. Z kolei systemy oparte na bramkach uniwersalnych, takie jak te opracowane przez IBM lub Google, działają w sposób zbliżony do logiki obwodów klasycznych, ale wykorzystują bramki kwantowe. Naukowcy korzystający z~tych systemów muszą stosować zupełnie inne algorytmy, takie jak algorytm kwantowej optymalizacji przybliżonej (QAOA), które manipulują amplitudami prawdopodobieństwa kubitów w celu znalezienia rozwiązania. Wybór sprzętu natychmiast wymusza więc wybór między dwiema radykalnie różnymi ścieżkami metodologicznymi.
+
+\subsection{QAOA}
+Algorytm kwantowej optymalizacji przybliżonej (Quantum Approximate Optimization Algorithm - QAOA) \cite{farhi2014quantumapproximateoptimizationalgorithm} należy do rodziny hybrydowych metod wariacyjnych, które łączą obliczenia kwantowe i klasyczne. W tym podejściu procesor kwantowy odpowiada za przygotowywanie i ewolucję stanów kwantowych — często reprezentujących wysokowymiarowe rozkłady prawdopodobieństwa lub splątane konfiguracje trudne do odwzorowania klasycznie — natomiast optymalizator klasyczny iteracyjnie dostraja parametry obwodu kwantowego na podstawie wyników pomiarów.
+
+Koncepcyjnie QAOA można postrzegać jako zdyskretyzowaną, $p$-krokową aproksymację troteryzowanej ewolucji adiabatycznej od stanu podstawowego prostego i łatwego do przygotowania hamiltonianu $H_m$ do stanu podstawowego hamiltonianu problemowego $H_C$. Ten ostatni koduje rozwiązanie zadania optymalizacyjnego w swoim stanie o najniższej energii. Czyni to QAOA użytecznym podejściem do rozwiązywania problemów optymalizacji kombinatorycznej wyrażonych w formie QUBO, szczególnie na aktualnym sprzęcie kwantowym.
+
+Azad wraz ze współautorami zastosowali QAOA do rozwiązywania małych instancji mTSP w \cite{Azad_2023}. Praca przedstawia sformułowanie QUBO dla mTSP i implementuje tę metodę w platformie Qiskit firmy IBM, pokazując, że QAOA potrafi generować rozwiązania dla małych instancji. Korzystając z~20 kubitów do rozwiązania instancji z 5 lokalizacjami i 3 pojazdami, uzyskali poprawne rozwiązanie z wystarczającym prawdopodobieństwem, używając optymalizatora COBYLA dla $p \ge 24$. Testowali optymalizatory COBYLA, NELDER–MEAD oraz L-BFGS-B dla różnych wartości $p$ od 6 do 40. Podobnie, autorzy \cite{azfar2025quantumassistedvehicleroutingrealizing} zastosowali QAOA do małego, konkretnego przykładu VRP na urządzeniu IBM Quantum System One, dostarczając szczegółowej analizy strojenia hiperparametrów.
+
+Huang w pracy \cite{huang2025solvingcapacitatedvehiclerouting} wykorzystał QAOA+ (nazywany w pracy QAOAnsatz), będący uogólnieniem QAOA, które zachowuje naprzemienną strukturę, ale pozwala na stosowanie własnych, zachowujących ograniczenia mikserów, eksplorujących wyłącznie przestrzeń wykonalną \cite{Hadfield_2019}. QAOA+, w ramach schematu generowania kolumn, z optymalizatorem COBYLA, jest wykorzystywany do rozwiązywania podproblemów, używając specjalnie zaprojektowanego hamiltonianu miksującego do wymuszania ograniczeń one-hot oraz metody inspirowanej Augmented Lagrangian do efektywnej obsługi ograniczeń pojemności, co zmniejsza liczbę wymaganych kubitów. Eksperymenty na małych instancjach CVRP (do 6 klientów) pokazują, że QAOA+ zbiega szybciej do rozwiązań optymalnych niż standardowe QAOA, podkreślając potencjał tego podejścia hybrydowego na aktualnych urządzeniach kwantowych.
+
+Maciejunes et al. w \cite{maciejunes2025solvinglargescalevehiclerouting} wykorzystali QAOA do dużych instancji VRP. VRP zostało zredukowane za pomocą CFRS oraz na poziomie obwodowym z użyciem Qiskit Addon Cutting, po czym zastosowano QAOA, badając różne kodowania, takie jak kodowanie krawędziowe i kodowanie amplitudowe \cite{amplitude}, w celu minimalizacji zasobów. Eksperymenty na instancji VRP z 13 węzłami (wymagającej pierwotnie 156 kubitów) pokazują, że taka podwójna dekompozycja redukuje problem do mniejszych obwodów wymagających tylko 6 kubitów i osiąga satysfakcjonujące wyniki na symulatorze Qiskit Aer.
+
+% \subsection{Kwantowe wyżarzanie}
+
+Kwantowe wyżarzanie (Quantum annealing - QA) jest metaheurystyczną techniką rozwiązywania trudnych problemów optymalizacyjnych poprzez wykorzystanie fluktuacji kwantowych podczas kontrolowanej eksploracji przestrzeni energetycznej \cite{Kadowaki_1998}. Metoda ta opiera się na stopniowej deformacji hamiltonianu systemu — od łatwego do przygotowania hamiltonianu początkowego do takiego, którego stan podstawowy koduje rozwiązanie problemu. Ewolucja ta jest opisana przez zależny od czasu hamiltonian:
+
+\begin{equation}
+H(t) = s(t) H_I + (1 - s(t)) H_P
+\end{equation}
+
+Tutaj $H_I$ oznacza hamiltonian początkowy o znanym stanie podstawowym, natomiast $H_P$ reprezentuje hamiltonian problemowy. Harmonogram wyżarzania $s(t)$ interpoluje pomiędzy nimi, zazwyczaj zmniejszając się od 1 do 0 w trakcie obliczeń. Jeśli interpolacja przebiega wystarczająco wolno, twierdzenie adiabatyczne gwarantuje, że system pozostanie blisko swojego chwilowego stanu podstawowego, zapewniając wysokie prawdopodobieństwo otrzymania stanu podstawowego $H_P$ na końcu procesu \cite{mcgeoch2022adiabatic}.
+
+Procesory kwantowe firmy D-Wave implementują ten paradygmat wyżarzania kwantowego bezpośrednio w sprzęcie. Ich architektura została zaprojektowana tak, aby przybliżać ewolucję adiabatyczną za pomocą analogowej sieci strojonanych sprzęgaczy i kubitów, które fizycznie realizują interpolację hamiltonianów. Choć sprzęt jest projektowany do podążania trajektorią adiabatyczną, rzeczywista dynamika nie jest w pełni adiabatyczna: urządzenie silnie oddziałuje ze swoim środowiskiem, co wprowadza efekty dyssypacyjne mogące wpływać na działanie. Niemniej jednak D-Wave określa swoją technologię jako unikalnie skoncentrowaną na obliczeniach kwantowych opartych na wyżarzaniu, określając się w dokumentach inwestorskich jako „jedyny komercyjny dostawca systemów obliczeń kwantowych opartych na wyżarzaniu”.
+
+Borowski et al. w \cite{Borowski2020} wykorzystali platformę Leap firmy D-Wave oraz jej dwa solvery — QBSolv oraz solver hybrydowy — do przeprowadzenia szerokich eksperymentów testujących różne warianty ich sformułowaniu CFRS dla VRP. Podobne badania przeprowadzili Feld et al. \cite{Feld_2019}, gdzie autorzy zbadali trzy różne podejścia w ich metodzie CFRS (nazywanej w pracy 2-Phase-Heuristic), używając QBSolv do umieszczenia QUBO na systemie D-Wave 2000Q.
+
+Holliday i współautorzy w pracy \cite{holliday2025advancedhybridquantumtabu} przedstawili hybrydowy algorytm o nazwie Hybrid Quantum Tabu Search (HQTS). W HQTS klasyczne Tabu Search pełni rolę metaheurystyki wysokiego poziomu, natomiast poszczególne pod-trasy w VRP są optymalizowane za pomocą wyżarzania kwantowego. Każda trasa jest formułowana jako QUBO dla TSP i rozwiązywana na systemie D-Wave Advantage. Algorytm HQTS osiągnął „rozwiązania optymalne lub bliskie optymalnym” dla kilku benchmarków CVRP. Autorzy twierdzą, że HQTS przewyższa wcześniejsze hybrydowe algorytmy CVRP. Ponadto wskazują, że zwiększenie częstotliwości kwantowego trasowania (tj. jak często kwantowy podsolver jest wywoływany do optymalizacji każdej trasy) poprawia zarówno jakość rozwiązania, jak i czas działania.
+
+\section{Podsumowanie}
+W niniejszej pracy przeanalizowano potencjał oraz wyzwania związane z zastosowaniem obliczeń kwantowych do rozwiązywania problemów logistycznych, takich jak TSP i VRP. Przeprowadzony przegląd literatury oraz metodologii pozwala na sformułowanie kilku kluczowych wniosków dotyczących obecnego stanu wiedzy w tej dziedzinie.
+
+Po pierwsze, sformułowanie problemów optymalizacyjnych w modelu QUBO jest krokiem niezbędnym, ale kosztownym zasobowo. Standardowe podejścia, takie jak sformułowanie Lucasa, wymagają liczby kubitów skalującej się kwadratowo względem liczby miast, co przy obecnych ograniczeniach sprzętowych (NISQ) stanowi wąskie gardło. Chociaż istnieją bardziej oszczędne kodowania, często wiążą się one z bardziej złożonymi układami bramek lub trudniejszymi do zoptymalizowania krajobrazami energii. W przypadku VRP, dodatkowe ograniczenia, takie jak pojemność pojazdów czy okna czasowe, dodatkowo zwiększają wymaganą liczbę zmiennych, co sprawia, że bezpośrednie mapowanie dużych instancji problemu na QPU jest obecnie niemożliwe.
+
+Po drugie, analiza metod dekompozycji wskazuje, że przyszłość praktycznych zastosowań kwantowych w logistyce leży w algorytmach hybrydowych. Podejścia typu Cluster-First, Route-Second czy generowanie kolumn pozwalają na wydzielenie mniejszych podproblemów, które mogą być efektywnie rozwiązywane przez obecne urządzenia kwantowe, podczas gdy globalna koordynacja pozostaje domeną algorytmów klasycznych. Wyniki badań przytaczane w literaturze sugerują, że takie podejście pozwala na znaczącą redukcję głębokości obwodów i liczby wymaganych kubitów.
+
+Po trzecie, zastosowania QAOA oraz metod opartych na kwantowym wyżarzaniu pokazują, że podejścia kwantowe są zdolne do generowania poprawnych lub bliskich optymalnym rozwiązań dla małych i średnich instancji, szczególnie gdy połączone są z dobrze zaprojektowanymi procedurami klasycznymi. Podwójna dekompozycja — na poziomie problemu i obwodu — okazuje się kluczowa dla efektywnego skalowania instancji VRP na obecnym sprzęcie. Jednocześnie wyniki eksperymentalne wskazują, że samodzielne metody kwantowe wciąż ustępują dojrzałym heurystykom klasycznym w zakresie jakości i stabilności rozwiązań.
+
+
+% ---------------------------------------------
+\begin{thebibliography}{99}
+\bibitem{dantzig1959truck}
+Dantzig, G. B. and Ramser, J. H.
+The Truck Dispatching Problem.
+Management Science, 6(1):80--91, 1959.
+
+\bibitem{farhi2014quantumapproximateoptimizationalgorithm}
+Farhi, E., Goldstone, J., and Gutmann, S.
+A Quantum Approximate Optimization Algorithm.
+arXiv:1411.4028, 2014.
+
+\bibitem{Azad_2023}
+Azad, U., Behera, B. K., Ahmed, E. A., Panigrahi, P. K., and Farouk, A.
+Solving Vehicle Routing Problem Using Quantum Approximate Optimization Algorithm.
+IEEE Transactions on Intelligent Transportation Systems, 24(7):7564–7573, 2023.
+
+\bibitem{LAPORTE1992345}
+Laporte, G.
+The vehicle routing problem: An overview of exact and approximate algorithms.
+European Journal of Operational Research, 59(3):345--358, 1992.
+
+\bibitem{barahona1999ising}
+Barahona, F.
+On the computational complexity of Ising spin glass models.
+Journal of Physics A: Mathematical and General, 15:3241, 1999.
+
+\bibitem{glover2019tutorialformulatingusingqubo}
+Glover, F., Kochenberger, G., and Du, Y.
+A Tutorial on Formulating and Using QUBO Models.
+arXiv:1811.11538, 2019.
+
+\bibitem{Lucas_2014}
+Lucas, A.
+Ising formulations of many NP problems.
+Frontiers in Physics, 2, 2014.
+
+\bibitem{huang2025solvingcapacitatedvehiclerouting}
+Huang, W.-h., Matsuyama, H., and Yamashiro, Y.
+Solving Capacitated Vehicle Routing Problem with Quantum Alternating Operator Ansatz and Column Generation.
+arXiv:2503.17051, 2025.
+
+\bibitem{Hadfield_2019}
+Hadfield, S., Wang, Z., O’Gorman, B., Rieffel, E. G., Venturelli, D., and Biswas, R.
+From the Quantum Approximate Optimization Algorithm to a Quantum Alternating Operator Ansatz.
+Algorithms, 12(2):34, 2019.
+
+\bibitem{padmasola2025solvingtravelingsalesmanproblem}
+Padmasola, V., Li, Z., Chatterjee, R., and Dyk, W.
+Solving the Traveling Salesman Problem via Different Quantum Computing Architectures.
+arXiv:2502.17725, 2025.
+
+\bibitem{DWaveProblemFormulation2022}
+D-Wave Systems Inc.
+Problem Formulation Guide.
+Whitepaper 14-1044A-C, 2022.
+
+\bibitem{a12110224}
+Papalitsas, C., Andronikos, T., Giannakis, K., Theocharopoulou, G., and Fanarioti, S.
+A QUBO Model for the Traveling Salesman Problem with Time Windows.
+Algorithms, 12(11):224, 2019.
+
+\bibitem{Qian_2023}
+Qian, W., Basili, R. A. M., Eshaghian-Wilner, M. M., Khokhar, A., Luecke, G., and Vary, J. P.
+Comparative Study of Variations in Quantum Approximate Optimization Algorithms for the Traveling Salesman Problem.
+Entropy, 25(8):1238, 2023.
+
+\bibitem{ramezani2024reducingnumberqubitsn2}
+Ramezani, M., Salami, S., Shokhmkar, M., Moradi, M., and Bahrampour, A.
+Reducing the Number of Qubits from $n^2$ to $n\log_{2}(n)$ to Solve the Traveling Salesman Problem with Quantum Computers.
+arXiv:2402.18530, 2024.
+
+\bibitem{mtzformulation}
+Miller, C. E., Tucker, A. W., and Zemlin, R. A.
+Integer Programming Formulation of Traveling Salesman Problems.
+J. ACM, 7(4):326–329, 1960.
+
+\bibitem{dantzig1954solution}
+Dantzig, G., Fulkerson, R., and Johnson, S.
+Solution of a large-scale traveling-salesman problem.
+Journal of the Operations Research Society of America, 2(4):393--410, 1954.
+
+\bibitem{cattelan2022modelingroutingproblemsqubo}
+Cattelan, M. and Yarkoni, S.
+Modeling routing problems in QUBO with application to ride-hailing.
+arXiv:2212.04894, 2022.
+
+
+\bibitem{Borowski2020}
+Borowski, M., Gora, P., Karnas, K., Błajda, M., Król, K., Matyjasek, A., Burczyk, D., Szewczyk, M., and Kutwin, M.
+New hybrid quantum annealing algorithms for solving vehicle routing problem.
+In International Conference on Computational Science, pages 546--561, 2020.
+
+\bibitem{irie2019quantumannealingvehiclerouting}
+Irie, H., Wongpaisarnsin, G., Terabe, M., Miki, A., and Taguchi, S.
+Quantum Annealing of Vehicle Routing Problem with Time, State and Capacity.
+arXiv:1903.06322, 2019.
+
+\bibitem{maciejunes2025solvinglargescalevehiclerouting}
+Maciejunes, A., Stenger, J., Gunlycke, D., and Chrisochoides, N.
+Solving Large-Scale Vehicle Routing Problems with Hybrid Quantum-Classical Decomposition.
+arXiv:2507.05373, 2025.
+
+\bibitem{Feld_2019}
+Feld, S., Roch, C., Gabor, T., Seidel, C., Neukart, F., Galter, I., Mauerer, W., and Linnhoff-Popien, C.
+A Hybrid Solution Method for the Capacitated Vehicle Routing Problem Using a Quantum Annealer.
+Frontiers in ICT, 6, 2019.
+
+\bibitem{metis}
+Karypis, G. and Kumar, V.
+A fast and high quality multilevel scheme for partitioning irregular graphs.
+SIAM Journal on Scientific Computing, 20(1):359--392, 1998.
+
+\bibitem{desaulniers2006column}
+Desaulniers, G., Desrosiers, J., and Solomon, M. M.
+Column Generation.
+Springer, 2006.
+
+\bibitem{wagner2024quantumsubroutinesbranchpriceandcutvehicle}
+Wagner, F. and Liers, F.
+Quantum Subroutines in Branch-Price-and-Cut for Vehicle Routing.
+arXiv:2412.15665, 2024.
+
+\bibitem{azfar2025quantumassistedvehicleroutingrealizing}
+Azfar, T., Raisuddin, O. M., Ke, R., and Holguin-Veras, J.
+Quantum-Assisted Vehicle Routing: Realizing QAOA-based Approach on Gate-Based Quantum Computer.
+arXiv:2505.01614, 2025.
+
+\bibitem{amplitude}
+Stenger, J. P. T., Crowe, S. T., Diaz, J. A., Rodriguez, R., Gunlycke, D., and Ptasinski, J. N.
+Efficient Encoding of the Traveling Salesperson Problem on a Quantum Computer.
+Quantum Reports, 7(3):32, 2025.
+
+\bibitem{Kadowaki_1998}
+Kadowaki, T. and Nishimori, H.
+Quantum annealing in the transverse Ising model.
+Physical Review E, 58(5):5355–5363, 1998.
+
+\bibitem{mcgeoch2022adiabatic}
+McGeoch, C. C.
+Adiabatic Quantum Computation and Quantum Annealing: Theory and Practice.
+Springer, 2022.
+
+\bibitem{holliday2025advancedhybridquantumtabu}
+Holliday, J. B., Osaba, E., and Luu, K.
+An Advanced Hybrid Quantum Tabu Search Approach to Vehicle Routing Problems.
+arXiv:2501.12652, 2025.
+
+\bibitem{Palackal_2023}
+Palackal, L., Poggel, B., Wulff, M., Ehm, H., Lorenz, J. M., and Mendl, C. B.
+Quantum-Assisted Solution Paths for the Capacitated Vehicle Routing Problem.
+In 2023 IEEE International Conference on Quantum Computing and Engineering (QCE).
+
+\end{thebibliography}

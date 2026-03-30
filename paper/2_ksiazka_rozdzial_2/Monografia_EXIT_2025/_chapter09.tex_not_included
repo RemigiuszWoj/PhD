@@ -1,0 +1,834 @@
+\chapter{The methodology of parallel memetic algorithms designing}
+\chaptermark{The methodology of...}
+\thispagestyle{empty}
+
+The chapter presents the methodology of
+parallel algorithm designing based on memetic approach (Lamarck
+and Baldwin evolution theory) making use of specific properties of
+the problem and distributed island model. This approach is
+presented on the example of the single machine scheduling problem
+with earliness/tardiness penalties.
+
+\section{Introduction}
+
+%\subsection{Memetic Algorithm}\index{Memetic Algorithm, MA}
+
+The memetic algorithm is an evolutionary approach based on the
+process of natural evolution adhering to the principles of natural
+selection, crossover and survival. The Lamarck's model
+\cite{Michalewicz} of evolution is applied to intensify the
+optimization process. In each generation a certain part of the
+population is replaced by their local minima simulating a learning
+effect which can be succeeded by the next generation as a 'meme'.
+From the current population some subset is drawn. Each individual
+of this subset is a starting solution for the local optimization
+algorithm. Thus, there are five essential steps of the memetic
+algorithm:
+\begin{enumerate}
+\itemsep -1pt \item \emph{selection} -- choosing some subset of
+individuals, so-called parents, \item \emph{crossover} --
+combining parts from pairs of parents to generate new ones, \item
+\emph{mutation} -- transformation that creates a new individual by
+small changes applied to an existing one taken from the
+population, \item \emph{learning} -- an individual is improved
+(e.g. by a local optimization), \item \emph{succession} --
+determining the next generation's population.
+\end{enumerate}
+New individuals created by crossover or mutation replace all or a
+part of the old population. The process of evaluating fitness and
+creating a new population generation is repeated until a
+termination criterion is achieved.
+
+Similar to the GA, following kinds of parallelization are usually
+applied to memetic algorithms MAs:
+\begin{itemize}
+\itemsep -2pt \item global parallelization,
+
+\item independent runs,
+
+\item island model,
+
+\item diffusion model,
+\end{itemize}
+with similar properties as applied to the classic GA.
+Additionally, a local search procedure can be parallelized in MA.
+Such an approach is proposed by \cite{Berger} and applied to the
+Vehicle Routing Problem with Time Windows (VRPTW) by using a
+master-slave parallel approach. The master controls the memetic
+algorithm execution, synchronizes and handles parent selection
+while the slaves execute genetic operations together with local
+search in parallel. Parallel memetic algorithm was also considered
+by \cite{Bradwell} (asynchronous MA) and \cite{Tang} (MA based on
+population entropy).
+
+
+Implementation of algorithms which are based on multithread
+multiple-walk searching\index{multithread!multiple-walk searching}
+of the solutions space are usually coarse-grained application,
+i.e. they require sparse communication and synchronization. These
+type of algorithms are easy to be applied in distributed
+calculation systems, as clusters which express beneficial
+efficiency-to-price ratio. Apart from speeding up the
+calculations, it is possible to improve quality of obtained
+results. Search processes can be either independent or
+cooperative.
+
+\subsection{Independent searching threads}
+
+In this category we can distinguish two base approaches:
+%
+\begin{itemize}
+\item Researching of the solution space by using multiple
+trajectories, which begin from different starting solutions (or
+different starting populations in the case of using
+population-based approaches). Searching threads can use either the
+same or different strategies, i.e. the same or different local
+search algorithms, the same or different parameters (tabu list
+length, population size, etc.). Trajectories can cross themselves
+in one or more places of the neighborhood graph.
+
+\item Parallel researching of subgraphs of a neighborhood graph
+obtained by decomposition of the problem into a few subproblems
+(for example fixing of some variables). Subgraphs of the
+neighborhood graph are searched concurrently without crossing
+search trajectories. We obtain partitioning of the neighborhood
+graph into disjoint subgraphs.
+\end{itemize}
+
+The first parallel implementation of the tabu search
+method\index{method!tabu search} based on multiple-walk searching
+of the solution space was proposed by Taillard for the quadric
+assignment problem (QAP) \cite{Tail_paral_QAP} and the job shop
+problem \cite{Tail_paral_jobshop}. The multiple-walk
+parallelization strategy based on independent searching threads is
+easy in implementation and one can obtain good values of the
+speedup\index{speedup} under condition of proper decomposition of
+the solution space into searching threads (and their
+trajectories).
+
+%If the decomposition is done improperly, a parallel algorithm can
+%multiple search through the same regions of the solution space,
+%i.e. we obtain redundance of searching.
+
+
+\subsection{Cooperative searching threads}\label{koop}
+
+This model constitutes the most general and promising type of
+solution space searching strategy by using parallel
+metaheuristics, however it requires knowledge of solving problem
+specificity. 'Cooperative' means here the interchange of
+information -- experience of searching history up to now. Specific
+information, which is characteristic for the problem and the
+method (i.e. the best solution found so far, elite solutions, the
+frequency of moves, tabu lists, backtrack-jump list,
+subpopulations and their sizes,~etc.) has to be exchanged or
+broadcasted.
+
+Information shared by search processes can be stored as global
+variables kept in the \textit{shared memory} or as records in the
+local memory of the dedicated central processor which communicates
+with all other processors providing them with requested data. In
+the model, in which processes cooperate with each other and
+information gathered during moving along a trajectory is used to
+improve other trajectories, not only can one expect convergence of
+such a parallel algorithm, but also founding in the same time a
+better solution than the parallel algorithm without communication
+can takes place. In such a case we can say that cooperative
+concurrent algorithms constitute a new class of algorithms in
+deed.
+
+The first heuristic algorithm of this type was asynchronous
+parallel tabu search algorithm proposed by Crainic, Toulouse and
+Gendreau \cite{61}. Packages such as ParSA \cite{116} offer ready
+implementations of parallel simulated annealing algorithms based
+on cooperative searching threads. The interaction strategy is also
+very efficient in implementation of parallel genetic algorithms
+(in the sense of obtained solutions). There are plenty of ready
+libraries such as POOGAL \cite{31}. The majority of cooperative
+implementations of parallel genetic algorithm is based on the
+\textit{migration island model}. Each process has its own
+subpopulation exchanging from time to time a number of individuals
+(usually the best -- elite) with other processes (Bubak and Sowa
+\cite{31}, Crainic and Toulouse \cite{Crainic}).
+Bo\.{z}ejko~\cite{bozejko2009_2} proposed a parallel
+path-relinking metaheuristics based on the parallel scatter search
+algorithm.
+
+
+\subsection{The problem}\label{section_twet}
+
+This paper aim is to present parallel memetic approach on the
+instance of a strongly NP-hard scheduling problem. We additionally
+assume that the considered problem has \emph{no idle} constraint
+(\emph{TWET-no-idle} problem), which means that the machine works
+without stops. The problem of scheduling with earliness and
+tardiness (total weighted earliness/tardiness problem,
+\emph{TWET}) is one of the most frequently considered in
+literature. In this problem each job from a set $\st{J} =
+\{1,2,\ldots,n\}$ has to be processed, without interruption, on a
+machine, which can execute at most one job in each moment. By $p_i
+$ we represent the execution time of a job $i \in \st{J}$, and by
+$e_i $ and $d_i $ we mean an adequately demanded earliest and
+latest moment of the finishing processing of a job. If scheduling
+of jobs is established and $C_i $ is the moment of finishing a job
+$i$, then we call $E_i = \max \{0,e_i - C_i \}$ an
+\textit{earliness} and $T_i = \max \{0,C_i - d_i \}$ a
+\textit{tardiness}. The expression $u_i E_i + w_i T$ is the
+\textit{cost} of execution a job, where $u_i $ and $w_i $ ($i \in
+\st{J})$ are nonnegative coefficients of a goal function. The
+problem consists in minimizing a sum of costs of jobs, that is to
+find a job sequence $\pi^* \in \Phi_n$ such that for the goal
+function
+\begin{equation}
+F(\pi) = \sum_{i = 1}^n {(u_{\pi(i)} E_{\pi(i)} + w_{\pi(i)}
+T_{\pi(i)} )},\;\;\; \pi \in \Phi_n,
+\end{equation}
+\noindent we have
+\begin{equation}
+F(\pi^*) = \min_{\pi \in \Phi_n} F(\pi).
+\end{equation}
+%
+This problem is represented by $1\vert \vert \sum {(u_i E_i + w_i
+T_i )} $ in literature and it belongs to a strongly
+NP-hard\index{NP-hard problem!strongly} class (if we assume $u_i =
+0$, $i = 1,2,\;\ldots\;,n$, we will obtain a strongly
+NP-hard\index{NP-hard problem!strongly} problem $1\vert \vert \sum
+{w_i T_i } $ - Lenstra et al. \cite{lenstra}). Baker and Scudder
+\cite{Bak} proved, that there can be an idle time in an optimal
+solution (jobs need not to be processed directly one after
+another), that is $C_{\pi(i + 1)} - p_{\pi(i + 1)} \ge C_{\pi(i)}
+$, $i = 1,2,\ldots,n - 1$. Solving the problem amounts to
+establishing a sequence of jobs and its starting times. Hoogeven
+and van de Velde \cite{hoo} proposed an algorithm based on the
+branch and bound method. Because of exponentially growing
+computation time, this algorithm can be applied only to solve
+instances where the number of jobs is not greater than 20.
+Therefore, in practice almost always approximate algorithms are
+used. The best ones are based on artificial intelligence methods.
+Calculations are performed in two stages.
+\begin{itemize}\itemsep -2pt  \item Determining the scheduling of jobs (with
+no idle times). \item Establishing optimal starting times of jobs.
+\end{itemize}
+
+\noindent Bo\.{z}ejko and Wodecki \cite{boz_2005_3} proposed a
+parallel coevolutionary algorithm for the considered problem.
+
+%stąd be korekty
+
+\subsubsection{Block properties}\index{block
+properties}\label{et_block_properties}
+
+For the \textit{TWET-no-idle }problem, each schedule of jobs can
+be represented by permutation $\pi = (\pi (1),\pi (2),\ldots,\pi
+(n))$ of elements of the set of jobs $\st{J}$. Let $\Phi_n$ denote
+the set of all such permutations. The total cost $\pi \in \Phi_n$
+is $F(\pi ) = \sum\nolimits_{i = 1}^n {f_{\pi (i)} (C_{\pi (i)} )}
+,$ where $C_{\pi (i)} $ is completed time of the job $\pi (i),
+C_{\pi (i)} = \sum\nolimits_{j = 1}^i {p_{\pi (j)} } $. The job
+$\pi (i)$ is considered \textit{early} if it is completed before
+its earliest moment of finishing ($C_{\pi (i)} < e_{\pi (i)} )$,
+\textit{on time} if $e_{\pi (i)} \le C_{\pi (i)} \le d_{\pi (i)}
+$, and \textit{tardy} if the job is completed after its due date
+(i.e. $C_{\pi (i)} > d_{\pi (i)} )$.
+
+Each permutation $\pi \in \Phi_n$ is decomposed into
+subpermutations (subsequences of jobs) $B = (B^1 ,B^2 ,\ldots,B^v
+)$ called \textit{blocks} in $\pi $, where:
+%\vspace{-5mm}
+\begin{enumerate}
+\item $ B^i = (\pi (a_i ),\pi (a_i + 1),\ldots,\pi (b_i - 1),\pi
+(b_i )), $ and \\ $a_i = b_{i - 1} + 1,\;\;1 \le i \le v,\;\;a_0 =
+0,\;b_v = n. $
+\item All the jobs $j \in B^i $ satisfy the following conditions:\\
+%\noindent
+%\vspace*{-6mm}
+%\begin{table}[htbp]
+\begin{tabular}{ll}
+\hspace*{1mm}$e_j > C_{\pi (b_i )} ,$&(C1)\\
+\hspace*{1mm}$e_j \le C_{\pi (b_{i - 1} )} + p_j$ and $d_j \ge C_{\pi (b_i )},\quad$&(C2)\\
+\hspace*{1mm}$d_j < C_{\pi (b_{i - 1} )} + p_j.$&(C3)\\
+\end{tabular}
+%\end{table}
+%\vspace*{-6mm}
+%
+%\noindent Cleary, each job $j \in B_i $ satisfying Condition $C1$ is a \textit{early}, Condition C2 is a
+%\textit{on time} and Condition C3 is a \textit{tardy}.
+\item $B_i$ are maximal subsequences of $\pi $ in which all the
+jobs satisfy either Condition $C1$ or Condition $C2$ or Condition
+$C3$.
+\end{enumerate}
+%
+\noindent By definition, there exist three types of blocks implied
+by either C1 or C2 or C3. To distinguish them, we will use the
+\textit{E-block}, \textit{O-block} and \textit{T-block} notions
+respectively. For any block $\Upsilon$ in a partition $B$ of
+permutation $\pi \in \Phi_n$, let
+%\vspace{-6mm}
+\begin{equation}
+F_\Upsilon (\pi ) = \sum\nolimits_{i \in \Upsilon} {(u_i E_i + w_i
+T_i )}. \end{equation}
+
+%\vspace{-2mm}
+
+\noindent Therefore, the value of a goal function
+%\vspace{-6mm}
+\begin{equation}
+F(\pi ) = \sum\nolimits_{i = 1}^n {(u_i E_i + w_i T_i )} =
+\sum\nolimits_{\Upsilon \in B } {F_\Upsilon (\pi )}.
+\end{equation}
+
+%\vspace{-2mm}
+
+\noindent If $\Upsilon$ is a $T$-block, then every job inside is
+early. Therefore, an optimal sequence of the jobs within
+$\Upsilon$ of the permutation $\pi $ (that is minimizing
+$F_\Upsilon (\pi ))$ can be obtained, using the well-known
+Weighted Shortest Processing Time (\emph{WSPT}) rule, proposed by
+Smith \cite{smith}. The \emph{WSPT} rule creates an optimal
+sequence of jobs in the non-increasing order of the ratios $w_j /
+p_j $. Similarly, if $\Upsilon$ is an $E$-block, than an optimal
+sequence of the jobs within can be obtained, using the Weighted
+Longest Processing Time (\emph{WLPT}) rule which creates a
+sequence of jobs in the non-decreasing order of the ratios $u_j /
+p_j $.
+%
+Partition $B$ of the permutation $\pi $ is \textit{ordered}, if
+there are jobs in the \emph{WSPT} sequence in any $T$-block, and
+if there are jobs in the \emph{WLPT} sequence in any $E$-block.
+
+\begin{tw}[\cite{Boz}]\label{tw_a} Let $\Upsilon$ be an ordered partition of a permutation $\pi
+\in \Phi_n$ to blocks. If $\beta \in \Phi_n$ and $F(\beta ) <
+F(\pi )$, so at least one job of some block of $\pi $ was moved
+before the first or after the last job of this block in the
+permutation $\beta $.
+\end{tw}
+
+%\vspace{-2mm}
+\noindent Note that Theorem \ref{tw_a} provides the necessary
+condition to obtain a permutation $\beta $ from $\pi $ such, that
+$F(\beta ) < F(\pi )$.
+%
+Let $B = (B^1 ,B^2 ,\ldots,B^v )$ be an ordered partition of the
+permutation $\pi \in \Phi_n$ to blocks. If a job $\pi (j) \in B^i
+\;(B^i \in B)$, therefore moves which can improving goal function
+value consists in reordering a job $\pi (j)$ before the first or
+after the last job of this block. Let $N_j^{bf} $ and $N_j^{af} $
+be sets of such moves ($N_j^{bf} = \emptyset$ for $j \in B^1$ and
+$N_j^{af} = \emptyset$ for $j \in B^v$). Therefore,
+the neighborhood of the permutation $\pi \in \Phi_n$, %\vspace{-3mm}
+\begin{equation}
+\label{eq1} N(\pi ) = \bigcup\limits_{j = 1}^n {N_j^{bf} \cup }
+\bigcup\limits_{j = 1}^n {N_j^{af} }.
+\end{equation}
+%\vspace{-3mm}
+As computational experiments show, the neighborhood defined in
+(\ref{eq1}) has a half smaller size than the neighborhood of all
+the insert moves.
+
+
+
+\section{Memetic algorithm}
+
+
+All operations in a coevolutionary memetic algorithm (selection,
+cross\-over, local optimization and succession) are executed
+locally, on some subsets of the current population called
+\textit{islands}. It is a strongly decentralized model of an
+evolutionary algorithm. There are independent evolution processes
+on each of the islands, and communication takes place
+sporadically. Exchanging individuals between islands secures
+diversity of populations and prevents fast imitating of an
+individual with a local minimum as its goal function. On each
+island a hybrid algorithm is applied, in which an evolutionary
+algorithm is used to determine the starting solutions for the
+local search algorithm. Algorithm~\ref{fig_Memetic algorithm} 
+on page \pageref{fig_Memetic algorithm} contains the outline of 
+the classic memetic algorithm.
+
+
+\begin{algorithm}[h!]
+\label{fig_Memetic algorithm}
+	\caption{Memetic algorithm}
+
+Number of iteration $k:=$0;
+
+$P_0\leftarrow $initial population;
+
+$\pi^* = \arg\min_{\pi \in P_0} f(\pi)$;
+
+\Repeat{termination condition is satisfied}{
+    $P_k^{\prime} \leftarrow $Selection($P_k )$;\\
+
+    $P_k^{\prime\prime} \leftarrow $Crossover($P_k^{\prime})$;\\
+
+    $P_k^{\prime\prime} \leftarrow $Mutation($P_k^{\prime\prime} )$;\\
+
+    $A \leftarrow $RandomSubSet($P_k^{\prime\prime} )$;\\
+
+    $P_k^{\prime\prime} \leftarrow $ $P_k^{\prime\prime} \cup $LocalMinimumSet($A$);\\
+
+    $P_{k + 1} \leftarrow $Succession($P_k,\;P_k^{\prime\prime})$\\
+    
+    $k:=k$ + 1;\\
+    
+    \If{$\min_{\pi \in P_k} f(\pi) < f(\pi^*)$}{$\pi^* \leftarrow \arg\min_{\pi \in P_k} f(\pi)$;}
+}
+
+\Return{$\pi^*$} 
+\end{algorithm}
+
+
+%\begin{figure}[h!]
+%\noindent\framebox[\linewidth][l]{
+%
+%\noindent \begin{tabular}{l}
+%
+%\addtocounter{algorithms_counter}{1}
+%
+%\noindent\textbf{\tt Algorithm
+%\arabic{algorithms_counter}. Memetic algorithm }\\
+%
+%%\noindent \begin{tabular}{|l|} \hline
+%
+%Number of iteration $k:=$0;\\
+%
+%$P_0\leftarrow $initial population;\\
+%
+%\noindent{\textbf{\tt repeat}}\\
+%
+%\quad $P_k^{\prime} \leftarrow $Selection($P_k )$;\\
+%
+%\quad $P_k^{\prime\prime} \leftarrow $Crossover($P_k^{\prime})$;\\
+%
+%\quad $P_k^{\prime\prime} \leftarrow $Mutation($P_k^{\prime\prime} )$;\\
+%
+%\quad $A \leftarrow $RandomSubSet($P_k^{\prime\prime} )$;\\
+%
+%\quad $P_k^{\prime\prime} \leftarrow $ $P_k^{\prime\prime} \cup
+%$LocalMinimumSet($A$);\\
+%
+%\quad $P_{k + 1} \leftarrow $Succession($P_k
+%,\;P_k^{\prime\prime})$\\
+%
+%\quad $k:=k$ + 1;\\
+%
+% \noindent {\textbf{\tt until}} some
+%termination condition is satisfied;\\
+%\end{tabular}
+%}\caption{Outline of the memetic algorithm.
+%}\label{figalg_memetic}
+%\end{figure}
+
+
+\section{Parallel memetic algorithm}\label{sect_par_coev}
+
+The parallel algorithms based on the island model divide the
+population into a few subpopulations. Each of them is assigned to
+a different processor which performs a sequential memetic
+algorithm based on its own subpopulation. The crossover involves
+only individuals within the same population. Occasionally, the
+processor exchanges individuals through a migration operator. The
+main determinants of this model are: (1) size of the
+subpopulations, (2) topology of the connection network, (3) number
+of individuals to be exchanged, (4) frequency of exchanging. The
+island model of parallel memetic algorithm is characterized by a
+significant reduction of the communication time, compared to the
+global model (with distributed computations of the fitness
+function only). As shared memory is not required, this model is
+also more flexible.
+
+
+Below, a parallel memetic algorithm is proposed. The algorithm is
+based on the island model of parallelism (see Bo\.{z}ejko and
+Wodecki \cite{boz_2006_4}). We have adapted the MSXF (Multi --
+Step Crossover Fusion) operator which is used to extend the
+process of researching for better solutions of the problem.
+Originally, a MSXF has been described by Reeves and Yamada
+\cite{reeves}. Its idea is based on local search, starting from
+one of the parent solutions, to find a new good solution where the
+other parent is used as a reference point. Here we propose to use
+block properties\index{block properties} defined in the
+Section~\ref{et_block_properties} to make the search process more
+effective -- prevent changes inside the block (which are
+unprofitable from the fitness function's point of view). Such a
+proceeding is consistent with an idea of not making unprofitable
+changes between memes. In this way we design a MSXF+B (MSXF with
+blocks) operator.
+
+The neighborhood $\mathcal{N}$(\textit{$\pi $}) of the permutation
+(individual) \textit{$\pi $ }is defined as a set of new
+permutations that can be achieved from \textit{$\pi $} by exactly
+one adjacent pairwise exchange operator which exchanges the
+positions of two adjacent jobs of a problem's solution connected
+with permutation \textit{$\pi $}. The distance measure
+$d$(\textit{$\pi $},\textit{$\sigma $}) is defined as a number of
+adjacent pairwise exchanges needed to transform permutation
+\textit{$\pi $} into permutation \textit{$\sigma $.} Such a
+measure is known as Kendall's \textit{$\tau $} measure. The
+outline of the procedure is presented by the
+Algorithm~\ref{fig_MSXF}.
+
+
+\begin{algorithm}[h!]
+\label{fig_MSXF}
+	\caption{Multi-Step Crossover Fusion with
+Blocks (MSXF+B)}
+
+\SetKwInOut{Input}{Input}
+\SetKwInOut{Output}{Output}
+
+\Input{$\pi_{1}$, $\pi_{2}$ -- parent solutions; $T$ -- initial temperature;}
+\Output{$q$ -- offspring (solution);}	
+\BlankLine{}
+
+Set $x = q = \pi_{1}$;
+
+\Repeat{termination condition is satisfied}{
+    Determine blocks in the solution $\pi$.
+
+    Determine restricted neighborhood $\mathcal{N}$(\textit{$\pi$}) according to blocks;
+
+    For each member $y_{i} \in  \mathcal{N}$(\textit{$\pi $}) calculate $d(y_{i}$,\textit{ $\pi $}$_{2})$;
+
+    Sort $y_{i} \in  \mathcal{N}$(\textit{$\pi $}) in ascending order of $d(y_{i}$,\textit{ $\pi $}$_{2})$;
+    
+    \Repeat{$y_i$ is accepted;}{
+        Select $y_{i}$ from $\mathcal{N}$(\textit{$\pi$}) with a probability inversely proportional to the index $i$;
+
+        Calculate $C_{sum}(y_{i})$;
+
+        \eIf{$C_{sum}(y_{i}) \le $ $C_{sum}(x)$}{Accept $y_{i}$;}{
+        Accept $y_i$ with probability $P_{T}(y_{i}) = \exp((C_{sum}(x) - C_{sum}(y_{i})) / T);$
+        }
+        Change the index of $y_{i}$ from $i$ to $n$ and the indexes of $y_{k}$, $k =i$+1,\ldots,$n$ from $k$ to $k-$1;
+    }
+    
+    \If{$C_{sum}(x) < C_{sum}(q)$}{$q \leftarrow  x$;}
+    
+    Modify $T$ due to the cooling scheme;
+}
+
+\Return{$q$} $\{$ $q$ is offspring $\}$
+\end{algorithm}
+
+
+%\begin{figure}[h!]
+%\noindent\framebox[\linewidth][l]{
+%
+%\noindent \begin{tabular}{l}
+%
+%\addtocounter{algorithms_counter}{1}
+%
+%\hspace{-1mm}\noindent\textbf{\tt Algorithm
+%\arabic{algorithms_counter}. Multi-Step Crossover}\\ {\tt
+%\hspace{2.5cm}Fusion with
+%Blocks}\\
+%
+%Let \textit{$\pi $}$_{1}$, \textit{$\pi $}$_{2}$ be parent
+%solutions. Set $x = q = \pi_{1}$;\\
+%
+%{\textbf{\tt repeat}}\\
+%
+%\quad Determine blocks in the solution $\pi$.\\
+%
+%\quad Determine restricted neighborhood $\mathcal{N}$(\textit{$\pi
+%$})\\
+%
+%\quad \quad according to blocks;\\
+%
+%\quad For each member $y_{i} \in  \mathcal{N}$(\textit{$\pi $})
+%calculate $d(y_{i}$,\textit{ $\pi $}$_{2})$;\\
+%
+%\quad Sort $y_{i} \in  \mathcal{N}$(\textit{$\pi $}) in ascending
+%order of $d(y_{i}$,\textit{ $\pi $}$_{2})$;\\
+%
+%\quad {\textbf{\tt repeat}}\\
+%
+%\quad\quad Select $y_{i}$ from $\mathcal{N}$(\textit{$\pi$}) with
+%a probability\\
+%
+%\quad\quad\quad inversely proportional to the index $i$;\\
+%
+%\quad\quad\quad Calculate
+%$C_{sum}(y_{i})$;\\
+%
+%\quad\quad Accept $y_{i }$ with probability 1,\\
+%
+%\quad\quad \quad if $C_{sum}(y_{i})
+%\quad \le $ $C_{sum}(x)$, and with\\
+%
+%\quad\quad\quad probability $P_{T}(y_{i})$ =
+%\textit{exp}(($C_{sum}(x) -$\\
+%
+%\quad\quad\quad $- C_{sum}(y_{i}))$ / $T)$ otherwise\\
+%
+%\quad\quad\quad ($T$ is temperature);\\
+%
+%\quad\quad Change the index of $y_{i}$ from $i$ to $n$ and the\\
+%
+%\quad\quad\quad indices of $y_{k}$, $k =i$+1,\ldots,$n$ from $k$ to $k-$1;\\
+%
+%\quad {\textbf{\tt until}} $y_{i}$ is accepted;\\
+%
+%\quad $x \leftarrow  y_{i}$;\\
+%
+%\quad {\textbf{\tt if}} $C_{sum}(x) < C_{sum}(q)$ \textbf{\tt
+%then}\\
+%
+%\quad \quad  $q
+%\leftarrow  x$;\\
+%
+%{\textbf{\tt until}} \textit{some termination condition is
+%satisfied};\\
+%
+%$q$ is the offspring.\\
+%\end{tabular}
+%}\caption{Outline of the Multi-Step Crossover Fusion with Blocks
+%procedure. }\label{figalg_msxfb}
+%\end{figure}
+
+
+In the implementation proposed here Multi-Step Crossover Fusion
+with Blocks (MSXF+B) is an inter-island (i.e.
+inter--sub\-po\-pu\-la\-tion) crossover operator which constructs
+a new individual by making use of the best individuals of
+different islands connected with subpopulations on different
+processors. The condition of termination consisted in exceeding
+100 iterations by the MSXF+B function. The outline of the whole
+parallel memetic algorithm is presented by the
+Algorithm~\ref{fig_ParMemeticAlgorithm} on page~\pageref{fig_ParMemeticAlgorithm}.
+
+
+\begin{algorithm}
+\label{fig_ParMemeticAlgorithm}
+	\caption{Parallel memetic algorithm}
+\SetKwFor{ParFor}{parfor}{do}{endfor}
+
+\ParFor{$j=1,2,\ldots,p$ ($p$ -- \#processors)}{
+    $i  \leftarrow $ 0;
+    
+    $P_{j} \leftarrow $ random subpopulation connected  with processor $j$;
+
+    $p_{j} \leftarrow $ number of individuals in $j$-th subpopulation;
+
+    \Repeat{stop condition}{
+        Selection($P_{j},P'_{j})$;
+
+        Crossover($P'_{j},P''_{j})$;
+
+        Mutation($P''_{j})$;
+        
+        \If{$k$ mod $R = 0$ (every $R$ iterations)}{
+            $r$ := \textit{random}(1, $p$);
+
+            MSXF+B($P'_{j}$(1)$,P_{r}$(1));
+        }
+    
+        $P_{j} \leftarrow  P''_{j}$; $i \leftarrow i$ + 1;
+        
+        \If{there is no improvement of the average $C_{sum}$}{
+        {\it $\{$ Partial Restart $\}$}
+            $r$ $\leftarrow$ \textit{random}(1,$p$);
+
+            Remove $\alpha = 90$ percentage of individuals in the subpopulation $P_{j.}$;
+
+            Replenish $P_{j}$ by random individuals;
+        }
+    
+        \If{$k$ mod $S = 0$}{
+            {\it $\{$ Migration to another island $\}$}
+        
+            Remove $\beta = 20$ percentage of individuals in the subpopulation $P_{j}$;
+
+            Replenish $P_{j}$ by the best individuals from the subpopulation $P_{r }$ taken from processor $r$;
+        }
+    }
+}
+
+\end{algorithm}
+
+
+The learning phase of the proposed algorithm uses the
+path-relinking conception which makes it more efficient than a
+standard descent search used as the learning phase in the
+sequential memetic algorithm. It provides a good genetic
+diversification of the population together with a high quality of
+each individual.
+
+Frequency of communication between processors (MSXF+B operator and
+migration) is very important for the parallel algorithm
+performance. It must not be too frequent because of the relative
+long time of communication between processors, comparing with the
+time of communication inside a program of a one processor. In this
+implementation the processor gets new individuals quite rarely,
+every $R$ = 20 (MSXF+B operator) or every $S$ = 35 (migration)
+iterations.
+%
+\section{Computer simulations}
+%
+The algorithm was implemented in the Ada95 language and ran on the
+SGI Altix 3700 Bx2 supercomputer installed in Wroc\l aw Center of
+Networking and Supercomputing under the Novell SUSE Linux
+Enterprise Server operating system. Tests were based on 125
+instances with 40,50 and 100 jobs taken from the OR-Library \cite{OR_Library}. The
+results were compared to the best known, also taken from
+OR-Library.
+%
+\begin{figure}[h!]
+\centerline{\includegraphics[width=0.75\textwidth]{fig/tab1.eps}}
+\caption{Average percentage relative deviations (APRD) to the best
+known solutions for the sequence and parallel memetic algorithms.}
+\label{figtab1_single_et}
+\end{figure}
+
+
+The computational results are presented on the
+Figure~\ref{figtab1_single_et}. The number of iterations was
+counted as a sum of iterations on processors, and permanently set
+to 800. For example, 4-processor implementations make 200
+iterations on each of the 4 processors, so we can obtain
+comparable costs of computations. As we can observe, the parallel
+versions of the algorithm achieve much better results of the
+average and maximal relative deviation from the optimal (or the
+best known) solutions, working (parallel) in a shorter time. Due
+to the small cost of communication the speedup parameter of the
+parallel algorithms is almost linear.\index{speedup}
+
+\section{Remarks and conclusions}
+
+We have discussed a parallel approach to the optimization problems with
+block properties\index{block properties} based on the new
+inter-island operator for the parallel asynchronous coevolutionary
+memetic algorithm (MA). It uses the Lamarck evolution theory as an
+extension of the classic GA incorporating a local-search algorithm
+for each solution.
+
+The Lamarck evolution theory as well as memetic approach not only
+significantly extend traditional GA, but offers more effective
+approach, too. It is well known, that the classic GA has a week
+search intensification phase -- genetic operators as well as a
+mutation mainly diversify the search process. Additionally, in the
+memetic approach it is possible to make use of specific problem
+properties such as the new MSXF+B operator with block properties.
+Embedding special properties of the problem inside GA is usually
+difficult. Further benefits are obtained by using an island model
+with inter-island operator for the parallel asynchronous
+coevolution.
+
+As we observe MA is also able to improve convergence time
+comparing to GA. Compared to a sequential algorithm, the
+parallelization of MA shortens the computations time and improves
+quality of obtained solutions. The proposed methodology of memetic
+algorithms parallelization can be applied to solve concurrently
+all scheduling problems with block properties, such as flow shop
+and job shop problems with makespan criterion, single machine
+scheduling problems, etc., for which a solution is represented as
+a permutation.
+
+\begin{thebibliography}{20}
+
+\bibitem{Bak}
+Baker, K. and Scudder, G. (1990).
+Sequencing with earliness and tardiness penalties: a~review.
+ Operations Research 38, 22--36.
+
+\bibitem{Berger}
+Berger, J. and Barkaoui, M. (2002).
+A memetic algorithm for the vehicle routing problem with time windows.
+In:  Proceedings of the 7th International Command and Control
+Research and Technology Symposium, http://www.dodccrp.org/events/7th\_ICCRTS/Tracks/pdf/035.pdf
+
+\bibitem{bozejko2009_2}
+Bo\.{z}ejko, W. (2010).
+Parallel path relinking method for the single machine total weighted tardiness problem with sequence-dependent setups.
+Journal of Intelligent Manufacturing 21/6, 777--785.
+
+\bibitem{Boz}
+Bo\.{z}ejko, W., Grabowski, J., and Wodecki, M. (2006).
+Block approach tabu search algorithm for single machine total
+weighted tardiness problem.
+Computers \& Industrial Engineering 50, 1--14.
+
+\bibitem{boz_2005_3}
+Bo\.{z}ejko, W. and Wodecki, M. (2005).
+Task realiation's optimization with earliness and tardiness penalties
+in distributed computation systems. Lecture Notes in Artificial Intelligence Vol. 2528, Springer, 69--75. 
+
+\bibitem{boz_2006_4}
+Bo\.{z}ejko, W. and Wodecki, M. (2006).
+A new inter-island genetic operator for optimization problems with
+block properties. Lecture Notes in Artificial Intelligence Vol. 4029, Springer, 324--333. 
+
+\bibitem{Bradwell}
+Bradwell, R. and Brown, K. (1999).
+Parallel asynchronous memetic algorithms.
+In: Cantu-Paz, E. and Punch, B. (Eds.) Evolutionar Computation, 157--159.
+
+\bibitem{31}
+Bubak, M. and Sowa, K. (2005).
+Object oriented implementation of parallel genetic algorithms.
+In: Buyya, R. (Ed.), High Performance Cluster Computing: Programming and Applications, Vol.~2., Lecture Notes in Computer Science Vol. 1225, 514--523.
+
+\bibitem{Crainic}
+Crainic, T. and Toulouse, M. (1998).
+Parallel metaheuristics.
+In: Crainic, T. and Laporte, G. (Eds.), Fleet management and
+logistics, Kluwer, 205--251. 
+
+\bibitem{61}
+Crainic, T., Toulouse, M., and Gendreau, M. (1995).
+Parallel asynchronous tabu search in multicommodity
+location-allocation with balancing requirements.
+Annals of Operations Research 63, 277--299.
+
+\bibitem{hoo}
+Hoogeveen, J. and van~de Velde, S. (1996).
+A branch and bound algorithm for single-machine earliness-tardiness
+scheduling with idle time.
+INFORMS Journal on Computing 8, 402--412.
+
+\bibitem{116}
+Kliewer, G., Klohs, K., and Tschoke, S. (1999).
+Parallel simulated annealing library: User manual.
+Technical report, Computer Science Department, University of
+Paderborn.
+
+\bibitem{lenstra}
+Lenstra, J., Kan, A.~R., and Brucker, P. (1977).
+Complexity of machine scheduling problems.
+Annals of Discrete Mathematics 1, 343--362.
+
+\bibitem{Michalewicz}
+Michalewicz, Z. (1994).
+Genetic Algorithms + Data Structures = Evolution Programs, Springer.
+
+\bibitem{OR_Library}
+OR Library: http://people.brunel.ac.uk/$\sim$mastjjb/jeb/info.html
+
+\bibitem{reeves}
+Reeves, C. and Yamada, T. (1998).
+Genetic algorithms, path relinking and the flowshop sequencing
+problem. Evolutionary Computation 6, 45--60.
+
+\bibitem{smith}
+Smith, W. (1956). Various optimizers for single-stage production.
+Naval Research Logistic Quart 3, 59--66.
+
+\bibitem{Tail_paral_QAP}
+Taillard, E. (1991).
+Robust taboo search for the quadratic assignment problem.
+Parallel Computing 17, 443--455.
+
+\bibitem{Tail_paral_jobshop}
+Taillard, E. (1994).
+Parallel taboo search techniques for the job shop scheduling problem.
+ORSA Journal on Computing 6, 108--117.
+
+\bibitem{Tang}
+Tang, J., Lim, M., and Ong, Y. (2006).
+Adaptation for parallel memetic algorithm based on population
+entropy. In: Proceedings of the 8th Annual Conference on Genetic and
+  Evolutionary Computation (Seattle, Washington, USA, July 08 - 12, 2006),
+  GECCO '06, ACM, 575--582.
+
+\end{thebibliography}

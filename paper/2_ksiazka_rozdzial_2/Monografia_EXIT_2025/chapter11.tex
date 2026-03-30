@@ -1,0 +1,372 @@
+\chapterauthor{Piotr Nowak}
+\chapter[Metody rozwiązywania \ldots]{Metody rozwiązywania problemu marszrutyzacji pojazdów i problemu pakowania}
+\thispagestyle{empty}
+\vspace{-8mm} {\large Piotr Nowak} \vspace{8mm}
+
+\section{Wstęp}
+Transport jest obecnie jednym z kluczowych elementów globalnej gospodarki. W związku z globalizacją i rozproszeniem poszczególnych etapów produkcji rokrocznie rośnie znaczenie łańcucha dostaw. Na wykresie \ref{fig:ch11_packages} z 2023 roku przedstawiono szacunkowe ilości dostarczonych przesyłek z lat 2018-2022 oraz przewidywania odnośnie lat 2023-2028.
+W ciągu 5 pierwszych lat liczba przesyłek praktycznie podwoiła się - z 177 miliardów do 339 miliardów przesyłek. Zgodnie z szacunkami \textit{Capital One Shopping}, w ciągu kolejnych 6 lat liczba przesyłek powinna wzrosnąć o kolejne 50\%, do liczby 498 miliardów przesyłek.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{fig/ch11/packages_graph.png}
+    \caption{Szacowana liczba przesyłek w latach 2018-2028 \cite{packages_graph}}
+    \label{fig:ch11_packages}
+\end{figure}
+
+Łańcuch dostaw jest znacząco skomplikowany i jest trudny do przedstawienia go za pomocą modelu matematycznego. Zazwyczaj jest dzielony na poszczególne etapy transportu, a następnie każda z nich jest optymalizowana niezależnie od pozostałych. Jednakże, wyniki optymalizacji wcześniejszych etapów mają znaczący wpływ na kolejne etapy.
+
+W tym rozdziale zostanie przedstawiony przegląd literatury odnośnie optymalizacji problemu marszrutyzacji pojazdów (ang. \texttt{Vehicle Routing Problem - VRP}), problemu pakowania (ang. \texttt{Bin Packing Problem - BPP}) oraz fuzji tych dwóch problemów w jeden.
+
+\section{Omawiane problemy}
+
+Zarówno \texttt{VRP} oraz \texttt{BPP} należą do zbioru problemów NP trudnych - problemów, których rozwiązanie można sprawdzić w czasie wielomianowym, lecz podstawowe modele problemów nie są w stanie dobrze przybliżyć rzeczywistych problemów, dlatego powstało wiele wariantów lepiej przedstawiających rzeczywiste ograniczenia.
+
+\subsection{Problem marszrutyzacji pojazdów}
+
+Problem marszrutyzacji pojazdów to problem optymalizacji dyskretnej, gdzie głównym zadaniem jest takie przyporządkowanie lokacji odbioru do pojazdów, aby zminimalizować funkcję celu. Najczęściej funkcjami celu jest łączna odległość przebyta przez flotę pojazdów, koszt lub łączny czas poświęcony na dostarczenie przesyłek. 
+
+\begin{equation}
+    \label{eq:ch11_vrp_model}
+  \min \sum_{i \in L} \sum_{j \in L} \sum_{z \in V}  x_{i,j,z} * c_{i,j,z}
+\end{equation}
+
+W równaniu \ref{eq:ch11_vrp_model} przedstawiono funkcję celu podstawowego \texttt{VRP}, gdzie $x_{i,j,z}$ jest binarną zmienną decyzyjną, czy dana krawędź grafu jest obecna w reprezentacji rozwiązania a $c_{i,j,z}$ jest wagą danej krawędzi. $L$ jest zbiorem wszystkich lokacji z uwzględnieniem głównego magazynu, $V$ zbiorem wszystkich dostępnych pojazdów w magazynie, $S$ zbiorem wszystkich możliwych podtras, a $n(s)$ mocą zbioru $S$.
+
+\begin{align}
+    \sum_{a \in \mathcal{L}} y_{0,a,z} \leq 1 && \forall z \in \mathcal{Z},
+        \label{eq:ch11_onlyOneReturn}
+    \\
+    \sum_{a \in \mathcal{L}} y_{a,a,z} = 0 && \forall z \in \mathcal{Z},
+        \label{eq:ch11_orderToHubLocal}
+    \\
+    \sum_{a \in \mathcal{L}} \sum_{b \in \mathcal{L}, a \neq b} y_{a,b,z} \leq n(s) - 1 &&\forall z \in \mathcal{Z}, s \in \mathcal{S}, n(s) \geq 2,
+        \label{eq:ch11_NoSubRoutes}
+    \\ 
+\sum_{a \in \mathcal{L}}\sum_{b \in \mathcal{L}} y_{a,b,z}  =  \sum_{a \in \mathcal{L}} \sum_{b \in \mathcal{L}} y_{b,a,z} && \forall z \in \mathcal{Z}
+        \label{eq:ch11_fromEqualTo}
+\end{align}
+%do poprawienia, by leq wyświetlało się poprawnie
+Model matematyczny problemu, poza zaprezentowaniem optymalizowanej funkcji celu, musi zawierać ograniczenia zwężające przestrzeń rozwiązań do zbioru rozwiązań dopuszczalnych. Podstawowy model problemu \texttt{VRP} musi zapewnić, że pojazd jedzie maksymalnie jedną trasą[\ref{eq:ch11_onlyOneReturn}], wyeliminuje trasy prowadzące bezpośrednio z lokacji do niej samej[\ref{eq:ch11_orderToHubLocal}], wyeliminuje trasy odłączone od głównego magazynu[\ref{eq:ch11_NoSubRoutes}] oraz zapewni, że liczba pojazdów opuszczających daną lokację jest równa liczbie pojazdów przyjeżdżających do danej lokacji[\ref{eq:ch11_fromEqualTo}].
+
+Do lepszego odwzorowania rzeczywistości powstało wiele różnych wariantów \texttt{VRP}:
+
+\begin{itemize}
+    \item Problem marszrutyzacji pojazdów z ograniczoną pojemnością (ang. \texttt{Capacitated Vehicle Routing Problem - CVRP}) - Pojazdy znajdujące się w flocie mają ograniczoną pojemność. Najczęściej występującymi ograniczeniami są te dotyczące masy transportowanych przesyłek lub ich objętości.
+    \item Problem marszrutyzacji pojazdów z oknami czasowymi (ang. \texttt{Vehicle Routing Problem with Time Windows - VRPTW}) - Przesyłki muszą być dostarczone w określonym czasie. W literaturze występują dwa podwarianty: \begin{itemize}
+        \item Miękkie okna czasowe - Dopuszczalne jest dostarczenie przesyłki poza określonym okresem, lecz wiąże się to z określoną karą pogarszającą wynik funkcji celu.
+        \item Twarde okna czasowe - Niedopuszczalne jest dostarczenie przesyłki poza określonym czasem, przez co rozwiązanie jest niedopuszczalne.
+    \end{itemize}
+    \item Wielomagazynowny problem marszrutyzacji pojazdów (ang. \texttt{Multi-Depot Vehicle Routing Problem - MDVRP}) - Jest kilka magazynów przeładunkowych, skąd mogą wyjeżdżać pojazdy dostarczające przesyłki.
+    \item Problem marszrutyzacji pojazdów z heterogeniczną flotą pojazdów (ang. \texttt{Multi-Modal Vehicle Routing Problem}) - Pojazdy znajdujące się w flocie mogą różnić się parametrami.
+    \item Elektryczny/Ekologiczny problem marszrutyzacji pojazdów (ang. \texttt{Electric/Ecological Vehicle Routing Problem - EVRP}) - Model bierze pod uwagę także koszty środowiskowe transportu a także ograniczenia dotyczące baterii pojazdów elektrycznych.
+    \item Problem marszrutyzacji pojazdów z odbiorem (ang. \texttt{Vehicle Routing Problem with Pick-up Delivery - VRPPD}) - W niektórych lokacjach, poza dostarczeniem przesyłki, będzie istnieć potrzeba odbioru dodatkowej przesyłki.
+    \item Problem marszrutyzacji pojazdów z podziałem przesyłek (ang. \texttt{Vehicle Routing Problem with Split Delivery}) - Przesyłki mogą zostać podzielone, by lepiej przyporządkować przesyłki do pojazdów.
+    \item Otwarty problem marszrutyzacji pojazdów (ang. \texttt{Open Vehicle Routing Problem - OVRP}) - Pojazdy nie muszą wracać do magazynu na koniec trasy.
+    \item Problem marszrutyzacji pojazdów z wielokrotnymi trasami (ang. \texttt{Vehicle Routing Problem with Multiple Trips - VRPMT}) - Pojazdy mogą być przypisane do wielu tras.
+    \item Problem marszrutyzacji pojazdów z zyskami (ang. \texttt{Vehicle Routing Problem with Profits}) - Maksymalizacja uzyskanych dochodów w określonym limicie czasowym. Pojazdy rozpoczynają i kończą trasy w określonym magazynie, jednakże nie wszystkie przesyłki muszą zostać dostarczone do odbiorcy.
+\end{itemize}
+
+\subsection{Problem pakowania}
+
+Problem pakowania jest problemem optymalizacji dyskretnej, której celem jest minimalizacja liczby opakowań użytych do spakowania przedmiotów lub maksymalizacja użycia określonego zbioru opakowań.
+
+Najczęstszymi wariantami \texttt{BPP} są:
+\begin{itemize}
+    \item Problem pakowania jednowymiarowego (ang. \texttt{1 Dimensional Bin Packing Problem - 1DBPP}) - Zbiór przedmiotów należy uporządkować na danej przestrzeni jednowymiarowej.
+    \item Problem pakowania dwuwymiarowego (ang. \texttt{2 Dimensional Bin Packing Problem - 2DBPP}) - Zbiór przedmiotów należy uporządkować na danej przestrzeni dwuwymiarowej.
+    \item Problem pakowania trójwymiarowego (ang. \texttt{3 Dimensional Bin Packing Problem - 3DBPP}) - Zbiór przedmiotów należy uporządkować na danej przestrzeni trzywymiarowej.
+\end{itemize}
+
+W literaturze występują podwarianty danych problemów, takie jak określone kształty porządkowanych przedmiotów czy możliwość rotacji tychże przedmiotów w celu lepszego ułożenia w danej przestrzeni.
+
+Z powodu ograniczonego użycia \texttt{1DBPP} w modelowaniu rzeczywistych problemów łańcucha dostaw artykuły dotyczące tego wariantu zostały pominięte przy dalszej analizie.
+
+\section{Metody optymalizacji}
+
+Metody wykorzystywane do optymalizacji problemów \texttt{VRP} oraz \texttt{BPP} można podzielić na dwie główne grupy:
+
+\subsection{Metody dokładne}
+Metody należące do tej grupy gwarantują uzyskanie rozwiązania optymalnego dla zadanego problemu, jednakże największą wadą tych metod jest ich duża złożoność obliczeniowa, przez co niemożliwe jest rozwiązanie za ich pomocą dużych instancji problemów.
+\begin{itemize}
+    \item Metoda siłowa (ang. \texttt{Brute Force - BF}) - Metoda sprawdzająca każde możliwe rozwiązanie danego problemu i zwraca rozwiązanie optymalne.
+    \item Metoda podziału i ograniczeń (ang. \texttt{Branch and Bound - B\&B}) - Metoda bazująca na podziale problemu na mniejsze podproblemy i użycie funkcji limitujących do eliminacji podproblemów nie zawierających rozwiązania optymalnego dla głównego problemu. Użycie dobrze dostosowanych do problemu funkcji limitujących pozwala na znaczące przyśpieszenie obliczeń poprzez eliminację znaczących ilości tzw. gałęzi drzewa rozwiązań, gdzie nie ma możliwości znalezienia rozwiązania optymalnego.
+    \item Solvery matematyczne - Metody bazujące na użyciu specjalistycznego oprogramowania rozwiązującego dany model matematyczny. Najczęściej wykorzystywanym oprogramowaniem są solvery \texttt{Gurobi} oraz \texttt{CPLEX}.
+\end{itemize}
+
+\subsection{Metody przybliżone}
+
+W przeciwieństwie do metod dokładnych, metody przybliżone nie mają gwarancji uzyskania rozwiązania optymalnego dla zadanego problemu, jednakże znaczącą zaletą tej grupy metod jest ich złożoność obliczeniowa, przez co możliwe jest uzyskanie rozwiązań w określonej odległości od rozwiązania optymalnego w stosunkowo krótkim czasie. Najczęściej występującymi metodami są metaheurystyki ze względu na swoją dobrą skalowalność z rozmiarami rozwiązywanych problemów, a dodatkowo można je dodatkowo zrównoleglić dla dalszego przyśpieszenia obliczeń.
+
+\begin{itemize}
+    \item Algorytm przeszukiwania z zabronieniami (ang. \texttt{Tabu Search - TS}) - Algorytm bazujący na usprawnionej metodzie przeszukiwania lokalnego. Lista ruchów zabronionych, tzw. lista tabu, pomaga algorytmowi uniknąć utknięcia w minimum lokalnym poprzez niemożliwość wykonania ruchu, który został wykonany w niedalekiej przeszłości. Dalsze usprawnienia algorytmu \texttt{TS} uwzględniają kryterium aspiracji pozwalające na wykonanie ruchu z listy tabu, o ile ruch ten doprowadzi do znacznego poprawienia wartości funkcji celu. Dodatkowo można zaimplementować listę tabu o adaptacyjnej długości, by poprawić przeszukiwanie przestrzeni rozwiązań w początkowej fazie algorytmu, by następnie zwiększyć zbieżność algorytmu w końcowych fazach algorytmu.
+    \item Algorytm symulowanego wyżarzania (ang. \texttt{Simulated Annealing - SA}) - Metoda probabilistyczna inspirowana fizycznym procesem wyżarzania metali. Wraz z kolejnymi iteracjami algorytmu spada prawdopodobieństwo zaakceptowania gorszego rozwiązania. Algorytm ten łączy dobre przeszukiwanie przestrzeni rozwiązań z odpowiednim tempem zbieżności. Metodę można usprawnić poprzez wielokrotne uruchamianie algorytmu przyjmując wcześniej otrzymane rozwiązanie jako rozwiązanie początkowe dla kolejnego uruchomienia - podobnie do procesu hartowania metali.
+    \item Algorytm genetyczny (ang. \texttt{Genetic Algorithm - GA}) - Algorytm bazujący na procesie ewolucji. Zbiór rozwiązań początkowych, zwany populacją, jest poprawiany wraz z upływem kolejnych iteracji poprzez użycie operatorów genetycznych takich jak \textit{selekcja}, \textit{krzyżowanie} oraz \textit{mutacja}. Poprzez odpowiednie dobranie parametrów operatorów oraz ich szczegółowe działanie można dopasować prędkość przeszukiwania przestrzeni rozwiązań, prędkość zbieżności czy złożoność obliczeniową.
+\end{itemize}
+
+\section{Analiza literatury}
+
+
+
+
+
+
+
+
+
+\begin{thebibliography}{99}
+\bibitem{packages_graph}
+CapitalOne Shopping,
+\textit{Package Delivery Statistics},
+\url{https://capitaloneshopping.com/research/package-delivery-statistics/},
+[dostęp 28.06.2025].
+
+\bibitem{pdf_46}
+L. Guezouli, L. Guezouli, S. Ameghchouche, H. Menzer,
+“Enhancing Green Vehicle Routing Efficiency Through Machine Learning-Optimized Genetic Algorithms,”
+\textit{International Journal of Networked and Distributed Computing}, 2025.
+
+\bibitem{pdf_45}
+N. Mohanty, B. K. Behera, C. Ferrie,
+“Solving the vehicle routing problem via quantum support vector machines,”
+\textit{Quantum Machine Intelligence}, 2024.
+
+\bibitem{pdf_44}
+D. Fitzek, T. Ghandriz, L. Laine, M. Granath, A. F. Kockum,
+“Applying quantum approximate optimization to the heterogeneous vehicle routing problem,”
+\textit{Scientific Reports}, 2024.
+
+\bibitem{pdf_43}
+E. Osaba, E. Villar-Rodriguez, A. Asla,
+“Solving a real-world package delivery routing problem using quantum annealers,”
+\textit{Scientific Reports}, 2024.
+
+\bibitem{pdf_42}
+C. Fang, Y. Cai, Y. Wu,
+“A discrete wild horse optimizer for capacitated vehicle routing problem,”
+\textit{Scientific Reports}, 2024.
+
+\bibitem{pdf_41}
+X. Diao, H. Fan, X. Zhu, Z. Liu,
+“Multi-depot routing problem with van-based driverless vehicles,”
+\textit{Scientific Reports}, 2024.
+
+\bibitem{pdf_40}
+B. Zhang, Y. Yao, H. K. Kan, W. Luo,
+“A GAN-based genetic algorithm for solving the 3D bin packing problem,”
+\textit{Scientific Reports}, 2024.
+
+\bibitem{pdf_38}
+S. V. Romero, E. Osaba, E. Villar-Rodriguez, I. Oregi, Y. Ban,
+“Hybrid approach for solving real-world bin packing problem instances using quantum annealers,”
+\textit{Scientific Reports}, 2023.
+
+\bibitem{pdf_37}
+L. Fan,
+“A two-stage hybrid ant colony algorithm for multi-depot half-open time-dependent electric vehicle routing problem,”
+\textit{Complex \& Intelligent Systems}, 2023.
+
+\bibitem{pdf_36}
+H. Zhang, Q. Li, X. Yao,
+“An efficient local search algorithm for split delivery vehicle routing problem with three-dimensional loading,”
+\textit{Memetic Computing}, 2025.
+
+\bibitem{pdf_35}
+N. Abdulatif, M. A. W. Shalaby, S. S. Kassem, T. Khalil,
+“Fuzzy demand electric vehicle routing problem with soft time windows,”
+\textit{Fuzzy Optimization and Decision Making}, 2025.
+
+\bibitem{pdf_34}
+J. Grabenschweiger, K. F. Doerner, R. F. Hartl, M. W. P. Savelsbergh,
+“The vehicle routing problem with heterogeneous locker boxes,”
+\textit{Central European Journal of Operations Research}, 2021.
+
+\bibitem{pdf_33}
+D. Adelhütte, K. Braun, F. Liers, S. Tschuppik,
+“Minimizing delays of patient transports with incomplete information: A modeling approach based on the vehicle routing problem,”
+\textit{OR Spectrum}, 2024.
+
+\bibitem{pdf_32}
+F. J. Gil-Gala, M. Đurasević, D. Jakobović, R. Varela,
+“Genetic programming with surrogate evaluation for the electric vehicle routing problem,”
+\textit{Swarm and Evolutionary Computation}, 2025.
+
+\bibitem{pdf_31}
+G. Campuzano, E. Lalla-Ruiz, M. Mes,
+“The two-tier multi-depot vehicle routing problem with robot stations and time windows,”
+\textit{Engineering Applications of Artificial Intelligence}, 2025.
+
+\bibitem{pdf_30}
+D. G. Mogale, A. Ghadge, S. K. Jena,
+“Modelling and optimising a multi-depot vehicle routing problem for freight distribution in a retail logistics network,”
+\textit{Computers \& Industrial Engineering}, 2025.
+
+\bibitem{pdf_29}
+M. A. Zamal, A. H. Schrotenboer, T. Van Woensel,
+“The two-echelon vehicle routing problem with pickups, deliveries, and deadlines,”
+\textit{Computers \& Operations Research}, 2025.
+
+\bibitem{pdf_28}
+Y. Lee, K. Thyagarajan, J. M. Pinto, V. M. Charitopoulos, L. G. Papageorgiou,
+“Towards efficient solutions for vehicle routing problems for oxygen supply chains,”
+\textit{Computers \& Chemical Engineering}, 2024.
+
+\bibitem{pdf_27}
+A. Lodi, M. Monaci, E. Pietrobuoni,
+“Partial enumeration algorithms for Two-Dimensional Bin Packing Problem with guillotine constraints,”
+\textit{Discrete Applied Mathematics}, 2015.
+
+\bibitem{pdf_26}
+A. Moura, T. Pinto, C. Alves, J. V. de Carvalho,
+“A Matheuristic Approach to the Integration of Three-Dimensional Bin Packing Problem and Vehicle Routing Problem with Simultaneous Delivery and Pickup,”
+\textit{Mathematics}, 2023.
+
+\bibitem{pdf_25}
+J. Lin, W. Zhou, O. Wolfson,
+“Electric vehicle routing problem,”
+\textit{Transportation Research Procedia}, 2015.
+
+\bibitem{pdf_24}
+D. Pisinger, M. Sigurd,
+“The two-dimensional bin packing problem with variable bin sizes and costs,”
+\textit{Discrete Optimization}, 2005.
+
+\bibitem{pdf_23}
+M. Hifi, I. Kacem, S. Nègre, L. Wu,
+“A Linear Programming Approach for the Three-Dimensional Bin-Packing Problem,”
+\textit{Electronic Notes in Discrete Mathematics}, 2010.
+
+\bibitem{pdf_22}
+J. E. Bell, P. R. McMullen,
+“Ant colony optimization techniques for the vehicle routing problem,”
+\textit{Advanced Engineering Informatics}, 2004.
+
+\bibitem{pdf_21}
+S. Erdoğan, E. Miller-Hooks,
+“A Green Vehicle Routing Problem,”
+\textit{Transportation Research Part E: Logistics and Transportation Review}, 2011.
+
+\bibitem{pdf_20}
+A. Lodi, S. Martello, D. Vigo,
+“Approximation algorithms for the oriented two-dimensional bin packing problem,”
+\textit{European Journal of Operational Research}, 1999.
+
+\bibitem{pdf_19}
+Y. Wu, W. Li, M. Goh, R. de Souza,
+“Three-dimensional bin packing problem with variable bin height,”
+\textit{European Journal of Operational Research}, 2010.
+
+\bibitem{pdf_18}
+T. G. Crainic, G. Perboli, R. Tadei,
+“TS$^2$ PACK: A two-level tabu search for the three-dimensional bin packing problem,”
+\textit{European Journal of Operational Research}, 2009.
+
+\bibitem{pdf_17}
+A. Lodi, S. Martello, D. Vigo,
+“Heuristic algorithms for the three-dimensional bin packing problem,”
+\textit{European Journal of Operational Research}, 2002.
+
+\bibitem{pdf_16}
+G. Barbarosoglu, D. Ozgur,
+“A tabu search algorithm for the vehicle routing problem,”
+\textit{Computers \& Operations Research}, 1999.
+
+\bibitem{pdf_15}
+C. Prins,
+“A simple and effective evolutionary algorithm for the vehicle routing problem,”
+\textit{Computers \& Operations Research}, 2004.
+
+\bibitem{pdf_14}
+Z. Wang, J.-B. Sheu,
+“Vehicle routing problem with drones,”
+\textit{Transportation Research Part B: Methodological}, 2019.
+
+\bibitem{pdf_13}
+K. Kang, I. Moon, H. Wang,
+“A hybrid genetic algorithm with a new packing strategy for the three-dimensional bin packing problem,”
+\textit{Applied Mathematics and Computation}, 2012.
+
+\bibitem{pdf_12}
+H. Hu, X. Zhang, X. Yan, L. Wang, Y. Xu,
+“Solving a New 3D Bin Packing Problem with Deep Reinforcement Learning Method,”
+arXiv:1708.05930, 2017.
+
+\bibitem{pdf_11}
+S. Jagiełło, J. Rudy, D. Żelazny,
+“Acceleration of neighborhood evaluation for a multi-objective vehicle routing,”
+\textit{Artificial Intelligence and Soft Computing}, 2015.
+
+\bibitem{pdf_10}
+J. Rudy, D. Żelazny,
+“Multi-Criteria Fuel Distribution: A Case Study,”
+\textit{Artificial Intelligence and Soft Computing}, 2015.
+
+\bibitem{pdf_9}
+Ł. Kacprzak, J. Rudy, D. Żelazny,
+“Multi-criteria 3-dimensional bin packing problem,”
+\textit{Research in Logistics \& Production}, 2015.
+
+\bibitem{pdf_8}
+R. Idzikowski, J. Rudy, M. Jaroszczuk,
+“Multi-criteria vehicle routing problem for a real-life parcel locker-based delivery,”
+\textit{International Journal of Electronics and Telecommunications}, 2025.
+
+\bibitem{pdf_7}
+K. Pempera, M. Jaroszczuk,
+“Analysis of the impact of Time Window Lengths on maintenance Vehicle Routing Problem Efficiency,”
+\textit{Advances in Dependable Systems and Networks}, 2025.
+
+\bibitem{pdf_6}
+M. Jaroszczuk, R. Idzikowski, M. Uchroński, P. Nowak,
+“Optymalizacja kosztów w transporcie multimodalnym,”
+\textit{Automatyzacja procesów dyskretnych. Teoria i zastosowania}, 2024.
+
+\bibitem{pdf_5}
+R. Idzikowski, M. Jaroszczuk, P. Nowak, M. Uchroński,
+“Tabu search algorithm for cost optimization in multimodal transport,”
+\textit{Proc. IEEE CINTI 2024}, 2024.
+
+\bibitem{pdf_4}
+J. Rudy, R. Idzikowski,
+“Optimization of a Multimodal Transport System with Order Deadlines and Limited Containers,”
+\textit{Intelligent Systems in Production Engineering and Maintenance IV}, 2025.
+
+\bibitem{pdf_3}
+R. Idzikowski, M. Jaroszczuk, P. Nowak, M. Uchroński,
+“Comparison of optimization methods for multimodal VRP in application to stores delivery,”
+\textit{ISPEM 2025}, 2025.
+
+\bibitem{pdf_2}
+M. Jaroszczuk, P. Nowak,
+“Order splitting strategy as cost reduction factor of last-mile delivery performance,”
+\textit{22nd International Conference of Students and Young Scientists}, 2025.
+
+\bibitem{pdf_1}
+J. Bronicki, P. Nowak,
+“Standard and RL-controlled Tabu search algorithms comparison in Capacitated Vehicle Routing Problem solving,”
+\textit{Advances in Dependable Systems and Networks}, 2025.
+
+\bibitem{data_pdf_28}
+Y. Lee, K. Thyagarajan, J. M. Pinto, V. M. Charitopoulos, L. G. Papageorgiou,
+“Data from article ‘Towards efficient solutions for vehicle routing problems for oxygen supply chains’,”
+\url{https://ars.els-cdn.com/content/image/1-s2.0-S009813542400245X-mmc1.pdf},
+[dostęp 01.08.2025].
+
+\bibitem{data_pdf_29}
+M. A. Zamal, A. H. Schrotenboer, T. Van Woensel,
+“Data from article ‘The two-echelon vehicle routing problem with pickups, deliveries, and deadlines’,”
+\url{https://github.com/aryazamal/2e-vrp-pdd},
+[dostęp 01.08.2025].
+
+\bibitem{data_pdf_40}
+B. Zhang, Y. Yao, H. K. Kan, W. Luo,
+“Data from article ‘A GAN-based genetic algorithm for solving the 3D bin packing problem’,”
+\url{https://github.com/wjszbl/3DGAPA},
+[dostęp 01.08.2025].
+
+\bibitem{data_pdf_43}
+E. Osaba, E. Villar-Rodriguez, A. Asla,
+“Data from article ‘Solving a real-world package delivery routing problem using quantum annealers’,”
+\url{https://data.mendeley.com/datasets/yv48pwk96y/1},
+[dostęp 01.08.2025].
+\end{thebibliography}

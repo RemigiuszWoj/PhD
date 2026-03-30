@@ -1,0 +1,236 @@
+\chapterauthor{Krzysztof Stępniak}
+\chapter[Środki organizacyjne \ldots]{Środki organizacyjne i techniczne ograniczające zagrożenia powodowane przez homoglify w URL}
+\label{intro} % Always give a unique label
+% use \chaptermark{}
+% to alter or adjust the chapter heading in the running head
+
+\thispagestyle{empty}
+\vspace{-8mm} {\large Krzysztof Stępniak} \vspace{8mm}
+
+\section{Wprowadzenie}
+Współczesne funkcjonowanie społeczeństwa w coraz większym stopniu opiera się na usługach sieciowych, a systemy komputerowe towarzyszą użytkownikom w niemal wszystkich obszarach codziennej aktywności. Komunikacja międzyludzka uległa znaczącej cyfryzacji i w dużej mierze została przeniesiona do środowiska internetowego. W celu ułatwienia nawigacji w złożonej ujednoliconej przestrzeni identyfikatorów zasobów (URI)~\footnote{~RFC3986~\url{https://datatracker.ietf.org/doc/html/rfc3986}} usług cyfrowych opracowano system DNS, oparty na hierarchicznej strukturze nazw domen, które są łatwe do zapamiętania oraz intuicyjnie kojarzone z określonymi usługami lub podmiotami.
+
+
+\begin{equation} \label{eq12.1:Schemat URI} 
+%\[
+\text{URI} \;=\;
+\underbrace{\text{scheme}}_{\text{schemat}}
+\;:://\;
+\underbrace{\text{userinfo}}_{\substack{\text{informacje o} \\ \text{użytkowniku}}}
+@\!
+\underbrace{\text{host}}_{\substack{\text{nazwa} \\ \text{hosta}}}
+.\!
+\underbrace{\text{domain}}_{\text{domena}}
+:\!
+\underbrace{\text{port}}_{\text{port}}
+/\!
+\underbrace{\text{path}}_{\text{ścieżka}} \\
+%\]
+\end{equation}
+%\noindent\text{Schemat URI \eqref{eq:example}}
+
+Z czasem jednak pojawiły się nadużycia wynikające z podatności ludzkiej percepcji wzrokowej na manipulacje wyglądem adresów URL. Atak homograficzny to jedna z technik przeprowadzania tego schematu. Homograf to litera lub ciąg znaków, który wizualnie można pomylić z inną literą lub ciągiem znaków. Na przykład, używając większości czcionek bezszeryfowych, łacińska litera l (mała litera "L") jest wizualnie podobna z łacińską literą I (wielka litera "i"). Poniższe znaki, renderowane w ten sposób, przy użyciu takiej czcionki, są mylone, jeśli nie nieodróżnialne~\cite{Holgers2006}:
+\[
+\text {http://www.paypal.com} \;\; \text{vs.}\;\; \text{http://www.paypaI.com} \;\; 
+\] % TODO:zmienic czcionke na bezszeryfowa, moze Arial?
+W ten sposób można było przygotować kampanię phishingową\footnote{~Phishing~\url{https://www.cisa.gov/uscert/ncas/tips/ST04-014}}, w której korespondencja elektroniczna z odpowiednio spreparowanym takim adresem w~hiperłączu uwiarygodnionym certyfikatem SSL zachęci użytkownika do podania swoich danych logowania w docelowej podrobionej witrynie graficznie nieodbiegającej od oryginału.
+
+Problem ten uległ dodatkowej intensyfikacji wraz z wprowadzeniem do przestrzeni identyfikatorów międzynarodowych nazw domen (ang. IDN\footnote{~IDN~Internationalized Domain Names \url{https://datatracker.ietf.org/doc/html/rfc5890}}) internetowych znaków narodowych w standardzie Unicode, które znacząco poszerzyły możliwości tworzenia wizualnie podobnych, lecz fałszywych nazw domen. Na przestrzeni wielu narodowych alfabetów występują glify o podobnym wyglądzie, choćby dla powyższego przykładu łacińska mała litera p (Unicode U+0070) odpowiada wizualnie literze p w cyrylicy, która jest tam małą literą "r" (Unicode U+0440)\cite{Holgers2006}.
+%\[
+%\text {0077 0077 0077 002E 0070 0061 0079 0070 0061 006C 002E 0063 006F 006D} \;\; %\text{vs.}\;\; \text{http://www.paypaI.com} \;\; 
+%\] % TODO:zmienic czcionke na bezszeryfowa, moze Arial?
+
+Dotychczasowe działania z zakresu podnoszenia świadomości zagrożeń phishingowych koncentrowały się przede wszystkim na edukowaniu użytkowników w~zakresie identyfikacji obecności oraz analizy zawartości certyfikatów SSL potwierdzających tożsamość i wiarygodność odwiedzanej strony internetowej. Współcześnie jednak nie istnieją techniczne ograniczenia uniemożliwiające uzyskanie takich certyfikatów również dla domen wykorzystujących homoglify, co znacząco obniża skuteczność tradycyjnych mechanizmów weryfikacji wiarygodności witryn. 
+Z uwagi na to, że system DNS technicznie akceptuje tylko ograniczony zestaw znaków ASCII wprowadzono standaryzowane w RFC 3492~\footnote{~RFC3492~\url{https://datatracker.ietf.org/doc/html/rfc3492}} rozszerzenie o nazwie Punycode, które stało się kluczową częścią systemu IDN, umożliwiając globalne rozszerzenie nazw domen poza standardowe znaki łacińskie.
+
+%Wielu popu
+Celem tego badania jest przegląd środków organizacyjnych i technicznych mających na celu ograniczenie zagrożeń bezpieczeństwa powodowanych przez homoglify Unicode i znaki wizualnie trudne do odróżnienia.
+
+%\label{sec:1}
+%tekst
+\section{Przegląd literatury}
+Literatura na temat łagodzenia wpływu homoglifów obejmuje różnorodne podejścia metodologiczne, począwszy od głębokiego uczenia po implementacje oparte na przeglądarce.
+
+
+\begin{table}[ht]
+\centering
+\caption{Charakterystyka uwzględnionych badań}
+\label{tab:badaniaTab}
+{\footnotesize
+\begin{tabularx}{\textwidth}{p{1.75cm}p{2.5cm}p{4cm}L}
+\bottomrule
+\textbf{Badanie} & \textbf{Typ badania} & \textbf{Główny nurt} & \textbf{Kontekst docelowy} \\ \midrule
+Hang Hu, 2021  &  analiza empiryczna i badanie użytkowników  & Ocena obrony na poziomie przeglądarki & Homografie IDN \\ 
+Johnny Al Helou, 2010  & Nie określono & Obrona wizualna po stronie klienta & IDN z alfabetem innym niż łaciński (arabski) \\ 
+Hiroaki Suzuki, 2019  & Badanie pomiarowe na dużą skalę & Zautomatyzowany framework wykrywania & Ataki homograficzne IDN z wykorzystaniem Unicode \\ 
+P. Hannay, 2012  & Ankieta & Badanie strategii łagodzenia & wizualne podobieństwo IDN \\ 
+Tobias Holgers, 2006  & Badanie pomiarowe & ilościowe określenie rozpowszechnienia ataków & IDN i homografy znaków łacińskich \\ 
+Florian Quinkert, 2019  & Badanie pomiarowe & Wykrywanie i monitorowanie domen homograficznych & Znaki IDN i Unicode o podobnym wyglądzie \\ 
+R. Yazdani, 2020  & Badanie pomiarowe & Wykrywanie podejrzanych domen za pomocą DNS & Podobieństwo wizualne IDN i Unicode \\ 
+Tyson McElroy, 2017  & Kontrolowany eksperyment & Ocena strategii łagodzenia zagrożeń przeglądarek & Ataki IDN o mieszanym skrypcie \\ 
+J. Abawajy, 2017  & Kontrolowany eksperyment lub studium przypadku & Obrona z dodatkami do przeglądark & Ataki homograficzne IDN \\ 
+Yuta Sawabe, 2019 & Kontrolowany eksperyment & Metoda wykrywania oparta na OCR & Podobieństwo wizualne w domenach IDN \\ \bottomrule
+\end{tabularx}
+}
+
+\end{table}
+
+
+Uwzględnione badania obejmują lata 2006–2021 i odzwierciedlają ewolucję badań nad atakami homograficznymi na przestrzeni 15 lat. Korpus obejmuje cztery badania pomiarowe badające rozpowszechnienie ataków i~możliwości ich wykrywania \cite{Suzuki2019}, trzy kontrolowane eksperymenty oceniające konkretne metody ograniczania ryzyka \cite{McElroy2017} oraz dwa badania ankietowe badające mechanizmy obronne na poziomie przeglądarki \cite{Hu2021}. Wszystkie badania dotyczą zagrożeń związanych z homoglifami związanymi z domenami międzynarodowymi (IDN), przy czym większość z nich koncentruje się na technicznych środkach zaradczych, a nie na politykach organizacji.
+
+\section{Środki techniczne}
+\begin{table*}[h]
+\centering
+\caption{Środki techniczne}
+\label{tab:techniczneTab}
+{\footnotesize
+\begin{tabularx}{\textwidth}{LLp{4cm}L}
+\toprule
+\textbf{Podejście do minimalizacji ryzyka} & \textbf{Poziom wdrożenia} & \textbf{
+Kluczowe mechanizmy} & \textbf{Badania} \\ \midrule
+Zasady dotyczące nazw domen (IDN) w przeglądarce  &  strona klienta  & Testowanie polityki typu „czarna skrzynka” przy użyciu zautomatyzowanych narzędzi & Hang Hu et al., 2021 \\
+Wyświetlanie Punycode  & strona klienta & Wyświetlanie znaków Unicode w formacie ASCII & McElroy et al., 2017; Al Helou et al., 2010 \\ 
+Kodowanie kolorami alfabetu  & strona klienta & Wizualne różnicowanie typów pisma & McElroy et al., 2017 \\ 
+Domena na białej liście  & strona klienta /rejestrator domeny & Dopuszczanie tylko domen wstępnie zatwierdzonych & Al Helou et al., 2010; McElroy et al., 2017 \\ 
+Framework ShamFinder & system detekcji & Zautomatyzowana konstrukcja bazy danych homoglifów & Suzuki et al., 2019 \\ 
+Wykrywanie oparte na OCR  & system detekcji & Wizualne rozpoznawanie podobieństw & Sawabe et al., 2019 \\ 
+Wykrywanie oparte na DNS  & strona serwera/sieć & Aktywne pomiary DNS za pośrednictwem OpenINTEL & Yazdani et al., 2020 \\ 
+Rozszerzenie tabeli homoglifów  & system detekcji & Rozszerzone tabele możliwości pomyłki Unicode & Yazdani et al., 2020 \\ 
+Dodatek do przeglądarki  & strona klienta & Automatyczne zapobieganie atakom bez zmiany interakcji użytkownika & Abawajy et al., 2017 \\ 
+Wstępne pobieranie miniatur & strona klienta & Wizualna weryfikacja stron internetowych & Al Helou et al., 2010 \\ \bottomrule
+\end{tabularx}
+}
+
+\end{table*}
+
+
+Ochrona realizowana na poziomie przeglądarki stanowi najlepiej przebadaną kategorię technicznych środków zaradczych. Główny mechanizm polega na wyświetlaniu znaków Unicode w formacie Punycode w celu ujawnienia ich reprezentacji w kodzie ASCII \cite{McElroy2017}. Wiele przeglądarek wdrożyło to podejście, w tym już Internet Explorer 7 \cite{McElroy2017} i Mozilla Firefox, z zaktualizowanymi algorytmami sprawdzającymi kombinacje skryptów. Kodowanie kolorami skryptów zapewnia dodatkową wizualną wskazówkę umożliwiającą rozróżnianie zestawów znaków \cite{McElroy2017}.
+
+Podejścia skoncentrowane na wykrywaniu pojawiły się jako środki uzupełniające. Framework ShamFinder zapewnia automatyczne wykrywanie poprzez automatyczną budowę baz danych homoglifów \cite{Suzuki2019}, podczas gdy Yazdani et al. rozszerzyli istniejące tabele homoglifów Unicode, aby poprawić możliwości wykrywania \cite{Yazdani2020}. Sawabe et al. zaproponowali innowacyjne podejście oparte na OCR, które wykorzystuje rozpoznawanie podobieństwa wizualnego do automatycznego wykrywania homograficznych nazw domen (IDN) \cite{Sawabe2019}, rozwiązując ograniczenia predefiniowanych metod mapowania.
+
+\section{Polityki organizacyjne i strategie obronne}
+Najbardziej kompleksowe omówienie polityk organizacyjnych, proponując dwutorową strategię obronną dla właścicieli domen przedstawiono w \cite{Quinkert}. Podejście to obejmuje identyfikację i prewencyjną rejestrację powszechnie stosowanych substytucji znaków, w połączeniu z ciągłym monitorowaniem pod kątem złośliwych rejestracji. W przypadku naruszenia znaku towarowego właściciele domen mogą skorzystać z istniejących mechanizmów rozwiązywania konfliktów, aby zażądać przeniesienia własności domen homograficznych.
+
+\section{Kontekst implementacyjny}
+
+\begin{table*}[!ht]
+\centering
+\caption{Kontekst implementacyjny}
+\label{tab:implementacyjnyTab}
+{\footnotesize
+\begin{tabularx}{\textwidth}{LLp{3cm}p{4cm}}
+\toprule
+\textbf{Badanie} & \textbf{Platforma technologiczna} & \textbf{
+Poziom wdrożenia} & \textbf{Rozważania skalowalności} \\ \midrule
+Hang Hu et al., 2021  &  Chrome, Firefox, Safari, Edge, IE, mobile browsers  & Strona klienta &Ponad 9000 przypadków testowych \\ 
+Al Helou et al., 2010  & Nie określono & Strona klienta & Rozwiązania zaprojektowane tak, aby były dyskretne i łatwe do wdrożenia \\ 
+P. Hannay et al., 2012  & Przeglądarki internetowe, klienci poczty e-mail & Strona klienta &Wiele aplikacji powoli się wdraża \\ 
+Holgers et al., 2006  & Przeglądarki, systemy DNS & Przeglądarki, systemy DNS & Nie określono \\ 
+Quinkert et al., 2019 & Domainlists.io, rozproszony crawler & Mechanizm wykrywania & Rozproszony crawler do przetwarzania na dużą skalę \\ 
+Yazdani et al., 2020  & system detekcji & Wizualne rozpoznawanie podobieństw & Sawabe et al., 2019 \\ 
+McElroy et al., 2017  & strona serwera/sieć & Aktywne pomiary DNS za pośrednictwem OpenINTEL & Yazdani et al., 2020 \\ 
+Abawajy et al., 2017  & system detekcji & Rozszerzone tabele możliwości pomyłki Unicode & Yazdani et al., 2020 \\ \bottomrule
+\end{tabularx}
+}
+
+\end{table*}
+
+
+Wdrożenia realizowane po stronie klienta dominują w obecnym krajobrazie implementacyjnym, a mechanizmy obronne oparte na przeglądarce stanowią podstawowy komponent warstwy ochronnej \cite{Hu2021}. Na tym tle podejście zaproponowane przez Yazdaniego et al. wyróżnia się wykorzystaniem pomiarów DNS prowadzonych po stronie serwera z użyciem platformy OpenINTEL, która wykonuje codziennie migawki obejmujące ponad 65\% przestrzeni nazw DNS \cite{Yazdani2020}.
+
+Istotną barierą dla skutecznej ochrony jest powolne wdrażanie strategii łagodzenia przez aplikacje \cite{Hannay2011}. Skuteczność zabezpieczeń na poziomie przeglądarki jest dodatkowo ograniczona przez zachowania użytkowników związane z aktualizacjami, ponieważ tempo wprowadzania nowych wersji przeglądarek bezpośrednio wpływa na narażenie na luki w zabezpieczeniach~\cite{McElroy2017}.
+
+\section{Dowody skuteczności} %Effectiveness Evidence}
+\begin{table*}[!ht]
+\centering
+\caption{Wyniki skuteczności}
+\label{tab:skutecznościTab}
+{\footnotesize
+\begin{tabularx}{\textwidth}{p{1.5cm}LLp{3cm}}
+\toprule
+\textbf{Badanie} & \textbf{Wyniki ilościowe} & \textbf{
+Ocena skuteczności} & \textbf{Zidentyfikowane ograniczenia} \\ \midrule
+Hang Hu et al., 2021  &  Oceniono ponad 9000 przypadków testowych  & Wszystkie testowane przeglądarki mają słabe punkty w regułach &Przeglądarka Chrome zmieniła zasady, aby ponownie zezwolić na używanie niektórych homografów \\ 
+Suzuki et al., 2019  & Przeprowadzono pomiary na dużą skalę & Framework zapewnia skuteczne środki zaradcze & Nie zgłoszono żadnych konkretnych wskaźników ilościowych \\ 
+Quinkert et al., 2019  & Wykryto \~3000 domen homograficznych; >200 domen oszustw pominiętych przez narzędzia branżowe & Wykrywa złośliwe domeny szybciej niż VirusTotal/Google Safe Browsing & Rejestracja prewencyjna wszystkich wariantów homograficznych jest niemożliwa \\ 
+Yazdani et al., 2020  & 2,97× poprawa wykrywania w porównaniu z istniejącymi tabelami & Proaktywne wykrywanie zapewnia wczesne alerty & Opiera się na rozszerzonych tabelach homoglifów \\ 
+McElroy et al., 2017 & Przetestowano wiele wersji przeglądarek (2011–2017) & Wysoka skuteczność łagodzenia skutków za pomocą wielu alfabetów; brak łagodzenia skutków za pomocą jednego alfabetu & W wersji Firefoksa brakowało funkcji łagodzących \\ 
+Abawajy et al., 2017  & Implementacja zademonstrowana jako dodatek & Skuteczny, bez zauważalnych kosztów dodatkowych & Nie podano danych ilościowych \\
+Sawabe et al., 2019  & Oceniono na podstawie 3,19 mln prawdziwych nazw domen IDN i 10 000 złośliwych nazw domen IDN & Metoda OCR wykrywa homografy, których nie wykrywają konwencjonalne metody & Nie określono \\ \bottomrule
+\end{tabularx}
+}
+
+\end{table*}
+
+Wyniki ilościowe wskazują na zróżnicowany poziom skuteczności różnych podejść. Yazdani et al. osiągnęli 2,97-krotną poprawę w wykrywaniu domen homograficznych w porównaniu z istniejącymi tabelami pomyłek \cite{Yazdani2020}. Mechanizm detekcji Quinkerta et al. zidentyfikował około 3000 domen kandydujących i ponad 200 domen oszustw, które nie zostały wykryte przez obecne narzędzia branżowe, takie jak VirusTotal i Google Safe Browsing \cite{Quinkert}.
+
+Obrona na poziomie przeglądarki przynosi mieszane rezultaty. McElroy et al. stwierdzili wysoką skuteczność w łagodzeniu zagrożeń związanych z wieloma alfabetami w różnych rodzajach przeglądarek \cite{McElroy2017}, przy czym Opera i Chromium wykazały się szczególnie silnym wykrywaniem mieszanych alfabetów\cite{McElroy2017}. Jednak wszystkie testowane przeglądarki wykazywały słabości w swoich regułach obronnych \cite{Hu2021}, a badania użytkowników potwierdziły, że homograficzne domeny IDN omijające zabezpieczenia przeglądarek pozostają wysoce zwodnicze dla użytkowników \cite{Hu2021}.
+
+\section{Zidentyfikowane ograniczenia i luki}
+
+\begin{table*}[!ht]
+\centering
+\caption{Zidentyfikowane ograniczenia i luki}
+\label{tab:ograniczeniaTab}
+{\footnotesize
+\begin{tabularx}{\textwidth}{Lp{5cm}L}
+\toprule
+\textbf{Kategoria ograniczenia} & \textbf{Konkretne kwestie} & \textbf{
+Badania} \\ \midrule
+Ograniczenia techniczne  &  Wszystkie przeglądarki mają słabe punkty w regułach\cite{Hu2021}; Chrome cofnął zasady\cite{Hu2021};W wersji Firefoksa brakowało rozwiązań łagodzących\cite{McElroy2017}  & Hang Hu et al., 2021; McElroy et al., 2017 \\
+Luki w pokryciu  & Niezaadresowane ataki oparte na pojedynczym alfabecie\cite{McElroy2017}; konwencjonalne metody nie są w stanie wykryć niezdefiniowanych znaków\cite{Sawabe2019}; istniejące tabele homoglifów są niewystarczające\cite{Yazdani2020} & McElroy et al., 2017; Sawabe et al., 2019; Yazdani et al., 2020  \\ 
+Ograniczenia skalowalności  & Wymagane ręczne aktualizacje mapowania\cite{Sawabe2019}; prewencyjna rejestracja wszystkich wariantów niewykonalna\cite{Quinkert} & Sawabe et al., 2019; Quinkert et al., 2019  \\ 
+Podatność użytkownika  & Homografy omijające obronę pozostają wysoce mylące & Hang Hu et al., 2021  \\ 
+Bariery adopcyjne & Powolne wdrażanie przez aplikacje\cite{Hannay2011}; biała lista zachowana wyłącznie ze względu na zgodność\cite{McElroy2017}  & Hannay et al., 2012; McElroy et al., 2017  \\ \bottomrule
+\end{tabularx}
+}
+\end{table*}
+
+
+Najpoważniejszą luką w literaturze jest brak skutecznego przeciwdziałania atakom z pojedynczeymi alfabetami \cite{McElroy2017}. Chociaż wykrywanie mieszanych alfabetów stało się standardem, fałszowanie pojedynczych – polegające na podstawianiu wizualnie podobnych znaków z tego samego alfabetu – pozostaje podatne na ataki we wszystkich przeglądarkach \cite{McElroy2017}.
+
+Skalowalność stanowi ciągłe wyzwanie. Konwencjonalne metody wykrywania oparte na predefiniowanych mapowaniach znaków nie są w stanie wykryć homograficznych nazw domen (IDN) zawierających znaki niezdefiniowane w mapowaniu i wymagają ręcznych aktualizacji \cite{Sawabe2019}. Podobnie, defensywne strategie rejestracji domen nie są w stanie objąć wszystkich możliwych wariantów homograficznych ze względu na ogromną liczbę wizualnie podobnych podstawień znaków \cite{Quinkert}.
+
+\section{Podsumowanie}
+Badania wskazują na dojrzewanie obrony opartej na homografach mieszanych, przy jednoczesnym utrzymywaniu się luk w ograniczaniu ataków opartych na pojedynczych alfabetach i skalowalności wykrywania.
+
+Badania dotyczące skuteczności obrony przeglądarek różnią się. McElroy et al. odnotowują wysoką skuteczność w ograniczaniu zagrożeń związanych z wieloma alfabetami \cite{McElroy2017}, podczas gdy Hang Hu et al. identyfikują słabe punkty we wszystkich testowanych przeglądarkach \cite{Hu2021}. Ta pozorna sprzeczność znika po przeanalizowaniu specyfiki typu ataku: mechanizmy obronne przeglądarek osiągnęły znaczną skuteczność w atakach z użyciem mieszanych alfabetów, w których łączone są znaki z różnych alfabetów Unicode \cite{McElroy2017}, ale te same mechanizmy obronne nie zapewniają ochrony przed zamianami pojedynczych alfabetów z użyciem wizualnie podobnych znaków w obrębie tego samego alfabetu \cite{McElroy2017}. Ten ostatni stanowi bardziej wyrafinowany i~obecnie nierozwiązany wektor zagrożenia.
+
+Pojawiają się trzy odrębne paradygmaty wykrywania o uzupełniających się zaletach. Podejścia oparte na tabelach (Yazdani et al.) osiągają 2,97-krotną poprawę w porównaniu z wykrywaniem bazowym \cite{Yazdani2020}, ale nadal są ograniczone przez predefiniowane mapowania znaków \cite{Sawabe2019}. Podejścia oparte na OCR (Sawabe et al.) mogą automatycznie wykrywać homografy nieobjęte konwencjonalnymi mapowaniami \cite{Sawabe2019}, ale wymagają dodatkowych zasobów obliczeniowych. Podejścia do pomiaru DNS (Quinkert et al., Yazdani et al.) umożliwiają proaktywne wykrywanie na dużą skalę – obejmujące ponad 65\% przestrzeni nazw DNS \cite{Yazdani2020} – ale wymagają dostępu do infrastruktury, która jest niedostępna dla typowych właścicieli domen.
+
+Dwojaka strategia obronna zaproponowana przez Quinkerta et al. – rejestracja wyprzedzająca połączona z ciągłym monitorowaniem \cite{Quinkert} – napotyka na fundamentalne ograniczenie: prewencyjna rejestracja wszystkich możliwych domen homograficznych jest niewykonalna ze względu na kombinatoryczną eksplozję wizualnie podobnych podstawień znaków \cite{Quinkert}. Właściciele domen muszą zatem priorytetyzować powszechnie używane wzorce podstawień, akceptując jednocześnie ryzyko resztkowe wynikające z mniej powszechnych wariantów.
+
+Polityki bezpieczeństwa stosowane przez przeglądarki wykazują nieoczekiwaną, niemonotoniczną dynamikę rozwoju. Hang Hu et al. udokumentowali, że Chrome wycofał część wcześniejszych reguł, ponownie dopuszczając określone homograficzne domeny IDN \cite{Hu2021}, które wcześniej były blokowane. Wskazuje to, że stopniowe wzmacnianie mechanizmów ochronnych nie jest zagwarantowane w dłuższej perspektywie. Taka zmienność polityk, w połączeniu z niejednolitym tempem wdrażania aktualizacji \cite{McElroy2017}, generuje luki bezpieczeństwa, które mogą zostać wykorzystane przez zaawansowanych technicznie atakujących.
+
+W przypadku celów o wysokiej wartości, szczególnie w sektorze usług finansowych oraz kryptowalut \cite{Suzuki2019}, najbardziej kompleksową ochronę zapewniają wielowarstwowe rozwiązania łączące prezentację Punycode na poziomie przeglądarki \cite{McElroy2017}, systemy wykrywania oparte na analizie DNS \cite{Yazdani2020} oraz proaktywną rejestrację domen \cite{Quinkert}. Dla organizacji dysponujących ograniczonymi zasobami praktycznym podejściem są rozszerzenia przeglądarkowe, które oferują zautomatyzowaną ochronę przy braku zauważalnego obciążenia operacyjnego \cite{Abawajy2017}. Mechanizmy detekcji wykorzystujące techniki OCR \cite{Sawabe2019} lub rozszerzone tablice homoglifów \cite{Yazdani2020} stanowią szczególną wartość dla podmiotów wymagających poziomu ochrony wykraczającego poza standardowe metody oparte na prostym podstawianiu znaków.
+
+\section{Wnioski}
+Źródła zbiorczo omawiają zagrożenie wynikające z ataków homograficznych, szczególnego przypadku phishingu, w których wykorzystuje się wizualne podobieństwo znaków (homoglifów) w nazwach domen, szczególnie tych umożliwionych przez Umiędzynarodowione Nazwy Domen (IDN). Jeden z artykułów proponuje proaktywną metodę detekcji podejrzanych domen, opartą na aktywnych pomiarach DNS oraz udoskonalonych tabelach (koszykach) podobieństwa znaków. Metoda ta wyznacza wskaźnik podejrzliwości na podstawie wykrywanych niezgodności w rekordach DNS. Inne badania koncentrują się na strategiach łagodzenia, śledząc, jak przeglądarki internetowe, takie jak Chrome i Firefox, używają formatu Punycode zamiast wprowadzającego w błąd tekstu Unicode w~paskach adresu i certyfikatach SSL. Wczesne pomiary wykazały, że chociaż wiele autorytatywnych witryn miało zarejestrowane mylące nazwy domen, ich głównym celem było często wyświetlanie reklam, a nie złośliwe podszywanie się. Mimo to, teksty podkreślają konieczność stosowania środków technicznych (jak np. uczenie maszynowe do analizy wizualnej) oraz ciągłej edukacji użytkowników, aby zapobiegać wyrafinowanym atakom phishingowym wykorzystującym IDN. Badania wskazują również, że domeny IDN homografów szczególnie często celują w~branże finansowe i kryptowalutowe. 
+
+Krytyczną luką zidentyfikowaną w wielu badaniach jest nieodpowiednie radzenie sobie z atakami homograficznymi opartymi na jednym alfabecie. Chociaż większość współczesnych przeglądarek dobrze radzi sobie z atakami opartymi na mieszanym alfabecie, atakujący nadal mogą wykorzystywać wizualnie podobne znaki w obrębie tego samego alfabetu.
+
+\begin{thebibliography}{3}
+\bibitem{Holgers2006}
+   Holgers T., Watson D., Gribble S.,
+   \textit{Cutting through the Confusion: A Measurement Study of Homograph Attacks, Proceedings of the 2006 USENIX Annual Technical Conference}, Boston, pp. 261 - 266, (2006).
+%\bibitem{Taha2024}
+%    Taha M., Rathi R., Pachpande I., Nikhil. S., Sanjan J. \textit{Navigating the %hazards: understanding, detecting, and preventing homograph attacks in cybersecurity, %International Research Journal of Modernization in Engineering Technology and Science} %(2024) doi:10.56726/IRJMETS50299.
+\bibitem{Yazdani2020}
+    Yazdani R., van der Toorn O., Sperotto A., \textit{"A Case of Identity: Detection of Suspicious IDN Homograph Domains Using Active DNS Measurements," 2020 IEEE European Symposium on Security and Privacy Workshops (EuroS\&PW)}, Genoa, Italy, (2020), pp. 559-564, doi: 10.1109/EuroSPW51379.2020.00082.
+\bibitem{Suzuki2019}
+    Suzuki H., Chiba D., Yoneya Y., Mori T., Goto S., \textit{ShamFinder: An Automated Framework for Detecting IDN Homographs. In Proceedings of the Internet Measurement Conference (IMC '19). Association for Computing Machinery}, New York, NY, USA, (2019), pp. 449–462. https://doi.org/10.1145/3355369.3355587
+\bibitem{Quinkert}
+    Quinkert F., Lauinger T., Robertson W., Kirda E., Holz T., \textit{It's Not what It Looks Like: Measuring Attacks and Defensive Registrations of Homograph Domains, 2019 IEEE Conference on Communications and Network Security (CNS)}, Washington, DC, USA, (2019), pp. 259-267, doi: 10.1109/CNS.2019.8802671.
+\bibitem{Hu2021}
+    Hu H., Jan S. T., Wang Y., Wang G., \textit{Assessing browser-level defense against {IDN-based} phishing. In 30th USENIX Security Symposium (USENIX Security 21)}, (2021) (pp. 3739-3756).
+\bibitem{Abawajy2017}
+    Abawajy J., Richard A., Aghbari, Z. A., \textit{Securing websites against homograph attacks. In International Conference on Security and Privacy in Communication Systems}, (2017). (pp. 47-59). Cham: Springer International Publishing.
+\bibitem{McElroy2017}
+    McElroy T., Hannay P., Baatard G., \textit{The 2017 homograph browser attack mitigation survey.}, (2017).
+\bibitem{Hannay2011}
+    Hannay P., Baatard G., \textit{The 2011 IDN homograph attack mitigation survey.}, (2012).
+\bibitem{Helou2010}
+    Al Helou J., Tilley S., \textit{Multilingual web sites: Internationalized Domain Name homograph attacks. In 2010 12th IEEE International Symposium on Web Systems Evolution (WSE)}, (2010), (pp. 89-92). IEEE.
+\bibitem{Sawabe2019}
+    Sawabe Y., Chiba D., Akiyama M., Goto S., \textit{Detection method of homograph internationalized domain names with OCR. Journal of Information Processing},  (2019), 27, 536-544.
+\end{thebibliography}

@@ -1,0 +1,325 @@
+\chapterauthor{Michał Szczepanik}
+\chapter[Analiza behawioralna \ldots]{Analiza behawioralna kodu źródłowego z wykorzystaniem metryk złożoności w prognozowaniu defektów}
+\thispagestyle{empty}
+\vspace{-8mm} {\large Michał Szczepanik} \vspace{8mm}
+
+\section{Wprowadzenie}
+Złożoność współczesnych systemów programistycznych rośnie zarówno pod względem wielkości kodu źródłowego, jak i dynamiki jego ewolucji. Utrzymanie wysokiej jakości kodu staje się zadaniem szczególnie wymagającym, gdy tradycyjne narzędzia analizy statycznej dostarczają jedynie informacji o aktualnym stanie struktury programu. Narzędzia te pomijają kontekst zachowań zespołu, historię zmian oraz ewolucję fragmentów kodu, które w praktyce mają kluczowe znaczenie dla późniejszej stabilności i kosztów utrzymania \cite{Ernst2021,Li2015,Martini2018}. 
+
+Aby skuteczniej identyfikować obszary podwyższonego ryzyka, w literaturze pojawiła się analiza behawioralna kodu. W odróżnieniu od podejść statycznych uwzględnia ona historię commitów (zmian kodu), sposób interakcji programistów z kodem oraz trendy złożoności. Dzięki temu możliwe jest wykrywanie punktów newralgicznych w kodzie, określanych jako hotspoty. Są to obszary o zwiększonej aktywności zmian oraz wysokiej złożoności, które w sposób nieproporcjonalny wpływają na liczbę defektów i~narastanie długu technicznego \cite{Borg2023,Tornhill2018,Tornhill2024,Tornhill2022}. W~literaturze spotyka się tłumaczenia terminu hotspot jako punkt zapalny lub gorący punkt, lecz są one używane przede wszystkim w innych obszarach kontekstach. Dlatego w~niniejszym artykule zachowano oryginalny termin angielski termin hotspot.
+
+W badaniach Feng i współautorów przedstawiono koncepcję aktywnych hotspotów, obejmujących zestawy plików powiązane wzorcami zmian o charakterze propagacji lub koncentracji. Analiza takich powiązań pozwala lepiej zrozumieć architektoniczne przyczyny degradacji kodu \cite{Feng2019}. Podobne wnioski przedstawiono również w pracach dotyczących fuzzingu oraz analizy ścieżek wykonania, gdzie punkty newralgiczne okazały się kluczowe dla skutecznego wykrywania luk i~anomalii w działaniu programów \cite{Du2024,Pang2021,Saha2023}. 
+
+Równolegle coraz większą uwagę zwraca się na czynnik ludzki. Analiza historycznych decyzji programistów oraz wzorców współpracy pozwala wykrywać obszary, w których nieefektywna komunikacja, zmienna odpowiedzialność za kod lub wysoka rotacja zespołu prowadzą do obniżenia jakości i zwiększonej liczby błędów \cite{Paixao2017,Pedreira2015,Barreto2021}. Badania nad modernizacją systemów legacy pokazują dodatkowo, że złożone obszary kodu często wymagają nie tylko refaktoryzacji, ale także wsparcia w postaci technik modelowych i~procesów zorientowanych na ponowne wykorzystanie funkcjonalności \cite{diBiase2019}. 
+
+Wszystkie te obserwacje prowadzą do jednego wniosku. Tylko analiza łącząca metryki złożoności, historię zmian oraz informacje o interakcjach zespołu pozwala realnie wskazać obszary wymagające priorytetowej interwencji. Celem niniejszej pracy jest szczegółowe omówienie wykorzystania analizy behawioralnej kodu w~procesie wykrywania hotspotów. Przedstawiono w niej zależności między danymi historycznymi, złożonością Halsteada, złożonością cykliczną oraz rzeczywistymi defektami zaobserwowanymi w pięciu projektach komercyjnych. 
+
+Podejście to dostarcza praktycznych podstaw do podejmowania decyzji dotyczących refaktoryzacji, testowania i zarządzania jakością oprogramowania. Analiza skupiona na obszarach wysokiego ryzyka stanowi fundament skutecznej strategii ograniczania długu technicznego oraz budowy zrównoważonych metod utrzymania złożonych systemów programistycznych.
+
+\section{Rola hotspotów w kodzie}
+
+Hotspoty stanowią centralny element analizy behawioralnej kodu, a ich wykrywanie umożliwia zespołom programistycznym skoncentrowanie wysiłku na obszarach najbardziej podatnych na powstawanie błędów oraz akumulację długu technicznego. Są to fragmenty kodu charakteryzujące się zarówno wysoką złożonością, jak i częstymi modyfikacjami, co czyni je kluczowym źródłem problemów utrzymaniowych. Systematyczna identyfikacja takich obszarów prowadzi do poprawy stabilności architektury oraz bardziej efektywnego wykorzystania zasobów projektowych.
+
+\subsection{Identyfikacja problemowych obszarów}
+
+Hotspoty to regiony kodu, które łączą dwa niekorzystne czynniki. Z jednej strony posiadają wysoki poziom złożoności strukturalnej, a z drugiej regularnie podlegają zmianom wynikającym z ewolucji wymagań lub napraw błędów. Połączenie tych cech zwiększa prawdopodobieństwo wystąpienia defektów oraz trudności związanych z utrzymaniem.  
+
+Wykrywanie takich obszarów umożliwia zespołom podejmowanie świadomych decyzji dotyczących planowania refaktoryzacji oraz kontroli jakości. Z~punktu widzenia architektury hotspoty wskazują miejsca o dużym znaczeniu operacyjnym, które wymagają szczególnej uwagi w procesach integracyjnych i~testowych.
+
+\subsection{Priorytetyzacja długu technicznego}
+
+Analiza behawioralna kodu wykorzystuje hotspoty do określania priorytetów działań refaktoryzacyjnych. Fragmenty, w których występuje wysoki poziom złożoności oraz duża liczba zmian, są kluczowym źródłem długu technicznego. Ich systematyczna identyfikacja pozwala ograniczyć ryzyko regresji, zmniejszyć nakład pracy związany z utrzymaniem oraz poprawić przewidywalność przyszłych kosztów.
+
+Hotspoty ujawniają również wzorce współpracy w zespole. Częste modyfikacje dokonywane przez wielu programistów mogą wskazywać na niejasną odpowiedzialność za kod lub potrzebę usprawnień organizacyjnych. Analiza takich zachowań umożliwia lepsze zrozumienie dynamiki zespołu oraz świadome planowanie rozwoju kompetencji.
+
+\subsection{Wykrywanie hotspotów}
+
+Jednym z podstawowych wskaźników stosowanych w analizie behawioralnej kodu jest częstotliwość zmian. Informuje ona, jak często dany plik lub funkcja były modyfikowane w czasie, co pozwala określić stopień niestabilności poszczególnych elementów. Systemy kontroli wersji, takie jak Git, dostarczają bogatego zbioru danych historycznych, które można analizować w celu identyfikacji najbardziej aktywnych fragmentów kodu.  
+
+Dane te można pozyskać za pomocą narzędzi konsolowych, na przykład:
+
+\begin{verbatim}
+git log --format=format: --name-only | sort |
+uniq -c | sort -rn | head -100
+\end{verbatim}
+
+Wynikiem działania komendy jest lista stu plików o największej liczbie modyfikacji, stanowi to podstawę do określenia obszarów kodu wykazujących najwyższą intensywność zmian.
+
+Sama częstotliwość zmian nie jest wystarczająca do oceny ryzyka. Dlatego analiza jest uzupełniana informacjami dotyczącymi złożoności, w szczególności złożoności cyklicznej oraz złożoności Halsteada. Połączenie tych metryk pozwala wskazać obszary wymagające największego nakładu pracy podczas utrzymania.
+
+Złożoność cykliczna jest jedną z najczęściej stosowanych miar logicznej złożoności programu. Oblicza się ją według wzoru:
+
+\begin{equation}
+M = E - N + 2P\label{eq:zc}
+\end{equation}
+
+gdzie \(M\) oznacza złożoność cykliczną, \(E\) liczbę krawędzi przepływu sterowania, \(N\) liczbę węzłów, natomiast \(P\) liczbę punktów wyjścia. W przypadku pojedynczej metody przyjmuje się \(P = 1\), co prowadzi do uproszczonej postaci:
+
+\begin{equation}
+M = E - N + 2\label{eq:zcp1}
+\end{equation}
+
+Z kolei złożoność Halsteada wykorzystuje liczby operatorów i operandów do oszacowania nakładu pracy związanego ze zrozumieniem kodu. Podstawowe metryki to liczba operatorów \(n_{1}\), liczba operandów \(n_{2}\), całkowita liczba operatorów \(N_{1}\) oraz operandów \(N_{2}\). Objętość programu \(PV\) jest obliczana według zależności:
+
+\begin{equation}
+PV = (N_{1} + N_{2}) \cdot \log_{2}(n_{1} + n_{2})\label{eq:pv}
+\end{equation}
+
+Trudność programu \(PD\) oblicza się jako:
+
+\begin{equation}
+PD = \left(\frac{n_{1}}{2}\right) \cdot \left(\frac{N_{2}}{n_{2}}\right)\label{eq:pd}
+\end{equation}
+
+a wysiłek Halsteada \(HE\) według:
+
+\begin{equation}
+HE = PD \cdot PV\label{eq:he}
+\end{equation}
+
+Połączenie częstotliwości zmian z miarami złożoności umożliwia identyfikację najbardziej problematycznych fragmentów kodu oraz przewidywanie ich wpływu na przyszłe prace utrzymaniowe.
+
+\subsection{Hotspoty a defekty}
+
+Porównanie mapy hotspotów z mapą defektów ujawnia wyraźną korelację, ponieważ większość błędów występuje w obszarach o najwyższej aktywności zmian. Jedynie nieliczne defekty pojawiają się poza hotspotami i wynikają głównie z integracji bibliotek zewnętrznych lub fragmentów kodu generowanych automatycznie. Wyniki te potwierdzają potrzebę priorytetyzacji hotspotów w działaniach utrzymaniowych, ponieważ ich refaktoryzacja oraz testowanie wyraźnie ograniczają ryzyko błędów i narastanie długu technicznego.
+
+Wnioski płynące z analizy wskazują, że to właśnie hotspoty powinny stanowić główny obszar zainteresowania podczas planowania prac utrzymaniowych. Uwzględnianie ich w procesach refaktoryzacji oraz testowania pozwala znacząco zmniejszyć ryzyko wystąpienia błędów oraz ograniczyć narastanie długu technicznego.
+
+\section{Zbiór danych}
+
+Większość badań dotyczących wykrywania hotspotów oraz analizy behawioralnej kodu opiera się na publicznie dostępnych projektach open source. W~projektach tego typu występuje jednak ograniczona liczba właścicieli kodu i~stosunkowo niewielka zmienność praktyk programistycznych. W~wielu repozytoriach pojedynczy plik jest modyfikowany przez jednego lub dwóch programistów, ogranicza to możliwość obserwacji pełnego spektrum dynamiki zespołowej. Tego rodzaju środowiska nie odzwierciedlają realnych warunków pracy w komercyjnych projektach wielozespołowych.
+
+Aby wyeliminować wpływ takich ograniczeń, w niniejszym badaniu wykorzystano zbiór danych obejmujący pięć projektów komercyjnych pochodzących z trzech przedsiębiorstw. Projekty te różniły się pod względem rozmiaru kodu, technologii, struktury zespołu oraz czasu trwania, co pozwoliło na uzyskanie szerokiego i reprezentatywnego spektrum zachowań kodu. Szczegółowe informacje dotyczące analizowanych projektów przedstawiono w tabeli \ref{tab:projects}.
+
+\begin{table}[h]
+\centering
+\scriptsize
+\caption{Charakterystyka analizowanych projektów komercyjnych}
+\label{tab:projects}
+\begin{tabularx}{.8\textwidth}{lCC}
+\toprule
+Nazwa projektu & Rozmiar kodu (LoC) & Czas trwania (miesiące) \\
+\midrule
+TL-FE-24 & 985786 & 14 \\
+BB-BE-23 & 3235430 & 38 \\
+BB-FE-23 & 1273567 & 37 \\
+AQ-BT-23 & 274345 & 6 \\
+KM-BT-24 & 315464 & 7 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Analizowane projekty charakteryzowały się rozproszoną własnością kodu. Odpowiedzialność za poszczególne moduły była dzielona między wielu członków zespołów, co lepiej odzwierciedla typowe warunki pracy w organizacjach komercyjnych. Zespoły korzystały z różnych podejść do projektowania, przeglądów kodu oraz testowania, co pozwoliło ocenić wpływ praktyk organizacyjnych na powstawanie hotspotów oraz defektów.
+
+W projekcie TL-FE-24 opracowano wieloplatformową aplikację mobilną z~wykorzystaniem środowiska Flutter oraz języka Dart. Zespół rozszerzył się z dwunastu do dwudziestu sześciu programistów. Zmieniające się wymagania biznesowe oraz rozbudowane interfejsy programowania powodowały znaczące zmiany w architekturze i wymuszały dostosowania w procesach programistycznych.
+
+Projekt BB-BE-23 obejmował rozbudowany system korporacyjny oparty na technologii Java oraz frameworku Spring. Zespół liczył trzydziestu dwóch programistów. Wyzwaniem była konieczność integracji złożonych fragmentów logiki odziedziczonej po poprzednich wersjach systemu, wymagało to sprawnej koordynacji oraz utrzymania spójności architektury.
+
+W projekcie BB-FE-23 łączono kod napisany w językach Java oraz Kotlin, przy jednoczesnym przenoszeniu części funkcjonalności z systemów opracowanych pierwotnie w języku C++. Z uwagi na dużą rotację w zespole, wynoszącą około pięćdziesiąt procent, występowały trudności związane z utrzymaniem wiedzy domenowej i ciągłością prac.
+
+Projekt AQ-BT-23 stanowił eksperymentalne wdrożenie technologii Kotlin Multiplatform. Zespół składał się z szesnastu programistów. Ograniczone doświadczenie oraz niejednolite praktyki doprowadziły do powstania niespójności w~strukturze kodu oraz znaczących różnic pomiędzy modułami. Dodatkowo wybrana technologia byla w wersji Beta, która także była pod ciągła zmianą.
+
+Projekt KM-BT-24 również bazował na technologii Kotlin Multiplatform, jednak korzystał z bardziej dojrzałego środowiska oraz rozwiniętej automatyzacji testów. Zespół pracował w sposób stabilny, co przełożyło się na wyższą jakość kodu oraz mniejszą liczbę defektów w porównaniu z projektem AQ-BT-23.
+
+Zastosowanie pięciu odmiennych projektów o zróżnicowanych profilach technicznych i organizacyjnych pozwoliło na przeprowadzenie kompleksowej analizy powstawania hotspotów. Różnorodność danych umożliwiła ponadto ocenę skuteczności miar behawioralnych w warunkach odpowiadających rzeczywistym komercyjnym projektom programistycznym.
+
+
+\section{Eksperymenty i testy}
+
+W celu oceny znaczenia hotspotów w analizowanych projektach przygotowano zestaw eksperymentów obejmujących klasyfikację i priorytetyzację punktów newralgicznych. Proces ten opierał się na trzech grupach wskaźników. Pierwszą z~nich była złożoność cykliczna określająca liczbę niezależnych ścieżek wykonania. Drugą stanowiła złożoność Halsteada oparta na analizie operatorów oraz operandów. Trzecią grupą była liczba zmian dokonanych w plikach przez różnych programistów, co odzwierciedlało aktywność oraz stopień współdzielenia kodu. Połączenie tych miar pozwoliło na oszacowanie trudności utrzymania oraz określenie ryzyka wystąpienia defektów.
+
+\subsection{Złożoność cykliczna}
+
+Złożoność cykliczna przedstawia liczbę liniowo niezależnych ścieżek występujących w kodzie. Jest powszechnie wykorzystywana do oceny trudności testowania oraz możliwości wystąpienia błędów. Na podstawie obserwacji z projektów oraz praktyk branżowych przyjęto interpretację obejmującą sześć poziomów: niską złożoność, umiarkowaną złożoność, wysoką złożoność, umiarkowanie wysoką złożoność, bardzo wysoką złożoność oraz ekstremalną złożoność prowadzącą do trudności w testowaniu i utrzymaniu.
+
+Wartość tej metryki wyznacza się za pomocą wzorów \eqref{eq:zc} oraz \eqref{eq:zcp1} dla pojedynczej funkcji.
+
+\subsection{Złożoność Halsteada}
+
+Złożoność Halsteada ocenia wkład poznawczy wymagany do zrozumienia kodu. Wskaźniki te uwzględniają liczbę operatorów oraz operandów, a także wartości pochodne takie jak objętość, trudność i wysiłek.
+
+Objętość oblicza się według omawianej wcześniej zależności
+\eqref{eq:pv}, następnie trudność programu określa się jako \eqref{eq:pd}, a na ich podstaiwie wysiłek Halsteada stanowi \eqref{eq:he}.
+
+Wskaźniki te umożliwiają ocenę stopnia obciążenia  mentalnego programisty oraz identyfikację fragmentów kodu, w których wysiłek potrzebny do ich utrzymania może być szczególnie wysoki.
+
+\subsection{Wskaźnik priorytetu hotspotów}
+
+Na podstawie opisanych metryk zdefiniowano wskaźnik priorytetu, który łączy informacje o liczbie zmian, liczbie autorów oraz poziomie złożoności. Wskaźnik ten klasyfikuje hotspoty jako obszary o niskim, średnim, wysokim, bardzo wysokim lub krytycznym priorytecie.  
+
+Przyjęto następujące zasady klasyfikacji:
+
+\begin{itemize}
+\item niski priorytet gdy plik zawiera mniej niż trzy zmiany pochodzące od co najmniej dwóch programistów,
+\item średni priorytet gdy liczba zmian mieści się w zakresie od trzech do sześciu i pochodzi od co najmniej trzech programistów,
+\item wysoki priorytet gdy liczba zmian przekracza sześć i dotyczy co najmniej trzech autorów,
+\item bardzo wysoki oraz krytyczny priorytet gdy złożoność cykliczna oraz metryki Halsteada przekraczają ustalone progi.
+\end{itemize}
+
+Złożoność cykliczna zwiększa poziom priorytetu o jeden gdy jej wartość mieści się w zakresie od ośmiu do dwudziestu. W przypadku wartości przekraczających dwadzieścia zwiększa poziom o dwa. Złożoność Halsteada zwiększa priorytet o jeden w przypadku umiarkowanego wysiłku oraz o dwa w przypadku wysokiego wysiłku.
+
+\subsection*{Interpretacja wyników i analiza porównawcza}
+
+\begin{table*}[h]
+\centering
+\scriptsize
+\caption{Zbiorcza analiza hotspotów dla wszystkich projektów}
+\label{tab:ba_all_projects}
+\begin{tabularx}{\textwidth}{l*{6}{C}}
+\toprule
+\textbf{Typ} & 
+\textbf{TL-FE-24} & 
+\textbf{BB-BE-23} & 
+\textbf{BB-FE-23} & 
+\textbf{AQ-BT-24} & 
+\textbf{KM-BT-24} \\
+\midrule
+\textbf{Brak} 
+& 83\% / 33\% 
+& 72\% / 26\% 
+& 79\% / 36\% 
+& 62\% / 38\% 
+& 71\% / 12\% \\
+\textbf{Niski} 
+& 6\% / 2\% 
+& 16\% / 5\% 
+& 6\% / 10\% 
+& 4\% / 7\% 
+& 8\% / 7\% \\
+\textbf{Średni} 
+& 3\% / 14\% 
+& 2\% / 10\% 
+& 3\% / 7\% 
+& 8\% / 6\% 
+& 14\% / 6\% \\
+\textbf{Wysoki} 
+& 2\% / 12\% 
+& 4\% / 21\% 
+& 5\% / 11\% 
+& 6\% / 7\% 
+& 5\% / 7\% \\
+\textbf{B.Wysoki} 
+& 3\% / 17\% 
+& 3\% / 19\% 
+& 3\% / 16\% 
+& 8\% / 14\% 
+& 2\% / 14\% \\
+\textbf{Krytyczny} 
+& 3\% / 22\% 
+& 3\% / 19\% 
+& 4\% / 20\% 
+& 12\% / 28\% 
+& 1\% / 28\% \\
+\bottomrule
+\end{tabularx}
+
+\vspace{2mm}
+\footnotesize{\textit{Uwaga: wartości przedstawiono w formacie Kod~(\%) / Defekty~(\%).}}
+\end{table*}
+
+Zbiorcze wyniki przedstawione w tabeli \ref{tab:ba_all_projects} ukazują wyraźną koncentrację defektów w obszarach sklasyfikowanych jako hotspoty. W projekcie TL-FE-24 obszary o wysokim, bardzo wysokim oraz krytycznym priorytecie obejmowały jedynie osiem procent kodu, lecz odpowiadały za pięćdziesiąt jeden procent defektów. Pozostała część systemu, obejmująca osiemdziesiąt trzy procent kodu, generowała jedynie jedną trzecią wszystkich błędów, co wskazuje na stabilność fragmentów systemu objętych regularnym testowaniem.
+
+Analogiczny trend wystąpił w projekcie BB-BE-23, gdzie hotspoty o wysokim, bardzo wysokim i krytycznym priorytecie stanowiły dziesięć procent kodu i generowały pięćdziesiąt dziewięć procent defektów. Wynik ten potwierdza, że duża złożoność logiki backendowej oraz elementy legacy istotnie wpływają na podatność tych obszarów na błędy. Obszary niebędące hotspotami, choć obejmowały ponad siedemdziesiąt procent kodu, odpowiadały za jedynie dwadzieścia sześć procent defektów, co odzwierciedla korzyści wynikające z wysokiego pokrycia testami.
+
+W projekcie BB-FE-23, który charakteryzował się dużą rotacją zespołu oraz koniecznością adaptacji starszej logiki C plus plus, hotspoty obejmowały dwadzieścia jeden procent kodu i odpowiadały za znaczną część defektów. Tylko siedem procent kodu o bardzo wysokim i krytycznym priorytecie generowało trzydzieści sześć procent błędów. Wynik ten wskazuje na silny wpływ niestabilności zespołowej oraz trudności w utrzymaniu fragmentów pochodzących z wcześniejszych implementacji.
+
+Projekt AQ-BT-24 odzwierciedla konsekwencje wczesnego etapu adopcji Kotlin Multiplatform oraz wysokiej rotacji pracowników. Obszary niebędące hotspotami obejmowały sześćdziesiąt dwa procent kodu i odpowiadały za trzydzieści osiem procent defektów, co sugeruje ogólną niestabilność kodu wynikającą z~niedojrzałości technologii. Hotspoty o wysokim, bardzo wysokim i krytycznym priorytecie stanowiły dwadzieścia sześć procent kodu i generowały czterdzieści dziewięć procent defektów. Szczególnie krytyczne obszary, obejmujące dwanaście procent kodu, odpowiadały za dwadzieścia osiem procent błędów.
+
+W projekcie KM-BT-24, korzystającym z bardziej dojrzałej wersji Kotlin Multiplatform oraz rozbudowanej automatyzacji testów, obserwuje się wyraźną poprawę jakości kodu. Obszary niebędące hotspotami obejmowały siedemdziesiąt jeden procent kodu i generowały jedynie dwanaście procent defektów. Jednocześnie bardzo wysokie oraz krytyczne hotspoty stanowiły zaledwie trzy procent kodu, lecz odpowiadały za czterdzieści dwa procent błędów, co potwierdza znaczenie procesów testowych i stabilności technologii.
+
+Porównanie wszystkich projektów ujawnia kilka spójnych zależności. Po pierwsze, niezależnie od architektury, technologii oraz wielkości zespołu, hotspoty konsekwentnie generują większość defektów, mimo że obejmują ułamek całkowitej bazy kodu. Po drugie, projekty korzystające z dojrzałych technologii oraz szerokiej automatyzacji testów, takie jak KM-BT-24, wykazują znacznie niższy poziom defektów poza hotspotami, co świadczy o~większej stabilności kodu. Po trzecie, wysoka rotacja zespołu oraz praca z~kodem legacy, jak w przypadku BB-FE-23, prowadzą do większej koncentracji defektów w obszarach o najwyższej złożoności. Po czwarte, niedojrzałość środowiska programistycznego oraz brak jednolitych praktyk, obserwowane w projekcie AQ-BT-24, wpływają na zwiększoną podatność na błędy zarówno w hotspotach, jak i poza nimi.
+
+Wyniki te potwierdzają, że identyfikacja oraz priorytetyzacja hotspotów powinna stanowić podstawę strategii utrzymania i refaktoryzacji w złożonych systemach programistycznych. Analiza behawioralna łączy czynniki techniczne i~organizacyjne, co pozwala precyzyjnie wskazać obszary o najwyższym ryzyku i~zwiększa skuteczność działań utrzymaniowych.
+
+
+\section{Wnioski}
+
+Przeprowadzone badanie potwierdza, że analiza behawioralna kodu stanowi skuteczne podejście do oceny jakości oprogramowania oraz identyfikacji obszarów o~podwyższonym ryzyku. Włączenie hotspotów jako centralnego elementu analizy umożliwia precyzyjne wskazanie fragmentów kodu, które w~sposób nieproporcjonalny wpływają na liczbę defektów, koszty utrzymania oraz tempo narastania długu technicznego. Wyniki uzyskane z pięciu projektów komercyjnych jednoznacznie potwierdzają, że niewielkie części kodu generują znaczną część błędów, co podkreśla wartość tej metody w~praktyce inżynierskiej.
+
+We wszystkich analizowanych projektach obszary niebędące hotspotami obejmowały większość kodu i charakteryzowały się niską gęstością defektów, szczególnie w środowiskach o wysokim poziomie automatyzacji testów. Z~drugiej strony hotspoty klasyfikowane jako wysokie, bardzo wysokie oraz krytyczne stanowiły niewielki procent bazy kodu, lecz generowały znaczną część zgłoszeń błędów. W~wielu przypadkach fragmenty te odpowiadały za ponad jedną trzecią defektów, mimo że stanowiły jedynie ułamek całego systemu.
+
+Różnice pomiędzy projektami wykazały istotny wpływ czynników technologicznych i organizacyjnych na rozmieszczenie hotspotów. W projektach TL-FE-24 oraz AQ-BT-24 istotną rolę odgrywała dynamika wymagań oraz niedojrzałość środowiska programistycznego. W projektach BB-BE-23 i BB-FE-23 kluczowe znaczenie miały rotacja zespołu oraz obecność kodu legacy. Z kolei projekt KM-BT-24 potwierdził, że stabilność technologii oraz szeroka automatyzacja testów znacząco redukują liczbę defektów poza obszarami najbardziej złożonymi.
+
+Wyniki te wskazują, że analiza behawioralna kodu powinna być integralną częścią strategii utrzymaniowej. Łączy ona dane historyczne, metryki złożoności oraz informacje o aktywności zespołu, tworząc spójny model wspierający przewidywanie obszarów ryzyka. Metoda ta może stanowić podstawę do priorytetyzacji refaktoryzacji, planowania testów oraz bardziej świadomego zarządzania zasobami technicznymi.
+
+Zastosowanie przedstawionego podejścia przyczynia się do ograniczenia narastania długu technicznego oraz poprawy jakości oprogramowania, szczególnie w systemach o dużej złożoności. Analiza hotspotów umożliwia efektywne wykorzystanie zasobów, zwiększa przewidywalność działań utrzymaniowych i wspiera podejmowanie decyzji projektowych opartych na danych.
+
+\begin{thebibliography}{99}
+
+\bibitem{Ernst2021}
+N. Ernst, J. Delange and R. Kazman,
+\textit{Technical Debt in Practice: How to Find It and Fix It},
+MIT Press, 2021.
+
+\bibitem{Li2015}
+Z. Li, P. Avgeriou and P. Liang,
+``A Systematic Mapping Study on Technical Debt and Its Management,''
+\textit{Journal of Systems and Software}, vol. 101, pp. 193--220, 2015.
+
+\bibitem{Martini2018}
+A. Martini, T. Besker and J. Bosch,
+``Tracking Technical Debt: Current State of Practice,''
+\textit{Science of Computer Programming}, vol. 163, pp. 42--61, 2018.
+
+\bibitem{Feng2019}
+Q. Feng, Y. Cai, R. Kazman, D. Cui, T. Liu and H. Fang,
+``Active Hotspot: A Problem-Oriented Model for Tracking Software Evolution and Degradation,''
+in \textit{Proc. 34th IEEE/ACM Int. Conf. Automated Software Engineering (ASE)}, pp. 986--997, 2019.
+
+\bibitem{diBiase2019}
+M. di Biase, A. Rastogi, M. Bruntink and A. van Deursen,
+``The Delta Maintainability Model: Measuring Maintainability of Fine-grained Changes,''
+in \textit{2019 IEEE/ACM Int. Conf. Technical Debt (TechDebt)}, pp. 113--122, 2019.
+
+\bibitem{Paixao2017}
+M. Paixao, J. Krinke, D. Di Nucci, C. Tantithamthavorn and M. Harman,
+``Are Developers Aware of the Architectural Impact of Their Changes?''
+in \textit{Proc. 32nd IEEE/ACM Int. Conf. Automated Software Engineering (ASE)}, pp. 95--105, 2017.
+
+\bibitem{Pedreira2015}
+O. Pedreira, F. García, N. Brisaboa and M. Piattini,
+``Gamification in Software Engineering: A Systematic Mapping,''
+\textit{Information and Software Technology}, vol. 57, pp. 157--168, 2015.
+
+\bibitem{Barreto2021}
+C. F. Barreto and C. Franca,
+``Gamification in Software Engineering: A Secondary Study,''
+in \textit{Proc. IEEE/ACM 13th Int. Workshop Cooperative and Human Aspects of Software Engineering (CHASE)},
+pp. 105--108, 2021.
+
+\bibitem{Borg2023}
+M. Borg, A. Tornhill and E. Mones,
+``You Are the Owner of the Hot Code. Peripheral Ownership Slows Down Issue Resolution for Low Quality Code,''
+in \textit{Proc. 27th Int. Conf. Evaluation and Assessment in Software Engineering (EASE)}, pp. 368--377, 2023.
+
+\bibitem{Tornhill2018}
+A. Tornhill and A. Tulton,
+\textit{Software Design X-Rays: Fix Technical Debt with Behavioral Code Analysis},
+Pragmatic Programmers, 2018.
+
+\bibitem{Tornhill2024}
+A. Tornhill,
+\textit{Your Code as a Crime Scene, Second Edition},
+The Pragmatic Programmers, 2024.
+
+\bibitem{Tornhill2022}
+A. Tornhill and M. Borg,
+``Red Code: The Business Impact of Code Quality,''
+in \textit{Proc. Int. Conf. Technical Debt (TechDebt)}, pp. 11--20, 2022.
+
+\bibitem{Du2024}
+C. Du, Y. Guo and Y. Feng,
+``HotCFuzz: Improving Vulnerability Discovery with Hotspot-based Coverage Analysis,''
+\textit{Electronics}, 2024.
+
+\bibitem{Pang2021}
+H. Pang, J. Jian, Y. Zhuang, Y. Ye and Z. Li,
+``SpotFuzz: Hotspot-based Fuzzing,''
+\textit{Electronics}, vol. 10, no. 24, 2021.
+
+\bibitem{Saha2023}
+S. Saha, L. Sarker, M. Shafiuzzaman, C. Shou, A. Li, G. Sankaran and T. Bultan,
+``Rare Path Fuzzing,''
+in \textit{Proc. 32nd ACM SIGSOFT Int. Symp. Software Testing and Analysis (ISSTA)}, pp. 1295--1306, 2023.
+
+\end{thebibliography}

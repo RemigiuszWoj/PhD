@@ -1,0 +1,283 @@
+%%%%%%%%%%%%%%%%%%%% book.tex %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% sample root file for the chapters of your "monograph"
+%
+% Use this file as a template for your own input.
+%
+%%%%%%%%%%%%%%%% Springer-Verlag %%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+% RECOMMENDED %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\documentclass[graybox,envcountchap,sectrefs]{svmono}
+\documentclass[11pt,twoside]{book}
+
+% choose options for [] as required from the list
+% in the Reference Guide
+\usepackage{polski}
+\usepackage{makeidx}         % allows index generation
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsthm}
+% \newtheorem{theorem}{Twierdzenie}
+\usepackage{todonotes}
+% \usepackage{mathptmx}
+% \usepackage{helvet}
+% \usepackage{courier}
+\usepackage{newtxtext,newtxmath}
+% \renewcommand{\ttdefault}{lmtt}
+% \usepackage{lmodern}
+\usepackage{enumitem}
+\usepackage{pgfplots}
+\usetikzlibrary{patterns}
+\pgfplotsset{
+    compat=1.18,
+    /pgfplots/area legend/.style={area style=none},
+    /pgf/manual layer/.style={}
+}
+\usepackage{pgf-pie}
+\usepackage{type1cm}
+\usepackage{booktabs}
+\usepackage{multicol}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[sectionbib]{chapterbib}
+\usepackage[english,polish]{babel}
+\usepackage[algoruled,vlined,linesnumbered,dotocloa]{algorithm2e}
+% \usepackage{algorithmicx}
+% \usepackage{algpseudocode}
+\usepackage{svg}
+\svgsetup{
+    inkscapelatex=false,
+    inkscapearea=page,
+    inkscapeopt=-z -D --export-type=pdf --export-text-to-path
+}
+\usepackage{subcaption}
+\usepackage{url}
+\usepackage{tocdata}
+\usepackage{tabularx}
+    \newcolumntype{C}{>{\centering\arraybackslash}X}
+    \newcolumntype{R}{>{\raggedleft\arraybackslash}X}
+    \newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\usepackage{multirow}
+\usepackage{listings}
+\usepackage{minted}
+\usemintedstyle{bw}
+\usepackage{float}
+% \usepackage{hyperref}
+% \hypersetup{
+%     colorlinks=false,
+%     linkcolor=blue,
+%     filecolor=magenta,      
+%     urlcolor=cyan,
+%     pdftitle={Overleaf Example},
+%     pdfpagemode=FullScreen,
+%     }
+% \makeatletter
+% \def\@chapter[#1]#2{% #1 = short for header, #2 = long for TOC and chapter page
+%   \ifnum \c@secnumdepth >\m@ne
+%     \if@mainmatter
+%       \refstepcounter{chapter}%
+%       \typeout{\@chapapp\space\thechapter.}%
+%       \addcontentsline{toc}{chapter}%
+%                 {\protect\numberline{\thechapter}#2 --}%  ← long title in TOC
+%     \else
+%       \addcontentsline{toc}{chapter}{#2}%  ← long title in TOC
+%     \fi
+%   \else
+%     \addcontentsline{toc}{chapter}{#2}%  ← long title in TOC
+%   \fi
+%   \chaptermark{#1}%  ← short title in header
+%   \addtocontents{lof}{\protect\addvspace{10\p@}}%
+%   \addtocontents{lot}{\protect\addvspace{10\p@}}%
+%   \if@twocolumn
+%     \@topnewpage[\@makechapterhead{#2}]%
+%   \else
+%     \@makechapterhead{#2}%
+%     \@afterheading
+%   \fi}
+% \makeatother
+
+
+\renewcommand{\chapterauthor}[1]{\def\chapterauthorname{\textit{#1} }}
+
+\makeatletter
+\newcommand{\chapterauthorname}{} % default empty
+\let\ps@plain\ps@headings
+\def\@chapter[#1]#2{%
+  \refstepcounter{chapter}%
+  \addcontentsline{toc}{chapter}{%
+    % \protect\numberline{\thechapter}#2 \ -- \chapterauthorname% % tytuł -- autor 
+    \protect\numberline{\thechapter}\chapterauthorname -- #2% autor -- tytuł
+  }%
+  \chaptermark{#1}%
+  \@makechapterhead{#2}%
+  \@afterheading
+}
+
+\makeatother
+
+
+
+% \newcommand*{\doi}[1]{\href{http://dx.doi.org/#1}{doi: #1}}
+\newcommand*{\doi}[1]{\url{http://dx.doi.org/#1}{doi: #1}}
+\newcommand{\st}[1]{{\cal #1}}
+\newcommand{\newton}[2]{(\stackrel{#1}{_{#2}})}
+\newcommand{\prim}{^{\prime}}
+\newcommand{\bis}{^{\prime\prime}}
+%\def\blacksquare{\hfill\hbox{\vrule width 5pt height 5pt depth 0pt}}
+\def\square{\hbox{\vrule\vbox{\hrule\phantom{o}\hrule}\vrule}}
+
+\newcounter{algorithms_counter}
+\setcounter{algorithms_counter}{0}
+
+
+\usepackage{graphicx}        % standard LaTeX graphics tool
+                             % when including figure files
+%\usepackage{multicol}        % used for the two-column index
+%\usepackage[bottom]{footmisc}% places footnotes at page bottom
+
+% see the list of further useful packages
+% in the Reference Guide
+
+
+\textwidth 12.5truecm \textheight 19.5truecm
+
+
+\makeindex             % used for the subject index
+                       % please use the style svind.ist with
+                       % your makeindex program
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\usepackage{ntheorem}
+%\theoremseparator{.}        
+\newtheorem{tw}{Theorem}[chapter]
+\newtheorem{df}{Definition}[chapter]
+\newtheorem{lem}{Lemma}[chapter]
+\newtheorem{fact}{Fact}[chapter]
+\newtheorem{prop}{Proposition}[chapter]
+\newtheorem{remark}{Remark}[chapter]
+\newtheorem{property}{Property}[chapter]
+\newtheorem{lemma}{Lemma}[chapter]
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{definition}{Definition}[chapter]
+\newtheorem{uwaga}{Remark}[chapter]
+\newtheorem{wl}{Property}[chapter]
+\newtheorem{wn}{Proposal}[chapter]
+\newtheorem{corollary}{Wniosek}[chapter]
+\newtheorem{example}[lemma]{Przykład}
+\newtheorem{proposition}[lemma]{Obserwacja}
+% Black and white listings configuration with line breaking
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\ttfamily,
+    commentstyle=\ttfamily,
+    stringstyle=\ttfamily,
+    showstringspaces=false,
+    breaklines=true,              % Automatically break long lines
+    breakatwhitespace=false,      % Break lines even in the middle of words if needed
+    postbreak=\mbox{\textcolor{black}{$\hookrightarrow$}\space}, % Show continuation symbol
+    frame=single,
+    numbers=none,                 % No line numbers
+    tabsize=4
+}
+
+%\newenvironment{proof}{{\noindent\bf Proof. }}{\hfill$\blacksquare$\par\medskip}
+
+%\newenvironment{proof}{{\noindent\bf Proof. }}{\par\medskip}
+\usepackage{xargs}
+% \usepackage{bbm}
+\usepackage{lmodern}
+\usepackage{dsfont}
+% \usepackage{lmodern}
+% \usepackage{newtxtext,newtxmath}
+% \renewcommand{\ttdefault}{lmtt}
+\pdfinclusioncopyfonts=1
+\pdfgentounicode=1
+\begin{document}
+
+\selectlanguage{polish}
+
+\author{Radosław Idzikowski i Mateusz A. Kucharski (red.)}
+\title{Zastosowania zaawansowanych obliczeń klasycznych i kwantowych w nauce i technice -- aktualności badawcze}
+\date{}
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\pagestyle{empty}
+
+\maketitle
+
+% \frontmatter%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \pagenumbering{arabic}
+
+% \setcounter{page}{3}
+
+
+%\include{dedic}
+%\include{foreword}
+\include{preface}
+%\include{acknow}
+%\include{abbrev}
+\setcounter{tocdepth}{1}
+
+\clearpage
+\thispagestyle{empty}   % ← tylko ta jedna strona bez nagłówka
+\pagestyle{headings}    % ← dopiero OD SPISU TREŚCI nagłówki
+\addtocontents{toc}{\protect\setcounter{tocdepth}{-10}}
+\tableofcontents
+
+\addtocontents{toc}{\protect\setcounter{tocdepth}{1}}
+
+%\include{acronym}
+
+
+
+% \mainmatter%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \setcounter{page}{11}
+\include{chapter01}
+\include{chapter02}
+\include{chapter03}
+\include{chapter04}
+\include{chapter05}
+\include{chapter06}
+\include{chapter07}
+\include{chapter08}
+
+%\include{chapter09}
+%\include{chapter10}
+%\include{chapter11} 
+
+\include{chapter12}
+\include{chapter13}
+\include{chapter15}
+\include{chapter16}
+\include{chapter17}
+\include{chapter18}
+\include{chapter19}
+\include{chapter20}
+\include{chapter21}
+\include{chapter22}
+
+\backmatter%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\include{glossary}
+%\include{solutions}
+
+%\listoftables
+%\listoffigures
+%\listofalgorithms
+%\printindex
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+	
+
+
+
+\end{document}
+
+
+
+
+

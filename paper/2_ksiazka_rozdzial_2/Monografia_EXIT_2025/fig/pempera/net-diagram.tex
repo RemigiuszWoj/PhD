@@ -1,0 +1,28 @@
+% \begin{figure}
+% \centering
+% \begin{tikzpicture}[
+%     layer/.style={rectangle, draw=black, fill=blue!10, minimum width=2.5cm, minimum height=1cm, font=\small},
+%     conv/.style={rectangle, draw=black, fill=orange!20, minimum width=3.5cm, minimum height=1cm, font=\small},
+%     dense/.style={rectangle, draw=black, fill=green!20, minimum width=3.5cm, minimum height=1cm, font=\small},
+%     output/.style={rectangle, draw=black, fill=red!20, minimum width=3.5cm, minimum height=1cm, font=\small}
+% ]
+
+% \node[layer] (input) {Input: $3 \times 128 \times 128$};
+% \node[conv, below=0.8cm of input] (conv1) {Conv1: $16@128\times128$};
+% \node[conv, below=0.6cm of conv1] (conv2) {Conv2: $32@64\times64$};
+% \node[conv, below=0.6cm of conv2] (conv3) {Conv3: $64@32\times32$};
+% \node[layer, below=0.6cm of conv3] (flatten) {Flatten: $64 \times 16 \times 16$};
+% \node[dense, below=0.6cm of flatten] (fc1) {FC1: 128 + ReLU};
+% \node[output, below=0.6cm of fc1] (fc2) {FC2: 2 classes (Softmax)};
+
+% \draw[->] (input) -- (conv1);
+% \draw[->] (conv1) -- (conv2);
+% \draw[->] (conv2) -- (conv3);
+% \draw[->] (conv3) -- (flatten);
+% \draw[->] (flatten) -- (fc1);
+% \draw[->] (fc1) -- (fc2);
+
+% \end{tikzpicture}
+% \caption{Architecture of the custom CNN model used in the experiment.}
+% \label{fig:cnn-architecture}
+% \end{figure}

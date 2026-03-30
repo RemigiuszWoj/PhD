@@ -1,0 +1,17 @@
+qasmfile,Qiskit,Cirq,Tket
+qaoa_3q_s103.qasm,20.96,19.0,30.0
+qaoa_3q_s106.qasm,20.0,28.0,30.0
+qaoa_4q_s107.qasm,37.0,47.0,55.0
+qaoa_5q_s105.qasm,57.0,81.0,92.0
+mb_mb_cz_entanglement.qasm,12.0,21.0,32.0
+mb_mb_measure_in_x_basis.qasm,18.0,24.0,33.0
+mb_mb_sparse_and_asymmetric.qasm,7.0,12.0,8.0
+mb_mb_spread_cnot.qasm,14.19,27.0,17.0
+ham_2q_dt0.1_T0.5.qasm,9.0,22.0,11.0
+ham_4q_dt0.1_T0.3.qasm,40.65,52.0,43.0
+ham_4q_dt0.2_T0.4.qasm,40.27,52.0,43.0
+ham_5q_dt0.1_T0.3.qasm,56.60377358490566,72.0,60.0
+ghz_hadamard_fan.qasm,7.0,20.0,9.0
+ghz_manual_cnot_order.qasm,7.0,16.0,8.0
+ghz_mirror_fanout.qasm,7.0,16.0,8.0
+ghz_star.qasm,7.0,16.0,8.0

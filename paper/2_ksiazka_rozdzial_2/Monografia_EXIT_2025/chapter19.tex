@@ -1,0 +1,481 @@
+% \noindent\footnotesize
+\chapterauthor{Mikołaj Bożejko, Igor Janiak, Hubert Siewiera i Mikołaj Wysocki}
+\chapter[Sformułowanie problemu \ldots]{Sformułowanie problemu optymalizacji sumy ważonych spóźnień i sumy ważonych przyspieszeń dla obliczeń kwantowych}
+\thispagestyle{empty}
+\vspace{-8mm} {\large Mikołaj Bożejko, Igor Janiak, Hubert Siewiera i Mikołaj Wysocki} \vspace{8mm}
+
+\newcommand{\Np}{\mathbb{N}_+}
+\newcommand{\wiTi}{1||\Sigma{}w_i T_i}
+\newcommand{\uiEi}{1||(\Sigma{}w_i T_i+u_i E_i)}
+
+
+
+\section{Wstęp}
+
+Obliczenia kwantowe są interdyscyplinarną dziedziną, skupiającą się na wykorzystaniu efektów kwantowych do wykonywania obliczeń, zamiast polegania na komputerach klasycznych. Chociaż wciąż napotykają na liczne trudności, obliczenia kwantowe osiągnęły obiecujące wyniki, wykonując obliczenia, których znane algorytmy klasyczne nie są w~stanie zrealizować w rozsądnym czasie \cite{doi:10.1126/science.ado6285}.
+
+Jednym z głównych istniejących podejść do obliczeń kwantowych, obok podejść opartych na bramkach kwantowych, jest wyżarzanie kwantowe \cite{PhysRevE.58.5355}. Koncepcja ta wykorzystuje systemy kwantowe, które naturalnie ewoluują poprzez efekty kwantowe, takie jak tunelowanie kwantowe i fluktuacje kwantowe, aby osiągnąć stan zbliżony do stanu o najniższej możliwej energii. Podejście to, skomercjalizowane po raz pierwszy przez firmę D-Wave Systems, ma kilka praktycznych zastosowań, w tym optymalizację i uczenie maszynowe \cite{https://doi.org/10.1002/que2.12}. Poprzez utożsamienie energii systemu z funkcją celu rozwiązywanego problemu optymalizacyjnego, wyżarzanie kwantowe może być użyte do modelowania wielu problemów w dziedzinie badań operacyjnych.
+
+W niniejszym artykule proponujemy formulacje D-Wave dla dwóch problemów optymalizacyjnych w zakresie szeregowania: (1) całkowite ważone opóźnienie oraz (2) całkowite ważone przyspieszenie i opóźnienie. Dla obu problemów przedstawiamy dwie formulacje. Jedna Sformułowanie jest bardziej bezpośrednia, natomiast alternatywne formulacje wykorzystują system uzupełnienia do dwóch w~celu próby redukcji złożoności sformułowania poprzez zmniejszenie liczby zmiennych. Motywacją tej pracy jest: (1) zaproponowanie sformułowania wyżarzania kwantowego dla problemu całkowitego ważonego przyspieszenia i~opóźnienia (która, zgodnie z naszą wiedzą, nie została jeszcze zaproponowana w literaturze) oraz (2) zilustrowanie różnic między proponowanymi sformułowaniami problemu.
+
+% Dalsza część artykułu ma następującą strukturę. W Sekcji~\ref{sec:problem} definiujemy rozważane problemy optymalizacyjne. Sekcja~\ref{sec:literature} zawiera krótki przegląd literatury. W Sekcji~\ref{sec:models} proponujemy dwie formuły problemu dla każdego z problemów. W Sekcji~\ref{sec:experiments} przedstawiamy wyniki ilustracyjnych eksperymentów komputerowych. Wreszcie, Sekcja~\ref{sec:conclusions} zawiera wnioski.
+
+\section{Przegląd literatury}
+
+W tej sekcji przedstawiamy krótki przegląd najnowszych osiągnięć w wykorzystaniu komputerów kwantowych i hybrydowych w dziedzinie badań operacyjnych, ze szczególnym uwzględnieniem różnych typów problemów szeregowania zadań.
+
+Zaczniemy od problemu całkowitego ważonego opóźnienia na jednej maszynie. Sformułowanie dla tego problemu na potrzeby komputera wykorzystującego wyżarzanie kwantowe D-Wave została zaproponowana w pracy \cite{10.1007/978-3-031-08760-8_15}. W artykule \cite{10703120} autorzy zaproponowali nowatorskie podejście hybrydowe, w którym komputer kwantowy dostarczał ograniczenia dolne i górne, wykorzystując relaksację Lagrange’a. Ograniczenia te były następnie używane przez metodę Branch-and-Bound działającą na komputerze klasycznym w celu optymalnego rozwiązania problemu.
+
+W odniesieniu do problemów z ważonym opóźnieniem należy zauważyć, że komputery klasyczne mogą opierać się na tych samych typach sformułowania, co komputery kwantowe. Jednak ze względu na długą historię badań nad problemem całkowitego ważonego opóźnienia, istniejące w literaturze klasyczne formulacje obliczeniowe są bardziej zróżnicowane. Na przykład, istnieją podejścia indeksowane czasem (ang. \textit{time-indexed approaches}), które dzielą horyzont czasowy na segmenty, zamiast analizować każde zadanie oddzielnie \cite{doi:10.1287/ijoc.1070.0225}. Podobnie, pojawiły się badania, które próbują rozwiązać ten problem optymalizacji dyskretnej za pomocą relaksacji Lagrange’a, co przekształca problem w~optymalizację częściowo ciągłą \cite{rudy2024new}. Bardziej kompleksowy przegląd istniejących podejść do problemu ważonego opóźnienia można znaleźć w \cite{ABDULRAZAQ1990235}.
+
+W odniesieniu do problemów szeregowania wielomaszynowego, autorzy pracy \cite{10382117} zastosowali podobne podejście Branch-and-Bound dla problemu szeregowania przepływowego na dwóch maszynach (two-machine flow shop scheduling), którego celem była maksymalizacja całkowitej ważonej liczby zadań wykonanych na czas. Sformułowanie dla problemu szeregowania warsztatowego na dwóch maszynach (two-machine job shop problem) została przedstawiona w artykule \cite{10.1007/978-3-031-75013-7_7}, ponownie wykorzystując hybrydowy kwantowo-klasyczny solver Leap oraz bardziej ogólne podejście do szeregowania warsztatowego, które rozważono w pracy \cite{venturelli2016job}.
+Interesujące podejście do szeregowania warsztatowego przedstawili autorzy pracy \cite{carugno2022evaluating}. Rozważali oni koszt obliczeniowy reprezentacji problemu dla wyżarzacza kwantowego, biorąc jednocześnie pod uwagę wymagania dotyczące kubitów oraz łagodzenie problemu przerw w łańcuchach kubitów. Ponadto, przedstawiono wpływ zaawansowanych narzędzi, takich jak odwrócone wyżarzanie, i omówiono jego efektywność. Wyniki wskazały na szereg wyzwań pojawiających się na różnych etapach procesu sformułowania i optymalizacji. Na koniec, przedstawiono podejście do rozwiązywania problemu szeregowania i równoważenia zadań na różnych maszynach z nieliniową funkcją celu \cite{10821238}. Wyniki uzyskane za pomocą hybrydowego solvera Leap okazały się wysoce konkurencyjne, a nawet pozwoliły na pewne przyspieszenie w porównaniu z~klasycznym solverem.
+
+W przypadku problemów optymalizacji, które nie są problemami szeregowania, autorzy pracy \cite{bozejko2024optimal} rozważali hybrydowe podejście Branch-and-Bound dla problemu plecakowego. Podobnie, solver Leap został również wykorzystany do pomocy w rozwiązaniu problemu trasowania pojazdów (VRP) w celu poprawy efektywności operacji reagowania na katastrofy w mieście Marikina na Filipinach \cite{Cadelina}. Wreszcie, hybrydowe podejście kwantowo-klasyczne zostało zastosowane do problemu optymalizacji portfela (portfolio optimization problem) \cite{10.1007/978-3-030-77980-1_4}, uzyskując wyniki zbliżone do komercyjnych solverów.
+
+
+Podsumowując, obliczenia kwantowe, wykorzystujące zarówno czysto kwantowe solvery, jak i hybrydowe, są stosowane w literaturze do rozwiązywania dyskretnych problemów optymalizacyjnych, w tym problemów szeregowania. Jednocześnie ta dziedzina badań zawiera stosunkowo niewiele publikacji, a istniejące podejścia pozwalają uzyskać umiarkowany sukces. Co więcej, brakuje prac na temat zastosowania obliczeń kwantowych do problemów ważonego opóźnienia i~ważonego przyspieszenia i opóźnienia. W~związku z tym, niniejszy artykuł ma na celu poprawę tej sytuacji poprzez dostarczenie kilku sformułowania dla wspomnianych problemów.
+
+\section{Opis problemu}
+
+Niech $\Np$ oznacza zbiór liczb naturalnych dodatnich. Rozważamy klasyczny
+problem szeregowania zadań na pojedynczej maszynie, którego celem jest minimalizacja ważonej sumy opóźnień. Niech $\mathcal{N} = \{1,2,\dots,n\}$ będzie zbiorem $n$ zadań
+przeznaczonych do realizacji na pojedynczej maszynie. Każde zadanie
+$i \in \mathcal{N}$ opisane jest przez czas przetwarzania $p_i \in \Np$,
+wagę $w_i \in \Np$ oraz termin wykonania $d_i \in \Np$.
+
+Ponadto, dla każdego zadania $i$ definiujemy zmienną decyzyjną $S_i$
+określającą czas rozpoczęcia jego realizacji. Wektor
+$S = (S_1, S_2, \dots, S_n)$ traktujemy jako pełny rozkład rozpoczęć zadań,
+czyli rozwiązanie problemu szeregowania zadań. Zakładamy, że maszyna może wykonywać w danym momencie co najwyżej jedno
+zadanie, żadne zadanie nie może rozpocząć się przed chwilą $0$, a
+przetwarzanie nie może być przerywane. Oznacza to, że czas zakończenia
+zadania $i$, oznaczony jako $C_i$, jest determinowany przez jego czas
+rozpoczęcia i czas przetwarzania:
+\begin{align}\label{eq:Ci}
+    C_i = S_i + p_i, \qquad \forall\, i \in \mathcal{N}.
+\end{align}
+
+Dla każdego zadania definiujemy jego opóźnienie:
+\begin{equation}\label{eq:Ti}
+    T_i = \max\{C_i - d_i, 0\}, \qquad \forall\, i \in \mathcal{N}.
+\end{equation}
+
+Celem jest znalezienie rozkładu rozpoczęć zadań minimalizującego sumę
+ważonych opóźnień:
+\begin{equation}\label{eq:witi1}
+    \min_S \sum_{i=1}^n w_i T_i,
+\end{equation}
+przy ograniczeniach
+\begin{align}
+    C_i \le S_j \ \vee \ C_j \le S_i,
+    & & \forall\, i,j \in \mathcal{N},\ i \neq j, \label{eq:witi2} \\
+    S_i \ge 0,
+    & & \forall\, i \in \mathcal{N}. \label{eq:witi3}
+\end{align}
+
+W notacji Grahama \cite{GRAHAM1979287} problem ten oznaczany jest jako
+$1||\sum w_i T_i$.
+
+Rozważamy również problem jednoczesnej minimalizacji ważonych opóźnień i przyspieszeń,
+oznaczany jako $1||\sum (w_i T_i + u_i E_i)$. Przyspieszenie zadania $i$ definiujemy jako:
+\begin{equation}\label{eq:Ei}
+    E_i = \max\{d_i - C_i, 0\}, \qquad \forall\, i \in \mathcal{N},
+\end{equation}
+gdzie $u_i$ jest wagą przyspieszenia.
+
+Pełna postać tego problemu jest następująca:
+\begin{equation}\label{eq:uiEi1}
+    \min_S \sum_{i=1}^n (w_i T_i + u_i E_i),
+\end{equation}
+przy ograniczeniach
+\begin{align}
+    C_i \le S_j \ \vee \ C_j \le S_i,
+    & & \forall\, i,j \in \mathcal{N},\ i \neq j, \label{eq:uiEi2} \\
+    S_i \ge 0,
+    & & \forall\, i \in \mathcal{N}. \label{eq:uiEi3}
+\end{align}
+
+Problem $1||\sum w_i T_i$ jest NP-trudny \cite{LENSTRA1977343}. Ponieważ
+stanowi szczególny przypadek problemu $1||\sum (w_i T_i + u_i E_i)$,
+ogólniejszy problem uwzględniający jednocześnie przyspieszenia i opóźnienia
+jest co najmniej tak samo trudny.
+
+
+\section{Sformułowanie dla D-wave}\label{sec:models}
+
+W tej sekcji podajemy dwa różne sformułowania problemów $\wiTi$ oraz $\uiEi$ dla wyżarzaczy kwantowych D-wave. Warto wspomnieć, że problemy sformułowaliśmy w \emph{kwadratowym modelu z ograniczeniami} (ang. \emph{Constraint Quadratic Model}, \emph{CQM}), który później zostanie zamieniony w \emph{binarny model kwadratowy} (ang. \emph{Binary Quardatic Model}, \emph{BQM}) przez oprogramowanie D-wave, aby umożliwić uruchomienie na wyżarzaczu kwantowym.
+
+\subsection{Pierwsze podejście}
+
+Podejście sformułowane w \eqref{eq:witi1}--\eqref{eq:witi3} jest dosyć proste wykorzystujące tylko $n$ zmiennych decyzyjnych (marszruta) i $n^2$ ograniczeń. Tak sformułowany problem jest nie przystosowany do uruchomienia na wyżarzaczu kwantowym D-wave, który wymaga sformułowania problemu jako BQM. Transformacji danego sformułowania z CQM na BQM można dokonać automatycznie używając narzędzi od D-wave. Taka transformacja musi jednak spełniać pewne kryteria, głównie operatory maksimum oraz OR muszą być zapisane w innej postaci. Dodatkowo, wszystkie ograniczenia muszą być zapisane w postaci $\leq{}0$. Zmienne $C_i$ mogą zostać zastąpione wyrażeniem $S_i+p_i$, aby zmniejszyć liczbę zmiennych. W rezultacie otrzymujemy sformułowanie takie jak pokazane w \cite{10703120}:
+
+\begin{equation}\label{eq:wiTi_dwave_A_1}
+    \min_S \sum_{i=1}^n w_i T_i ,
+\end{equation}
+%
+ograniczone:
+%
+\begin{align}
+    S_i + p_i - S_j - M(1-x_{i,j}) & \leq{} 0, & \forall{}i,j\in{}\mathcal{N},j>i, \label{eq:wiTi_dwave_A_2} \\
+    S_j + p_j - S_i - Mx_{i,j} & \leq{} 0, & \forall{}i,j\in{}\mathcal{N},j>i, \label{eq:wiTi_dwave_A_3} \\
+    S_i+p_i-d_i-T_i & \leq{} 0, & \forall{}i\in{}\mathcal{N}, \label{eq:wiTi_dwave_A_4} \\
+    -T_i & \leq{} 0, & \forall{}i\in{}\mathcal{N}, \label{eq:wiTi_dwave_A_5} \\
+    -S_i & \leq{} 0, & \forall{}i\in{}\mathcal{N}, \label{eq:wiTi_dwave_A_6} \\
+    x_{i,j} & \in \{0,1\}, & \forall{}i,j\in{}\mathcal{N},j>i, \label{eq:wiTi_dwave_A_7}
+\end{align}
+%
+gdzie $M$ jest wystarczająco dużą liczbą. Ograniczenia \eqref{eq:wiTi_dwave_A_2}--\eqref{eq:wiTi_dwave_A_3} implementują ograniczenia \eqref{eq:witi2} z użyciem zmiennych binarnych i dużej stałej $M$. Warto zauważyć, że to, czy zadanie $j$ poprzedza $i$ zależy od tego, czy $i$ poprzedza $j$. Dlatego, potrzebujemy tylko $(n^2-n)/2$ zmiennych, a nie $n^2-n$. Dalej, ograniczenia \eqref{eq:wiTi_dwave_A_4}--\eqref{eq:wiTi_dwave_A_5} implementują wyrażenie \eqref{eq:Ti}, wymuszając, aby $T_i$ było niemniejsze od 0 i niemniejsze od $S_i+p_i-d_i$.
+
+Powyższy model jest dostosowany do D-wave, jednakże jest znacznie bardziej złożony, niż ten w \eqref{eq:witi1}--\eqref{eq:witi3}, ponieważ zawiera $(n^2-n)/2$ zmiennych binarnych $x_{i,j}$ i $2n$ zmiennych całkowitoliczbowych $S_i$ and $T_i$ (te zmienne również zostaną zamienione na binarne przez D-wave). Ten model również ma $n^2$ ograniczeń (nie liczymy ograniczeń \eqref{eq:wiTi_dwave_A_5}--\eqref{eq:wiTi_dwave_A_7}, ponieważ służą one tylko do zdefiniowania podstawowej dziedziny dla każdej ze zmiennych).
+
+Sformułowanie problemu $\uiEi$ dla D-wave wygląda podobnie:
+
+\begin{equation}\label{eq:uiEi_dwave_A_1}
+    \min_S \sum_{i=1}^n (w_i T_i + u_i E_i) ,
+\end{equation}
+%
+ograniczone:
+%
+\begin{align}
+    S_i + p_i - S_j - M(1-x_{i,j}) & \leq{} 0, & \forall{}i,j\in{}\mathcal{N},j>i, \label{eq:uiEi_dwave_A_2} \\
+    S_j + p_j - S_i - Mx_{i,j} & \leq{} 0, & \forall{}i,j\in{}\mathcal{N},j>i, \label{eq:uiEi_dwave_A_3} \\
+    S_i+p_i-d_i-T_i & \leq{} 0, & \forall{}i\in{}\mathcal{N}, \label{eq:uiEi_dwave_A_4} \\
+    d_i-S_i-p_i-E_i & \leq{} 0, & \forall{}i\in{}\mathcal{N}, \label{eq:uiEi_dwave_A_5} \\
+    -T_i & \leq{} 0, & \forall{}i\in{}\mathcal{N}, \label{eq:uiEi_dwave_A_6} \\
+    -E_i & \leq{} 0, & \forall{}i\in{}\mathcal{N}, \label{eq:uiEi_dwave_A_7} \\
+    -S_i & \leq{} 0, & \forall{}i\in{}\mathcal{N}, \label{eq:uiEi_dwave_A_8} \\
+    x_{i,j} & \in \{0,1\}, & \forall{}i,j\in{}\mathcal{N},j>i, \label{eq:uiEi_dwave_A_9}
+\end{align}
+%
+Tak sformułowany problem na $(n^2-n)/2$ zmiennych binarnych, $3n$ zmiennych całkowitoliczbowych oraz $n^2+n$ ograniczeń. Zauważmy, że liczba zmiennych i ograniczeń jest większa, niż w problemie $\wiTi$.
+
+\subsection{Podejście alternatywne}
+
+Proponujemy alternatywne, mniej złożone, sformułowanie problemu. Weźmy problem $\wiTi$ na początek.
+Zamiast używać opóźnienia z równania $\eqref{eq:Ti}$, użyjemy pojęcia spóźnienia zadania $i$, oznaczone jako $L_i$ i dane wzorem:
+%
+\begin{equation}\label{eq:Li}
+    L_i = C_i - d_i, \quad{}\quad{}\quad{}\quad{} \forall{}i\in\mathcal{N} .
+\end{equation}
+%
+W przeciwieństwie do opóźnienia, spóźnienie może być ujemne. W zwykłych warunkach $L_i$ nie może być użyte jako zamiennik dla $T_i$. Jednakże zrobimy, aby było to możliwe, korzystając z faktu, że BQM wykorzystuje tylko zmienne binarne, co oznacza, że wszystkie zmienne całkowitoliczbowe są implementowane jako seria zmiennych binarnych (cyfr) z użyciem Naturalnego Kodu Binarnego. Ściśle mówiąc, zmienna $L_i$ może być widziana jako złożona ze zmiennych binarnych $L_i^0, L_i^1,\dots{}, L_i^{k-1}$, gdzie $k$ to liczba cyfr binarnych:
+%
+\begin{equation}\label{eq:Li_nbc}
+    L_i = L_i^0 + 2 L_i^1 + 4 L_i^2 + 8 L_i^3 + \dots{} + 2^{k-2} L_i^{k-2} + 2^{k-1} L_i^{k-1} . 
+\end{equation}
+
+Naturalny Kod Binarny nie pozwala na reprezentację liczb ujemnych, dlatego zmieniliśmy reprezentację na kod uzupełnieniowy pełny do dwóch. Dokładniej, dodaliśmy dodatkowy bit na najbardziej znaczącej pozycji, ale z ujemną wagą $-2^k$ zamiast $2^k$.
+%
+\begin{equation}
+    L_i = L_i^0 + 2 L_i^1 + 4 L_i^2 + 8 L_i^3 + \dots{} + 2^{k-2} L_i^{k-2} + 2^{k-1} L_i^{k-1} - 2^k L_i^k , 
+\end{equation}
+%
+gdzie $L_i$ pełni rolę bitu znaku. Jeżeli $L_i^k=0$ to $L_i\geq{}0$. W przeciwnym wypadku, $L_i<0$.
+
+Dzięki temu, $L_i$ może być użyte do zastąpienia $T_i$:
+%
+\begin{equation}\label{eq:Li=Ti}
+    T_i = L_i^* (1 - L_i^k) ,
+\end{equation}
+%
+gdzie $L_i^*$ jest wartością z \eqref{eq:Li_nbc}, czyli $L_i$ bez najbardziej znaczącego bitu znaku $L_i^k$. Innymi słowy, jeżeli $L_i>0$, to $(1 - L_i^k)=1$ i \eqref{eq:Li=Ti} jest równe $L_i$. Jeżeli $L_i<0$, to $(1 - L_i^k)=0$ i \eqref{eq:Li=Ti} jest równe 0. Kiedy $L_i=0$, to \eqref{eq:Li=Ti} też jest równe 0, niezależnie od $(1 - L_i^k)$. W wszystkich przypadkach, otrzymujemy poprawną wartości $T_i$.
+
+Zaletą tego podejścia jest, że udało się zaimplementować operator maksimum z \eqref{eq:Ti} bez użycia żadnych nierówności. W rezultacie, $L_i$ i $S_i$ są bezpośrednio powiązane równaniem \eqref{eq:Li}. Dzięki temu, możemy całkowicie pozbyć się bezpośrednich zmiennych $S_i$ i używać ich pośrednio:
+%
+\begin{equation}
+    S_i = L_i - p_i + d_i, \quad{}\quad{}\quad{}\quad{} \forall{}i\in\mathcal{N} . 
+\end{equation}
+
+Przy takim podejściu sformułowanie problemu $\wiTi$ formułujemy następująco:
+
+\begin{equation}\label{eq:wiTi_dwave_B_1}
+    \min_S \sum_{i=1}^n w_i L_i^* (1 - L_i^k) ,
+\end{equation}
+%
+ograniczone:
+%
+\begin{align}
+    L_i + d_i - L_j + p_j - d_j - M(1-x_{i,j}) & \leq{} 0, & \forall{}i,j\in{}\mathcal{N},j>i, \label{eq:wiTi_dwave_B_2} \\
+    L_j + d_j - L_i + p_i - d_i - Mx_{i,j} & \leq{} 0, & \forall{}i,j\in{}\mathcal{N},j>i, \label{eq:wiTi_dwave_B_3} \\
+    -L_i^* & \leq{} 0, & \forall{}i\in{}\mathcal{N}, \label{eq:wiTi_dwave_B_4} \\
+    x_{i,j} & \in \{0,1\}, & \forall{}i,j\in{}\mathcal{N},j>i, \label{eq:wiTi_dwave_B_5}
+\end{align}
+%
+Takie podejście ma $(n^2-n)/2$ "prawdziwych" zmiennych binarnych, $n$ zmiennych binarnych dla znaków oraz $n$ zmiennych całkowitoliczbowych. Co więcej, potrzeba tylko $n^2-n$ ograniczeń.
+
+Sytuacja staje się jeszcze bardziej interesująca dla problemu $\uiEi$, ponieważ $L_i$ może być użyte do zastąpienia nie tylko $T_i$ i $S_i$, ale również $E_i$. Jest to możliwe, ponieważ przedwczesność jest przeciwieństwem spóźnienia:
+%
+\begin{align}
+    E_i = - L_i^* L_i^k .
+\end{align}
+%
+Wtedy, sformułowanie wygląda następująco:
+%
+\begin{equation}\label{eq:uiEi_dwave_B_1}
+    \min_S \sum_{i=1}^n (w_i L_i^* (1 - L_i^k) - u_i L_i^* L_i^k ),
+\end{equation}
+%
+%subject to
+ograniczone:
+%
+\begin{align}
+    L_i + d_i - L_j + p_j - d_j - M(1-x_{i,j}) & \leq{} 0, & \forall{}i,j\in{}\mathcal{N},j>i, \label{eq:uiEi_dwave_B_2} \\
+    L_j + d_j - L_i + p_i - d_i - Mx_{i,j} & \leq{} 0, & \forall{}i,j\in{}\mathcal{N},j>i, \label{eq:uiEi_dwave_B_3} \\
+    -L_i^* & \leq{} 0, & \forall{}i\in{}\mathcal{N}, \label{eq:uiEi_dwave_B_4} \\
+    x_{i,j} & \in \{0,1\}, & \forall{}i,j\in{}\mathcal{N},j>i, \label{eq:uiEi_dwave_B_5}
+\end{align}
+%
+Takie sformułowanie ma taką samą liczbę zmiennych i ograniczeń jak sformułowanie \eqref{eq:wiTi_dwave_B_1}--\eqref{eq:wiTi_dwave_B_5} i znacznie mniej niż \eqref{eq:uiEi_dwave_A_1}--\eqref{eq:uiEi_dwave_A_9}. Ogólne porównanie sformułowań pokazano w tabeli \ref{tab:formulations}.
+
+\begin{table}[!ht]
+\renewcommand{\arraystretch}{1.5}
+\caption{Porównanie sformułowań. Zakładamy, że zmienne całkowite są implementowane przy użyciu $k$ (kod naturalny binarny) oraz $k+1$ (kod uzupełnieniowy pełny do dwóch) zmiennych binarnych}\label{tab:formulations}
+\begin{tabularx}{\columnwidth}{lXXXX}
+\toprule
+\multirow{2}{*}{Sformułowanie\phantom{aa}} & \multicolumn{2}{c}{$\wiTi$} & \multicolumn{2}{c}{$\uiEi$} \\ \cmidrule(r){2-3} \cmidrule(l){4-5}
+ & Początkowe  & Ulepszone  & Początkowe  & Ulepszone  \\ \midrule
+\multicolumn{5}{c}{Liczba zmiennych} \\ \midrule
+$x_{i,j}$ & $(n^2-n)/2$ & $(n^2-n)/2$ & $(n^2-n)/2$ & $(n^2-n)/2$ \\
+$S_i$ & $kn$ & --- & $kn$ & --- \\
+$T_i$ & $kn$ & --- & $kn$ & --- \\
+$E_i$ & --- & --- & $kn$ & --- \\
+$L_i$ & --- & $(k+1)n$ & --- & $(k+1)n$ \\ \midrule
+Wszystkie & $\frac{1}2n(n+4k-1)$ & $\frac{1}2n(n+2k+1)$ & $\frac{1}2n(n+6k-1)$ & $\frac{1}2n(n+2k+1)$ \\ \midrule
+\multicolumn{5}{c}{Liczba ograniczeń} \\ \midrule
+Poprz. zadań & $n^2-n$ & $n^2-n$ & $n^2-n$ & $n^2-n$ \\
+$\max$ dla $T_i$ & $n$ & --- & $n$ & --- \\
+$\max$ dla $E_i$ & --- & --- & $n$ & --- \\ \midrule
+Wszystkie & $n^2$ & $n^2-n$ & $n^2+n$ & $n^2-n$ \\
+\bottomrule
+\end{tabularx}
+\renewcommand{\arraystretch}{1.0}
+\end{table}
+% hubert start
+\section{Eksperymenty komputerowe}
+
+W celu zweryfikowania właściwości sformułowań teoretycznych zaimplementowaliśmy je z wykorzystaniem oprogramowania Ocean od D-Wave Systems. Jednym z problemów związanych z implementacją jest to, że proces wyżarzania kwantowego może zwracać rozwiązania niespełniające ograniczeń.
+Aby temu zaradzić, analizujemy próbki rozwiązań zwrócone przez interfejs API D-Wave i w oparciu o nie konstruujemy rozwiązanie końcowe w następujący sposób. Jako pierwszy kandydat wybieramy najlepsze rozwiązanie dopuszczalne spośród próbek. Drugi kandydat powstaje poprzez wzięcie najlepszego rozwiązania niedopuszczalnego i jego naprawę zgodnie z następującą procedurą.
+Dla $\wiTi$ zadania są sortowane w niemalejącym porządku według wartości $S_i$, po czym rozmieszczane tak, aby nie nachodziły na siebie (tzn. jeśli $S_i + p_i > S_{i+1}$, to $S_{i+1} \leftarrow S_i + p_i$).Następnie wszystkie zadania są przesuwane w lewo do momentu aż $S_1 = 0$.
+Procedura dla $\uiEi$ jest trochę inna, ponieważ warunek $S_1 = 0$ nie jest zawsze lepszy od $S_1 > 0$.
+W tym przypadku zadania są rozmieszczane tak, aby nie nachodziły na siebie i aby spełniony był warunek $S_1 \ge 0$ (jeżeli to ostatnie przesunięcie prowadzi do nowych nakładek, krok rozpraszania jest powtarzany).
+ Ostatecznie zwracany jest lepszy z dwóch kandydatów (najlepszy dopuszczalny oraz najlepszy naprawiony niedopuszczalny). Jeśli wszystkie rozwiązania były dopuszczalne albo były niedopuszczalne, istnieje tylko jeden kandydat i to on jest raportowany. Kod projektu jest dostępny na GitHubie \cite{github}.
+ 
+Instancje problemu $\wiTi$ zostały wygenerowane przy użyciu generatora instancji z OR-library \cite{Beasley01111990}. Instancje dla problemu $\uiEi$ zostały uzyskane poprzez rozszerzenie generatora tak, aby wartości $u_i$ były generowane w taki sam sposób jak wartości $w_i$. 
+Przeprowadzono dwa eksperymenty z wykorzystaniem różnych typów solverów: (1) czysto kwantowego solvera oraz (2) solvera hybrydowego, który łączy wyżarzanie kwantowe z obliczeniami klasycznymi. Szczegóły oraz wyniki obu eksperymentów przedstawiono poniżej.
+
+
+\subsection{Wyniki dla problemu $\wiTi$}\label{subsec:wiTi}
+Przedstawiamy tutaj eksperymenty dla problemu $\wiTi$. Najpierw zaprezentujemy wyniki uzyskane przy użyciu czysto kwantowego solvera. Dostęp do tego solvera jest ograniczony czasowo. Na szczęście uruchamianie małych instancji zużywa bardzo niewiele czasu solvera, dzięki czemu mogliśmy wykonać wiele uruchomień dla każdej wielkości problemu $n$. Niestety, czysto kwantowy solver jest również bardzo ograniczony pod względem rozmiaru problemu, który jest w stanie obsłużyć. Wynika to z faktu, że sformułowanie matematyczne musi zostać odwzorowane na istniejącą strukturę systemu kwantowego, co nie zawsze jest możliwe. Z tego powodu wykorzystano jedynie niewielkie wartości $n$ w~celach ilustracyjnych.
+
+\begin{table}[!ht]
+\renewcommand{\arraystretch}{1.5}
+\caption{Średnia liczba zmiennych $\mathit{NoV}$, względne odchylenie $\mathit{RD}$, procent embeddingów $\mathit{PoE}$ oraz procent sukcesów alternatywnego sformułowania $\mathit{PoA}$ dla problemu $\wiTi$ z wykorzystaniem w pełni kwantowego solvera}\label{tab:quantum_wiTi}
+\begin{tabularx}{\columnwidth}{c*{6}{C}c}
+\toprule
+\multirow{2}{*}{$n$} & \multicolumn{3}{c}{\scriptsize Sformułowanie \eqref{eq:wiTi_dwave_A_1}--\eqref{eq:wiTi_dwave_A_7}} & \multicolumn{3}{c}{\scriptsize Sformułowanie \eqref{eq:wiTi_dwave_B_1}--\eqref{eq:wiTi_dwave_B_5}} & \multirow{2}{*}{$\mathit{PoA}$} \\ \cmidrule(r){2-4} \cmidrule(lr){5-7}
+& $\mathit{NoV}$ & $\mathit{RD}$ & $\mathit{PoE}$ & $\mathit{NoV}$ & $\mathit{RD}$ & $\mathit{PoE}$ &  \\ \midrule
+2 & \phantom{0}57.4 & 2.2090 & 100.0 & \phantom{0}44.8 & 4.6334 & 100.0 & 50.0 \\
+3 & 128.3 & 3.7248 & 100.0 & 103.8 & 7.2863 & 100.0 & 30.0 \\
+4 & 224.7 & 3.7368 & 100.0 & 187.2 & 6.4528 & 100.0 & 30.0 \\
+5 & 325.0 & 2.3988 & \phantom{0}20.0 & 297.1 & 5.5403 & \phantom{0}90.0 & 70.0 \\ \midrule
+All & 148.6 & 3.1720 & \phantom{0}80.0 & 123.4 & 6.0781 & \phantom{0}97.5 & 45.0 \\
+\bottomrule
+\end{tabularx}
+\renewcommand{\arraystretch}{1.0}
+\end{table}
+
+\begin{table}[!ht]
+\renewcommand{\arraystretch}{1.5}
+\caption{Liczba zmiennych $\mathit{NoV}$, względne odchylenie $\mathit{RD}$, procent embeddingów $\mathit{PoE}$ oraz procent sukcesów alternatywnego sformułowania $\mathit{PoA}$ dla problemu $\wiTi$  z wykorzystaniem hybrydowego solvera kwantowego}\label{tab:hybrid_wiTi}
+\begin{tabularx}{\columnwidth}{c*{4}{X}c}
+\toprule
+\multirow{2}{*}{$n$} & \multicolumn{2}{c}{\scriptsize Sformułowanie  \eqref{eq:wiTi_dwave_A_1}--\eqref{eq:wiTi_dwave_A_7}} & \multicolumn{2}{c}{\scriptsize Sformułowanie  \eqref{eq:wiTi_dwave_B_1}--\eqref{eq:wiTi_dwave_B_5}} & \multirow{2}{*}{$\mathit{PoA}$} \\ \cmidrule(r){2-3} \cmidrule(lr){4-5}
+& $\mathit{NoV}$ & $\mathit{RD}$  & $\mathit{NoV}$ & $\mathit{RD}$ & \\ \midrule
+\phantom{0}7 & \phantom{0}35.0 & \phantom{0}3.6444 & \phantom{0}91.0 & \phantom{0}2.6222 & 100.0 \\
+\phantom{0}8 & \phantom{0}44.0 & \phantom{0}2.7000 & 108.0 & \phantom{0}3.4364 & \phantom{00}0.0 \\
+\phantom{0}9 & \phantom{0}54.0 & 17.8511 & 135.0 & \phantom{0}7.9787 & 100.0 \\
+10 & \phantom{0}65.0 & 16.7791 & 155.0 & 24.8140 & \phantom{00}0.0 \\
+11 & \phantom{0}77.0 & 11.7882 & 176.0 & \phantom{0}4.3005 & 100.0 \\
+12 & \phantom{0}90.0 & \phantom{0}4.9427 & 198.0 & 13.0521 & \phantom{00}0.0 \\
+13 & 104.0 & \phantom{0}1.5168 & 221.0 & \phantom{0}5.1134 & \phantom{00}0.0 \\
+14 & 119.0 & \phantom{0}2.8315 & 245.0 & \phantom{0}3.8090 & \phantom{00}0.0 \\ \midrule
+All & \phantom{0}73.5 & \phantom{0}7.7567 & 166.1 & \phantom{0}8.1408 & \phantom{0}37.5 \\
+\bottomrule
+\end{tabularx}
+\renewcommand{\arraystretch}{1.0}
+\end{table}
+
+Ze względu na wykorzystanie 10 instancji dla każdego rozmiaru problemu nie możemy stosować surowych wartości bezwzględnych. Zamiast tego posługujemy się wartościami średnimi oraz normalizujemy dane w razie potrzeby. Dla każdej wartości $n$ rozważamy cztery parametry:
+%
+\begin{enumerate}
+    \item Liczbę zmiennych $\mathit{NoV}$ dla każdego sformułowania. Jest to całkowita liczba zmiennych raportowana przez oprogramowanie Ocean.
+
+    \item Odsetek udanych embeddingów $\mathit{PoE}$ dla każdego sformułowania. Na przykład wartość 80.0 oznacza, że 8 z 10 instancji dla danego $n$ zostało pomyślnie zembedowanych w systemie kwantowym.
+
+    \item Względne odchylenie $\mathit{RD}$ dla każdego sformułowania. Parametr ten mierzy błąd względem rozwiązania optymalnego. Przykładowo, $\mathit{RD}$ równe 2.5 oznacza, że wartość uzyskana przez solver kwantowy jest o 2.5 większa (gorsza) od rozwiązania optymalnego. Rozwiązanie optymalne zostało wyznaczone za pomocą solvera Gurobi uruchomionego na komputerze klasycznym.
+
+    \item Odsetek $\mathit{PoA}$ instancji, dla których sformułowanie alternatywne dało wyniki co najmniej tak dobre, jak sformułowanie bezpośrednie. Uwzględnia to również sytuacje, w~których sformułowanie bezpośrednie nie uzyskała osadzenia. Na przykład $\mathit{PoA}=20.0$ oznacza, że sformułowanie alternatywne przewyższyła sformułowanie bezpośrednie w 2 z~10 instancji dla danego $n$. 
+\end{enumerate}
+
+Wyniki dla w pełni kwantowego solvera dla obu sformułowań przedstawiono w Tabeli~\ref{tab:quantum_wiTi}. Zgodnie z oczekiwaniami liczba zmiennych jest mniejsza dla sformułowania alternatywnego. Chociaż różnica nie wydaje się duża, umożliwiła ona pomyślne osadzenie większej liczby problemów (97,5\%) w porównaniu z formulacją bezpośrednią (80\%). Należy zauważyć, że w ostatnim wierszu wartości $\mathit{NoV}$ i $\mathit{RD}$ zostały policzone wyłącznie dla tych instancji, dla których obie formulacje uzyskały osadzenie.
+
+Możemy również zauważyć, zgodnie z przewidywaniami, że czysto kwantowy solver dostarcza wyniki niskiej jakości w porównaniu z rozwiązaniami optymalnymi. Co jednak nieoczekiwane, to porównanie obu sformułowań pod względem $\mathit{RD}$. Ze względu na mniejszą liczbę zmiennych można by oczekiwać, że sformułowanie alternatywne uzyska lepsze wyniki dzięki mniejszemu rozmiarowi przestrzeni rozwiązań. Wyniki wskazują jednak coś przeciwnego: średnie $\mathit{RD}$ dla sformułowania alternatywnego jest dwukrotnie większe niż dla sformułowania pierwotnego. Może to sugerować istnienie pewnego problemu z formulacją CQM lub sposobem jej przekształcania do BQM. Ogólnie rzecz biorąc, podejście alternatywne osiągnęło wyniki takie same lub lepsze w 45\% instancji.
+
+Przeprowadzono osobny eksperyment dla hybrydowego solvera kwantowo-klasycznego. Jego zaletą jest możliwość uruchamiania problemów z większą liczbą zadań niż w przypadku czysto kwantowego solwera. Wadą natomiast jest to, że każde uruchomienie zużywa stałe 5 sekund z dostępnego limitu czasu. Z tego powodu byliśmy w stanie uruchomić jedną instancję dla każdego $n$ i raportować wyniki bezpośrednio, zamiast je uśredniać. Wyniki dla solvera hybrydowego przedstawiono w Tabeli~\ref{tab:hybrid_wiTi}. Pierwszym zaskakującym faktem jest to, że liczba zmiennych raportowana przez oprogramowanie D-Wave jest znacznie większa dla implementacji alternatywnej niż dla tej bezpośredniej. Może to wskazywać albo na problem z transformację CQM na BQM, albo na inny sposób przekształcania problemu dla solvera hybrydowego. Możliwym powodem może być to, że solver hybrydowy traktuje zmienne takie jak $S_i$ jako zmienne całkowitoliczbowe, licząc je jako jedną zamiast $k$ zmiennych binarnych (jak ostatecznie miałoby to miejsce w~przypadku BQM). Podobnie jak wcześniej, bezpośrednie formułowanie dostarcza lepszych rozwiązań, ale różnica wynosi jedynie 5\% pomimo pozornie większej liczby zmiennych. 
+
+\subsection{Wyniki dla problemu $\uiEi$}
+
+\begin{table}[!ht]
+\renewcommand{\arraystretch}{1.5}
+\caption{Średnia liczba zmiennych $\mathit{NoV}$, odchylenie względne $\mathit{RD}$, procent embeddings $\mathit{PoE}$ oraz procent sukcesów alternatywnej formuły $\mathit{PoA}$ dla problemu $\uiEi$ z wykorzystaniem w pełni kwantowego solvera }\label{tab:quantum_uiEi}
+\begin{tabularx}{\columnwidth}{c*{6}{X}c}
+\toprule
+\multirow{2}{*}{$n$} & \multicolumn{3}{c}{\scriptsize Sformułowanie \eqref{eq:uiEi_dwave_A_1}--\eqref{eq:uiEi_dwave_A_9}} & \multicolumn{3}{c}{\scriptsize Sformułowanie \eqref{eq:uiEi_dwave_B_1}--\eqref{eq:uiEi_dwave_B_5}} & \multirow{2}{*}{$\mathit{PoA}$} \\ \cmidrule(r){2-4} \cmidrule(lr){5-7}
+& $\mathit{NoV}$ & $\mathit{RD}$ & $\mathit{PoE}$ & $\mathit{NoV}$ & $\mathit{RD}$ & $\mathit{PoE}$ & \\ \midrule
+2 & \phantom{0}78.1 & 5.1287 & 100.0 & \phantom{0}44.8 & \phantom{0}8.0388 & 100.0 & 20.0 \\
+3 & 174.1 & 7.1755  & 100.0 & 103.8 & \phantom{0}8.8883 & 100.0 & 50.0 \\
+4 & 295.3 & 5.5946 & \phantom{0}60.0 & 187.2 & 12.5535 & 100.0 & 50.0 \\
+5 & 400.0 & 2.4540 & \phantom{0}10.0 & 295.3 & \phantom{0}8.0182 & \phantom{0}70.0 & 60.0 \\ \midrule
+All & 173.9 & 5.8912 & \phantom{0}67.5 & 107.2 & \phantom{0}8.9246 & \phantom{0}92.5 & 45.5 \\
+\bottomrule
+\end{tabularx}
+\renewcommand{\arraystretch}{1.0}
+\end{table}
+
+
+\begin{table}[!ht]
+\renewcommand{\arraystretch}{1.5}
+\caption{Liczba zmiennych $\mathit{NoV}$, odchylenie względne $\mathit{RD}$, procent embeddingów $\mathit{PoE}$ oraz procent sukcesów alternatywnego sformułowania $\mathit{PoA}$ dla problemu $\uiEi$ z wykorzystaniem hybrydowego solvera kwantowego }\label{tab:hybrid_uiEi}
+\begin{tabularx}{\columnwidth}{c*{4}{X}c}
+\toprule
+\multirow{2}{*}{$n$} & \multicolumn{2}{c}{\scriptsize Sformułowanie \eqref{eq:uiEi_dwave_A_1}--\eqref{eq:uiEi_dwave_A_9}} & \multicolumn{2}{c}{\scriptsize Sformułowanie \eqref{eq:uiEi_dwave_B_1}--\eqref{eq:uiEi_dwave_B_5}} & \multirow{2}{*}{$\mathit{PoA}$} \\ \cmidrule(r){2-3} \cmidrule(lr){4-5}
+& $\mathit{NoV}$ & $\mathit{RD}$  & $\mathit{NoV}$ & $\mathit{RD}$ & \\ \midrule
+\phantom{0}7 & \phantom{0}42.0 & 3.2910 & \phantom{0}91.0 & 5.6557 & 0.0 \\
+\phantom{0}8 & \phantom{0}52.0 & 2.2891 & 108.0 & 4.0081 & 0.0 \\
+\phantom{0}9 & \phantom{0}63.0 & 3.4655 & 135.0 & 9.8757 & 0.0 \\
+10 & \phantom{0}75.0 & 2.6691 & 155.0 & 7.8065 & 0.0 \\
+11 & \phantom{0}88.0 & 2.6431 & 176.0 & 4.5470 & 0.0 \\
+12 & 102.0 & 2.7818 & 198.0 & 5.8316 & 0.0 \\
+13 & 117.0 & 2.5840 & 221.0 & 4.6328 & 0.0 \\
+14 & 133.0 & 2.3713 & 245.0 & 4.0880 & 0.0 \\ \midrule
+All & \phantom{0}84.0 & 2.7619 & 166.1 & 5.8057 & 0.0 \\
+\bottomrule
+\end{tabularx}
+\renewcommand{\arraystretch}{1.0}
+\end{table}
+
+Podobne eksperymenty przeprowadzono dla problemu $\uiEi$. Wyniki dla czystego solvera kwantowego przedstawiono w Tabeli~\ref{tab:quantum_uiEi}. Wnioski są podobne jak w przypadku problemu $\wiTi$. Alternatywne sformułowanie charakteryzuje się zmniejszoną liczbą zmiennych (zgodnie z raportem oprogramowania D-Wave), przy czym różnica ta jest bardziej znacząca niż dla $\wiTi$. W tym wypadku zmniejszona liczba zmiennych również nie poprawia jakości rozwiązań, nie jest ona również tak duża jak w przypadku $\wiTi$. Alternatywne sformułowanie osiąga sukces w 92.5\% przypadków embeddingu, co jest mniejszą wartością niż dla $\wiTi$ (z powodu bardziej złożonego charakteru problemu), jednakże jest to wciąż znacznie lepszy wynik niż 67.5\% w przypadku sformułowania bezpośredniego.
+
+Na koniec, w Tabeli~\ref{tab:hybrid_uiEi} przedstawiono wyniki dla problemu $\uiEi$ z~wykorzystaniem hybrydowego solvera kwantowego. Zgodnie z przewidywaniami, liczba zmiennych decyzyjnych dla alternatywnego sformułowania pozostaje taka sama jak w~przypadku problemu $\wiTi$. Niestety, liczba ta wciąż pozostaje znacznie wyższa niż w~przypadku bezpośredniego sformułowania, prawdopodobnie z tej samej przyczyny co w~poprzedniej podsekcji. Po uwzględnieniu jakości rozwiązań, bezpośrednie sformułowanie zapewnia rozwiązania dwukrotnie lepsze od alternatywnego, przewyższając je dla wszystkich rozważanych instancji.
+
+\section{Wnioski i kierunki dalszych badań}\label{sec:conclusions}
+
+W niniejszym artykule zaproponowaliśmy dwa różne sformułowania kwadratowej optymalizacji problemów optymalizacji całkowitego ważonego opóźnienia i~całkowitego ważonego przyspieszenia, dla kwantowego wyżarzania. Pokazaliśmy, w~jaki sposób drugie, alternatywne sformułowanie może prowadzić do zmniejszenia liczby zmiennych decyzyjnych. Jednak eksperymenty z wykorzystaniem czystego oraz hybrydowego kwantowego wyżarzania pokazały, że alternatywne sformułowanie nie tylko nie poprawia jakości rozwiązań, lecz może nawet prowadzić do zwiększenia liczby zmiennych decyzyjnych. Podsumowując, konieczne są dalsze badania, aby ustalić, czy jest to spowodowane samymi sformułowaniami, czy niewłaściwym wykorzystaniem systemu kwantowego wyżarzania. Możliwe przyszłe kierunki badań obejmują porównanie liczby zmiennych i ograniczeń w~procesie kompilacji CQM do BQM lub wykorzystanie ciągłych zmiennych decyzyjnych w sformułowaniu problemu. Ponadto czysty solver kwantowy pozwala na rozwiązywanie jedynie małych problemów, a wyżarzanie kwantowe ma trudność z~uzyskaniem rozwiązań dobrej jakości.
+
+\begin{thebibliography}{99}
+\bibitem{10703120}
+W.~Bożejko, R.~Klempous, J.~Pempera, J.~Rozenblit, C.~Smutnicki, M.~Uchroński, and M.~Wodecki,
+``Optimal Solving of a Scheduling Problem Using Quantum Annealing Metaheuristics on the D-Wave Quantum Solver,''
+\textit{IEEE Transactions on Systems, Man, and Cybernetics: Systems},
+vol.~55, no.~1, pp.~196--208, 2025, doi:10.1109/TSMC.2024.3458873.
+
+\bibitem{doi:10.1126/science.ado6285}
+A.~D. King, A.~Nocera, M.~M. Rams, J.~Dziarmaga, \textit{et al.},
+``Beyond-classical computation in quantum simulation,''
+\textit{Science}, p.~eado6285, doi:10.1126/science.ado6285.
+
+\bibitem{LENSTRA1977343}
+J.~K. Lenstra, A.~H.~G. Rinnooy Kan, and P.~Brucker,
+``Complexity of Machine Scheduling Problems,''
+in \textit{Studies in Integer Programming}, Annals of Discrete Mathematics, vol.~1, pp.~343--362, 1977.
+
+\bibitem{Beasley01111990}
+J.~E. Beasley,
+``OR-Library: Distributing Test Problems by Electronic Mail,''
+\textit{Journal of the Operational Research Society},
+vol.~41, no.~11, pp.~1069--1072, 1990.
+
+\bibitem{GRAHAM1979287}
+R.~L. Graham, E.~L. Lawler, J.~K. Lenstra, and A.~H.~G. Rinnooy Kan,
+``Optimization and Approximation in Deterministic Sequencing and Scheduling: a Survey,''
+in \textit{Discrete Optimization II}, Annals of Discrete Mathematics, vol.~5, pp.~287--326, 1979.
+
+\bibitem{PhysRevE.58.5355}
+T.~Kadowaki and H.~Nishimori,
+``Quantum annealing in the transverse Ising model,''
+\textit{Phys. Rev. E}, vol.~58, pp.~5355--5363, 1998.
+
+\bibitem{10.1007/978-3-031-08760-8_15}
+W.~Bożejko, J.~Pempera, M.~Uchroński, and M.~Wodecki,
+``Distributed Quantum Annealing on D-Wave for the Single Machine Total Weighted Tardiness Scheduling Problem,''
+in \textit{ICCS 2022}, pp.~171--178, Springer, 2022.
+
+\bibitem{https://doi.org/10.1002/que2.12}
+F.~Hu, B.-N. Wang, N.~Wang, and C.~Wang,
+``Quantum machine learning with D-Wave quantum computer,''
+\textit{Quantum Engineering}, vol.~1, no.~2, p.~e12, 2019.
+
+\bibitem{carugno2022evaluating}
+C.~Carugno, M.~F. Dacrema, and P.~Cremonesi,
+``Evaluating the job shop scheduling problem on a D-wave quantum annealer,''
+\textit{Scientific Reports}, vol.~12, p.~6539, 2022.
+
+\bibitem{bozejko2024optimal}
+W.~Bożejko, A.~Burduk, J.~Pempera, M.~Uchroński, and M.~Wodecki,
+``Optimal solving of a binary knapsack problem on a D-Wave quantum machine and its implementation in production systems,''
+\textit{Annals of Operations Research}, pp.~1--16, 2024.
+
+\bibitem{10.1007/978-3-030-77980-1_4}
+F.~Phillipson and H.~S. Bhatia,
+``Portfolio Optimisation Using the D-Wave Quantum Annealer,''
+in \textit{ICCS 2021}, pp.~45--59, Springer, 2021.
+
+\bibitem{Cadelina}
+A.~R. Cadeliña, M.~A. Cuevas, M.~Kallos, M.~J. Montemayor, R.~J. Uy, J.~B. Rodriguez, and O.~Tubola,
+``D-Wave Implementation of Quantum Annealing for Optimal Resource Allocation in Disaster Response,''
+\textit{ECTI-CIT}, vol.~18, no.~1, pp.~24--33, 2024.
+
+\bibitem{10382117}
+W.~Bożejko, R.~Klempous, M.~Uchroński, and M.~Wodecki,
+``Solving two-machine flow shop scheduling problem … on D-Wave quantum computer,''
+in \textit{CINTI 2023}, pp.~37--40.
+
+\bibitem{10.1007/978-3-031-75013-7_7}
+W.~Bożejko, S.~Trotskyi, M.~Uchroński, and M.~Wodecki,
+``Comparison of D-Wave Quantum Computing Environment Solvers for a Two-Machine Scheduling Problem,''
+in \textit{SOCO 2024}, pp.~68--76.
+
+\bibitem{venturelli2016job}
+D.~Venturelli, D.~Marchand, and G.~Rojo,
+``Job shop scheduling solver based on quantum annealing,''
+in \textit{COPLAS at ICAPS}, pp.~25--34, 2016.
+
+\bibitem{10821238}
+A.~Awasthi, N.~Kraus, F.~Krellner, and D.~Zambrano,
+``Real World Application of Quantum-Classical Optimization for Production Scheduling,''
+in \textit{QCE 2024}, vol.~2, pp.~239--244.
+
+\bibitem{github}
+J.~Rudy,
+``GitHub repository,'' 2025. [Online]. Available: https://github.com/jaroslaw-rudy/quantum-wiTi-uiEi-2025.
+
+\bibitem{guide}
+D-Wave Systems,
+``Problem Formulation Guide,'' 2022. [Online]. Available: https://www.dwavequantum.com/media/bu0lh5ee/problem-formulation-guide-2022-01-10.pdf.
+
+\bibitem{doi:10.1287/ijoc.1070.0225}
+L.-P.~Bigras, M.~Gamache, and G.~Savard,
+``Time-Indexed Formulations and the Total Weighted Tardiness Problem,''
+\textit{INFORMS Journal on Computing}, vol.~20, no.~1, pp.~133--142, 2008.
+
+\bibitem{rudy2024new}
+J.~Rudy, R.~Idzikowski, C.~Smutnicki, Z.~Banaszak, and G.~Bocewicz,
+``New ideas in Lagrangian relaxation for weighted tardiness scheduling,''
+\textit{IJAMCS}, vol.~34, no.~2, 2024.
+
+\bibitem{ABDULRAZAQ1990235}
+T.~S. Abdul-Razaq, C.~N. Potts, and L.~N. Van Wassenhove,
+``A survey of algorithms for the single machine total weighted tardiness scheduling problem,''
+\textit{Discrete Applied Mathematics}, vol.~26, no.~2, pp.~235--253, 1990.
+\end{thebibliography}

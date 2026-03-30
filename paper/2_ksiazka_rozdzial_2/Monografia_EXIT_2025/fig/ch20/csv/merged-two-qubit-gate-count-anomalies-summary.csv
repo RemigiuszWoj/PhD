@@ -1,0 +1,17 @@
+qasmfile,Qiskit,Cirq,Tket
+qaoa_3q_s100.qasm,7.0,12.0,9.0
+qaoa_3q_s106.qasm,7.0,12.0,9.0
+qaoa_4q_s107.qasm,14.0,21.0,18.0
+qaoa_5q_s105.qasm,29.0,41.0,35.0
+ham_2q_dt0.05_T0.1.qasm,2.0,4.0,2.0
+ham_2q_dt0.1_T0.2.qasm,2.0,4.0,2.0
+ham_2q_dt0.1_T0.5.qasm,2.0,10.0,2.0
+ham_4q_dt0.1_T0.3.qasm,15.0,24.0,15.0
+ghz_central.qasm,7.0,13.0,10.0
+ghz_gskip_qubit.qasm,2.0,5.0,2.0
+ghz_hadamard_fan.qasm,4.0,7.0,4.0
+ghz_manual_cnot_order.qasm,4.0,7.0,4.0
+mb_mb_cz_entanglement.qasm,6.0,10.0,10.0
+mb_mb_endpoints_only.qasm,7.0,10.0,10.0
+mb_mb_measure_in_x_basis.qasm,7.0,10.0,10.0
+mb_mb_partial_hadamards.qasm,7.0,10.0,10.0

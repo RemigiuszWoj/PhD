@@ -1,0 +1,825 @@
+\chapterauthor{Thanh-Ngo Nguyen}
+\chapter[Częste eksplorowani \ldots]{Częste eksplorowanie wzorców: kompleksowy przegląd}
+\thispagestyle{empty}
+\vspace{-8mm} {\large Thanh-Ngo Nguyen} \vspace{8mm}
+
+
+% =====================
+% I. Introduction
+% =====================
+\section{Introduction}
+Eksploracja częstych wzorców (FPM) ma na celu wydobywanie często współwystępujących wzorców z dużych zbiorów danych i stanowi jedno z centralnych zagadnień w odkrywaniu wiedzy oraz eksploracji danych. Od czasu przełomowej pracy Agrawala i Srikanta dotyczącej eksploracji reguł asocjacyjnych w 1993 roku~\cite{agrawal1994fast}, intensywne badania doprowadziły do znacznego rozwoju efektywności, skalowalności i zastosowań FPM w różnych środowiskach obliczeniowych.
+
+Metody FPM znalazły szerokie zastosowanie m.in. w analizie koszyka zakupowego, systemach rekomendacyjnych, modelowaniu zachowań, eksploracji danych internetowych, cyberbezpieczeństwie, bioinformatyce oraz wielu innych obszarach. W tych zastosowaniach częste wzorce dostarczają interpretowalnych struktur, które mogą być bezpośrednio analizowane przez ekspertów dziedzinowych. FPM często stanowi kluczowy element szerszego procesu analitycznego, w którym wydobyte wzorce są dalej wykorzystywane do generowania reguł, klasyfikacji, klasteryzacji, wykrywania anomalii lub wspomagania decyzji.
+
+Niniejszy rozdział przedstawia kompleksowy przegląd FPM, obejmujący podstawowe pojęcia, reprezentatywne algorytmy eksploracji wzorców (eksplorację zbiorów przedmiotów, wzorców sekwencyjnych oraz podgrafów), miary oceny, zastosowania dziedzinowe oraz nowe kierunki badań. Materiał ten jest przeznaczony dla czytelników zainteresowanych zarówno teoretycznymi aspektami, jak i~praktycznym wdrażaniem metod eksploracji częstych wzorców we współczesnych środowiskach zorientowanych na dane.
+
+% =====================
+% II. Fundamental Concepts
+% =====================
+\section{Podstawowe pojęcia}
+\label{sec:fundamentals}
+Niech $I = \{A,B,C,D\}$ będzie skończonym zbiorem przedmiotów (ang. \textit{items}). Baza danych transakcji $D$ składa się z transakcji $T_k$, gdzie $T_k \subseteq I$. Rozważamy przykładową bazę danych przedstawioną w Tabeli~\ref{tab:dataset}.
+
+\begin{table}[ht]
+\centering
+\caption{Przykładowa baza danych transakcji}
+\label{tab:dataset}
+\begin{tabularx}{.5\textwidth}{cC}
+\toprule
+TID & Przedmioty \\
+\midrule
+1 & A, B, C, D \\
+2 & A, C, D \\
+3 & B, C \\
+4 & A, B \\
+5 & A, B, C \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\emph{Zbiorem przedmiotów} (ang. \textit{itemset}) $X$ nazywamy dowolny podzbiór $I$. Jego (względne) wsparcie definiuje się następująco:
+
+\begin{equation}
+\label{eq:support}
+support(X) = \frac{|\{T_k \in D \mid X \subseteq T_k \}|}{|D|}.
+\end{equation}
+
+Przy $|D| = 5$ oraz progu minimalnego wsparcia $minsup = 60\%$ (tj. co najmniej trzy transakcje), obliczamy wsparcie wybranych zbiorów przedmiotów następująco:
+
+\begin{equation}\scriptstyle
+support(A) = \frac{4}{5},\; support(B) = \frac{4}{5},\; support(C) = \frac{4}{5},\; support(D) = \frac{3}{5},\nonumber
+\end{equation}
+\begin{equation}\scriptstyle
+support(AB) = \frac{3}{5},\; support(AC) = \frac{3}{5},\; support(AD) = \frac{2}{5},\nonumber
+\end{equation}
+\begin{equation}\scriptstyle
+support(BC) = \frac{3}{5},\; support(BD) = \frac{2}{5},\; support(CD) = \frac{2}{5},\nonumber
+\end{equation}
+\begin{equation}\scriptstyle
+support(ABC) = \frac{2}{5},\; support(ABD) = \frac{1}{5},\; support(ACD) = \frac{2}{5},\; support(BCD) = \frac{1}{5},\nonumber
+\end{equation}
+\begin{equation}\scriptstyle
+support(ABCD) = \frac{1}{5}.
+\end{equation}
+
+Zatem częstymi zbiorami przedmiotów są:
+\begin{equation}
+L_1 = \{A:4, B:4, C:4, D:3\},
+\end{equation}
+\begin{equation}
+L_2 = \{AB:3, AC:3, AD:2, BC:3, BD:2, CD:2\}.
+\end{equation}
+Zbiór $ABCD$ nie jest częsty, ponieważ jego wsparcie ($\frac{1}{5}$) jest poniżej minimalnego progu wsparcia $60\%$.
+
+Regułę asocjacyjną $X \Rightarrow Y$ (gdzie $X \cap Y = \emptyset$) ocenia się za pomocą ufności (ang. \textit{confidence}):
+\begin{equation}
+\label{eq:confidence}
+confidence(X \Rightarrow Y) = \frac{support(X \cup Y)}{support(X)}.
+\end{equation}
+
+Reguła $X \Rightarrow Y$ może być dodatkowo oceniana za pomocą miar interesowności, takich jak \emph{lift}:
+\begin{equation}
+lift(X \Rightarrow Y) = \frac{support(X \cup Y)}{support(X)\,support(Y)}.
+\end{equation}
+
+Miara wsparcia jest \emph{antymonotoniczna}: jeśli $X$ jest nieczęsty, to każdy nadzbiór $X$ również będzie nieczęsty. Właściwość ta jest kluczowa dla odcinania przestrzeni przeszukiwań w klasycznych algorytmach FPM.
+
+
+
+% =====================
+% III. Taxonomy
+% =====================
+\section[Taksonomia technik eksploracji \ldots]{Taksonomia technik eksploracji częstych wzorców}
+\label{sec:taxonomy}
+Techniki eksploracji częstych wzorców można kategoryzować na podstawie strategii przeszukiwania, sposobu reprezentacji danych oraz celów eksploracji. Wysokopoziomowa taksonomia przedstawiona jest w Tabeli~\ref{tab:taxonomy}.
+
+\begin{table}[ht]
+    \centering
+    \caption{Taksonomia technik eksploracji częstych wzorców}
+    \label{tab:taxonomy}
+    \begin{tabularx}{.8\textwidth}{LL}
+        \toprule
+        Kategoria & Reprezentatywne algorytmy \\ 
+        \midrule
+        Algorytmy Apriori (generowanie kandydatów) & Apriori\\ 
+        Wzrost wzorca (projekcja warunkowa) & FP-Growth, PrefixSpan \\ 
+        Eksploracja pionowa (TID-zbiory) & Eclat, dEclat, SPADE \\ 
+        Eksploracja grafów/drzew & gSpan, GRAMI, OWGraMi \\          
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+Każda kategoria oferuje odmienne kompromisy pod względem czasu wykonania, użycia pamięci, łatwości implementacji oraz przydatności dla różnych charakterystyk danych.
+
+
+% =====================
+% IV. Representative Algorithms
+% =====================
+\section{Reprezentatywne algorytmy}
+\label{sec:algorithms}
+Niniejsza sekcja przedstawia reprezentatywne algorytmy, które w znaczący sposób wpłynęły na rozwój eksploracji częstych wzorców. Dyskusja koncentruje się na algorytmach Apriori, FP-Growth oraz Eclat. Dodatkowo omawiamy algorytmy PrefixSpan, SPAM i SPADE dla eksploracji wzorców sekwencyjnych oraz gSpan, GRAMI i OWGraMi dla eksploracji podgrafów.
+
+
+% --- Apriori ---
+\subsection{Algorytm Apriori}
+Algorytm Apriori~\cite{agrawal1994fast} wykonuje przeszukiwanie wszerz (ang. \textit{breadth-first search}) po kracie zbiorów przedmiotów. Wykorzystuje on własność domknięcia w dół: wszystkie niepuste podzbiory częstego zbioru przedmiotów również muszą być częste. W związku z tym każdy kandydat posiadający nieczęsty podzbiór może zostać odrzucony (przycięty).
+
+
+
+\begin{algorithm}[!htb]
+\LinesNumbered
+\SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
+
+\Input{$D$: Transaction database, $I$: Set of items, $minsup$: Minimum support threshold}
+\Output{$F$: Set of all frequent itemsets}
+\BlankLine
+
+$F \leftarrow \emptyset$ \\
+$k \leftarrow 1$ \\
+$C_1 \leftarrow \{\{i\} \mid i \in I\}$ \tcp*[r]{Initial candidate 1-itemsets}
+
+\While{$C_k \neq \emptyset$}{
+    \textnormal{ComputeSupport}$(C_k, D)$ \\
+    
+    \ForEach{itemset $X \in C_k$}{
+        \If{$support(X) \ge minsup$}{
+            $F \leftarrow F \cup \{X\}$ \\
+        }
+    }
+    
+    Remove all infrequent itemsets from $C_k$ \\
+    
+    $C_{k+1} \leftarrow$ \textnormal{GenerateCandidates}$(F)$ \tcp*[r]{Join + prune step}
+    
+    $k \leftarrow k + 1$ \\
+}
+
+\Return $F$
+\caption{Algorytm Apriori}
+\label{alg:apriori}
+\end{algorithm}
+
+\begin{algorithm}[!htb]
+\LinesNumbered
+\SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
+
+
+\BlankLine
+
+\ForEach{transaction $t \in D$}{
+    \ForEach{$k$-subset $X \subseteq t$}{
+        \If{$X \in C_k$}{
+            $support(X) \leftarrow support(X) + 1$
+        }
+    }
+}
+% \caption{ComputeSupport($C_k$, $D$)}
+% \label{alg:compute_support}
+\caption{\textbf{Procedure} ComputeSupport$(C_k, D)$ — wywoływane przez algorytm Apriori}
+\label{proc:compute_support}
+\end{algorithm}
+
+
+\begin{algorithm}[!htb]
+\LinesNumbered
+\SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
+
+\Input{$C_k$: Current prefix-tree of frequent $k$-itemsets}
+\Output{$C_{k+1}$: Extended prefix-tree (candidate $(k+1)$-itemsets)}
+\BlankLine
+
+\ForEach{leaf $X_a \in C_k$}{
+    \ForEach{leaf $X_b \in siblings(X_a)$ such that $b > a$}{
+        $X_{ab} \leftarrow X_a \cup X_b$ \\
+        \tcp{Prune if any $(k)$-subset of $X_{ab}$ is infrequent}
+        \If{$\forall X_j \subset X_{ab}$ and $|X_j| = |X_{ab}| - 1$, $X_j \in C_k$}{
+            Add $X_{ab}$ as a child of $X_a$ with $support(X_{ab}) \leftarrow 0$
+        }
+    }
+    \If{no extensions from $X_a$}{
+        Remove $X_a$ and all its ancestors with no further extensions
+    }
+}
+
+\Return $C_{k+1}$
+\caption{\textbf{Procedure} ExtendPrefixTree$(C_k)$ — wywoływane przez algorytym Apriori}
+\label{proc:extend_prefix}
+\end{algorithm}
+
+Dla przykładowej bazy danych oraz $minsup = 3$ algorytm Apriori wyznacza:
+\begin{equation}
+L_1 = \{A:4, B:4, C:4\},\quad
+\end{equation}
+\begin{equation}
+L_2 = \{AB:3, AC:3, BC:3\},\quad
+\end{equation}
+\begin{equation}
+L_3 = \emptyset,
+\end{equation}
+ponieważ $support(ABC) = 2 < 3$.
+
+Apriori jest algorytmem prostym i intuicyjnym, lecz może generować dużą liczbę kandydatów oraz wymaga wielokrotnego pełnego skanowania bazy danych, co czyni go mniej odpowiednim dla zbiorów gęstych lub bardzo dużych. Pełna procedura algorytmu Apriori została zilustrowana w Algorytmach 1–3.
+
+
+% --- FP-Growth ---
+\subsection{Algorytm FP-Growth}
+FP-Growth~\cite{han2000mining} eliminuje generowanie kandydatów poprzez kompresję bazy danych do struktury FP-Tree, a następnie wykonywanie rekurencyjnego wzrostu wzorca na drzewach warunkowych.
+
+Podczas konstruowania FP-Tree transakcje są porządkowane zgodnie z malejącym wsparciem globalnym przedmiotów. W naszym przykładzie $support(A) = support(B) = support(C) = 4$, a do rozstrzygania remisów przyjmujemy porządek:
+\begin{equation}
+A > B > C > D
+\end{equation}
+Każda transakcja jest odpowiednio sortowana, a przedmioty nieczęste (w tym przypadku żadne) są usuwane.
+
+Ogólny schemat działania algorytmu FP-Growth wygląda następująco:
+
+
+\begin{algorithm}[!htb]
+\LinesNumbered
+\SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
+\Input{$R$: FP-tree of database $D$; $P$: current prefix (initially $\emptyset$); $minsup$}
+\Output{$F$: set of frequent itemsets}
+\BlankLine
+Remove all infrequent items from $R$ \;
+\If{\textnormal{$R$ is a single path}}{
+    \ForEach{subset $Y \subseteq R$}{
+        $X \leftarrow P \cup Y$ \;
+        $support(X) \leftarrow \min\{ count(x) \mid x \in Y \}$ \;
+        Add $(X, support(X))$ to $F$ \;
+    }
+}
+\Else{
+    \ForEach{frequent item $i$ in $R$ (in increasing support order)}{
+        $X \leftarrow P \cup \{i\}$ \;
+        $support(X) \leftarrow support(i)$ \tcp{sum of counts of nodes labeled $i$} \;
+        Add $(X, support(X))$ to $F$ \;
+        $R_X \leftarrow \emptyset$ \tcp{projected FP-tree for $X$} \;
+        \ForEach{path in $R$ ending in item $i$}{
+            $c \leftarrow$ count of $i$ in that path \;
+            Insert prefix of path (excluding $i$) into $R_X$ with count $c$ \;
+        }
+        \If{$R_X \neq \emptyset$}{
+            \textnormal{FPGrowth}$(R_X, X, F, minsup)$ \;
+        }
+    }
+}
+\caption{\textbf{FP-Growth} Algorytm}
+\label{alg:fpgrowth}
+\end{algorithm}
+
+
+FP-Growth jest zazwyczaj szybszy od algorytmu Apriori w przypadku gęstych zbiorów danych, ponieważ unika generowania i testowania ogromnej liczby kandydatów. Szczegóły algorytmu FP-Growth przedstawiono w Algorytmie 4.
+
+
+% --- Eclat ---
+\subsection{Algorytm Eclat}
+Eclat~\cite{zaki2000scalable} (Equivalence Class Transformation) jest algorytmem eksploracji pionowej. Zamiast przechowywać transakcje w postaci list przedmiotów, dla każdego przedmiotu przechowuje on zbiór identyfikatorów transakcji (TID-zbiór), w których dany przedmiot występuje. Dla przykładowej bazy danych:
+
+
+\begin{table}[ht]
+\centering
+\caption{Pionowa reprezentacja TID-zbiorów dla przykładu}
+\label{tab:eclat_vertical}
+\begin{tabularx}{.5\textwidth}{cC}
+\toprule
+Item & TID-set \\
+\midrule
+A & \{1, 2, 4, 5\} \\
+B & \{1, 3, 4, 5\} \\
+C & \{1, 2, 3, 5\} \\
+D & \{1, 2\} \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Wsparcie zbioru przedmiotów jest równe liczności przecięcia odpowiednich TID-zbiorów, np.:
+\begin{equation}
+T_{AB} = \{1,4,5\},\quad
+T_{AC} = \{1,2,5\},\quad
+T_{BC} = \{1,3,5\}.
+\end{equation}
+
+
+\begin{algorithm}[!htb]
+\LinesNumbered
+\SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
+
+\Input{$P$: initial set of frequent 1-itemsets in vertical format $(X, T_X)$; $minsup$}
+\Output{$F$: set of frequent itemsets}
+\BlankLine
+
+\ForEach{$(X_a, T_{X_a}) \in P$}{
+    Add $(X_a, |T_{X_a}|)$ to $F$ \tcp{store frequent itemset}
+    
+    $P_a \leftarrow \emptyset$ \;
+    
+    \ForEach{$(X_b, T_{X_b}) \in P$ with $X_b > X_a$}{
+        $X_{ab} \leftarrow X_a \cup X_b$ \;
+        $T_{X_{ab}} \leftarrow T_{X_a} \cap T_{X_b}$ \;
+        
+        \If{$|T_{X_{ab}}| \ge minsup$}{
+            $P_a \leftarrow P_a \cup \{(X_{ab}, T_{X_{ab}})\}$ \;
+        }
+    }
+    
+    \If{$P_a \neq \emptyset$}{
+        \textnormal{Eclat}$(P_a, minsup, F)$ \;
+    }
+}
+
+\caption{\textbf{Eclat} algorytm}
+\label{alg:eclat}
+\end{algorithm}
+
+
+\begin{algorithm}[!htb]
+\LinesNumbered
+\SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
+
+\Input{$P$: initial set of frequent 1-itemsets in diffset form $(X, d(X), sup(X))$; $minsup$}
+\Output{$F$: set of frequent itemsets}
+\BlankLine
+
+\ForEach{$(X_a, d(X_a), sup(X_a)) \in P$}{
+    Add $(X_a, sup(X_a))$ to $F$ \tcp{frequent itemset found}
+    
+    $P_a \leftarrow \emptyset$ \;
+    
+    \ForEach{$(X_b, d(X_b), sup(X_b)) \in P$ with $X_b > X_a$}{
+        $X_{ab} \leftarrow X_a \cup X_b$ \;
+        $d(X_{ab}) \leftarrow d(X_b) \setminus d(X_a)$ \;
+        $sup(X_{ab}) \leftarrow sup(X_a) - |d(X_{ab})|$ \tcp{diffset support update}
+        
+        \If{$sup(X_{ab}) \ge minsup$}{
+            $P_a \leftarrow P_a \cup \{(X_{ab}, d(X_{ab}), sup(X_{ab}))\}$ \;
+        }
+    }
+    
+    \If{$P_a \neq \emptyset$}{
+        \textnormal{dEclat}$(P_a, minsup, F)$ \;
+    }
+}
+
+\caption{\textbf{dEclat} algorytm (diffset-based Eclat)}
+\label{alg:declat}
+\end{algorithm}
+
+
+
+
+Eclat zmniejsza liczbę skanów bazy danych, lecz może wymagać znacznej ilości pamięci do przechowywania TID-zbiorów w przypadku bardzo dużych zbiorów danych. Algorytm Eclat został przedstawiony w Algorytmie~5.
+
+
+% --- dEclat ---
+\subsection{Algorytm dEclat}
+Wydajność algorytmu dEclat~\cite{zaki2003dECLAT} może zostać znacząco poprawiona poprzez redukcję rozmiaru pośrednich TID-zbiorów. Osiąga się to poprzez stosowanie \emph{diffsetów}, które przechowują jedynie różnice między TID-zbiorami, a nie pełne zbiory.
+
+Niech $X_a = \{x_1, \ldots, x_{k-1}, x_a\}$ oraz
+$X_b = \{x_1, \ldots, x_{k-1}, x_b\}$, tak że:
+\begin{equation}
+X_{ab} = X_a \cup X_b = \{x_1, \ldots, x_{k-1}, x_a, x_b\}.
+\end{equation}
+
+Diffset zbioru $X_{ab}$ definiuje się jako zbiór transakcji, które zawierają prefiks $X_a$, lecz nie zawierają przedmiotu $x_b$:
+\begin{equation}
+d(X_{ab}) = t(X_a) \setminus t(X_{ab}) = t(X_a) \setminus t(X_b),
+\end{equation}
+gdzie $t(X)$ oznacza TID-zbiór dla zbioru przedmiotów $X$.
+
+Możemy dalej wyrazić $d(X_{ab})$ przy użyciu $d(X_a)$ oraz $d(X_b)$ w następujący sposób:
+\begin{equation}
+d(X_{ab}) = d(X_b) \setminus d(X_a).
+\end{equation}
+
+
+Implikuje to, że operacje przecinania zbiorów w algorytmie Eclat mogą zostać zastąpione bardziej wydajnymi operacjami na diffsetach, co znacząco zmniejsza zużycie pamięci oraz poprawia czas działania. Algorytm dEclat został przedstawiony w Algorytmie~6.
+
+
+
+% =====================
+% Sequential Pattern Mining
+% =====================
+\section{Eksploracja wzorców sekwencyjnych}
+\label{sec:sequential}
+Eksploracja wzorców sekwencyjnych (SPM, ang. \textit{Sequential Pattern Mining})~\cite{agarwal1995spam} stanowi rozszerzenie eksploracji częstych wzorców, ukierunkowane na odkrywanie często występujących sekwencji przedmiotów, zdarzeń lub działań w czasie. Jest szczególnie istotna w takich zastosowaniach jak eksploracja zachowań użytkowników stron WWW, analiza zachowań klientów czy predykcja sekwencji zdarzeń. Dwa reprezentatywne algorytmy SPM to PrefixSpan oraz SPADE.
+
+
+
+% ---------------- PrefixSpan ----------------
+\subsection{Algorytm PrefixSpan}
+PrefixSpan~\cite{pei2001prefixspan} (Prefix-projected Sequential Pattern Mining) jest podejściem typu wzrost wzorca, przeznaczonym do odkrywania częstych wzorców sekwencyjnych bez konieczności generowania dużej liczby sekwencji kandydatów. Zamiast wielokrotnego przeszukiwania całej bazy sekwencji, koncentruje się jedynie na istotnych podsekwencjach poprzez wykorzystanie \emph{baz danych rzutowanych prefiksem}.
+
+Główna idea jest następująca: baza danych jest najpierw skanowana w~celu znalezienia wszystkich częstych elementów jako sekwencji długości 1. Dla każdego częstego prefiksu konstruowana jest baza danych rzutowana, która zawiera wyłącznie sufiksy sekwencji następujące po tym prefiksie. Prefiks jest następnie rekurencyjnie rozszerzany poprzez dołączanie częstych elementów odkrytych w~jego bazie danych rzutowanej. Proces ten jest kontynuowany do momentu, gdy nie można już znaleźć kolejnych częstych rozszerzeń.
+
+Poprzez ograniczenie przestrzeni przeszukiwania do baz danych rzutowanych prefiksem i unikanie jawnego generowania kandydatów, PrefixSpan osiąga wysoką wydajność, szczególnie w przypadku dużych i gęstych zbiorów sekwencyjnych. Algorytm PrefixSpan został przedstawiony w Algorytmie~7.
+
+
+\begin{algorithm}[!htb]
+\LinesNumbered
+\SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
+
+\Input{$D_r$: projected sequence database for prefix $r$ (or original database if $r = \emptyset$); $minsup$}
+\Output{$F$: set of frequent sequential patterns}
+\BlankLine
+
+\ForEach{symbol $s \in \Sigma$ such that $sup(s, D_r) \ge minsup$}{
+    $r_s \leftarrow r \cdot s$ \tcp{extend prefix by symbol $s$}
+    
+    Add $(r_s, sup(s, D_r))$ to $F$ \;
+    
+    $D_s \leftarrow \emptyset$ \tcp{create projected database of $r_s$}
+    
+    \ForEach{sequence $s_i \in D_r$}{
+        $s'_i \leftarrow$ projection of $s_i$ w.r.t.\ symbol $s$ \;
+        Remove infrequent symbols from $s'_i$ \;
+        \If{$s'_i \neq \emptyset$}{
+            Add $s'_i$ to $D_s$ \;
+        }
+    }
+    
+    \If{$D_s \neq \emptyset$}{
+        \textnormal{PrefixSpan}$(D_s, r_s, minsup, F)$ \;
+    }
+}
+
+\caption{\textbf{PrefixSpan} algorithm (Prefix-projected Sequential Pattern Mining)}
+\label{alg:prefixspan}
+\end{algorithm}
+
+
+% ---------------- SPADE ----------------
+\subsection{Algorytm SPADE}
+SPADE~\cite{zaki2001spade} (Sequential PAttern Discovery using Equivalence classes) jest algorytmem opartym na pionowym formacie danych, który wydajnie odkrywa wzorce sekwencyjne poprzez wykorzystanie klas równoważności do grupowania podobnych sekwencji. Unika on generowania kandydatów, koncentrując się na rzutowaniu bazy sekwencji na mniejsze podbazy danych. Algorytm SPADE został przedstawiony w Algorytmie~8.
+
+
+\begin{algorithm}[!htb]
+\LinesNumbered
+\SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
+
+\Input{$P$: set of frequent 1-sequences with ID-lists $L(s)$; $k$: current sequence length; $minsup$}
+\Output{$F$: set of frequent sequential patterns}
+\BlankLine
+
+\ForEach{$(r_a, L(r_a)) \in P$}{
+    Add $(r_a, sup(r_a))$ to $F$ \; \tcp{support = $|L(r_a)|$}
+    
+    $P_a \leftarrow \emptyset$ \;
+    
+    \ForEach{$(r_b, L(r_b)) \in P$}{
+        $r_{ab} \leftarrow r_a + r_b[k]$ \tcp{join based on same prefix of length $k$}
+        $L(r_{ab}) \leftarrow L(r_a) \cap L(r_b)$ \tcp{ID-list intersection}
+        
+        \If{$sup(r_{ab}) \ge minsup$}{
+            $P_a \leftarrow P_a \cup \{(r_{ab}, L(r_{ab}))\}$ \;
+        }
+    }
+    
+    \If{$P_a \neq \emptyset$}{
+        \textnormal{Spade}$(P_a, minsup, F, k+1)$ \;
+    }
+}
+
+\caption{\textbf{SPADE} algorithm (Sequential PAttern Discovery using Equivalence classes)}
+\label{alg:spade}
+\end{algorithm}
+
+
+% =====================
+% Subgraph Mining
+% =====================
+\section{Eksploracja podgrafów}
+\label{sec:subgraph}
+Eksploracja podgrafów polega na odkrywaniu częstych podgrafów (lub motywów) w zbiorze danych opartym na grafach, gdzie celem jest znalezienie wzorców, które często występują jako podgrafy w bazie grafów. Jest to szczególnie istotne w takich zastosowaniach jak chemoinformatyka (np. odkrywanie struktur molekularnych), analiza sieci społecznościowych (np. wykrywanie społeczności) oraz sieci biologiczne (np. interakcje białek).
+
+Algorytm gSpan (graph-based Subgraph Pattern Mining)~\cite{yan2002gspan} jest jednym z~najbardziej znanych algorytmów eksploracji częstych podgrafów. gSpan został zaprojektowany w celu wydajnego znajdowania częstych podgrafów w bazach grafowych, wykorzystując strategię przeszukiwania w głąb oraz leksykograficzne porządkowanie reprezentacji grafów.
+
+
+% ---------------- gSpan ----------------
+\subsection{Algorytm gSpan}
+Algorytm gSpan~\cite{yan2002gspan} działa poprzez reprezentowanie każdego grafu za pomocą uporządkowanej listy krawędzi oraz wykorzystuje przeszukiwanie w~głąb (ang. \textit{depth-first search}) do eksploracji struktury grafu przy jednoczesnym utrzymaniu porządku leksykograficznego. Zapewnia to, że izomorficzne podgrafy nie są wydobywane wielokrotnie.
+
+gSpan realizuje następujące główne kroki:
+\begin{itemize}
+    \item Konwersja bazy grafów na uporządkowane listy krawędzi.
+    \item Wykonywanie przeszukiwania w głąb w celu generowania kandydatów na podgrafy.
+    \item Odrzucanie podgrafów, które nie spełniają minimalnego progu wsparcia.
+\end{itemize}
+
+Algorytm gSpan został przedstawiony w Algorytmie~9.
+
+
+
+\begin{algorithm}[!htb]
+\LinesNumbered
+\SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
+
+\Input{$C$: current DFS code (initially $\emptyset$);
+$D$: graph database; $minsup$}
+\Output{$F$: set of frequent subgraph patterns (implicitly stored)}
+\BlankLine
+
+$E \leftarrow$ \textnormal{RightMostPath-Extensions}$(C, D)$ \;
+\tcp{$E$ contains candidate edge extensions with support}
+
+\ForEach{$(t, sup(t)) \in E$}{
+    $C' \leftarrow C \cup t$ \tcp{extend DFS code with edge tuple $t$}
+    $sup(C') \leftarrow sup(t)$ \;
+    
+    \If{$sup(C') \ge minsup$ \textbf{and} \textnormal{IsCanonical}$(C')$}{
+        \textnormal{gSpan}$(C', D, minsup)$ \;
+    }
+}
+
+\caption{\textbf{gSpan} algorithm (graph-based Substructure Pattern Mining)}
+\label{alg:gspan}
+\end{algorithm}
+
+
+
+
+% ---------------- GRAMI ----------------
+\subsection{Algorytm GRAMI}
+GRAMI~\cite{elseidy2014grami} (Graph Mining Algorithm for Mining Subgraphs) jest kolejnym algorytmem zaprojektowanym do eksploracji częstych podgrafów, wyposażonym w optymalizacje umożliwiające obsługę wielkoskalowych baz grafów. Wykorzystuje on wydajne strategie przeszukiwania oraz zaawansowane techniki przycinania przestrzeni przeszukiwań. Algorytm GRAMI został przedstawiony w Algorytmie~10.
+
+
+\begin{algorithm}[!htb]
+\LinesNumbered
+\SetKwInOut{Input}{Input}\SetKwInOut{Output}{Output}
+
+\Input{$G$: single input graph; $minsup$}
+\Output{$F$: set of frequent subgraph patterns}
+\BlankLine
+
+Generate frequent 1-edge subgraphs from $G$ and insert them into $F$ \;
+Initialize priority queue $PQ$ with frequent 1-edge subgraphs \;
+
+\While{$PQ$ is not empty}{
+    $P \leftarrow PQ.\textnormal{pop()}$ \tcp{highest priority pattern}
+    
+    \ForEach{valid extension $P'$ of $P$}{
+        Compute \textnormal{sup}$(P')$ using candidate pairs pruning \;
+        
+        \If{$sup(P') \ge minsup$}{
+            Add $P'$ to $F$ \;
+            Insert $P'$ into $PQ$ \;
+        }
+    }
+}
+
+\caption{\textbf{GRAMI} algorithm (Graph Mining via Efficient Candidate Generation)}
+\label{alg:grami}
+\end{algorithm}
+
+
+% ---------------- OWGraMi ----------------
+\subsection{Algorytm OWGraMi}
+Problem eksploracji ważonych podgrafów z ważonego pojedynczego grafu zyskuje coraz większe znaczenie, ponieważ grafy ważone są powszechnie wykorzystywane do reprezentowania, symulowania i monitorowania złożonych i wielkoskalowych systemów, w których każdy obiekt ma różną rolę lub poziom istotności. Tematyka ta przyciąga dużą uwagę badawczą, a wśród istniejących prac podejście Weighted Graph Mining (WeGraMi) jest uważane za reprezentatywny stan wiedzy. Jednakże WeGraMi nie stosuje wczesnej strategii przycinania dla nieważonych podgrafów-kandydatów oraz generuje duże koszty obliczeniowe z powodu konieczności obliczania wag dla wszystkich wydobytych częstych podgrafów.
+
+Aby przezwyciężyć te ograniczenia, Le wraz ze współautorami zaproponował ulepszoną metodę o nazwie Optimized Weighted Graph Mining (OWGraMi)~\cite{le2022owgrami}, która rozszerza WeGraMi, wykorzystując dwie skuteczne strategie optymalizacyjne. Po pierwsze, przycina częste krawędzie, które nie mogą spełnić progu wagowego, zmniejszając liczbę nieważonych kandydatów. Po drugie, ponownie wykorzystuje wagi podgrafów rodzica podczas obliczania wag ich podgrafów potomnych, co znacząco zmniejsza całkowity czas działania. Pełna procedura algorytmu OWGraMi została przedstawiona w Algorytmach 11–12.
+
+
+% \begin{algorithm}[!htb]
+% \LinesNumbered
+% \SetKwInOut{Input}{input}\SetKwInOut{Output}{output}
+
+% \Input{$G$: weighted input graph, $minsup$: minimum support, $minWeight$: minimum weight threshold}
+% \Output{$F$: set of frequent weighted subgraphs}
+
+% \BlankLine
+% $F \leftarrow \emptyset$ \\
+% Generate initial frequent edges $C_1$ from $G$ \\
+% Prune edges with $weight < minWeight$ \\
+
+% \ForEach{$g \in C_1$}{
+%     store $weight(g)$ \\
+%     add $g$ into $F$ \\
+%     \Call{OWGraMi-Recursive}{$g$, $weight(g)$}
+% }
+% \Return{$F$}
+
+% \caption{OWGraMi main procedure}
+% \label{alg:owgrami}
+% \end{algorithm}
+
+\begin{algorithm}[!ht]
+\LinesNumbered
+\SetKwInOut{Input}{input}\SetKwInOut{Output}{output}
+\Input{$G$: weighted input graph, $minsup$: minimum support, $minWeight$: minimum weight threshold}
+\Output{$F$: set of frequent weighted subgraphs}
+$F \leftarrow \emptyset$ \;
+Generate initial frequent edges $C_1$ from $G$ \;
+Prune edges with $weight < minWeight$ \;
+\ForEach{$g \in C_1$}{
+    store $weight(g)$ \;
+    add $g$ into $F$ \;
+    OWGraMi\_Recursive($g$, $weight(g)$) \;
+}
+\KwRet{$F$}
+\caption{OWGraMi main procedure}
+\label{alg:owgrami}
+\end{algorithm}
+
+
+
+% \begin{algorithm}[!htb]
+% \LinesNumbered
+% \SetKwInOut{Input}{input}\SetKwInOut{Output}{output}
+
+% \SetKwProg{Fn}{Procedure}{}{}
+% \Fn{OWGraMi-Recursive($P$, $w_P$)}{
+
+%     Generate candidate extensions $C_P$ of $P$ \\
+
+%     \ForEach{$X \in C_P$}{
+%         Compute edge support of $X$ \\
+%         \If{$support(X) \ge minsup$}{
+%             Compute $weight(X)$ using:
+%             \begin{itemize}
+%                 \item reuse $w_P$ as upper bound
+%                 \item subtract weighted edges pruned earlier
+%             \end{itemize}
+%             \If{$weight(X) \ge minWeight$}{
+%                 add $X$ to $F$ \\
+%                 \Call{OWGraMi-Recursive}{$X$, $weight(X)$}
+%             }
+%         }
+%     }
+% }
+% \caption{Recursive mining of weighted subgraphs in OWGraMi}
+% \label{alg:owgrami_recursive}
+% \end{algorithm}
+
+\begin{algorithm}[!ht]
+\LinesNumbered
+\SetKwInOut{Input}{input}
+\SetKwInOut{Output}{output}
+\SetKwProg{Fn}{Procedure }{}{}
+\Fn{OWGraMi-Recursive($P$, $w_P$)}{
+    Generate candidate extensions $C_P$ of $P$ \;
+    \ForEach{$X \in C_P$}{
+        Compute edge support of $X$ \;
+        \If{$support(X) \ge minsup$}{
+            Compute $weight(X)$ using: \;
+            \Indp
+               reuse $w_P$ as upper bound \;
+               subtract weighted edges pruned earlier \;
+            \Indm
+            \If{$weight(X) \ge minWeight$}{
+                add $X$ to $F$ \;
+                OWGraMi-Recursive($X$, $weight(X)$) \;
+            }
+        }
+    }
+}
+\caption{Recursive mining of weighted subgraphs in OWGraMi}
+\label{alg:owgrami_recursive}
+\end{algorithm}
+
+
+% =====================
+% VI. Performance Evaluation
+% =====================
+\section{Ocena wydajności}
+\label{sec:evaluation}
+Ważnymi miarami wydajności algorytmów FPM~\cite{luna2019fimreview,kumar2019survey,kallay2025comparison} są:
+
+\begin{itemize}
+\item \textbf{Czas wykonania}: całkowity czas działania w funkcji $|D|$, $|I|$ oraz $minsup$.
+\item \textbf{Zużycie pamięci}: maksymalne wykorzystanie pamięci na kandydatów, drzewa lub TID-zbiory.
+\item \textbf{Skalowalność}: zachowanie algorytmu przy zwiększaniu rozmiaru zbioru danych lub liczby węzłów obliczeniowych.
+\item \textbf{Jakość wzorców}: redundancja, interpretowalność oraz użyteczność uzyskanych wzorców.
+\end{itemize}
+
+
+% =====================
+% VII. Applications
+% =====================
+\section{Zastosowania}
+\label{sec:applications}
+FPM znajduje liczne praktyczne zastosowania, w tym:
+
+\begin{itemize}
+\item \textbf{Analiza koszyka zakupowego i rekomendacje}~\cite{han2007fpm_survey}: odkrywanie współkupowanych produktów na potrzeby sprzedaży krzyżowej i systemów rekomendacyjnych.
+\item \textbf{Eksploracja zachowań użytkowników stron WWW}~\cite{mba2023}: analiza częstych ścieżek kliknięć i nawigacji w celu optymalizacji struktury serwisu.
+\item \textbf{Cyberbezpieczeństwo}~\cite{weblog2006}: wydobywanie częstych wzorców i anomalii w~logach na potrzeby wykrywania włamań.
+\item \textbf{Bioinformatyka i ochrona zdrowia}~\cite{bioinf2013}: identyfikacja częstych kombinacji genów, objawów lub terapii.
+\item \textbf{IoT i dane sensorowe}~\cite{dharpp2022}: wykrywanie wzorców zdarzeń w szeregach czasowych generowanych przez sensory.
+\end{itemize}
+
+
+% =====================
+% VIII. Challenges and Future Directions
+% =====================
+\section{Wyzwania i przyszłe kierunki badań}
+\label{sec:challenges}
+Pomimo intensywnych badań, nadal pozostaje wiele wyzwań:
+
+\begin{itemize}
+\item \textbf{Skalowalność}: eksploracja danych masowych, wysoko-wymiarowych oraz strumieniowych.
+\item \textbf{Eksplozja wzorców}: kontrolowanie ogromnej liczby wzorców.
+\item \textbf{Użyteczność i kontekst}: uwzględnianie wartości, ryzyka lub użyteczności specyficznej dla danej dziedziny.
+% \item \textbf{Prywatność i bezpieczeństwo}: eksploracja wzorców z zachowaniem prywatności oraz federacyjna eksploracja danych wielu podmiotów.
+\item \textbf{Integracja z głębokim uczeniem}: łączenie FPM z grafowymi sieciami neuronowymi oraz uczeniem reprezentacji w celu wzbogacenia semantyki wzorców.
+\end{itemize}
+
+
+% =====================
+% IX. Conclusion
+% =====================
+\section{Wnioski}
+\label{sec:conclusion}
+W niniejszym rozdziale przedstawiono przegląd eksploracji częstych wzorców, obejmujący podstawowe pojęcia, taksonomię technik, reprezentatywne algorytmy dla różnych typów baz danych, ocenę wydajności, zastosowania oraz otwarte kierunki badań. Przykład ilustrujący działanie algorytmów pokazuje, w jaki sposób różne metody operują na tym samym zbiorze danych. Wraz ze wzrostem wolumenu i złożoności danych, eksploracja częstych wzorców pozostanie kluczowym elementem interpretowalnej i skalowalnej analityki danych.
+
+
+% =====================
+% References
+% =====================
+% \section*{References}
+% \addcontentsline{toc}{section}{References}
+
+\begin{thebibliography}{99}
+
+\bibitem{agrawal1994fast}
+Agrawal, R., Srikant, R.:
+Fast algorithms for mining association rules.
+In: Proc. 20th Int. Conf. Very Large Databases (VLDB), pp. 487--499 (1994)
+
+\bibitem{han2000mining}
+Han, J., Pei, J., Yin, Y.:
+Mining frequent patterns without candidate generation.
+In: Proc. ACM SIGMOD Int. Conf. Management of Data, pp. 1--12 (2000)
+
+\bibitem{zaki2000scalable}
+Zaki, M.J.:
+Scalable algorithms for association mining.
+IEEE Trans. Knowl. Data Eng. \textbf{12}(3), 372--390 (2000)
+
+\bibitem{zaki2003dECLAT}
+Zaki, M.J., Hsiao, C.J.:
+Mining frequent itemsets using diffsets.
+In: Proc. 9th ACM SIGKDD Int. Conf. Knowledge Discovery and Data Mining (KDD),
+pp. 253--262 (2003)
+
+\bibitem{pei2001prefixspan}
+Pei, J., Han, J., et al.:
+PrefixSpan: Mining sequential patterns efficiently by prefix-projected pattern growth.
+In: Proc. 17th Int. Conf. Data Engineering (ICDE), pp. 215--224 (2001)
+
+\bibitem{zaki2001spade}
+Zaki, M.J.:
+SPADE: An efficient algorithm for mining frequent sequences.
+Mach. Learn. \textbf{42}(1), 31--60 (2001)
+
+\bibitem{agarwal1995spam}
+Agarwal, R., Srikant, R.:
+Mining sequential patterns using regular expressions and automata.
+In: Proc. 3rd Int. Conf. Knowledge Discovery and Data Mining (KDD), pp. 350--354 (1995)
+
+\bibitem{yan2002gspan}
+Yan, X., Han, J.:
+gSpan: Graph-based substructure pattern mining.
+In: Proc. IEEE Int. Conf. Data Mining (ICDM), pp. 721--724 (2002)
+
+\bibitem{elseidy2014grami}
+Elseidy, M., Abdelhamid, E., Skiadopoulos, S., Kalnis, P.:
+GraMi: Frequent subgraph and pattern mining in a single large graph.
+Proc. VLDB Endow. \textbf{7}(7), 517--528 (2014)
+
+\bibitem{le2022owgrami}
+Le, N.T., Vo, B., Nguyen, L.B.Q., Le, B.:
+OWGraMi: Efficient method for mining weighted subgraphs in a single graph.
+Expert Syst. Appl. \textbf{204}, 117625 (2022)
+
+\bibitem{luna2019fimreview}
+Luna, J.M., Fournier-Viger, P., Ventura, S.: Frequent itemset mining: A 25 years review. 
+Knowl. Inf. Syst. \textbf{61}(3), 1143--1175 (2019)
+
+\bibitem{kumar2019survey}
+Kumar, G., Reddy, Y.P.: Frequent itemset mining algorithms: A survey. 
+Artif. Intell. Rev. \textbf{52}, 435--468 (2019)
+
+\bibitem{kallay2025comparison}
+Kallay, P., Mihoc, T.D.: Comparative analysis of frequent pattern mining algorithms. 
+Procedia Comput. Sci. \textbf{229}, 678--689 (2025)
+
+\bibitem{han2007fpm_survey}
+Han, J., Cheng, H., Xin, D., Yan, X.: Frequent pattern mining: current status and future directions. Data Mining and Knowledge Discovery, 15, 55–86 (2007)
+
+\bibitem{mba2023}
+Author(s): Market Basket Analysis Using Frequent Pattern Mining Techniques. (2023)
+
+\bibitem{weblog2006}
+Iváncsy, R., et al.: Frequent Pattern Mining in Web Log Data. (2006)
+
+\bibitem{bioinf2013}
+Naulaerts, S., et al.: A primer to frequent itemset mining for bioinformatics. BMC Bioinformatics (2013)
+
+\bibitem{dharpp2022}
+Yasir, M., et al.: Distributed HARnessing the Power of Powersets for Mining Frequent Itemsets (D-HARPP). (2022)
+
+
+
+\end{thebibliography}
+
+

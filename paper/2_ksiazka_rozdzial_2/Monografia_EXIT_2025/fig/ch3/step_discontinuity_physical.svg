@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Warstwa_2" data-name="Warstwa 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 124.26 90">
+  <defs>
+    <style>
+      .cls-1, .cls-2, .cls-3 {
+        stroke-width: .25px;
+      }
+
+      .cls-1, .cls-2, .cls-3, .cls-4, .cls-5 {
+        stroke: #1d1d1b;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-1, .cls-3 {
+        stroke-dasharray: 0 0 0 0 0 0 4 4 4 4 4 4;
+      }
+
+      .cls-1, .cls-5 {
+        fill: #fff;
+      }
+
+      .cls-2, .cls-3, .cls-4 {
+        fill: none;
+      }
+
+      .cls-6 {
+        font-family: TimesNewRomanPS-ItalicMT, 'Times New Roman';
+        font-size: 12px;
+        font-style: italic;
+      }
+
+      .cls-6, .cls-7 {
+        fill: #1d1d1b;
+      }
+
+      .cls-4 {
+        stroke-width: .1px;
+      }
+
+      .cls-5 {
+        stroke-width: .5px;
+      }
+    </style>
+  </defs>
+  <g id="Warstwa_1-2" data-name="Warstwa 1">
+    <g>
+      <polyline class="cls-5" points="26.59 72 71.59 72 71.59 54 98.59 54"/>
+      <polyline class="cls-5" points="98.59 36 71.59 36 71.59 18 26.59 18"/>
+      <line class="cls-1" x1="26.59" x2="26.59" y2="90"/>
+      <line class="cls-1" x1="98.59" x2="98.59" y2="90"/>
+      <g>
+        <line class="cls-2" x1="17.59" y1="19.79" x2="17.59" y2="70.21"/>
+        <polygon class="cls-7" points="16.34 20.16 17.59 18 18.83 20.16 16.34 20.16"/>
+        <polygon class="cls-7" points="16.34 69.84 17.59 72 18.83 69.84 16.34 69.84"/>
+      </g>
+      <g>
+        <line class="cls-2" x1="107.59" y1="37.79" x2="107.59" y2="52.21"/>
+        <polygon class="cls-7" points="106.34 38.16 107.59 36 108.83 38.16 106.34 38.16"/>
+        <polygon class="cls-7" points="106.34 51.84 107.59 54 108.83 51.84 106.34 51.84"/>
+      </g>
+      <line class="cls-2" x1="26.59" y1="18" x2="26.59" y2="18"/>
+      <line class="cls-4" x1="17.59" y1="18" x2="26.59" y2="18"/>
+      <line class="cls-4" x1="17.59" y1="72" x2="26.59" y2="72"/>
+      <line class="cls-4" x1="98.59" y1="36" x2="107.59" y2="36"/>
+      <line class="cls-4" x1="98.59" y1="54" x2="107.59" y2="54"/>
+      <text class="cls-6" transform="translate(9.97 49.55) rotate(-90)"><tspan x="0" y="0">w</tspan></text>
+      <text class="cls-6" transform="translate(13.97 41.54) rotate(-90) scale(.58)"><tspan x="0" y="0">1</tspan></text>
+      <text class="cls-6" transform="translate(116.59 49.96) rotate(-90)"><tspan x="0" y="0">w</tspan></text>
+      <text class="cls-6" transform="translate(120.58 41.95) rotate(-90) scale(.58)"><tspan x="0" y="0">2</tspan></text>
+      <ellipse class="cls-3" cx="71.59" cy="45" rx="10.57" ry="31.57"/>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,379 @@
+\chapterauthor{Muhammad Kamran Safdar, Zbigniew Jóskiewicz}
+\chapter[Modelowanie predykcyjne \ldots]{Modelowanie predykcyjne natężenia pola elektrycznego w komorze półbezechowej SAC w środowisku MATLAB  - weryfikacja podstawowych konfiguracji}
+\label{modelowanie} % Always give a unique label
+% use \chaptermark{}
+% to alter or adjust the chapter heading in the running head
+\thispagestyle{empty}
+\vspace{-8mm} {\large Muhammad Kamran Safdar, Zbigniew Jóskiewicz} \vspace{8mm}
+
+\section{Wprowadzenie}
+\label{sec:17_wp}
+Szybki rozwój złożonej elektroniki (urządzeń medycznych, elektroniki samochodowej, systemów lotniczych i okrętowych) oraz instalacji do obliczeń kwantowych stwarza poważne wyzwania związane z kompatybilnością elektromagnetyczną i~zakłóceniami (EMC/EMI) oraz ulotem elektromagnetycznym informacji niejawnych, których źródłem są układy elektryczne i elektroniczne. Te złożone systemy integrują dużą liczbę interfejsów elektrycznych działających w bezpośredniej bliskości fizycznej i widmowej, zwiększając tym samym ryzyko niezamierzonych zakłóceń elektromagnetycznych \cite{1OTT1}. Każdy element przewodzący prąd generuje niepożądane pola elektromagnetyczne, które mogą oddziaływać na pobliskie urządzenie i zakłócać jego pracę \cite{2DOBREF2,3PAUL3,4KOVAR4}. W przypadku instalacji takich systemów w środowiskach półzamkniętych (np. w samochodach, autobusach, samolotach, ekranowanych salach szpitalnych i inteligentnych biurach), wyzwanie to staje się szczególnie dotkliwe, ponieważ wielokrotne odbicia od otaczających struktur tworzą warunki semi-odbiciowe, co skutkuje wysoce złożonym rozkładem pola wewnątrz lub wokół systemów oraz natężeniami pola znacząco przewyższającymi propagację fal w otwartej przestrzeni. W związku z tym systematyczne pomiary EMC/EMI są obowiązkowe w celu oceny i ilościowego określenia niepożądanych emisji oraz zapewnienia niezawodnego działania zarówno małych, jak i dużych systemów elektronicznych.
+Konwencjonalne stanowiska pomiarowe EMC, w których stosuje się komory semi-bezodbiciowe (SAC) i całkowicie bezodbiciowe (FAR), są szeroko stosowane do badań emisji promieniowanej i odporności na pola elektromagnetyczne urządzeń elektronicznych. Komory te zbudowane są w~oparciu o specjalistyczne, ekranowane kabiny, które izolują stanowisko pomiarowe od zakłóceń zewnętrznych i są zaprojektowane tak, aby minimalizować odbicia od ścian i sufitów poprzez zainstalowane na nich wysokowydajnymi, dużymi absorberami fal elektromagnetycznych o częstotliwościach radiowych (RFA). W ten sposób pola generowane przez źródła EMI i badane urządzenia (EUT) teoretycznie nie odbijają się od ścian i sufitu komory wyłożonych absorberami, więc nie zmieniają tym samym rozkładu pola w strefie pomiarowej. W~komorze FAR nie ma żadnych odbić w przeciwieństwie do stanowisk testowych w otwartej przestrzeni (OATS) czy komory SAC, w których występuje odbicie od podłogi \cite{15SEDAT15}. Komora SAC różni się od FAR tym, że przewodząca uziemieniona podłoga nie jest wyłożona absorberami fal radiowych. W FAR emuluje się  środowisko z propagacją w wolnej przestrzeni a w SAC środowisko z propagacją nad doskonale przewodzącą płaską ziemią \cite{10SERRA10}. Jednak podłogę SAC można częściowo wyłożyć absorberami uziemienia, aby uzyskać warunki propagacji podobni do warunków w~FAR. 
+W przypadku SAC i FAR znormalizowane tłumienie miejsca/stanowiska NSA (Normalized Site Attenuation) jest stosowane jako podstawowy wskaźnik jakości stanowiska pomiarowego, używanym do walidacji stanowiska pod kątem przydatności do pomiarów emisji promieniowanej zgodnie z międzynarodowymi normami EMC, takimi jak CISPR 16-1-4 \cite{4KOVAR4,6WILSON6}. Obliczenia teoretyczne uwzględniają współczynniki antenowe anten nadawczych i odbiorczych, napięcie mierzone na wyjściu anteny odbiorczej oraz odpowiadające im natężenie pola elektrycznego w punktach pomiarowych. W praktyce natężenie pola elektrycznego mierzy się zarówno dla polaryzacji pionowej, jak i poziomej anten nadawczych i odbiorczych. Pomimo ściśle określonym procedurom zawartych w normach, nadal istnieje kilka wyzwań praktycznych związanych z oceną przydatności komór do pomiaru emisji promieniowanych w~SAC/FAR/RC. W szczególności nie ma narzędzi umożliwiających szybką identyfikację przyczyn, gdy stanowisko przekracza dozwoloną odchyłkę od wartości NSA w idealnych warunkach (bez odbić od ścian i sufitu oraz odbiciem od doskonale przewodzącej, nieskończonej przewodzącej płaszczyzny), która zgodnie z wymogami CISPR 16-1-4 wynosi ±4 dB \cite{6WILSON6}. Dlatego w~celu uzyskania poprawnych pomiarów poziomów emisji promieniowanej i~odporności na pola EM, SAC musi zostać zweryfikowany poprzez standardowy test znormalizowanego tłumienia stanowiska (NSA) \cite{4KOVAR4,6WILSON6}. Podczas pomiaru NSA rozmieszczenie anten (wzajemna odległość i wysokości nad podłogą) i ich polaryzacja muszą być rozważane iteracyjnie, aby dla wybranych częstotliwości z zakresu pomiarowego (30 MHz – 1GHz) wyznaczyć maksymalne natężenie pola i minimalne wartości tłumienia między antenami.
+Te konwencjonalne środowiska są dobrze poznane, ale wciąż brakuje narzędzia do modelowania warunków propagacji w realnych środowiskach (podczas badań in-situ) oraz komorach semi-rewerberacyjnych (SRC) \cite{6WILSON6,7KOEPKE7,8JANSSON8,9ROWELL9}, gdy np. komora SAC jest wyposażona w dodatkowe absororbery i~reflektory fal EM. Szczególnie przy wysokich częstotliwościach i podczas szybkiego przełączania w badanych urządzeniach, promieniowanie zamierzone i~niezamierzone cechują się dużą kierunkowością i losową charakterystyką kierunkową promieniowania, a dokładność pomiarów emisji staje się bardziej znacząca. Natomiast duże metalowe komory rewerberacyjne (RC) \cite{5VOGT5,10SERRA10,11HILL11,12MIGLIACCIO12,13MIGLIACCIO13,14CORONA14} wykazały zalety metodologii statystycznej oceny ich parametrów i przydatności do testów poprzez weryfikacje jednorodności rozkładu przestrzennego pola EM oraz weryfikację charakterystyk statystycznych przy użyciu wyników pomiaru całkowitej mocy promieniowanej (TRP). Jednakże nie ma kompleksowych ram teoretycznych ani metodologicznych dla realistycznych, semi-rewerberacyjnych obudów i~środowisk, np. takich jak występujące wewnątrz pojazdów oraz samolotów, ekranowanych pomieszczeniach szpitalnychch, pomieszczeniach MRI i infrastrukturze bezpieczeństwa, terminali lotniskowych czy wewnątrz urządzeń z częściowo lub w pełni metalowymi obudowami.
+W niniejszym opracowaniu, zaproponowano rozwiązanie powyższych problemów poprzez analityczne wyznaczenie natężenia pola elektrycznego w obszarze pomiarowym, w celu poprawy weryfikacji stanowisk stosowanych do pomiarów EMC/EMI. Predykcyjny model teoretyczny oparty na środowisku MATLAB koncentruje się przede wszystkim na analitycznym obliczeniu natężenia pola i odbić w obszarze pomiarowym, co może być następnie zastosowane do obliczenia rozkładów pola w środowiskach semi-rewerberacyjnych SRC. Ten model predykcyjny stanowi narzędzie do wstępnej oceny zgodności, służące do przewidywania poziomów emisji promieniowanej i~właściwości komory podczas badań urządzeń pod kątem EMC jak i badań osiągów urządzeń radiowych a także walidacji NSA, zmniejszając w ten sposób złożoność konfiguracji pomiarowych, kalibracji, niepewności pomiaru i umożliwiając uniknięcie czasochłonnych pomiarów w poszukiwaniu optymalnych konfiguracji stanowiska pomiarowego. W tym modelu położenie, rozmiar i orientację RFA, a~także dodatkowych reflektorów, można modyfikować w celu ilościowego określenia wpływu wielodrogowości propagacji w rzeczywistym środowisku na całkowite natężenie pola w obszarze pomiarowym. Ten analityczny model predykcyjny powstał w~oparciu o równanie propagacyjne Friisa, wykorzystywane w~planowania systemów radiokomunikacyjnych i teorii odbić zwierciadlanych. Model ten użyto do obliczania natężenia pola elektrycznego w wolnej przestrzeni oraz w komorze SAC/SRC dla różnych odległości między antenami nadawczymi i odbiorczymi o~zgodnej polaryzacji. Wynikowe natężenie pola wyznaczone z użyciem tego modelu predykcyjnego zostało zweryfikowane w~oparciu o symulacje pełnofalowe z~użyciem oprogramowania do symulacji elektromagnetycznych 3D CST Microwave Studio.
+
+
+\section[Model predykcyjny dla swobodnej \ldots]{Model predykcyjny dla swobodnej przestrzeni}
+\label{sec:17_mp_sw}
+Model predykcyjny został sformułowany w oparciu o klasyczną teorię łącza radiowego, z wykorzystaniem równania Friisa, wiążącego moc odebraną przez antenę odbiorczą z mocą nadawaną przez antenę nadawczą, w strefie pola dalekiego, tj. dla anten oddalonych od siebie o odległość co najmniej  $d=\frac{2D^{2}}{\lambda}$, gdzie (D), jest największym rozmiarem anteny \cite{16CONSTANTINE16}. Dodatkowo, w celu uwzględnienia odbić od podłoża i obliczenia wypadkowego natężenia pola elektrycznego w obszarze pomiarowym, wykorzystano teorię odbić zwierciadlanych.
+Zakładając, że antena nadawcza jest anteną izotropową nadającą z mocą P(t), to gęstość mocy w punkcie odbioru oblicza się za pomocą wektora Poyntinga na sferze zawierającej punkt odbioru o promieniu R, jako:
+\begin{equation} \label{eq:17_1}
+    S=\frac{P_{t}}{4\times \pi \times d^{2}} 
+\end{equation}
+W przypadku fali płaskiej harmonicznej w czasie, chwilowy wektor Pontinga jest dany przez iloczyn wektorowego natężemoa pola elektrycznego i~magnetycznego:
+\begin{equation} \label{eq:17_2}
+    \vec{S}=\vec{E}\times \vec{H}
+\end{equation}
+Poprzez wykorzystanie wartości amplitud $(E_{0}  ,H_{0}) $ lub wartości średniokwadratowe $(E_{rms}  ,H_{rms})$ natężeń pola elektrycznego i magnetycznego można uśrednioną w czasie gęstość mocy w warunkach wolnej przestrzeni  wyrazić jako:
+
+\begin{equation} \label{eq:17_3}
+    S=\frac{E_{o}\times H_{0}}{2}=E_{rms}H_{rms}=\frac{E_{0}^{2}}{2Z_{0}}=\frac{E_{rms}^{2}}{Z_{0}}=\frac{E_{0}^{2}}{240 \pi}
+\end{equation}
+gdzie $Z_{f}=Z_{0}=120 \pi $ $[\Omega]$ jest impedancją falową wolnej przestrzeni.
+
+Moc $(P_{rad} = P)$ wypromieniowywana przez antenę izotropową w wolnej przestrzeni przy stałej amplitudzie pola elektrycznego można uzyskać poprzez całkowanie gęstości mocy na powierzchni $S_s$ kuli o promieniu d: 
+
+\begin{equation} \label{eq:17_4}
+    P_{t}=\int\int_{s_{s}}\frac{E^{2}_{0}}{2Z_{0}}dS_{s}=\frac{E^{2}_{0}S_{s}}{2Z_{0}}=\frac{E^{2}_{0}S_{s}}{240\pi}=\frac{E^{2}_{0} \times 4\pi d^{2}}{240\pi}=\frac{E^{2}_{0}d^{2}}{60}
+\end{equation}
+Z równania \eqref{eq:17_4} wynika, że maksymalna amplituda pola elektrycznego w~odległości d od źródła izotropowego jest wyrażona wzorem:
+\begin{equation} \label{eq:17_5}
+    E_{0}=\frac{\sqrt{60 P_{rad}}}{d}
+\end{equation}
+Równanie \eqref{eq:17_5} umożliwia wyznaczyć natężenie pola elektrycznego w warunkach wolnej przestrzeni, jak to ma miejsce w przypadku FAR. Z równania \eqref{eq:17_5} wynika, że natężenie pola maleje monotonicznie wraz ze wzrostem odległości (d).
+Moc promieniowana przez antenę izotropową w dowolnym kierunku jest iloczynem mocy wejściowej $(P_n)$ oraz zysku anteny nadawczej $(G_n)$. W wolnej przestrzeni i może być wyrażona wzorem: 
+
+\begin{equation} \label{eq:17_6}
+    P_{rad}=P_{n}G_{n}
+\end{equation}
+Korzystając z wzoru \eqref{eq:17_5}, można wyznaczyć amplitudę natężenie pola elektrycznego w wolnej przestrzeni w odległości(d):
+\begin{equation} \label{eq:17_7}
+    E_{0}=\frac{\sqrt{60 P_{n}G_{n}}}{d}
+\end{equation}
+Moc odebrana przez antenę odbiorczą $(P_o)$ określa się na podstawie jej apertury skutecznej $(A_e)$ i gęstości mocy promieniowań EM w punkcie jej instalacji (S):
+\begin{equation} \label{eq:17_8}
+    P_{o}=SA_{e}=\frac{P_{n}G_{n}A_e}{4\pi d^{2}}
+\end{equation}
+Apertura skuteczna   $A_e$  anteny odbiorczej wyraża się zależnością:
+\begin{equation} \label{eq:17_9}
+    A_{e}=\frac{\lambda^{2}G_{o}}{4\pi}
+\end{equation}
+gdzie $G_o$ oznacza zysk anteny odbiorczej. Podstawienie zależności \eqref{eq:17_9} do \eqref{eq:17_8} w wolnej przestrzeni daje równanie propagacyjne Friisa:
+\begin{equation} \label{eq:17_10}
+    P_{r}=\frac{P_{n}G_{n}\lambda^{2}G_{o}}{(4\pi d)^{2}}
+\end{equation}
+W zależności \eqref{eq:17_10} człon $(\frac{4 \pi d}{\lambda})^{2}$ oznacza współczynnik strat propagacji w~wolnej przestrzeni na skutek rozpraszania energii. Równania propagacyjne Friisa pozwalają na wyznaczenie tłumienia w wolnej przestrzeni, gdy obie anteny mają zgodne położenia (brak strat związanych z niedopasowaniem polaryzacyjnym). Tłumienie w~wolnej przestrzeni można obliczyć w~decybelach jako:
+
+\begin{equation} \label{eq:17_11}
+    L[dB]=32.44+20 log_{10}(f[MHz])+20log_{10}(d[km])
+\end{equation}
+
+\section[Model predykcyjny \ldots]{Model predykcyjny nad przewodzącą płaszczyzną}
+\label{sec:17_mp_pp}
+Aby zamodelować wpływ odbicia od doskonale przewodzącej nieskończonej płaszczyzny, zastosowano model dwupromieniowy. W przypadku polaryzacji pionowej jako antenę nadawczą wybrano dipol półfalowy zorientowany wzdłuż osi z, a~całkowite natężenie pola elektrycznego w punkcie odbioru obliczono jako superpozycję wektorów fali padającej (bezpośredniej) i odbitej od przewodzącej płaszczyzny (rys. \ref{fig:17_1}). 
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.7
+    \linewidth]{fig//ch17/Ch17_Pict01c.png}
+    \caption{Mechanizm propagacji fal radiowych od pionowo zorientowanego dipola umieszczonego nad przewodzącą płaszczyzną}
+    \label{fig:17_1}
+\end{figure}
+
+W związku z tym, wypadkowy wektor pola w miejscu odbioru można zapisać jako:
+\begin{equation} \label{eq:17_12}
+    E_{z}=E_{1}sin \theta_{1}+E_{2}sin \theta_{2}
+\end{equation}
+
+
+gdzie: $E_1sin\theta_1$ oznacza pionową składową wektora pola elektrycznego w~punkcie odbioru dla bezpośredniej fali, przy czym: 
+\begin{equation} \label{eq:17_13}
+    sin\theta_{1}  =\frac{d}{r_{1}}
+\end{equation}
+w której d jest odległością poziomą między antenami nadawczą i odbiorczą, umieszczonymi nad płaszczyzną przewodzącą, a $r_1$ jest najmniejszą odległością między antenami.
+Podobnie wyrażenie $E_2sin\theta_2$ reprezentuje pionową składową wektora natężenia pola elektrycznego dla fali odbitej od płaszczyzny przewodzącej, w której:
+\begin{equation} \label{eq:17_14}
+     sin\theta_{2}  =\frac{d}{r_{2}}
+\end{equation}
+gdzie $r_2$ jest długością trasy propagacji fali odbitej od płaszczyzny przewodzącej. 
+Całkowite natężenie składowej $z$ wektora natężenia pola elektrycznego (mierzonej wzdłuż osi $z$), wzbudzonego przez  półfalową dipolową antenę  nadawczą zorientowaną pionowo, można zapisać jako:
+\begin{equation} \label{eq:17_15}\scriptstyle
+    E_{z}=\sqrt{60P_{n}G_{n}} (F(\theta_{i}) sin\theta_{1}\frac{e^{-jk_{o}r_{1}}}{r_{1}}+F(\theta_{r})sin\theta_{2}\ R_{V} e^{j\phi_V}\frac{e^{-jk_{o}r_{2}}}{r_{2}})\left[ \frac{V}{m} \right]
+\end{equation}
+gdzie, $F(\theta_{i} )$  i $F(\theta_{r} )$ są znormalizowanymi charakterystykami antenowymi anteny nadawczej, odpowiednio na kierunku promienia padającego i odbitego, $k_{o}=\frac{2\pi}{\lambda}$ jest stałą propagacji w wolnej przestrzeni, $R_{V}$  jest współczynnikiem odbicia od płaszczyzny przewodzącej, a $e^{j\phi_{v} }$ oznacza człon zmiany fazy dla przy odbiciu fali spolaryzowanej pionowo.
+W przypadku rozważania fali o polaryzacji poziomej półfalową antenę dipolową zorientowano równolegle do płaszczyzny przewodzącej. W takim przypadku znormalizowana charakterystyka promieniowania obu anten na kierunku nadawania i~odbioru odpowiada maksimum charakterystyki dookólnej $F(\theta_{} ) =1$ i jest niezależnia od wysokości zawieszenia anten. Wypadkowa wartość składowej poziomej wektora natężenia pola elektrycznego wzdłuż osi $x$ dla układu dwóch półfalowych dipoli zorientowanych równolegle do siebie i płaszczyzny przewodzącej jest sumą natężeń pól elektrycznych fali bezpośredniej i fali odbitej. Wypadkowa suma jest wyrażona jako:
+\begin{equation} \label{eq:17_16}\scriptstyle
+    E_{x}=E_{1}+E_{2}=\sqrt{60P_{n}G_{n}} (F(\theta_{i}) \frac{e^{-jk_{o}r_{1}}}{r_{1}} +F(\theta_{r})\ R_{H}e^{j\phi_ H}\frac{e^{-jk_{o}r_{2}}}{r_{2}})\left[ \frac{V}{m} \right]
+\end{equation}
+gdzie $F(\theta_{i} )$  i $F(\theta_{r} )$ są znormalizowanymi charakterystykami antenowymi anteny nadawczej wyznaczonymi odpowiednio na kierunku promienia padającego i odbitego, $k_{o}=\frac{2\pi}{\lambda}$ jest stałą propagacji. $R_{H}$ jest amplitudą współczynnika odbicia fali o polaryzacji poziomej, a $e^{j\phi_{H} }$ określa fazę tego współczynnika. $R_V$ i $R_H$ można obliczyć z wzorów Fresnela.
+W przypadku fali o~polaryzacji pionowej współczynnik odbicia wynosi:
+\begin{equation} \label{eq:17_17}
+    R_{V}=\frac{\epsilon^{'}_r sin\Delta _i-\sqrt{(\epsilon^{'}_r-cos^{2}\Delta _{i})}}{\epsilon^{'}_r sin\Delta _i+\sqrt{(\epsilon^{'}_r-cos^{2}\Delta _{i})}}=|R_{V}|e^{j\phi_V}
+\end{equation}
+W przypadku fali o polaryzacji poziomej współczynnik odbicia oblicza się następująco:
+\begin{equation} \label{eq:17_18}
+    R_{H}=\frac{sin\Delta _i-\sqrt{(\epsilon^{'}_r-cos^{2}\Delta _{i})}}{sin\Delta _i+\sqrt{(\epsilon^{'}_r-cos^{2}\Delta _{i})}}=|R_{H}|e^{j\phi_H}
+\end{equation}
+gdzie $ \Delta _{i} $  jest kątem padania wynikającym z geometrii odbić i teorii odbić zwierciadlanych, a $\epsilon_{r}^{'}$ jest zespoloną przenikalnością elektryczną przewodzącej płaszczyzny, którą można zapisać jako:
+\begin{equation} \label{eq:17_19}
+    \varepsilon_r = \varepsilon_r' - j \varepsilon_r'', \qquad gdzie \space
+ \varepsilon_r'' = j\,60\,\sigma\,\lambda
+\end{equation}
+
+
+$\lambda =\frac{c}{\omega}$ , jest długością fali pola elektrycznego w wolnej przestrzeni, $\sigma$  jest przewodnością płaszczyzny przewodzącej, czyli zależną od częstości $\omega =2\pi f(MHz)$.
+Kąt fazowy polaryzacji można obliczyć, korzystając z~rzeczywistych i urojonych składowych współczynników odbicia fali spolaryzowanej pionowego i poziomego, jako:
+\begin{equation} \label{eq:17_20}
+    \Phi_{H,V}=tan^{-1}(\frac{Im(R_{H,V})}{Real(R_{H,V})})
+\end{equation}
+Te matematyczne podstawy modelu predykcyjnego w pełni charakteryzują natężenie pola w punkcie odbioru dipolowej półfalowej anteny odbiorczej zorientowanej pionowo i poziomo.
+
+
+\section[Weryfikacja numeryczna \ldots]{Weryfikacja numeryczna modelu predykcyjnego} 
+\label{sec:17_wer_up}
+Model predykcyjny opracowany w oprogramowaniu MATLAB został zweryfikowany poprzez obliczenie natężenia pola elektrycznego dla kilku częstotliwości w wolnej przestrzeni, odpowiadającemu idealnemu środowisku w FAR, oraz nad przewodzącą płaszczyzną, czyli w~idealnym środowisku w~SAC. Obliczone natężenia pola elektrycznego porównano z wynikami obliczeń numerycznych, uzyskanymi w oprogramowaniu 3D EM CST Microwave Studio analizując promieniowanie symetrycznego dipola (rys. \ref{fig:17_2_a}). 
+Porównania dokonano dla trzech wybranych częstotliwości: 30 MHz, 200 MHz i~1000 MHz. W przypadku obliczeń numerycznych dostosowano długość elektryczną anteny dipolowej, aby dla każdej z analizowanych częstotliwości (30 MHz, 200 MHz i 1000 MHz)odpowiadała ona dipolowi półfalowemu, czyli miała długość połowy długości fali analizowanej częstotliwości. W każdym przypadku obliczony współczynnik odbicia $S_{11}$ wykazywał dopasowanie falowe dipola, maksymalną efektywność promieniowania i~teoretyczną wartość zysku enerhetycznego:  2,14 dBi. Obliczone charakterystyki promieniowania w polu dalekim dla półfalowej anteny dipolowej dla każdej analizowanej częstotliwości przedstawiono poniżej na rysunkach (\ref{fig:17_2_b}, \ref{fig:17_2_c}, \ref{fig:17_2_d}).
+
+\begin{figure}[t]
+    \centering
+    \begin{subfigure}{0.3\textwidth}
+          \centering
+          \includegraphics[width=\textwidth,keepaspectratio]{fig//ch17/Ch17_Pict02ac.png}
+          \caption{} % wygeneruje tylko (a)
+          \label{fig:17_2_a}
+    \end{subfigure} 
+    \hfill
+    \begin{subfigure}{0.45\textwidth}
+          \centering
+          \includegraphics[width=\textwidth,keepaspectratio]{fig//ch17/Ch17_Pict02bc.png}
+          \caption{} % wygeneruje tylko (b)
+          \label{fig:17_2_b}
+    \end{subfigure} 
+    \begin{subfigure}{0.40\textwidth}
+        \centering
+        \includegraphics[width=\textwidth,keepaspectratio]{fig//ch17/Ch17_Pict02cc.png}
+        \caption{} % wygeneruje tylko (c)
+        \label{fig:17_2_c}
+    \end{subfigure} 
+    \hfill
+    \begin{subfigure}{0.45\textwidth}
+        \centering
+        \includegraphics[width=\textwidth,keepaspectratio]{fig//ch17/Ch17_Pict02dc.png}
+        \caption{} % wygeneruje tylko (d)
+        \label{fig:17_2_d}
+    \end{subfigure} 
+    \caption{Wyniki symulacji dla dipoli półfalowych uzyskane w CST Studio: (a) Model dipola półfalowego oraz charakterystyki promieniowania uzyskane dla pola elektrycznego  $E$ dla częstotliwości  200 MHz, (d) Cdla częstotliwości 1000 MHz}
+        \label{fig:step_discontinuity2}
+\end{figure}
+
+
+
+\subsection[Współczynnik odbicia \ldots]{Współczynnik odbicia dla dipola półfalowego} 
+\label{sec:17_wsp_odb}
+Dla opracowanych modeli dipoli wyznaczono współczynnik odbicia, aby potwierdzić poprawność rozmiaru fizycznego oraz potwierdzić, że nie ma dodatkowych strat, które mogłyby wpłynąć na uzyskiwany wynik porównań. Ponieważ dla każdej analizowanej częstotliwości wykonywano obliczenia dla anteny o długości równej połowie długości fali, dlatego dla wszystkich analizowanych przypadków uzyskano zbliżone wyniki Obliczone współczynniki odbicia $S_{11}$ obliczone w CST studio dla wejściach analizowanych anten dipolowych zgodnie z oczekiwaniami były bardzo małe i wynosiły poniżej -50 dB, co zaprezentowano na rysunkach (\ref{fig:17_3_a}, \ref{fig:17_3_b}, \ref{fig:17_3_c}).
+
+\begin{figure}[t]
+     \centering
+     \begin{subfigure}{0.3\textwidth}
+         \centering
+         \includegraphics[width=1\textwidth]{fig//ch17/Ch17_Pict03ac.png}
+         \caption{}
+         \label{fig:17_3_a}
+     \end{subfigure}
+          \hfill
+          \begin{subfigure}{0.3\textwidth}
+         \centering
+          \includegraphics[width=1\textwidth]{fig//ch17/Ch17_Pict03ac.png}
+          \caption{}
+         \label{fig:17_3_b}
+     \end{subfigure}
+          \hfill
+     \begin{subfigure}{0.3\textwidth}
+         \centering
+         \includegraphics[width=1\textwidth]{fig//ch17/Ch17_Pict03ac.png}
+         \caption{}
+         \label{fig:17_3_c}
+     \end{subfigure}
+            \caption{ Wspólczynnik S11 obliczone w CST Studio dla dipoli półfalowych i częstotliwości (a) 30 MHz, (b) 200 MHz, (c) 1000 MHz}
+        \label{fig:three graphs}
+\end{figure}
+
+
+
+\subsection[Natężenie pola \ldots]{Natężenie pola elektrycznego od dipola półfaloweg} 
+\label{sec:17_nat_pol}
+Dla częstotliwości 30 MHz, która odpowiada dolnej częstotliwości pomiaru emisji promieniowanych, oraz odległości między antenami: 5 m, 7 m i 10 m, zapewnione są warunki pola dalekiego. Dla tych częstotliwości nie należy spodziewać się zatem różnic wyników obliczeń numerycznych z wynikami uzyskanymi z zastosowanego modelu predykcyjnego w środowisku MATLAB. Zaobserwowano jednak, że wartości natężenia pola elektrycznego obliczone za pomocą oprogramowania CST, uwzględniającego pełne modelowanie promieniowania rzeczywistego dipola, różnią się dla poszczególnych analizowanych odległości między antenami oraz  częstotliwości. Uzyskane wyniki zamieszczono na rys. 4. Różnice choć maleją ze wzrostem częstotliwości, są elementem który wpływa na wynik porównania opracowanego modelu względem obliczeń numerycznych, potwierdzający również uproszczony charakter modelu. Zgodnie z zależnością \eqref{eq:17_7} natężenie pola w~miejscu odbioru nie powinno się różnić dla różnych częstotliwości, jeżeli zyski anteny są takie same i taką samą moc doprowadzono do anteny.
+
+\begin{figure}[t]
+     \centering
+     \begin{subfigure}{0.3\textwidth}
+         \centering
+         \includegraphics[width=1\textwidth]{fig//ch17/Ch17_Pict04ac.png}
+        \caption{}
+         \label{fig:17_4_a}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure} {0.3\textwidth}
+         \centering
+         \includegraphics[width=1\textwidth]{fig//ch17/Ch17_Pict04bc.png}
+        \caption{}
+         \label{fig:17_4_b}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}{0.3\textwidth}
+         \centering
+         \includegraphics[width=1\textwidth]{fig//ch17/Ch17_Pict04cc.png}
+        \caption{}
+         \label{fig:17_4_c}
+     \end{subfigure}
+            \caption{Natężenie pole elektrycznego wyznaczone w CST Studio dla układu dwóch dipoli w warunkach propagacji w wolnej przestrzenia (a) dla częstotliwości 30 MHz i 1000 MHz i odległości między dipolami: 5 m oraz 10 m   (b) dla częstotliwości 30 MHz i odległości między dipolami 5 m, 7 m i 10 m  (c) dla częstotliwości 1000 MHz i odległości między dipolami: 5 m, 7 m i 10 m.}
+        \label{fig:three graphs2}
+\end{figure}
+
+Zgodnie z oczekiwaniem (\ref{fig:17_4_a}, \ref{fig:17_4_b}, \ref{fig:17_4_c}), natężenie pola elektrycznego w wolnej przestrzeni maleje proporcjonalnie wraz ze wzrostem odległości.
+
+
+\subsection{Tłumienie wolnej przestrzeni} 
+\label{sec:17_wer_FSL}
+W obliczeniach dipole półfalowe o takich samych parametrach użyto jako antenę nadawczą i odbiorczą, aby dla warunków wolnej przestrzeni wyznaczyć i porównać tłumienia trasy radiowej między tymi antenami. Obliczenia $S_{21}$ wykonano w~odległości 5 m i 10 m między antenami (rysunki \ref{fig:17_5_a}, \ref{fig:17_5_b}. Z równania \eqref{eq:17_11} wynika, że w wolnej przestrzeni (np. w FAR) tłumienie stanowiska zależy od kwadratu częstotliwości i kwadratu odległości. Wyniki tłumienia ośrodka między antenami z użyciem pełnofalowej symulacji w 3D CST porównano z wartościami obliczonymi z użyciem modelu predykcyjnego, a więc teoretycznego modelu stosowanego w obliczeniach w~strefie dalekiej. Jak można zauważyć na rysunku \ref{fig:17_6}, wyniki symulacji CST są zbliżone do wyników obliczeń uzyskanych z użyciem modelu predykcji, jednak nie są dokładnie takie same.
+
+\begin{figure}[t]
+     \centering
+     \begin{subfigure}{0.4\textwidth}
+         \centering
+         \includegraphics[width=1\textwidth]{fig//ch17/Ch17_Pict04cc.png}
+        \caption{}
+         \label{fig:17_5_a}
+     \end{subfigure}
+     \hspace{2cm}
+     \begin{subfigure}{0.4\textwidth}
+         \centering
+         \includegraphics[width=1\textwidth]{fig//ch17/Ch17_Pict04cc.png}
+        \caption{}
+         \label{fig:17_5_b}
+     \end{subfigure}
+     \hfill
+            \caption{ 
+            Wyznaczone w CST Studio  tłumienie wolnej przestrzeni dla wybranych częstotliwości i odległości między dipolami: 5 m, 7 m i 10 m: (a) dla częstotliwości 200 MHz (b) dla częstotliwości 1000 MHz.}
+        \label{fig:three graphs3}
+\end{figure}
+
+\begin{figure}[t]
+     \centering
+         \centering
+         \includegraphics[width=0.5\textwidth]{fig//ch17/Ch17_Pict06c.png}
+        \hfill
+        \caption{ Porównanie wyników obliczeń tłumienia wolnej przestrzeni uzyskanych CST Studio i modelu predykcyjnym MATLAB dla wybranych odległości między dipolami (5 m, 7 m i 10 m) oraz częstotliwości (200 MHz i 1000 MHz).}
+        \label{fig:17_6}
+\end{figure}
+
+Jak pokazano na rysunku \ref{fig:17_6}, wraz ze wzrostem częstotliwości i odległości między antenami wzrasta tłumienie stanowiska. Porównanie tłumienia stanowiska spełnia założenie przyjęte w modelu predykcyjnym opartym na MATLAB-ie.
+
+\subsection[Natężenie pola \ldots]{Natężenie pola elektrycznego w SAC} 
+\label{sec:17_wer_nat_polSAC}
+Analizę propagacji fal radiowych w komorze semi-bezodbiciowej SAC należy przeprowadzić dla przypadku propagacji fali nad nieskończenie rozległą płaszczyzną przewodzącą, wykonaną z materiału przewodzącego prąd elektryczny. Materiał doskonale przewodzić prąd  (jesy oznaczany jako PEC) lub rzeczywistego materiału przewodzącego, np. miedzi. 
+Aby ocenić wpływ metalowej płaszczyzny na mierzoną wartość natężenia pola elektrycznego należy przeprowadzić symulacje odpowiadające metodyce pomiaru emisji promieniowanej w komorze SAC, uwzględniające konfiguracje stanowiska z~krokową zmianą wysokości jednej z anten. Zmiana wysokości anteny odbiorczej jest wymagana dla ograniczenia wpływu zjawiska interferencji fali padającej z falą dobitą od płaszczyzny przewodzącej na wypadkowe natężenia pola elektrycznego. 
+Przeanalizowano i porównano wyniki obliczeń uzyskanych dla opracowanego modelu w środowisku MATLAB z wynikami symulacji w programie 3D CST Solver dla czterech wysokości zawieszenia dipola półfalowego nad przewodzącą płaszczyzną, tj.: 1 m, 2 m, 3 m i 4 m. Porównano maksymalne wartości natężenia pola elektrycznego uzyskane dla wszystkich analizowanych wysokości zawieszenia anteny odbiorczej. Obie anteny były analogicznie zorientowane (ta sama polaryzacja i~przeciwne kierunki). Antena nadawcza była umieszczona na stałej wysokości 1 m nad płaszczyzną przewodzącą.
+Obliczenia wykonano dla dwóch przypadków płaszczyzny przewodzącej: wykonanej z idealnego przewodnika elektrycznego (PEC) i~miedzi wyżarzanej. Maksymalne natężenia pola elektrycznego i tłumienie stanowiska ($S_{21}$) dla częstotliwości 200 MHz obliczano niezależnie dla pionowego i poziomego położenia dipoli. Przykładowe wyniki obliczeń natężenia pola uzyskane w CST dla częstotliwości 200 MHz, odległości anten 5m i 10m, wysokości zawieszenia dipola nadawczego 1m oraz wysokości zawieszenia dipola odbiorczego  od 1m do 4m zamieszczono na rysunku \ref{fig:17_6}, a~ich porównanie z wynikami uzyskanymi z użyciem opracowanego modelu predykcyjnego w Mathlab na rysunkach \ref{fig:17_7_a} i \ref{fig:17_7_b}.
+Przykładowe charakterystyki promieniowania nadawczych dipoli półfalowych zorientowanych poziomo i pionowo na wysokości 1 m nad PEC oraz częstotliwości 200 MHz przedstawiono na rysunku 8.
+
+\begin{figure}[t]
+     \centering
+     \begin{subfigure}{0.49\textwidth}
+         \centering
+         \includegraphics[width=1\textwidth]{fig//ch17/Ch17_Pict07ac.png}
+        \caption{}
+         \label{fig:17_7_a}
+     \end{subfigure}
+     \hfill
+     \begin{subfigure}{0.49\textwidth}
+         \centering
+         \includegraphics[width=1\textwidth]{fig//ch17/Ch17_Pict07bc.png}
+        \caption{}
+         \label{fig:17_7_b}
+     \end{subfigure}
+     \hfill
+            \caption{ 
+            Obliczone w CST wartości natężenie pola elektrycznego dla układu dwóch dipoli półfalowych (nadawczy na wysokości 1 m, odbiorczy na wysokości od 1 m do 4 m z krokiem 1 m) oraz częstotliwości 200 MHz a) dla dipoli półfalowych zorientowanych pionowo (b) dla dipoli półfalowych poziomo. }
+        \label{fig:three graphs4}
+\end{figure}
+
+\begin{figure}[t]
+     \centering
+         \centering
+         \includegraphics[width=0.6\textwidth]{fig//ch17/Ch17_Pict08c.png}
+        \hfill
+        \caption{ Porównanie wartości natężenie pola elektrycznego dla układu dwóch dipoli półfalowych (nadawczy na wysokości 1m , odbiorczy na wysokości od 1 m do 4 m z krokiem 1 m) oraz częstotliwości 200 MHz a) uzyskanych w CST i z użyciem opracowanego modelu w Mathlab}
+        \label{fig:17_8}
+\end{figure}
+
+Wypadkowe natężenie pola elektrycznego dla dipoli zorientowanych pionowo podlega większym zmianom, gdy dipole są zlokalizowane w bezpośrednim pobliżu płaszczyzny przewodzącej (rys. \ref{fig:17_7_a} ), niż w przypadku  dipoli zorientowanych poziomo (rys. \ref{fig:17_7_b} ). Składowa pionowa wektora pola elektrycznego fali odbitej w~większym stopniu pozytywnie interferuje ze składową pionową pola elektrycznego fali bezpośredniej w przypadku dipoli zorientowanych poziomo. Dla orientacji poziomej dipoli maksymalne natężenie pola osiągane jest na wysokości 2 m nad płaszczyzną ziemi odniesienia. Przy takiej orientacji anten maksymalną wartość składowej poziomej wektora natężenia pola elektrycznego obserwuje się dla anteny odbiorczej zawieszonej na wysokości 2 m nad płaszczyzną przewodzącą, natomiast przy pionowej orientacji anten maksymalne natężenie składowej poziomej wektora natężenia pola elektrycznego odnotowano na wysokości 1 m.
+
+\begin{figure}[t]
+     \centering
+     \begin{subfigure}{0.4\textwidth}
+         \centering
+         \includegraphics[width=1\textwidth]{fig//ch17/Ch17_Pict09ac.png}
+        \caption{}
+         \label{fig:17_9_a}
+     \end{subfigure}
+     \hspace{2cm}
+     \begin{subfigure}{0.4\textwidth}
+         \centering
+         \includegraphics[width=1\textwidth]{fig//ch17/Ch17_Pict09bc.png}
+        \caption{}
+         \label{fig:17_9_b}
+     \end{subfigure}
+     \hfill
+            \caption{ 
+            Rys. 9. Przykładowe charakterystyki promieniowania nadawczych dipoli półfalowych zorientowanych poziomo (a) i pionowo (b) na wysokości 1 m nad PEC dla częstotliwości 200 MHz. }
+        \label{fig:three graphs5}
+\end{figure}
+Wartości pola elektrycznego wyznaczone z modelu predykcyjnego w środowisku MATLAB i symulacje CST różnią się o około 0,3-0,7 $V/m$, jak pokazano na rysunky \ref{fig:17_8}. W symulacji CST solver analizuje płaszczyznę przewodzącą wykonaną z PEC jako płaszczyznę przewodzącą o ograniczonym rozmiarze, co znajduje odzwierciedlenie w wynikach symulacji uzyskanych w CST. Co więcej, rzeczywiste charakterystyki promieniowania anteny dla dipola półfalowego umieszczonego na wysokości 1 m nad płaszczyzną przewodzącą są odmienne niż w swobodnej przestrzeni (rys. \ref{fig:17_9_a} i \ref{fig:17_9_b}). Zyski i kierunkowości dipoli równieź zmieniają się. W modelu MATLAB efekty oddziaływania płaszczyzny przewodzącej jak i ograniczony jej rozmiar nie są uwzględniane w obliczeniach. W związku z tym obserwuje się systematyczne, choć umiarkowane różnice między wynikami obliczeń natężenia pola elektrycznego wyznaczanego  analitycznie (model), i~numerycznie (CST). 
+Dodatkowo zweryfikowano model predykcyjny opracowany w~MATLAB z uwzględnieniem kolejnego przybliżenia warunków obliczeń do rzeczywistej konfiguracji stanowiska pomiaru emisji w SAC. Kolejne analizy wykonano dla przypadku płaszczyzny przewodzącej wykonanej z~wyżarzanej miedzi, a uzyskane natężenia pola elektrycznego porównano z wartościami uzyskanymi dla przypadku zastosowania idealnego przewodnika PEC. 
+Przyjęto następujące parametry elektryczne dla wyżarzanej miedzi to: $\epsilon_r = 9,9$,  $\sigma = 1,1 x10^{-5} [S/m]$. W przeciwieństwie do PEC, wyżarzana miedź charakteryzuje się skończoną przewodnością i nie zapewnia pełnego (bezstratnego) odbicia fal.
+
+\begin{figure}[t]
+     \centering
+         \centering
+         \includegraphics[width=0.6\textwidth]{fig//ch17/Ch17_Pict10c.png}
+        \hfill
+        \caption{ Porównanie wyników obliczeń natężenia pola elektrycznego uzyskanych dla modelu predykcyjnego MATLAB dla płaszczyzny przewodzącej wykonanej z PEC i miedzi (wyniki uzyskane dla częstotliwości 200 MHz, odległości 5 m i 10 m  między dipolami, anteny nadawczej na wysokości 1 m i zmian wysokości anteny odbiorczej nad płaszczyzną przewodzącą w zakresie od 1 m do 4 m odbijającą z wyżarzanej miedzi.}
+        \label{fig:17_10}
+\end{figure}
+
+Analiza uzyskanych wyników obliczeń wartości natężenia pola (rys. \ref{fig:17_10}) wykazała, że po zastąpieniu materiału płaszczyzny przewodzącej z PEC na miedź (o mniejszej konduktywności niż PEC) maleje  wypadkowa wartość natężenia pola elektrycznego w punkcie obserwacji - umieszczenia anteny odbiorczej. Ten spadek natężenia pola można przypisać zmniejszeniu udziału składowej odbitej, co prowadzi do mniejszej dodatniej interferencji fali odbitej z falą bezpośrednią w~punkcie miejscu położenia anteny odbiorczej. Natomiast dla idealnej płaszczyzny przewodzącej (wykonanej z PEC) amplituda fali odbitej jest większa niż w~przypadku zastosowania miedzi, co w rezultacie skutkuje silniejszą dodatnią interferencją, a~w~konsekwencji większym wypadkowym natężeniem pola w punkcie obserwacji (pomiaru).
+
+
+\section{Wnioski i dalsze prace} 
+\label{sec:17_wnioski}
+W niniejszej pracy badawczej przedstawiono wstępny model predykcji natężenia pola elektrycznego i tłumienie trasy radiowej (NSA) w wolnej przestrzeni i nad przewodzącą płaszczyzną (np. w komorze SAC). Model ten został wykonany z~zastosowaniem klasycznego równania propagacyjnego Friisa, stosowanego powszechnie przy planowaniu systemów radiowych. Dla prostoty obliczeń i analiz uwzględniono w modelu teorię odbić zwierciadlanych od metalowej płaszczyzny i~teorię odbicia Fresnela. Porównanie wyników obliczeń uzyskanych dla wstępnego modelu predykcyjnego (z podstawową funkcjonalnością) z wynikami obliczeń uzyskanymi CST Microwave Studio dla warunków częściowo zbliżonych do rzeczywistych, wykazało zadawalającą zgodność dla częstotliwości 1000 MHz, gdzie anteny odbiorcza zlokalizowane są w strefie promieniowania -– w strefie pola dalekiego. Systematycznie różnice obserwowane są przy niższych częstotliwościach, w szczególności 30 MHz, dla której to częstotliwości  granica pola dalekiego znajduje się w odległości 5 m od dipola półfalowego. Wypadkowe natężenie pola zależy również od ograniczonych rozmiarów i materiału, z którego wykonana jest płaszczyzna przewodząca (podłoga komory SAC).
+W przypadku płaszczyzny wykonanej z rzeczywistego materiału, model umożliwia wyznaczenie zmiany polaryzacji fali i wartości wypadkowego natężenia pola elektrycznego w zależności od parametrów elektrycznych materiału oraz wysokości zawieszenia anten 
+Podsumowując, model predykcyjny oferuje szybkie i dość dokładne narzędzie do wstępnej oceny warunków propagacji w określonych, choć często wyidealizowanych warunkach. Model zostanie rozszerzony o analizę w przypadku propagacji w zamkniętych strukturach ekranowanych z zainstalowanymi absorberami oraz z zastosowaniem wewnątrz komór dodatkowych elementów pochłaniających i odbijających fale elektromagnetyczne, aby możliwe było symulowanie różnych scenariuszy pomiarowych dla realistycznych przypadków i stosowanych materiałów. Model umożliwi również wyznaczanie charakterystyk opóźnień czasowych istotnych dla modelowania różnych charakterystyk kanału radiowego, które są niezbędne podczas testowania nowoczesnych urządzeń radiowych w komorach bezodbiciowych.
+
+
+
+
+\begin{thebibliography}{bib17}
+
+\bibitem{1OTT1}	Ott, H.W., Electromagnetic compatibility engineering. 2011: John Wiley \& Sons.
+\bibitem{2DOBREF2}	Dobref, V., et al., Critical aspects of electromagnetic compatibility on board ships. Scientific Bulletin'Mircea cel Batran'Naval Academy, 2023. 26(1).
+\bibitem{3PAUL3}	Paul, C.R., R.C. Scully, and M.A. Steffka, Introduction to electromagnetic compatibility. 2022: John Wiley \& Sons.
+\bibitem{4KOVAR4}	Kovar, S., Immunity of camera systems against electromagnetic interference. Treatise on doctoral thesis. Faculty of applied informatics in Zlin. Supervisor doc. Mgr. Milan Adamek. 2017, Ph. D. Zlin.
+\bibitem{5VOGT5}	Vogt-Ardatjew, R.A., Electromagnetic fields in reverberant environments. 2017.
+\bibitem{6WILSON6}	Wilson, P., et al. Emission and immunity standards: Replacing field-at-a-distance measurements with total-radiated-power measurements. in 2001 IEEE EMC International Symposium. Symposium Record. International Symposium on Electromagnetic Compatibility (Cat. No. 01CH37161). 2001. IEEE.
+\bibitem{7KOEPKE7}	Koepke, G., D. Hill, and J. Ladbury. Directivity of the test device in EMC measurements. in IEEE International Symposium on Electromagnetic Compatibility. Symposium Record (Cat. No. 00CH37016). 2000. IEEE.
+\bibitem{8JANSSON8}	Jansson, L. and M. Backstrom. Directivity of equipment and its effect on testing in mode-stirred and anechoic chamber. in 1999 IEEE International Symposium on Electromagnetic Compatability. Symposium Record (Cat. No. 99CH36261). 1999. IEEE.
+\bibitem{9ROWELL9}	Rowell, A., D. Welsh, and A. Papatsoris, Practical Limits for EMC Emission Testing at Frequencies Above 1GHz Final Report (AY3601) For The Radiocommunications Agency. York, UK: York EMC Services Ltd., Univof York, Heslington, 2001.
+\bibitem{10SERRA10}	Serra, R., et al., Reverberation chambers a la carte: An overview of the different mode-stirring techniques. IEEE Electromagnetic Compatibility Magazine, 2017. 6(1): p. 63-78.
+\bibitem{11HILL11}	Hill, D.A., Electromagnetic theory of reverberation chambers. (No Title), 1998.
+\bibitem{12MIGLIACCIO12}	Migliaccio, M., et al., The polarization purity of the electromagnetic field in a reverberating chamber. IEEE Transactions on Electromagnetic Compatibility, 2016. 58(3): p. 694-700.
+\bibitem{13MIGLIACCIO13}	Migliaccio, M. and G. Ferrara, A simple polarimetric field characterisation in reverberating chambers. IET Microwaves, Antennas \& Propagation, 2007. 1(5): p. 1029-1033.
+\bibitem{14CORONA14}	Corona, P., G. Ferrara, and M. Migliaccio, Polarimetric field characterization in reverberating      chambers. IEEE transactions on electromagnetic compatibility, 2004. 46(2): p. 155-159.
+\bibitem{15SEDAT15}  Sedat Eser and Levent Sevgi Open area test site caliberation. IEEE Antennas and Propagation Magazine. 
+\bibitem{16CONSTANTINE16} Constantine A. Balanis: Antenna Theory: Analysis and Design
+
+\end{thebibliography}
+

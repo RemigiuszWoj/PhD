@@ -1,0 +1,385 @@
+\chapterauthor{Aleksander Biskup, Karolina Berniker, Marcel Owczarek i Eryk Sikora}
+\chapter[Porównanie frameworków \ldots]{Porównanie frameworków programowania kwantowego dla architektury IQM Spark 5}
+\thispagestyle{empty}
+\vspace{-8mm} {\large Aleksander Biskup, Karolina Berniker, Marcel Owczarek, Eryk Sikora} \vspace{8mm}
+
+% ---------------------------
+% ------------------- SECTION
+% ---------------------------
+% \section{Wprowadze}
+% W erze NISQ (Noisy Intermediate-Scale Quantum), efektywna kompilacja obwodów kwantowych jest kluczowa dla połączenia wysokopoziomowej logiki kwantowej z ograniczeniami sprzętowymi Kwantowych Jednostek Przetwarzania (QPU). Niniejsze badanie empirycznie ocenia fazę transpilacji -- obejmującą dekompozycję bramek, mapowanie oraz routing -- trzech wiodących frameworków do kompilacji obwodów kwantowych: IBM Qiskit, Google Cirq oraz Tket. Badanie koncentruje się na architekturze komputera IQM Spark 5, która nie była wcześniej analizowana w tym kontekście.
+
+% Opracowano zestaw testów porównawczych składający się z 50 instancji obwodów, reprezentujących stany GHZ, symulację hamiltonowską, nierówności Mermina-Bella oraz algorytmy QAOA. Zostały one zaprojektowane tak, aby uwzględnić zróżnicowaną liczbę kubitów, kompozycję bramek oraz złożoność strukturalną. Każdą instancję skompilowano 100-krotnie dla każdego z frameworków, oceniając głębokość obwodu wyjściowego, liczbę bramek dwukubitowych oraz czas kompilacji. Stabilność procesu oceniono na podstawie odchyleń standardowych, średniej wydajności i analizy porównawczej w podziale na typ instancji. Wyniki wskazują, że Qiskit często przoduje pod względem jakości obwodu wyjściowego, podczas gdy Cirq oferuje szybszą transpilację w specyficznych przypadkach; na podstawie przeprowadzonych eksperymentów stwierdzono, że żaden z frameworków nie wykazuje uniwersalnej przewagi.
+
+
+\section{Wprowadzenie}
+\label{sec:introduction}
+W erze obliczeń kwantowych w technologii NISQ (Noisy Intermediate-Scale Quantum) efektywność wykonania obwodów zależy od skutecznej kompilacji wysokopoziomowej logiki kwantowej do instrukcji sprzętowych. Obecny dostępny sprzęt narzuca istotne ograniczenia, w tym ograniczoną liczbę kubitów, wysokie wskaźniki błędów oraz ograniczoną łączność między kubitami. Ograniczenia te wymuszają użycie zaawansowanych narzędzi programistycznych w celu zniwelowania różnic między abstrakcyjnymi obwodami kwantowymi a ich fizycznymi odpowiednikami wykonywanymi na QPU (Quantum Processing Units). Niniejsza praca koncentruję się na architekturach QPU opartych na bramkach.
+
+% Compilation outline
+Proces kompilacji można przedstawić jako problem optymalizacyjny, w~którym ograniczenia definiuje architektura QPU, a wejściowy obwód kwantowy stanowi instancję problemu. Rozwiązanie jest wykonalne wtedy, gdy harmonogram może zostać uruchomiony na docelowym QPU, a jego jakość może być mierzona na podstawie, np. prawdopodobieństwa poprawnego wykonania, czasu wykonania lub liczby wymaganych kubitów. Kompilacja rozpoczyna się zazwyczaj od dekompozycji abstrakcyjnych bramek (takich jak wielokubitowa bramka Toffoliego) na zestaw bramek bardziej dopasowanych sprzętowo (np. $R_z$, $R_x$, $\mathit{CZ}$ lub $\mathit{CNOT}$). W kroku mapowania algorytm przypisuje logiczne kubity do fizycznych kubitów - proces ten musi uwzględnić ograniczenia sprzętowe, takie jak ograniczona łączność między kubitami. Jeśli takie mapowanie nie jest wykonalne bezpośrednio, obwód można zmodyfikować. Modyfikacja ta ma na celu dopasowanie struktury obwodu do topologii sprzętowej, na przykład poprzez dodanie bramek $\mathit{SWAP}$ (etap trasowania). Na koniec obwód musi zostać przekształcony tak, aby wykorzystywał jedynie natywny zestaw bramek docelowego QPU, a następnie poddany harmonogramowaniu z~uwzględnieniem charakterystyk sprzętowych oraz możliwości równoległości. Na każdym etapie procesu można napotkać różne ograniczenia sprzętowe, w tym szum, czasy dekoherencji kubitów oraz zjawisko przesłuchu. Niniejsza praca rozpatruje fazę transpilacji w~procesie kompilacji, obejmując dekompozycję bramek do natywnego zestawu, mapowanie oraz trasowanie.
+
+Celem niniejszego badania jest empiryczna ocena wiodących frameworków do kompilacji obwodów kwantowych - Qiskit, Cirq oraz Tket - poprzez analize ich wydajności podczas fazy transpilacji. Z racji że kompilacja jest niezbędna do wykonywania zadań na QPU, znalezienie najskuteczniejszego frameworka jest kluczowe. Jednak żadne z dotychczasowych badań nie było konkretnie ukierunkowane na IQM SPark. Niniejsza praca ma na celu wypełnienie tej luki. 
+
+% ---------------------------
+% ------------------- SECTION
+% ---------------------------
+\section{Przegląd literatury}
+\label{sec:literature-review}
+
+Ostatnie badania wskazują na nieustanny wzrost zainteresowania obliczeniami kwantowymi, co potwierdzają systematyczne przeglądy literatury, takie jak praca Gomesa i~in. \cite{Gomes2024}. Coraz silniejszy nacisk kładzie się również na synergię obliczeń kwantowych ze sztuczną inteligencją, co w swoim najnowszym przeglądzie systematycznym z 2025 roku podkreślają Sharma i Ali \cite{sharma_integration_2025}. Równolegle, postępy w~algorytmach optymalizacji kombinatorycznej w~erze NISQ pozostają kluczowym obszarem badawczym \cite{Gemeinhardt2023}.
+
+Literatura dotycząca kompilacji obwodów kwantowych (Quantum Circuit Compilation, QCC) jest równie obszerna i dynamicznie się rozwija. Prace przeglądowe z lat 2021–2022 ugruntowały podstawową wiedzę na temat algorytmów kompilacji \cite{Huang2022,Kusyk2021,Tan2021}. Najnowsze opracowania z lat 2024 i 2025, takie jak szeroki przegląd metod kompilacji autorstwa Ge i in. \cite{Ge2024} oraz analiza nowoczesnych języków, symulatorów i architektur przeprowadzona przez Karhana i in. \cite{karhan_modern_2025}, wskazują na rosnącą złożoność ekosystemu oprogramowania kwantowego.
+
+W praktycznych zastosowaniach dominują obecnie kompleksowe frameworki typu end-to-end. Oferują one gotowe rozwiązania problemów QCC, stanowiąc jednocześnie punkty odniesienia dla nowych badań. Przykładem takiego podejścia jest praca \cite{Younis2022}, gdzie analizowano sparametryzowane obwody z użyciem IBM Qiskit, Google Cirq oraz Tket, a także badania Dobbsa i in. \cite{Dobbs2025}, w których Cirq pełnił podwójną rolę: infrastruktury bazowej i~punktu referencyjnego. Mimo dominacji tych rozwiązań, widoczny jest problem fragmentacji ekosystemu. Odpowiedzią na to są platformy integrujące, takie jak XACC \cite{mccaskey2019xaccsystemlevelsoftwareinfrastructure}, czy zaproponowany w 2025 roku Quantum Executor – zunifikowany interfejs dla obliczeń kwantowych \cite{bisicchia_quantum_2025}. Warto również wspomnieć o specjalistycznych narzędziach jak PennyLane \cite{bergholm2022pennylaneautomaticdifferentiationhybrid}, dedykowanym hybrydowym obliczeniom różniczkowalnym.
+
+Chociaż frameworki te zapewniają wygodę użytkowania, badania wskazują, że dedykowane algorytmy często przewyższają ich domyślne procedury optymalizacyjne. Przykładowo, zastosowanie uczenia ze wzmocnieniem pozwoliło na~ulepszenie wyników Tket i~Qiskit \cite{Quetschlich2023}, a integracja systemu algebraicznego SPIRAL rozszerzyła możliwości tworzenia obwodów \cite{Mionis2021}. Trend ten jest kontynuowany w~roku 2025, gdzie nacisk położono na specyficzne etapy kompilacji. Luo i in. \cite{luo_towards_2025} zaproponowali efektywne metody local search dla problemu mapowania kubitów, a Huang i in. \cite{huang_qubit_2025} przedstawili dla tego samego zagadnienia adaptacyjne podejście "dziel i rządź". Z kolei w~obszarze syntezy obwodów, Islam i in. \cite{islam_quantum_2025} wykazali skuteczność algorytmów genetycznych wspomaganych logiką rozmytą.
+
+Mimo istnienia wielu alternatywnych bibliotek (np. PyQuil, Qulacs, Qibo \cite{Rakyta2024}), przegląd literatury jednoznacznie wskazuje, że Qiskit, Cirq oraz Tket pozostają najbardziej wpływowymi środowiskami, co uzasadnia ich wybór jako podstawy w niniejszej pracy.
+
+% ---------------------------
+% ------------------- SECTION
+% ---------------------------
+\section{Konfiguracja eksperymentalna}
+\label{sec:setup}
+
+Sekcja przedstawia szczegółowy opis konfiguracji eksperymentalnej: symulowanego sprzętu QPU, testowanych frameworków kompilacyjnych, benchmarków oraz metryk wydajności. Uzasadnia również podjęte decyzje projektowe, zgodnie z~ustaloną metodologią.
+
+\subsection{Sprzęt}
+IQM Spark to pięciokubitowy komputer kwantowy opracowany przez fińską firmę IQM Quantum Computers~\cite{Rnkk2024}, wykorzystujący technologię kubitów nadprzewodzących. Został on zaprojektowany specjalnie do celów badań naukowych i rozwojowych, wspierając eksperymenty z algorytmami kwantowymi, testy na poziomie systemowym oraz edukację w~dziedzinie obliczeń kwantowych. 
+
+Z technicznego punktu widzenia IQM Spark zapewnia operacje kwantowe o wysokiej dokładności. Dokładność bramek jednokubitowych osiąga $\geq99.9\%$, natomiast dokładność dwukubitowych bramek Controlled-Z wynosi $\geq99.0\%$. Typowa dokładność odczytu kubitów to $\geq97\%$. Procesor wykorzystuje topologię z kubitem centralnym, w której centralny kubit jest połączony ze wszystkimi pozostałymi.
+
+W niniejszej pracy nie korzystano z rzeczywistego sprzętu kwantowego. Podczas eksperymentów uwzględniono natomiast ograniczenia sprzętowe charakterystyczne dla procesora kwantowego IQM Spark.
+
+\subsection{Charakterystyka i wybór frameworków}
+
+ Opierając się na przeglądzie literatury, do ewaluacji eksperymentalnej wybrano trzy frameworki kompilacyjne: Qiskit, Cirq oraz Tket. Qiskit~\cite{ibmqiskit2024} to framework typu open-source, opracowany przez IBM  i przeznaczony do obliczeń kwantowych. Jest szeroko stosowany w rozwijaniu algorytmów, implementacji sprzętowej oraz edukacji. Framework został zaprojektowany z~myślą o modularności, co obejmuje również jego architekturę transpilacji. Transpilacja w Qiskit jest realizowana przez konfigurowalny system zarządzania przebiegiem, w którym użytkownicy mogą definiować własne etapy lub wybrać jedną z wbudowanych procedur transpilacji. Korzystając z parametru \texttt{optimization\_level} $(0-3)$, użytkownik reguluje głębokość i~intensywność zastosowanych optymalizacji.
+
+W przeprowadzonym badaniu wartość parametru poziomu optymalizacji została ustawiona domyślnie na 3. Ten poziom obejmuje wszystkie zaawansowane optymalizacje dostępne w frameworku. Proces transpilacji rozpoczyna się od wyboru układu kubitów (layout selection) przy użyciu algorytmu \texttt{SabreLayout} , który mapuje logiczne kubity na fizyczne, minimalizując liczbę operacji $\mathit{SWAP}$. Routing odbywa się za pomocą algorytmu  \texttt{SabreSwap},który dynamicznie wstawia operacje $\mathit{SWAPs}$ zgodnie z~ograniczeniami sprzętowymi. Dekompzycję bramek realizują \texttt{UnitarySynthesis} oraz \texttt{BasisTranslator}, które przekształcają bramki abstrakcyjne w zestaw bramek natywnych dla danego sprzętu. Procedury optymalizacyjne \texttt{Collect2QBlocks}, \texttt{ConsolidateBlocks}, oraz \texttt{Commutative\-Cancellation} czy również znana procedura \texttt{Optimize1qGatesDecomposi\-tion} są stosowane w celu poprawy parametrów zoptymalizowanego obwodu. Strategie planowania, m.in.  \texttt{ALAPSchedulingAnalysis} i \texttt{PadDy\-namicalDecoupling} umożliwiają synchronizację realizacji bramek.
+
+Chociaż Qiskit nie obsługuje natywnie sprzętu IQM, integrację osiągnięto dzięki rozszerzeniu \texttt{qiskit-on-iqm~\cite{qiskitoniqm2024}} opracowanemu przez firmę IQM Finland. Pakiet ten umożliwia kierowanie kompilacji na backendy IQM poprzez konfigurację parametrów specyficznych dla urządzenia, takich jak mapy sprzężeń, zestawy bramek czy metadane kalibracyjne. Integracja pozwoliła na wykonywanie natywnej transpilacji pod architekturę IQM Spark 5 bez konieczności modyfikowania wewnętrznych mechanizmów Qiskit.
+
+
+Cirq~\cite{cirq2024} to framework kwantowy typu open-source opracowany przez Google, przeznaczony do konstruowania i wykonywania obwodów kwantowych na urządzeniach NISQ. Kładzie on nacisk na precyzyjną kontrolę nad strukturą obwodów, co czyni go odpowiednim do eksperymentów niskopoziomowych i zastosowań badawczych. W przeciwieństwie do Qiskit, Cirq nie oferuje wbudowanego pipeline’u transpilacji ani poziomów optymalizacji; zamiast tego transformacje obwodów realizowane są za pomocą niezależnych funkcji i procesów. 
+
+W naszej konfiguracji wykorzystano rozszerzenie \texttt{cirq-on-iqm~\cite{cirqoniqm2024}} (opracowane przez IQM Finland), aby umożliwić transpilację uwzględniającą ograniczenia sprzętowe dla architektury IQM Spark 5. Pomimo, że Spark nie był bezpośrednio uwzględniony w pakiecie, wybrano model urządzenia \texttt{Adonis} ponieważ posiada on tę samą topologię oraz natywny zestaw bramek. Proces rozpoczynał się od dekompozycji bramek przy użyciu funkcji \texttt{Adonis.decompose\_circuit()}, która tłumaczyła nieobsługiwane operacje na natywny zestaw bramek. Następnie wykonywano uproszczenie obwodu poprzez \texttt{simplify\_circuit()},obejmujące sekwencję kroków takich jak łączenie bramek, konsolidacja rotacji jednokubitowych, przesuwanie bramek kwantowych Z oraz usuwanie nadmiarowych momentów.
+
+Routing zrealizowano za pomocą \texttt{Adonis.route\_circuit()}, która wykorzystywała transformator \texttt{RouterCQC} do wstawiania bramek  $\mathit{SWAP}$ zgodnie z~ograniczeniami urządzenia. W architekturach opartych na sprzężeniach z rezonatorami dynamiczny graf trasowania był automatycznie generowany na podstawie metadanych. Ostateczny etap dekompozycji zapewniał pełną kompatybilność z~natywnym zestawem bramek po trasowaniu.
+
+
+Tket~\cite{tket2024} to zestaw narzędzi do tworzenia oprogramowania kwantowego opracowany przez firmę Quantinuum (dawniej Cambridge Quantum i Honeywell Quantum). Został zaprojektowany jako niezależny od backendu i~opiera się na elastycznej sekwencji kroków transformacji. W przeciwieństwie do Qiskit i Cirq, Tket nie oferuje wstępnie zdefiniowanych poziomów transpilacji ani domyślnych ustawień; użytkownicy muszą samodzielnie komponować procesy, poprzez sekwencjonowanie wybranych etapów.
+%
+Aby wspierać IQM Spark 5, zaimplementowano niestandardowy symulowany backend (\texttt{FakeAdonisTketBackend}), odzwierciedlający topologię i obsługiwany zestaw bramek sprzętu.
+
+Transpilacja rozpoczynała się od \texttt{DecomposeBoxes} i \texttt{SynthesiseTket} w~celu spłaszczenia i zsyntetyzowania komponentów obwodu. Optymalizacja była przeprowadzana za pomocą \texttt{FullPeepholeOptimise}, a następnie wykonywano rozmieszczenie i~trasowanie przy użyciu \texttt{Graph- Placement} oraz \texttt{RoutingPass}.
+
+Wprowadzono niestandardowe przekształcenie bramek przy wykorzystaniu \texttt{RebaseCustom}, w którym nieobsługiwane bramki $\mathit{CX}$ i $\mathit{TK1}$ były tłumaczone na sekwencje natywnych operacji obejmujące $\mathit{CZ}$ oraz rotacje $\mathit{Ry}$/$\mathit{Rz}$. Ostateczny etap porządkowania obwodu wykonany przy użyciu  \texttt{RemoveRedundancies} zapewniał minimalny narzut obwodu. Te transformacje zostały zintegrowane w~funkcji    \texttt{default\_compilation\_pass()} w backendzie, umożliwiając wykonanie powtarzalnej transpilacji z uwzględnieniem poziomu optymalizacji.
+
+
+\subsection{Metryki wydajności}
+
+Aby ocenić jakość transpilacji, wykorzystano trzy podstawowe metryki: liczbę bramek, głębokość obwodu oraz czas transpilacji. Każdą metrykę, z~wyjątkiem czasu, obliczano na podstawie obwodów kwantowych: (1) przed transpilacją oraz (2) po transpilacji. 
+%
+
+Liczba bramek może odnosić się do całkowitej liczby operacji kwantowych (bramek) w obwodzie. Oprócz liczby całkowitej można również zliczać rodzaje bramek — rozróżniając bramki jednokubitowe, dwukubitowe oraz operacje pomiarowe. Ponieważ bramki dwukubitowe zazwyczaj mają największy wpływ na dokładność obwodu, przyjmuje się tutaj, że liczba bramek dla obwodu wyjściowego odpowiada liczbie takich bramek. Głębokość obwodu definiuje się jako maksymalną liczbę sekwencyjnych operacji bramek kwantowych, wzdłuż dowolnej ścieżki od wejścia do wyjścia w obwodzie kwantowym. Metryki wydajności zostały dobrane zgodnie z praktykami uznanymi za najlepsze w tej dziedzinie. Liczba bramek i głębokość obwodu stanowią metryki pośrednie dla oceny prawdopodobieństwa poprawnego wykonania obwodu. Czas transpilacji jest kluczowym czynnikiem w hybrydowych algorytmach kwantowych, gdyż kompilacja jest wymagana na każdym kroku algorytmu.
+
+Aby zmierzyć rozproszenie wyników, przeprowadzono analizę stabilności. Początkowo, dla każdej metryki, instancji i frameworku, obliczano odchylenie standardowe wyników. Następnie empirycznie ustalono progi wykrywające potencjalne anomalie pomiarowe: 0.5 dla głębokości, 0.4 dla liczby bramek oraz 0.03 dla czasu transpilacji. Progi te zostały określone na podstawie 95. percentyla rozkładu odchyleń standardowych dla wszystkich 100 próbek każdego typu instancji i frameworku. Celem tego podejścia było oddzielenie szumu pomiarowego od rzeczywistych anomalii.
+
+\subsection{Obwody testowe}
+
+Obwody udostępnione przez SupermarQ posłużyły w zakresie badania jako szablony do generowania nowych instancji problemów (obwodów kwantowych). Obwody udostępnione przez SupermarQ posłużyły w zakresie badania jako szablony do generowania nowych instancji problemów (obwodów kwantowych). 
+SupermarQ~\cite{tomesh2022supermarqscalablequantumbenchmark} to zestaw skalowalnych, niezależnych od sprzętu benchmarków, które oceniają wydajność platform obliczeń kwantowych. Obejmują one zarówno sprzęt kwantowy, jak i powiązane stosy oprogramowania, wykorzystując metryki na poziomie aplikacji, odzwierciedlając w ten sposób realistyczne obciążenia.
+
+Na podstawie tych szablonów benchmarków opracowano skrypt umożliwiający generowanie obwodów określonego typu w różnych konfiguracjach. Poza generowaniem obwodów, SupermarQ udostępnia funkcjonalność obliczania istotnych cech każdej instancji obwodu kwantowego, takich jak głębokość obwodu czy liczba poszczególnych operacji bramek. Funkcje te są szczególnie przydatne podczas przygotowywania obwodów benchmarkowych w formacie OpenQASM, który – choć nie jest formalnym standardem – jest  powszechnie wspierany w~różnych frameworkach wykorzystywanych do oprogramowania kwantowego.
+
+Aby przeanalizować jakość i skuteczność transpilacji w różnych frameworkach kwantowych, wykorzystano cztery typy benchmarków z pakietu SupermarQ: Mermin-Bell (MB), Greenberger–Horne–Zeilinger (GHZ), Hamiltonian (HAM) i~Quantum Approximate Optimization Algorithm (QAOA).
+
+Łącznie przygotowano 50 instancji benchmarków w celu analizy jakości transpilacji, podzielonych na cztery kategorie: GHZ (15), Hamiltonian (15), Mermin-Bell (10) oraz QAOA (10). Obwody zostały automatycznie wygenerowane przy użyciu skryptu w Pythonie i zapisane w dwóch formatach: Quantum Assembly Language, pliki QASM 2.0 (reprezentacja obwodu kwantowego) oraz pliki JSON (zawierające cechy obwodu). Metadane zawierają szczegółowe informacje dla każdej instancji obwodu, w tym typ benchmarku, unikalny identyfikator, liczbę kubitów, całkowitą liczbę bramek, liczbę bramek według  ich typu oraz głębokość obwodu.
+%
+Wszystkie obwody zostały dostosowane do architektury 5-kubitowej, odpowiadającej maksymalnej liczbie kubitów fizycznych w urządzeniu IQM Spark. Niektóre benchmarki zawierały również mniejsze instancje (np. 2- i 3-kubitowe), co umożliwiło analizę wpływu skali obwodu na jakość transpilacji. Instancje zostały przesłane do repozytorium GitHub\footnote{https://github.com/Marowc/QuantumBenchmarkInstances} i są publicznie dostępne.
+
+Obwody benchmarkowe były znacznie zróżnicowane pod względem struktury i złożoności bramek. Obwody GHZ i Mermin-Bell charakteryzowały się stosunkowo niewielką głębokością — od 6 do 18 warstw (mediany: odpowiednio 10 i~12) — przy niskiej liczbie bramek i sekwencyjnych wzorcach splątania. W porownaniu do tego, benchmarki QAOA i symulacje Hamiltonianu były znacznie głębsze, z głębokością obwodów w zakresie od 22 do 59 warstw (mediana: 37) dla QAOA oraz od 25 do 184 warstw (mediana: 48) dla obwodów Hamiltonianu. Te benchmarki cechowały się gęstszym rozmieszczeniem bramek oraz większą liczbą operacji dwukubitowych. Wszystkie benchmarki zostały zdefiniowane dla maksymalnie pięciu kubitów, choć uwzględniono również mniejsze instancje (np. trzy obwody 2-kubitowe, dziewięć obwodów 3-kubitowych itd.). 
+
+Podczas fazy testów zaobserwowano błąd podczas transpilacji czterech instancji obwodów typu Hamiltonian z wykorzystaniem frameworku Cirq. Problem dotyczył pięciokubitowych obwodów takich jak: \texttt{ham\_5q\_dt0.1\_T1.0.qasm}, \texttt{ham\_5q\_dt0.1\_T0.5.qasm} a także \texttt{ham\_5q\_dt0.15\_T0.6.qasm} oraz także \texttt{ham\_5q\_dt0.05\_T0.25.qasm}. Dogłębna analiza wykazała, że problem wynikał z niepoprawnego rozdzielenia bramek obwodu na operacyjne i pomiarowe na każdym kroku, co skutkowało wygenerowaniem ogólnego wyjątku. W celu zapewnienia spójności wyników i~zminimalizowania ryzyka potencjalnego zniekształcenia dalszych analiz, podjęto decyzję o całkowitym wyłączeniu wspomnianych instancji obwodów z kolejnych etapów badania. Dla każdego analizowanego obwodu benchmarkowego i testowanego frameworku transpilację powtórzono dokładnie 100 razy.
+
+% ---------------------------
+% ------------------- SECTION
+% ---------------------------
+\section{Wyniki badań}
+\label{sec:results}
+
+Wyniki eksperymentalne uporządkowano według przyjętych metryk wydajności. Dla każdej z nich przeanalizowano wartość średnią, rozrzut oraz wariancję uzyskanych rezultatów. Na koniec przedstawiono ocenę porównawczą badanych frameworków.
+
+\subsection{Liczba bramek}
+
+Analiza średniej liczby bramek dwukubitowych ujawniła różnice między frameworkami sięgające nawet 400\% dla pewnych instancji (Tabela~\ref{table:anomalies_gate}). Najbardziej ekstremalne różnice zaobserwowano dla symulacji hamiltonowskiej, a konkretnie \texttt{ham\_2q\_dt0.1\_T0.5.qasm}, gdzie liczba bramek dwukubitowych wynosiła 2 dla Qiskit i Tket, ale aż 10 dla Cirq, co daje różnicę rzędu 400\%.
+Dla prostszych obwodów GHZ i MB różnice były również znaczące, np. dla \texttt{ghz\_gskip\_qubit.qasm}, \texttt{ghz\_partial\_entanglement.qasm} oraz \texttt{mb\_mb\_sparse\_and\_asymmetric\-.qasm}, różnice wyniosły 150\%, przy 2 bramkach dla Qiskit i Tket, a 5 dla Cirq.
+W przypadku obwodów QAOA różnice były nieco mniejsze, ale wciąż istotne, sięgając 71,4\% dla instancji \texttt{qaoa\_3q\_s100.qasm} i \texttt{qaoa\_3q\_s106.qasm} (7 bramek dla Qiskit, 12 dla Cirq i 9 dla Tket). W większości przypadków Qiskit i Tket generowały zbliżoną liczbę bramek dwukubitowych, często identyczną, podczas gdy Cirq konsekwentnie wprowadzał ich więcej.
+
+\begin{table}[t]
+    \centering
+    \caption{Średnia liczba bramek 2-kubitowych dla kluczowych instancji różnicujących}
+    \label{table:anomalies_gate}
+    \begin{tabular}{l@{\hspace{8pt}}c@{\hspace{8pt}}c@{\hspace{8pt}}c}
+        \toprule
+        \textbf{Instancja obwodu kwantowego} & \textbf{Qiskit} & \textbf{Cirq} & \textbf{Tket} \\
+        \midrule
+        \texttt{qaoa\_3q\_s100.qasm} & {7.0} & {12.0} & {9.0} \\
+        \texttt{qaoa\_3q\_s106.qasm} & {7.0} & {12.0} & {9.0} \\
+        \texttt{qaoa\_4q\_s107.qasm} & {14.0} & {21.0} & {18.0} \\
+        \texttt{qaoa\_5q\_s105.qasm} & {29.0} & {41.0} & {35.0} \\
+        \texttt{ham\_2q\_dt0.05\_T0.1.qasm} & {2.0} & {4.0} & {2.0} \\
+        \texttt{ham\_2q\_dt0.1\_T0.2.qasm} & {2.0} & {4.0} & {2.0} \\
+        \texttt{ham\_2q\_dt0.1\_T0.5.qasm} & {2.0} & {10.0} & {2.0} \\
+        \texttt{ham\_4q\_dt0.1\_T0.3.qasm} & {15.0} & {24.0} & {15.0} \\
+        \texttt{ghz\_central.qasm} & {7.0} & {13.0} & {10.0} \\
+        \texttt{ghz\_gskip\_qubit.qasm} & {2.0} & {5.0} & {2.0} \\
+        \texttt{ghz\_hadamard\_fan.qasm} & {4.0} & {7.0} & {4.0} \\
+        \texttt{ghz\_manual\_cnot\_order.qasm} & {4.0} & {7.0} & {4.0} \\
+        \texttt{mb\_mb\_cz\_entanglement.qasm} & {6.0} & {10.0} & {10.0} \\
+        \texttt{mb\_mb\_endpoints\_only.qasm} & {7.0} & {10.0} & {10.0} \\
+        \texttt{mb\_mb\_measure\_in\_x\_basis.qasm} & {7.0} & {10.0} & {10.0} \\
+        \texttt{mb\_mb\_partial\_hadamards.qasm} & {7.0} & {10.0} & {10.0} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Rozważając liczbę instancji, w których dany framework przewyższył pozostałe (patrz Rysunek~\ref{fig:heatmap_twoqubit}), Qiskit wyłonił się jako rozwiązanie dominujące, uzyskując najmniejszą liczbę bramek dwukubitowych w zdecydowanej większości przypadków. Co istotne, osiągnął on najlepsze wyniki we wszystkich obwodach MB i QAOA oraz odpowiednio w 14 i 10 instancjach typów GHZ i HAM. Tket osiągnął najlepszą wydajność spośród testowanych frameworków tylko w dwóch instancjach (jednej GHZ i jednej HAM), podczas gdy Cirq nie uzyskał najlepszego wyniku w żadnym przypadku.
+Biorąc pod uwagę wysoki koszt i stopę błędów związaną z operacjami dwukubitowymi w obecnym sprzęcie ery NISQ, konsekwentna redukcja liczby bramek przez Qiskit podkreśla jego praktyczną użyteczność.
+Nieliczne przypadki, w których Tket przewyższył Qiskit sugerują, że w pewnych kontekstach strukturalnych alternatywne heurystyki kompilacji mogą dawać lepsze mapowania efektywne sprzętowo, co uzasadnia potrzebę dalszej eksploracji tego tematu.
+Na koniec, wyniki badania stabilności przedstawiono na Rysunku~\ref{fig:threshold-exceedances}. Warto odnotować, że jedynie Qiskit przekroczył ustalony próg, co wystąpiło wyłącznie dla jednej klasy instancji.
+
+\begin{figure}[!ht]
+  \centering
+  %\hspace{-1cm}  % Shift image to the right
+  \includesvg[width=0.65\linewidth]{fig/ch20/svg/heatmap_output_two_qubit_gate_count.svg}
+ \caption{Wydajność frameworków w metryce liczby bramek dwukubitowych.}
+  \label{fig:heatmap_twoqubit}
+\end{figure}
+
+\begin{figure}[!ht]
+\centering
+\includesvg[width=0.65\textwidth]{fig/ch20/svg/heatmap_output_two_qubit_gate_count_pl.svg}
+\caption{Przekroczenia wartości progowej dla liczby bramek dwukubitowych}
+\label{fig:threshold-exceedances}
+\end{figure}
+
+\subsection{Głębokość obwodu}
+Dogłębna analiza średnich głębokości obwodów ujawniła ekstremalne różnice między frameworkami, sięgające nawet 185\% dla pewnych instancji (Tabela~\ref{table:anomalies_depth}). Najbardziej znaczące różnice zaobserwowano dla obwodów GHZ, gdzie wynik kompilacji instancji \texttt{ghz\_hadamard\_fan.qasm} wykazał różnicę rzędu 185,7\% między frameworkami, przy głębokościach wynoszących 7 dla Qiskit, 20 dla Cirq oraz 9 dla Tket.
+Dla badanych obwodów Mermina-Bella różnice były również znaczne, sięgając aż 166,7\% dla instancji \texttt{mb\_mb\_cz\_entanglement.qasm} (12 dla Qiskit, 21 dla Cirq, 32 dla Tket). W przypadku obwodów symulacji hamiltonowskiej, instancja \texttt{ham\_2q\_dt0.1\_T0.5.qasm} wykazała różnicę na poziomie 144,4\%, z głębokościami wynoszącymi 9 dla Qiskit, 22 dla Cirq i 11 dla Tket.
+Obwody QAOA wykazały mniejsze, ale wciąż istotne różnice w zakresie 48,6--61,4\%. Dla instancji \texttt{qaoa\_5q\_s105.qasm} różnica wyniosła 61,4\%, przy głębokościach: 57 dla Qiskit, 81 dla Cirq oraz 92 dla Tket. 
+We wszystkich kategoriach obwodów Qiskit konsekwentnie generował struktury o najmniejszej głębokości, podczas gdy Tket często tworzył najgłębsze układy, szczególnie dla obwodów QAOA i MB. Cirq zazwyczaj plasował się pośrodku dla obwodów QAOA, ale generował głębsze struktury niż Tket dla niektórych obwodów GHZ.
+
+\begin{table}
+    \centering
+    \scriptsize
+    \caption{Średnia głębokość obwodów dla kluczowych instancji różnicujących}
+    \label{table:anomalies_depth}
+        \begin{tabular}{l@{\hspace{8pt}}c@{\hspace{8pt}}c@{\hspace{8pt}}c}
+        \toprule
+        \textbf{Instancja obwodu kwantowego} & \textbf{Qiskit} & \textbf{Cirq} & \textbf{Tket} \\
+        \midrule
+        \texttt{qaoa\_3q\_s103.qasm} & {21.0} & {19.0} & {30.0} \\
+        \texttt{qaoa\_3q\_s106.qasm} & {20.0} & {28.0} & {30.0} \\
+        \texttt{qaoa\_4q\_s107.qasm} & {37.0} & {47.0} & {55.0} \\
+        \texttt{qaoa\_5q\_s105.qasm} & {57.0} & {81.0} & {92.0} \\
+        \texttt{mb\_mb\_cz\_entanglement.qasm} & {12.0} & {21.0} & {32.0} \\
+        \texttt{mb\_mb\_measure\_in\_x\_basis.qasm} & {18.0} & {24.0} & {33.0} \\
+        \texttt{mb\_mb\_sparse\_and\_asymmetric.qasm} & {7.0} & {12.0} & {8.0} \\
+        \texttt{mb\_mb\_spread\_cnot.qasm} & {14.2} & {27.0} & {17.0} \\
+        \texttt{ham\_2q\_dt0.1\_T0.5.qasm} & {9.0} & {22.0} & {11.0} \\
+        \texttt{ham\_4q\_dt0.1\_T0.3.qasm} & {40.6} & {52.0} & {43.0} \\
+        \texttt{ham\_4q\_dt0.2\_T0.4.qasm} & {40.3} & {52.0} & {43.0} \\
+        \texttt{ham\_5q\_dt0.1\_T0.3.qasm} & {56.6} & {72.0} & {60.0} \\
+        \texttt{ghz\_hadamard\_fan.qasm} & {7.0} & {20.0} & {9.0} \\
+        \texttt{ghz\_manual\_cnot\_order.qasm} & {7.0} & {16.0} & {8.0} \\
+        \texttt{ghz\_mirror\_fanout.qasm} & {7.0} & {16.0} & {8.0} \\
+        \texttt{ghz\_star.qasm} & {7.0} & {16.0} & {8.0} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Rozważając liczbę instancji, w których dany framework przewyższył pozostałe (patrz Rysunek~\ref{fig:heatmap_depth}), Qiskit wykazał stałą przewagę, osiągając najlepszy wynik w~niemal wszystkich instancjach we wszystkich typach obwodów. Konkretnie, Qiskit przewyższył inne frameworki w 14 instancjach GHZ, 10 instancjach HAM, 10 instancjach MB oraz 9 instancjach QAOA.
+W przeciwieństwie do niego, Cirq i Tket osiągały optymalne wyniki jedynie sporadycznie i bez wyraźnego wzorca powiązanego z konkretnymi typami obwodów. Sugeruje to, że Qiskit zawiera bardziej solidne lub uogólnione techniki optymalizacji pod kątem minimalizacji głębokości, podczas gdy Cirq i Tket mogą nie posiadać równie skutecznych strategii lub mogą być bardziej wrażliwe na specyficzne charakterystyki danego obwodu.
+Na koniec, wyniki badania stabilności przedstawiono na Rysunku~\ref{fig:threshold-exceedances_d}. Ponownie, jedynie Qiskit przekroczył ustalony próg, co wystąpiło dla dwóch klas instancji.
+
+\begin{figure}
+  \centering
+  %\hspace{-1cm}  % Shift image to the right
+  \includesvg[width=0.6\textwidth]{fig/ch20/svg/heatmap_output_depth.svg}
+  \caption{Liczba typów instancji, w których dany framework osiągnął najlepszą głębokość.}
+  \label{fig:heatmap_depth}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \includesvg[width=0.75\textwidth]{fig/ch20/svg/heatmap_output_depth_pl.svg}
+    \caption{Przekroczenia wartości progowej progu dla głębokości wyjściowej}
+    \label{fig:threshold-exceedances_d}
+\end{figure}
+
+\subsection{Czas transpilacji}
+Dogłębna analiza średniego czasu transpilacji ujawniła najbardziej drastyczne różnice między badanymi frameworkami (Tabela~\ref{table:anomalies_time}), sięgające nawet 2573\% dla instancji \texttt{mb\_mb\_cz\_entanglement.qasm} (0,184 s dla Qiskit, 0,0069 s dla Cirq oraz 0,060 s dla Tket). Podobnie ekstremalne różnice wystąpiły dla innych obwodów MB i GHZ, np. dla \texttt{ghz\_star.qasm} różnica wyniosła 2292,6\% (0,189 s dla Qiskit, 0,0079 s dla Cirq oraz 0,055 s dla Tket).
+Ciekawy wzorzec zaobserwowano dla obwodów QAOA o większej liczbie kubitów, gdzie Qiskit był najszybszy (0,020--0,022 s), podczas gdy Cirq był najwolniejszy (0,218--0,257 s), a Tket uplasował się pośrodku (0,112--0,156 s).
+W przypadku obwodów symulacji hamiltonowskiej Qiskit był również najszybszy (0,013--0,032 s), jednak dla \texttt{ham\_4q\_dt0.05\_T0.2.qasm} Tket okazał się najwolniejszy (0,249 s), a~dla pozostałych instancji najwięcej czasu potrzebował Cirq (0,172--0,257 s).
+
+\begin{table}
+    \centering
+    \caption{Średni czas transpilacji dla kluczowych instancji różnicujących}
+    \label{table:anomalies_time}
+    \begin{tabular}{l@{\hspace{8pt}}c@{\hspace{8pt}}c@{\hspace{8pt}}c}
+        \toprule
+        \textbf{Instancja obwodu kwantowego} & \textbf{Qiskit} [s] & \textbf{Cirq} [s] & \textbf{Tket} [s] \\
+        \midrule
+        \texttt{mb\_mb\_cz\_entanglement.qasm} & {0.184} & {0.007} & {0.060} \\
+        \texttt{mb\_mb\_endpoints\_only.qasm} & {0.176} & {0.009} & {0.065} \\
+        \texttt{mb\_mb\_rz\_before\_measure.qasm} & {0.187} & {0.011} & {0.064} \\
+        \texttt{mb\_mb\_spread\_cnot.qasm} & {0.188} & {0.009} & {0.042} \\
+        \texttt{qaoa\_3q\_s106.qasm} & {0.195} & {0.018} & {0.048} \\
+        \texttt{qaoa\_5q\_s105.qasm} & {0.020} & {0.218} & {0.112} \\
+        \texttt{qaoa\_5q\_s108.qasm} & {0.020} & {0.243} & {0.156} \\
+        \texttt{qaoa\_5q\_s109.qasm} & {0.022} & {0.257} & {0.120} \\
+        \texttt{ham\_2q\_dt0.1\_T0.5.qasm} & {0.013} & {0.198} & {0.028} \\
+        \texttt{ham\_4q\_dt0.05\_T0.2.qasm} & {0.032} & {0.172} & {0.249} \\
+        \texttt{ham\_4q\_dt0.1\_T0.3.qasm} & {0.019} & {0.204} & {0.088} \\
+        \texttt{ham\_4q\_dt0.1\_T0.4.qasm} & {0.030} & {0.257} & {0.172} \\
+        \texttt{ghz\_central.qasm} & {0.169} & {0.008} & {0.045} \\
+        \texttt{ghz\_star.qasm} & {0.189} & {0.008} & {0.055} \\
+        \texttt{ghz\_with\_measure.qasm} & {0.169} & {0.008} & {0.047} \\
+        \texttt{ghz\_with\_swap.qasm} & {0.188} & {0.011} & {0.041} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+Rozważając liczbę instancji, w których dany framework przewyższył inne (patrz Rysunek~\ref{fig:heatmap_time}), w przeciwieństwie do poprzednich metryk, Qiskit nie utrzymał absolutnej dominacji. Zamiast tego, wydajność różniła się w zależności od typu instancji. Dla obwodów HAM i QAOA Qiskit wykazał znacznie lepszą szybkość transpilacji, wyprzedzając zarówno Cirq, jak i Tket we wszystkich odnośnych instancjach.
+W przeciwieństwie do tego, Cirq był bardziej wydajny w transpilacji obwodów GHZ i MB, uzyskując najlepszy czas w większości instancji obu kategorii. Tket natomiast nie odnotował najszybszego czasu transpilacji dla żadnej instancji.
+Na koniec, wyniki badania stabilności przedstawiono na Rysunku~\ref{fig:threshold-exceedances_t}. Tutaj wszystkie frameworki wielokrotnie przekroczyły próg, przy czym nie zaobserwowano żadnego wyraźnego wzorca.
+
+
+\begin{figure}
+  \centering
+  %\hspace{-1cm}  % Shift image to the right
+  \includesvg[width=0.75\linewidth]{fig/ch20/svg/heatmap_transpile_time.svg}
+  \caption{Dominacja frameworków w kryterium czasu transpilacji.}
+  \label{fig:heatmap_time}
+\end{figure}
+
+
+\begin{figure}
+\centering
+\includesvg[width=0.75\textwidth]      
+{fig/ch20/svg/heatmap_transpile_time_pl.svg}
+\caption{Przekroczenia wartości progowej dla czasu transpilacji}
+\label{fig:threshold-exceedances_t}
+\end{figure}
+
+
+\subsection{Podsumowanie}
+
+Zaobserwowane różnice w wydajności frameworków sięgały 185,7\% w przypadku głębokości obwodu, 400\% dla liczby bramek dwukubitowych oraz aż 2573\% dla czasu transpilacji, co podkreśla znaczący wpływ doboru narzędzia na efektywność obwodu. Qiskit konsekwentnie wykazywał przewagę w~minimalizowaniu głębokości obwodu oraz liczby bramek dwukubitowych. W~przypadku obwodów MB i~GHZ, Qiskit charakteryzował się jednak dłuższymi czasami transpilacji w~porównaniu do konkurencyjnych rozwiązań. Cirq oferował dla tych instancji najszybszą transpilację, lecz generował obwody o większej głębokości i większej liczbie bramek dwukubitowych.
+
+Analiza stabilności wykazała, że Cirq i Tket cechowały się wyższą ogólną stabilnością w porównaniu do Qiskit, z mniejszą liczbą anomalii obserwowanych w powtarzanych przebiegach. W tym kontekście stabilność rozumiana jest jako spójność wyników transpilacji w 100 próbach dla każdego typu obwodu, co odzwierciedla przewidywalność działania frameworka w identycznych warunkach wejściowych.
+
+Żaden z frameworków nie przewyższał konsekwentnie pozostałych we wszystkich typach obwodów i metrykach. Dobór kompilatorów kwantowych powinien zatem opierać się na specyficznych potrzebach oraz ograniczeniach docelowej architektury i zastosowania.
+
+% ---------------------------
+% ------------------- SECTION
+% ---------------------------
+\section{Wnioski}
+\label{sec:conclusions20}
+W niniejszej pracy oceniono jakość i efektywność kompilacji obwodów kwantowych przy użyciu trzech frameworków: Qiskit, Cirq oraz Tket. Zaprojektowano zestaw benchmarków składający się z 50 instancji obwodów, reprezentujących cztery kluczowe klasy algorytmiczne --- GHZ, symulację hamiltonowską, nierówności Mermina-Bella oraz QAOA --- obejmujące zróżnicowaną liczbę kubitów, kompozycje bramek oraz złożoność strukturalną.
+
+Wszystkie zadania kompilacji skonfigurowano pod kątem komputera kwantowego IQM Spark 5. Ze względu na brak natywnego wsparcia tej architektury w~frameworku Tket, zaimplementowano niestandardową warstwę symulacyjną, aby zapewnić kompatybilność i uczciwe porównanie między wszystkimi badanymi narzędziami. Każdą instancję obwodu przetworzono 100-krotnie dla każdego z~frameworków.
+
+Ewaluacja koncentrowała się na trzech głównych metrykach: głębokości obwodu wyjściowego, liczbie bramek dwukubitowych w obwodzie wyjściowym oraz czasie kompilacji. Analiza obejmowała: (1) ocenę stabilności poprzez odchylenia standardowe, (2) średnią wydajność oraz (3) analizę porównawczą najlepiej radzących sobie frameworków w podziale na typ instancji.
+
+Chociaż w przeprowadzonych eksperymentach Qiskit często przewyższał pozostałe rozwiązania pod względem jakości obwodu, a Cirq wykazywał przewagę w szybkości transpilacji dla pewnych obwodów, żaden framework nie wykazał uniwersalnej przewagi. Wyniki wskazują, że wybór frameworka powinien być dostosowany do konkretnego zadania i podyktowany obranym celem optymalizacji.
+
+Przyszłe prace mogą rozszerzyć analizę o dodatkowe frameworki, uwzględnić wykonanie obliczeń na fizycznych urządzeniach kwantowych oraz zbadać alternatywne strategie optymalizacji w celu poprawy wydajności kompilacji. W szczególności interesujące byłoby zbadanie wpływu hiperparametrów poszczególnych frameworków. Ponadto, badaniami można objąć kolejne architektury kwantowe, w oparciu o zidentyfikowane luki w wiedzy (tj. inne jednostki QPU firmy IQM).
+
+\begin{thebibliography}{99}
+
+% Oprogramowanie i strony WWW
+\bibitem{cirqoniqm2024}
+IQM Quantum Computers: Cirq-on-IQM: Cirq Integration for IQM Quantum Devices. \url{https://github.com/iqm-finland/cirq-on-iqm} (2024). Dostęp: 2024-04-13
+
+\bibitem{qiskitoniqm2024}
+IQM Quantum Computers: Qiskit-on-IQM: Qiskit integration for IQM quantum devices. \url{https://github.com/iqm-finland/qiskit-on-iqm} (2024). Dostęp: 2024-04-13
+
+\bibitem{tket2024}
+Quantinuum: t$|$ket$\rangle$: Quantum Compiler for Optimization and Circuit Transformation. \url{https://docs.quantinuum.com/tket/} (2024). Dostęp: 2024-04-13
+
+\bibitem{cirq2024}
+Google Quantum AI: Cirq: A Python Framework for Creating, Editing, and Invoking Noisy Intermediate Scale Quantum (NISQ) Circuits. \url{https://quantumai.google/cirq} (2024). Dostęp: 2024-04-13
+
+\bibitem{ibmqiskit2024}
+IBM Quantum: Qiskit by IBM Quantum. \url{https://www.ibm.com/quantum/qiskit} (2024). Dostęp: 2024-04-13
+
+% Artykuły naukowe
+\bibitem{Rnkk2024}
+Rönkkö, J., Ahonen, O., Bergholm, V., et al.: On-premises superconducting quantum computer for education and research. EPJ Quantum Technol. \textbf{11}, 32 (2024). \url{https://doi.org/10.1140/epjqt/s40507-024-00243-z}
+
+\bibitem{Gomes2024}
+Gomes, C., Falcao, G., Tayur, S., et al.: A Systematic Mapping Study on Quantum and Quantum-inspired Algorithms in Operations Research. ACM Comput. Surv. \textbf{57}(3), 1--35 (2024). \url{https://doi.org/10.1145/3700874}
+
+\bibitem{Gemeinhardt2023}
+Gemeinhardt, F., Garmendia, A., Wimmer, M., Weder, B., Leymann, F.: Quantum Combinatorial Optimization in the NISQ Era: A Systematic Mapping Study. ACM Comput. Surv. \textbf{56}(3), 1--36 (2023). \url{https://doi.org/10.1145/3620668}
+
+\bibitem{Kusyk2021}
+Kusyk, J., Saeed, S.M., Uyar, M.U.: Survey on Quantum Circuit Compilation for Noisy Intermediate-Scale Quantum Computers: Artificial Intelligence to Heuristics. IEEE Trans. Quantum Eng. \textbf{2}, 1--16 (2021). \url{https://doi.org/10.1109/TQE.2021.3068355}
+
+\bibitem{Tan2021}
+Tan, B., Cong, J.: Optimality Study of Existing Quantum Computing Layout Synthesis Tools. IEEE Trans. Comput. \textbf{70}(9), 1363--1373 (2021). \url{https://doi.org/10.1109/TC.2020.3009140}
+
+\bibitem{Huang2022}
+Huang, H.-L., Xu, X.-Y., Guo, C., et al.: Near-Term Quantum Computing Techniques: Variational Quantum Algorithms, Error Mitigation, Circuit Compilation, Benchmarking and Classical Simulation. Sci. China Phys. Mech. Astron. \textbf{66}, 220301 (2022). \url{https://doi.org/10.1007/s11433-022-2057-y}
+
+\bibitem{Dobbs2025}
+Dobbs, E., Friedman, J., Paler, A.: Efficient Quantum Circuit Design with a Standard Cell Approach, with an Application to Neutral Atom Quantum Computers. ACM Trans. Quantum Comput. \textbf{6}(1), 1--18 (2025). \url{https://doi.org/10.1145/3670417}
+
+\bibitem{Rakyta2024}
+Rakyta, P., Morse, G., Nádori, J., et al.: Highly optimized quantum circuits synthesized via data-flow engines. J. Comput. Phys. \textbf{500}, 112756 (2024). \url{https://doi.org/10.1016/j.jcp.2024.112756}
+
+% Materiały konferencyjne (Proceedings)
+\bibitem{Younis2022}
+Younis, E., Iancu, C.: Quantum Circuit Optimization and Transpilation via Parameterized Circuit Instantiation. In: 2022 IEEE International Conference on Quantum Computing and Engineering (QCE), pp. 465--475. IEEE (2022). \url{https://doi.org/10.1109/QCE53715.2022.00068}
+
+\bibitem{Quetschlich2023}
+Quetschlich, N., Burgholzer, L., Wille, R.: Compiler Optimization for Quantum Computing Using Reinforcement Learning. In: 2023 60th ACM/IEEE Design Automation Conference (DAC), pp. 1--6. IEEE (2023). \url{https://doi.org/10.1109/DAC56929.2023.10248002}
+
+\bibitem{Mionis2021}
+Mionis, S., Franchetti, F., Larkin, J.: Optimized Quantum Circuit Generation with SPIRAL. In: 2021 IEEE High Performance Extreme Computing Conference (HPEC), pp. 1--7. IEEE (2021). \url{https://doi.org/10.1109/HPEC49654.2021.9622814}
+
+% Preprinty (arXiv itp.)
+\bibitem{tomesh2022supermarqscalablequantumbenchmark}
+Tomesh, T., Gokhale, P., Omole, V., et al.: SupermarQ: A Scalable Quantum Benchmark Suite. arXiv preprint arXiv:2202.11045 (2022). \url{https://doi.org/10.48550/arXiv.2202.11045}
+
+\bibitem{mccaskey2019xaccsystemlevelsoftwareinfrastructure}
+McCaskey, A.J., Lyakh, D.I., Dumitrescu, E.F., Powers, S.S., Humble, T.S.: XACC: A System-Level Software Infrastructure for Heterogeneous Quantum-Classical Computing. arXiv preprint arXiv:1911.02452 (2019). \url{https://doi.org/10.48550/arXiv.1911.02452}
+
+\bibitem{bergholm2022pennylaneautomaticdifferentiationhybrid}
+Bergholm, V., Izaac, J., Schuld, M., et al.: PennyLane: Automatic differentiation of hybrid quantum-classical computations. arXiv preprint arXiv:1811.04968 (2022). \url{https://doi.org/10.48550/arXiv.1811.04968}
+
+\bibitem{Ge2024}
+Ge, Y., Wenjie, W., Yuheng, C., et al.: Quantum Circuit Synthesis and Compilation Optimization: Overview and Prospects. arXiv preprint arXiv:2407.00736 (2024). \url{https://doi.org/10.48550/arXiv.2407.00736}
+
+\bibitem{bisicchia_quantum_2025}
+Bisicchia, G., Bocci, A., Brogi, A.: Quantum Executor: A Unified Interface for Quantum Computing. arXiv preprint arXiv:2507.07597 (2025). \url{https://doi.org/10.48550/arXiv.2507.07597}
+
+\bibitem{sharma_integration_2025}
+Sharma, A., Ali, Z.: Integration of Quantum Computing with Artificial Intelligence: A Systematic Review. J. Eng. Res. Rep. \textbf{27}(9), 329--343 (2025). \url{https://doi.org/10.9734/jerr/2025/v27i91644}
+
+\bibitem{karhan_modern_2025}
+Karhan, D., Çimen, S., Güllü, M.: Modern Quantum Computing: Languages, Simulators, Architectures and Future Directions. In: 2025 International Conference on Artificial Intelligence, Computer, Data Sciences and Applications (ACDSA), pp. 1--7. IEEE (2025). \url{https://doi.org/10.1109/ACDSA65407.2025.11165857}
+
+\bibitem{huang_qubit_2025}
+Huang, Y., Zhou, X., Meng, F., Li, S.: Qubit mapping: the adaptive divide-and-conquer approach. Quantum Inf. Process. \textbf{24}(7), 202 (2025). \url{https://doi.org/10.1007/s11128-025-04815-5}
+
+\bibitem{islam_quantum_2025}
+Islam, I., Jha, V., Thomas, S., et al.: Quantum Circuit Synthesis Using Fuzzy-Logic-Assisted Genetic Algorithms. Algorithms \textbf{18}(4), 178 (2025). \url{https://doi.org/10.3390/a18040178}
+
+\bibitem{luo_towards_2025}
+Luo, C., Cao, S., Guo, S., Hu, C.: Towards Effective Local Search for Qubit Mapping. IEEE Trans. Comput. \textbf{74}(6), 1897--1910 (2025). \url{https://doi.org/10.1109/TC.2025.3544869}
+
+\end{thebibliography}

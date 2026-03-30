@@ -1,0 +1,721 @@
+\newcommand{\p}{\mathcal{P}}
+\chapterauthor{Joanna Balbus}
+\chapter[Trwałość w układach \ldots]{Trwało\'s\'c w układach równa\'n reakcji -- dyfuzji z adwekcj\k{a}}
+% \label{rffp} % Always give a unique label
+% use \chaptermark{}
+% to alter or adjust the chapter heading in the running head
+
+\thispagestyle{empty}
+\vspace{-8mm} {\large Joanna Balbus} \vspace{8mm}
+
+	\section{Wprowadzenie}
+	W ostatnich kilku latach wiele uwagi poświęca się modelom populacji w~środowisku jednorodnym lub niejednorodnym.
+	Jednostajna trwałość, koegzystencja oraz wymieranie opisują istotne szczególne typy asymptotycznego zachowania rozwiązań powiązanych modeli. W niniejszej pracy badamy zagadnienie reakcji–dyfuzji typu Kołmogorowa z adwekcją
+	
+	\begin{equation}
+		\label{1.1}
+		% \tag{1.1}
+		\begin{cases}
+			u_{it}=\mu_i  u_{ixx}  -\alpha_i  u_{ix} + f_i(t,x,u_1,u_2)u_i, \quad t>0 \quad x\in (0,L),\quad i=1,2,\\
+			u_i(0,x)=u_{i0}(x), \quad x\in (0,L),\quad i=1,2.
+		\end{cases}
+	\end{equation}
+	z warunkami brzegowymi bez przepływu
+	\begin{equation}
+		\label{1.2}
+		% \tag{1.2}
+		\begin{cases}
+			\mu_i u_{ix}(0,t) - \alpha_i u_i(0,t)=0, \quad t>0, \quad i=1,2, \\
+			\mu_i u_{ix}(L,t) - \alpha_i u_i(L,t) = 0, \quad t>0, \quad i=1,2.
+		\end{cases}
+	\end{equation}
+	
+	W  literaturze istnieje wiele prac poświęconych równaniom reakcji–dyfuzji z adwekcją, zob. \cite{Hess,Huisman}, 
+	\cite{Kolokolnikov,Lutscher},  \cite{Ma,Vasilyeva}, .
+	Takie równania mogą być rozpatrywane z różnymi warunkami brzegowymi. W zależności od warunków brzegowych
+	otrzymujemy odmienne scenariusze ekologiczne.
+	
+	Najbardziej ogólna postać warunków brzegowych to
+	\begin{equation}
+		\begin{cases}
+			\mu_i u_{ix} - \alpha_i u_{i} =\tilde{b}_{i}\alpha_i u_i, \quad x=0,\quad i=1,2,\\
+			\mu_i u_{ix} - \alpha_i u_{i} =-\hat{b}_{i}\alpha_i u_i, \quad x=L, \quad i=1,2.\\
+		\end{cases}
+	\end{equation}
+	Parametry $\tilde{b}_i$ oraz $\hat{b}_i$ mierzą  tempo, z jakim osobniki opuszczają obszar odpowiednio na początku i końcu strumienia.
+	
+	Jeśli $\hat{b}_i=0$, $i=1,2$, otrzymujemy warunki brzegowe bez przepływu \eqref{1.2}, zob. \cite{Huisman} oraz \cite{Kolokolnikov}. Oznacza to, że żadne osobniki nie wchodzą do siedliska ani go nie opuszczają.
+	Autorzy rozważali układ
+	\begin{equation}
+		\label{1.3}
+		% \tag{1.3}
+		\begin{cases}
+			u_t=\mu_1u_{xx} -\alpha u_x+ (r(x) - u - v)u,\quad 0<x<L,\quad t>0,\\
+			v_t=\mu_2  v_{xx} -\alpha v_x +(r(x)-u-v)v,\quad 0<x<L,\quad t>0,\\
+			\mu_1 u_{x}(x,t) - \alpha u(x,t)=0, \quad t>0,\quad x=0,\quad x=L,\\
+			\mu_2 v_{x}(x,t) - \alpha v(x,t) = 0, \quad t>0,\quad x=0,\quad x=L.
+		\end{cases}
+	\end{equation}
+	
+	Jeśli $\hat{b}=1$, mamy następujące warunki brzegowe
+	
+	\begin{equation}
+		\label{1.4}
+		% \tag{1.4}
+		\begin{cases}
+			\mu_1 u_x(0)  - \alpha u(0)=0,\\
+			\mu_2 v_x(0) - \alpha v(0)=0,\\
+			u_x(L)=0,\\
+			v_x(L)=0.
+		\end{cases}
+	\end{equation}
+	 Warunki brzegowe \eqref{1.4}
+	nazywamy warunkami Danckwertsa.
+	
+	Zagadnienie \eqref{1.3} z warunkami \eqref{1.4} było rozważane w  \cite{Lutscher} i \cite{Vasilyeva} .
+	
+	Jeżeli $\hat{b} \to \infty$, otrzymujemy następujące warunki
+	\begin{equation}
+		\begin{cases}
+			\mu_1 u_x(0)  - \alpha u(0)=0,\\
+			\mu_2 v_x(0) - \alpha v(0)=0,\\
+			u(L)=0,\\
+			v(L)=0.
+		\end{cases}
+	\end{equation}
+	
+	Zagadnienie \eqref{1.3} z tymi warunkami brzegowymi było rozważane w \cite{Ma}.
+	
+	Dla $\alpha_i=0$, $i=1,2$, otrzymujemy następujące równanie reakcji–dyfuzji  
+	\begin{equation}
+		\label{1.5}
+		% \tag{1.5}
+		u_{it}=d_i u_{ixx} +f_i(t,x,u)u_i.
+	\end{equation}
+	
+	W interpretacji biologicznej równanie \eqref{1.5} opisuje model populacji, w~którym tempo wzrostu uwzględnia jedynie losową dyspersję, zob. np.
+	 \cite{Chafee,Hale,Rocha}.
+	
+	Zagadnienie \eqref{1.5} jest zwykle rozważane z warunkami Neumanna lub Dirichleta.
+	
+	Jednak na tempo wzrostu populacji wpływają różne czynniki zewnętrzne, takie jak dryf, wiatr, grawitacja.
+	
+	Model opisany równaniem \eqref{1.1} jest bardziej realistyczny niż modele opisane równaniem \eqref{1.2}.  
+	Model \eqref{1.1} opisuje sytuację, w której osobniki podlegają jednokierunkowemu dryfowi, który wypycha je poza system, powodując w ten sposób spadek liczebności populacji. Doskonałymi przykładami środowisk z jednokierunkowym ruchem są ekosystemy wodne, takie jak strumienie czy rzeki, zob.  \cite{Lou,Speirs}. Osobniki zamieszkujące te systemy są znoszone w dół biegu rzeki przez ukierunkowany ruch. Pomimo tego znosu populacje opierają się wymywaniu i~utrzymują się przez wiele pokoleń w~takich środowiskach adwekcyjnych. To zjawisko biologiczne znane jest jako „paradoks dryfu” (zob. np. \cite{Anholt,Hershey,Huisman,Hsu,Muller1,Muller2,Pachepsky,Shigesada,Waters,Waters1}, ).
+	
+	Celem niniejszej pracy jest podanie warunków wystarczających, aby równanie \eqref{1.1} było trwałe przy pewnych podstawowych założeniach. W literaturze istnieją różne podejścia do dowodzenia globalnej atrakcyjności i trwałości w nieautonomicznych równaniach różniczkowych.
+	Aby wykazać, że układ \eqref{1.1} jest trwały, korzystamy z metody pod- i nadrozwiązań.  Dynamika monotoniczna była rozważana w pracach  \cite{periodic,Hirsch,Yi,Smith}. W \cite{Zhao} Zhao rozważał układ monotoniczny i~podjednorodny prawie okresowy. 
+	\vspace{2mm}
+	
+	Niniejsza praca jest zorganizowana następująco.
+	W Rozdziale 2 wprowadzamy podstawowe założenia i lematy pomocnicze. Ponadto pokazujemy, że układ \eqref{1.1} ma jednoznaczne klasyczne rozwiązanie.
+	Rozdziały 3 i 4 zawierają główne wyniki pracy. W Rozdziale 3 formułujemy średnie warunki trwałości układu \eqref{1.1}.
+	
+	\section{Preliminaries}
+	
+	W niniejszej pracy rozważamy konkurencyjny układ semiliniowych równań parabolicznych
+	
+	\begin{equation}
+		\label{2.1}
+		% \tag{2.1}
+		\begin{cases}
+			u_{it}=\mu_i  u_{ixx}  -\alpha_i  u_{ix} + f_i(t,x,u_1,u_2)u_i, \quad t>0,\; x\in (0,L),\quad i=1,2, \\begin{equation}2mm]
+			\mu_i u_{ix}(0,t) - \alpha_i u_i(0,t)=0, \quad t>0, \quad i=1,2, \\begin{equation}1mm]
+			\mu_i u_{ix}(L,t) - \alpha_i u_i(L,t) = 0, \quad t>0, \quad i=1,2,\\begin{equation}1mm]
+			u_i(0,x)=u_{i0}(x), \quad x\in (0,L),\quad i=1,2,
+		\end{cases}
+	\end{equation}
+	
+	gdzie $u_i(t,x)$ oznacza gęstość $i$-tego gatunku w chwili $t$ i miejscu $x$ w~ograniczonym przedziale $[0,L]$,  
+	$\mu_i>0$ są współczynnikami dyfuzji $i$-tego gatunku, a~$\alpha_i\ge 0$ oznaczają wielkość dryfu adwekcyjnego gatunku w~kierunku rosnącego $x$.  
+	
+	Z biologicznego punktu widzenia lewa krawędź (upstream) stanowi powierzchnię wody, a prawa (downstream) — dno.  
+	Żadna z tych granic nie przepuszcza osobników, stąd narzucamy warunki zerowego strumienia.
+	
+	\vspace{3mm}
+	
+	Przyjmujemy następujące założenia:
+	
+	(A1) Funkcje $f_i:[0,\infty)\times [0,L]\times [0,\infty)^2 \to \mathbb{R}$ oraz ich pochodne pierwszego rzędu  
+	$\frac{\partial f_i}{\partial t}$, $\frac{\partial f_i}{\partial u_j}$, $\frac{\partial f_i}{\partial x}$, $i=1,2$, są ciągłe.  
+	Ponadto pochodne $\frac{\partial f_i}{\partial u_j}$, $i=1,2$, są ograniczone i jednostajnie ciągłe na zbiorze  
+	$[0,\infty)\times [0,L]\times B$, gdzie $B$ jest dowolnym ograniczonym podzbiorem $[0,\infty)^2$.
+	\newline
+	Założenie (A1) jest standardowym warunkiem gwarantującym, że dla wystarczająco regularnej funkcji początkowej  
+	$u_0(x)=(u_{0,1}(x),u_{0,2}(x))$, $x\in(0,L)$, gdzie $u_{0,1},u_{0,2}\ge 0$, układ \eqref{2.1} ma jednoznaczne, maksymalnie określone rozwiązanie  
+	$u(t,x)=(u_1(t,x),u_2(t,x))$ dla $(t,x)\in [0,\tau_{\max})\times [0,L]$, $\tau_{\max}>0$, spełniające warunek początkowy.  
+	Rozwiązanie jest klasyczne: wszystkie pochodne występujące w~równaniach i warunkach brzegowych istnieją oraz układ jest spełniony punktowo;  
+	ponadto pochodne $\frac{\partial u_i}{\partial t}$ oraz $\frac{\partial^2 u_i}{\partial x^2}$ są ciągłe na $(0,\tau_{\max})\times [0,L]$ (por. Friedman).
+	
+	W konsekwencji silnej zasady maksimum, jeśli $u_{0,1}(x),u_{0,2}(x)\ge 0$ dla wszystkich $x\in [0,L]$ i nie są identycznie równe zero, to  
+	$u_1(t,x),u_2(t,x)>0$ dla wszystkich $t\in (0,\tau_{\max})$ i $x\in (0,L)$.  
+	Jeśli natomiast $u_{0,j}\equiv 0$ dla pewnego $j=1$ lub $2$, wówczas $u_j(t,x)=0$ dla wszystkich $t\in (0,\tau_{\max})$ i~$x\in (0,L)$.
+	
+	Przez rozwiązanie dodatnie układu \eqref{2.1} rozumiemy takie rozwiązanie $u(t,x)$, które spełnia $u_1(t,x),u_2(t,x)>0$ dla $t\in (0,\tau_{\max})$, $x\in (0,L)$.
+	
+	Regularność funkcji początkowych $u_0$ rozważa się zwykle w przestrzeniach Banacha ciągle zanurzonych w $C^1([0,L],\mathbb{R}^2)$  
+	(see Henry \cite{Henry}). Ponieważ w pracy badamy zachowanie (dodatnich) rozwiązań dla dużych $t$, można — odpowiednio przesuwając czas początkowy —  
+	założyć, że $u_{0,1},u_{0,2}$ są funkcjami klasy $C^2$ na $[0,L]$, dodatnimi w $(0,L)$ i spełniającymi warunki brzegowe.
+	
+	\vspace{5mm}
+	
+	Kolejne założenie jest standardowym założeniem ograniczoności.
+	
+	Dla $i=1,2$ funkcję $f_i(t,x,0,0)$ nazywamy wewnętrznym (intrinsic) tempem wzrostu $i$-tego gatunku.
+	
+	(A2) Funkcje $(t,x)\mapsto f_i(t,x,0,0)$ dla $i=1,2$ są ograniczone na $[0,\infty)\times [0,L]$.
+	
+	Niech
+	\begin{equation}
+	\overline{a}_i=\sup\{f_i(t,x,0,0): t\ge 0,\; x\in[0,L]\},
+    \end{equation}
+    \begin{equation}
+	\underline{a}_i=\inf\{f_i(t,x,0,0): t\ge 0,\; x\in[0,L]\}.
+	\end{equation}
+	
+	Dla ograniczonej ciągłej funkcji $c:[0,\infty)\to \mathbb{R}$ definiujemy średnią dolną:
+	\begin{equation}
+	m[c]=\liminf_{t-s\to \infty} \frac{1}{t-s}\int_{s}^{t} c(\tau)\,d\tau,
+	\end{equation}
+	oraz średnią górną:
+	\begin{equation}
+	M[c]=\limsup_{t-s\to \infty} \frac{1}{t-s}\int_{s}^{t} c(\tau)\,d\tau.
+	\end{equation}
+	
+	Oznaczamy
+	\begin{equation}
+	m[f_i]=\liminf_{t-s\to \infty} \frac{1}{t-s}\int_{s}^{t} \min_{x\in[0,L]} f_i(\tau,x,0,0)\,d\tau,
+	\end{equation}
+	\begin{equation}
+	M[f_i]=\limsup_{t-s\to \infty} \frac{1}{t-s}\int_{s}^{t} \min_{x\in[0,L]} f_i(\tau,x,0,0)\,d\tau.
+	\end{equation}
+	
+	(A3) $m[f_i]>0$ dla $i=1,2$.
+	
+	Założenie (A3) jest dość szerokie: ograniczenia nałożone na wewnętrzne stopy wzrostu mają charakter całkowy —  
+	istnieje $T>0$ takie, że
+	\begin{equation}
+	\int_{t}^{t+T} \min_{x\in [0,L]} f_i(\tau,x,0,0)\, d\tau >0
+	\end{equation}
+	dla każdego $t>0$.
+	
+	(A4) $\frac{\partial f_i}{\partial u_j}(t,x,u)\le 0$ dla wszystkich $t\ge 0$, $x\in [0,L]$, $u\in [0,\infty)^2$, $i\ne j$.
+	
+	Pochodna $\partial f_i/\partial u_j$ mierzy wpływ gatunku $j$ na tempo wzrostu gatunku $i$.  
+	Układy \eqref{2.1} spełniające $\partial f_i/\partial u_j\le 0$ nazywane są konkurencyjnymi.
+	
+	(A5) Istnieje $\underline{b}_{ii}>0$ takie, że $\frac{\partial f_i}{\partial u_i}(t,x,u)\le -\underline{b}_{ii}$  
+	dla wszystkich $t\ge 0$, $x\in [0,L]$, $u\in [0,\infty)^2$ oraz $i=1,2$.
+	
+	Z (A5) wynika, że mechanizm samoregulacji każdego gatunku jest na tyle silny, że poziomy populacji są ostatecznie ograniczone od góry przez wielkość zależną jedynie od parametrów układu.
+	
+	(A6) Istnieje $\overline{b}_{ij}\ge 0$ takie, że $\frac{\partial f_i}{\partial u_j}(t,x,u)\ge -\overline{b}_{ij}$  
+	dla wszystkich $t\ge 0$, $x\in [0,L]$, $u\in [0,\infty)$ i $i,j=1,2$.
+	
+	\vspace{3mm}
+	
+	Niech $\varphi_i$, $i=1,2$, będzie jednoznacznie wyzanczoną funkcją własną zagadnienia
+	
+	\begin{equation}
+		\label{2.6}
+		% \tag{2.6}
+		\begin{cases}
+			\mu_i  \varphi_{ixx}  -\alpha_i \varphi_{ix}=\lambda_i \varphi_i, \quad x\in (0,L),\\
+			\mu_i \varphi_{ix}(0) - \alpha_i \varphi_i(0)=0,\\
+			\mu_i \varphi_{ix}(L) - \alpha_i \varphi_i(L)=0.
+		\end{cases}
+	\end{equation}
+	
+	
+	
+	
+	Zagadnienie \eqref{2.6} ma dodatnią wartość własną, a odpowiadająca jej funkcja własna może być wybrana tak żeby była dodatnia na $[0,L]$ (por. \cite{Lutscher}).
+	
+	Definiujemy operator
+	\begin{equation}
+	Z[\psi_i]= \psi_{it}+\mu_i\psi_{ixx}-\alpha_i\psi_{ix}-f_i(t,x,u)\psi_i
+	\end{equation}
+	dla $x\in(0,L)$ oraz  
+	$Z[\psi_i]=\mu_i\psi_{ix}-\alpha_i\psi_i$ na $x=0$ i $x=L$.
+	
+	Zakładamy, że dla $i=1,2$
+	\begin{equation}
+	\inf_{x\in [0,L]} \frac{u_{0,i}(x)}{\varphi_i(x)}\le 
+	\sup_{x\in [0,L]} \frac{u_{0,i}(x)}{\varphi_i(x)}<\infty.
+	\end{equation}
+	
+	Wprowadzamy rodzinę równań ODE, które będą przydatne przy badaniu dodatnich rozwiązań układu \eqref{2.1}.  
+	Niech $u(t,x)$ będzie dodatnim rozwiązaniem \eqref{2.1} przy $f$ spełniającym (A1)–(A4).  
+	Definiujemy $\xi_i(t)$, $t\ge 0$, jako dodatnie rozwiązanie problemu:
+	
+	\begin{equation}
+		\label{2.7}
+		% \tag{2.7}
+		\begin{cases}
+			\xi_i'(t)=\max_{x\in[0,L]} (f_i(t,x,0,0)-\lambda_i-\underline{b}_{ii}\xi_i)\xi_i,\\
+			\xi_i(0)=\sup_{x\in[0,L]} u_i(0,x),\qquad i=1,2.
+		\end{cases}
+	\end{equation}
+	
+	\begin{lemma}
+		Załóżmy (A1), (A2), (A4) oraz (A5).  
+		Wówczas dla dowolnego dodatniego rozwiązania $u(t,x)$ układu \eqref{2.1} zachodzi
+		\begin{equation}
+		u_i(t,x)\le \xi_i(t)\varphi_i(x)\quad \text{dla }t\in[0,\tau_{\max}),\; x\in[0,L],\; i=1,2,
+		\end{equation}
+		gdzie $\xi_i(t)$ jest rozwiązaniem \eqref{2.7}.
+	\end{lemma}
+	
+	\begin{proof}
+	Wykażemy że  $\xi_i(t)$ jest  nadrozwiązaniem równania $u_i(t,x)$. 
+	Z założenia (A5) 
+	\begin{equation}
+		f_i(t,x,u) \le \max_{x\in [0,L]} f(t,x,0,0)  - \underline{b}_{ii}u_i.  
+	\end{equation}
+	Zatem
+	\begin{equation}
+		\begin{split}
+			Z[\xi_i \varphi_i] = \frac{\partial }{\partial t }(\xi_i \varphi_i) +\mu \frac{\partial^2 }{\partial x^2}(\xi_i \varphi_i) -
+			\alpha_i \frac{\partial }{\partial x}\xi_i \varphi_i- f_i(t,x,u)\xi_i \varphi_i =\\
+			\xi_i'(t) \varphi_i +\mu_i \xi_i \varphi_{ixx} - \alpha_i \xi_i \varphi_{ix}
+			- f_i(t,x,u) \xi_i \varphi_i\\
+			\geq (\max_{x\in [0,L]} f_i(t,x,0,0) - \underline{b}_{ii}\xi_i )\xi_i \varphi_i  +\mu_i \xi_i \varphi_{ixx} - \\
+			\alpha_i \xi_i \varphi_{ix} - (\max_{x\in [0,L]} f_i(t,x,0,0) - \underline{b}_{ii}\xi_i -\lambda_i )\xi_i \varphi_i =0
+		\end{split} 
+	\end{equation}
+	dla $i=1,2$ w przedziale $x\in(0,L)$.
+	%
+	%
+	Ponadto
+	\begin{equation}
+		Z[\xi_i \varphi_i]= \mu_i \frac{\p(\xi_i \varphi_i)}{\p x} - \alpha_i\xi_i \varphi_i =0 
+	\end{equation}
+	w $x=0$ oraz $x=L$.
+	Mamy także
+	\begin{equation}
+		\xi_i(0)\varphi_i(x)=\sup_{x\in[0,L]}\{\frac{u_i(0,x)}{\varphi_i(x)}\}\varphi_i(x)\le u_i(0,x).
+	\end{equation}
+	%
+	Wtedy $u_i(t,x)\le \xi_i(t)\varphi_i(x)$ dla wszystkich $t\geq 0$ i $x\in [0,L]$.
+	\end{proof}
+	
+	\begin{lemma}
+		Załóżmy (A1)–(A4). Wówczas dla każdego maksymalnie określonego dodatniego rozwiązania $u(t,x)$ układu \eqref{2.1} zachodzi:
+		
+		(i) $\tau_{\max}=\infty$,
+		
+		(ii)
+		\begin{equation}
+		\limsup_{t\to\infty} u_i(t,x)\le \frac{\overline{a}_i}{\underline{b}_{ii}},\qquad i=1,2,
+		\end{equation}
+		przy czym zbieżność jest jednostajna względem $x\in[0,L]$.
+	\end{lemma}
+	
+	\begin{proof}
+		Ze standardowej zasady porównawczej dla równań różniczkowych zwyczajnych wynika że
+		\begin{equation}
+		\label{2.8}
+		% \tag{2.8}
+		\limsup_{t\to \infty} \xi_i(t)\le \frac{\overline{a}_i}{\underline{b}_{ii}}.
+	\end{equation}
+	Załóżmy że $\varphi_i$ jest znormalizowana tak że $\max_{[0,L]} \varphi_i(x)=1$, $i=1,2$. 
+	Na podstawie Lematu 2.5 i z  \eqref{2.8} wynika że
+	\begin{equation}
+		\label{2.9}
+		% \tag{2.9}
+		\limsup_{t \to \infty}u_i(t,x) \le \limsup_{t \to \infty} \xi_i(t)\varphi_i(x) \le \frac{\overline{a}_i}{\underline{b}_{ii}}.
+	\end{equation}
+	Z Lematu 2.4 i \eqref{2.8} wynika że istnieje  $t_2\geq 0$ takie że
+	 $u_i(t,x)$ jest ograniczona na odcinku $[t_1,\infty)$ przez 
+	$\frac{\overline{a}_{i}}{\underline{b}_{ii}}+1$.
+	Zatem rozwiązanie układu $\eqref{2.1}$ jest określone dla $t\in [0,\infty)$. To udowadnia  $(i)$. Dowód (ii) wynika z \eqref{2.9}.
+	
+	
+	
+	\end{proof}
+	
+	\begin{lemma}
+		Niech $c:[t_0,\infty)\to\mathbb{R}$, $t_0>0$, będzie ograniczoną funkcją ciągłą, dla której istnieją liczby $\underline{c}>0$, $\overline{c}>0$ takie, że
+		\begin{equation}
+		-\underline{c}\le c(t)\le \overline{c}
+		\end{equation}
+		dla wszystkich $t\ge t_0$.  
+		Niech $d>0$. Załóżmy ponadto, że istnieją $K>0$ i $\beta>0$ takie, że
+		\begin{equation}
+		\frac{1}{K}\int_{t}^{t+K} c(\tau)\,d\tau \ge \beta
+		\end{equation}
+		dla wszystkich $t\ge t_0$.  
+		Wówczas dla dowolnego rozwiązania
+		\begin{equation}
+		\zeta'(t)=(c(t)-d\zeta)\zeta,\qquad \zeta(t_0)=\zeta_0>0,
+		\end{equation}
+		zachodzi
+		\begin{equation}
+		\frac{\beta}{d}e^{-K(\underline{c}+\beta)}
+		\le \liminf_{t\to\infty} \zeta(t)
+		\le \limsup_{t\to\infty} \zeta(t)
+		\le \frac{\overline{c}}{d}.
+		\end{equation}
+	\end{lemma}
+	
+	\section{Średnie warunki trwałości}
+	
+	W niniejszej sekcji pokażemy, że przy pewnych warunkach dotyczących dolnych i~górnych średnich układ \eqref{2.1} jest trwały.
+	%
+	Najpierw wprowadzimy definicję trwałości dla układu \eqref{2.1}.
+	\begin{definition}
+		Układ \eqref{2.1} jest trwały (permanentny), jeśli istnieją dodatnie stałe $\delta_i$ takie, że dla każdego dodatniego rozwiązania
+		$u(t,x) = (u_1(t,x),u_2(t,x))$ układu \eqref{2.1} zachodzi
+		\begin{equation}
+			\liminf_{t \to \infty} \frac{u_i(t,x)}{\varphi_i(x)} \geq \delta_i, \quad i=1,2,
+		\end{equation}
+		gdzie granica jest jednostajna względem $x \in [0,L]$, a $\varphi_i(x)$ jest funkcją własną zagadnienia \eqref{2.6}.
+	\end{definition}
+	%
+	%
+	\begin{theorem}
+		Załóżmy (A1)–(A6). Jeśli
+		\begin{equation}
+			\label{3.1}
+			% \tag{3.1}
+			m[f_i] > \lambda_i + \frac{\bar{b}_{ij}(M[f_j] + \lambda_j)}{\underline{b}_{jj}}, \quad i=1,2,\ j\neq i,
+		\end{equation}
+		gdzie $\lambda_i$ jest główną wartością własną zagadnienia \eqref{2.6},  
+		to układ \eqref{2.1} jest trwały.
+	\end{theorem}
+	
+	\begin{proof}
+		Ustalmy dodatnie rozwiązanie $u(t,x) = (u_1(t,x), u_2(t,x))$ układu \eqref{2.1}. Oznaczmy $\eta_i(t)$, $t \ge t_0$, jako dodatnie rozwiązanie zagadnienia początkowego
+		\begin{equation}
+			\label{3.2}
+			% \tag{3.2}
+			\begin{cases}
+				\eta_i'(t) = \bigl(\min_{x\in [0,L]} f_i(t,x,0,0) - \lambda_i - \overline{b}_{ii}\eta_i - \overline{b}_{ij}\xi_j\bigr)\eta_i,\quad i\neq j,\\begin{equation}1mm]
+				\eta(t_0)=\displaystyle\inf_{x\in[0,L]}\frac{u(t_0,x)}{\varphi(x)}.
+			\end{cases}
+		\end{equation}
+		
+		Pokażemy, że $\eta_i(t)\varphi_i(x)$ jest podrozwiązaniem dla $u_i(t,x)$.  
+		Z założenia (A6) mamy
+		\begin{equation}
+			\begin{split}
+				f_i(t,x,u) \ge \min_{x\in [0,L]} f_i(t,x,0,0)
+				- \overline{b}_{ii} \eta_i(t)\varphi_i(x) - \overline{b}_{ij} u_j 
+				\ge \\
+				\min_{x\in [0,L]} f_i(t,x,0,0)
+				- \overline{b}_{ii} \eta_i(t)\varphi_i(x)
+				- \overline{b}_{ij} \xi_j.
+			\end{split}
+		\end{equation}
+		
+		Wobec tego
+		\begin{equation}
+			\begin{split}
+				Z[\eta_i(t)\varphi_i(x)] 
+				= \frac{\partial}{\partial t}(\eta_i(t)\varphi_i(x))
+				+ \mu_i (\eta_i(t)\varphi_{ixx}(x)) 
+				- \alpha_i (\eta_i(t)\varphi_{ix}(x)) \\
+				\quad - f_i(t,x,u) (\eta_i(t)\varphi_i(x)) \\
+				\le 
+				(\min_{x\in [0,L]} f_i(t,x,0,0) - \lambda_i - \overline{b}_{ii}\eta_i - \overline{b}_{ij}\xi_j )\eta_i \varphi_i(x) \\
+				\quad - \mu_i \eta_i(t)\varphi_{ixx}(x) + \alpha_i \eta_i(t)\varphi_{ix}(x) \\
+				\quad - (\min_{x\in [0,L]} f_i(t,x,0,0)  - \overline{b}_{ii}\eta_i - \overline{b}_{ij}\xi_j) (\eta_i(t)\varphi_i(x)) \\
+				\le -\lambda_i \eta_i \varphi_i - \eta_i(t) (\mu_i \varphi_{ixx} - \alpha_i \varphi_{ix}) = 0.
+			\end{split}
+		\end{equation}
+		dla $t > t_0$, $x \in (0,L)$.
+		
+		Ponadto na brzegach
+		\begin{equation}
+			Z[\eta_i \varphi_i] = \mu_i \eta_i \varphi_{ix} - \alpha_i \eta_i \varphi_i = 0
+		\end{equation}
+		dla $x=0$ i $x=L$.
+		
+		A także
+		\begin{equation}
+			\eta_i(t_0)\varphi_i(x)
+			= \inf_{x\in[0,L]}\frac{u_i(t_0,x)}{\varphi_i(x)}\varphi_i(x)
+			\le u_i(t_0,x).
+		\end{equation}
+		
+		Zatem
+		\begin{equation}
+			u_i(t,x) \ge \eta_i(t)\varphi_i(x), \qquad t \ge t_0,\ x\in [0,L].
+		\end{equation}
+		
+		Wystarczy więc zastosować Lemma 2.6 do równania \eqref{3.2}, gdzie
+		\begin{equation}
+		c(t)= \min_{x\in [0,L]} f_i(t,x,0,0) - \lambda_i - \overline{b}_{ij}\xi_j,
+		\qquad 
+		d=\overline{b}_{ii}.
+		\end{equation}
+		
+		Teraz pokażemy, że wielkości występujące w Lemma 2.6 można wybrać niezależnie od rozwiązania $u(t,x)$, przynajmniej dla dostatecznie dużych $t$.
+		Łatwo zauważyć, że $c(t)$ ma górne ograniczenie niezależne od $u(t,x)$.
+		
+		Wybierzmy $\beta$ i $\beta'$ takie, że
+		\begin{equation}
+			\label{3.3}
+			% \tag{3.3}
+			0<\beta<\beta'< m[f_i] - \lambda_i + \frac{\bar{b}_{ij}(M[f_j]+\lambda_j)}{\underline{b}_{jj}}.
+		\end{equation}
+		
+		Z \eqref{3.3} otrzymujemy
+		\begin{equation}
+		\frac{1}{L} \int_{t}^{t+L} \frac{\xi_j'(\tau)}{\xi_j(\tau)}\, d\tau
+		= \frac{1}{L}\int_{t}^{t+L} \bigl(\max_{x\in[0,L]} f_j(\tau,x,0,0)
+		+\lambda_j - \underline{b}_{jj}\xi_j(\tau)\bigr)\, d\tau.
+		\end{equation}
+		
+		A więc
+		\begin{equation}
+			\label{3.4}
+			% \tag{3.4}
+			\underline{b}_{jj} M[\xi_j]
+			= M[f_j] + \lambda_j
+			- \frac{\ln \xi_j(t+L) - \ln \xi_j(t)}{L}.
+		\end{equation}
+		
+		Z \eqref{2.9} wynika, że istnieje $L_0>0$ takie, że dla dowolnego dodatniego rozwiązania $u(t,x)$ istnieje $t_1\ge 0$ z własnością
+		\begin{equation}
+		\frac{|\ln \xi_j(t+L) - \ln \xi_j(t)|}{L}
+		< \frac{(\beta'-\beta)\underline{b}_{jj}}{\max_{k\neq l}\overline{b}_{kl}}
+		\end{equation}
+		dla $j=1,2$, $t\ge t_1$, $L \ge L_0$.
+		
+		Wówczas
+		\begin{equation}
+			\begin{split}
+				m\bigl[\min_{x\in [0,L]} f_i(t,x,0,0) 
+				- \lambda_i - \overline{b}_{ij} M[\xi_j]\bigr] 
+				= \\
+				m[f_i] - \lambda_i 
+				- \overline{b}_{ij} \left(
+				-\frac{1}{\underline{b}_{jj}}
+				\frac{|\ln \xi_j(t+L) - \ln \xi_j(t)|}{L}
+				+ \frac{M[f_j]}{\underline{b}_{jj}} 
+				+ \frac{\lambda_j}{\underline{b}_{jj}}
+				\right)
+				\ge \\
+				m[f_i] - \lambda_i 
+				- \frac{\overline{b}_{ij}(M[f_j] + \lambda_j)}{\underline{b}_{jj}}
+				+ \frac{|\ln \xi_j(t+L) - \ln \xi_j(t)|}{L}
+				> \beta,
+			\end{split}
+		\end{equation}
+		dla dostatecznie dużych $t$.
+		
+		Pozostaje zatem zastosować Lemat 2.6, aby zakończyć dowód.
+	\end{proof}
+	
+	\begin{thebibliography}{9999}
+		%%
+		
+		\bibitem{Anholt} % drift paradox 
+		B. R. Anholt,
+		\emph{Density dependence resloves the stream drift paradox},
+		Ecology 76 (1995) 2235 -- 2239
+		%%
+		%
+		%
+		%
+		\bibitem{Chafee}
+		N. Chafee,
+		\emph{Asymptotic Behavior for Solutions of a
+			One-Dimensional Parabohc Equation with
+			Homogeneous Neumann Boundary Conditions},
+		J. Differential Equations 18, 111 -- 134 (1975),
+		%
+		%%
+		\bibitem{Hale}
+		M. Chen, Xu-Yan Chen, J. K. Hale,
+		\emph{Structural Stability for Time-Periodic
+			One-Dimensional Parabolic Equations},
+		J. Differential Equations 96, 355 -- 418 (1992),
+		
+		
+		%
+		%%
+		%
+		%%
+		\bibitem{Henry}
+		D. Henry,
+		\emph{Geometric theory of semilinear parabolic equations},
+		Lecture Notes in Mathemstics vol. 840 Springer Berlin New York (1981),
+		%%
+		\bibitem{Hershey} %drift paradox
+		A. E. Hershey, J. Pastor, J. Peterson, W. G. Kling,
+		\emph{Stable isotopes resolve the drift paradox for Baetis mayflies in an arctic river},
+		Ecology 74,  2315 -- 2325 (1993),
+		%%
+		%%%
+		%
+		%%
+		\bibitem{Hess}
+		Hess, P,
+		\emph{Spatial homogeneity of stable solutions of some periodic - parabolic problems with Neumann boundary conditions.},
+		J. Differential Equations 68,  320 -- 331 (1987), 
+		%%
+		\bibitem{periodic}
+		P. Hess, 
+		\emph{Periodic - parabolic  boundary value problems and positivity},
+		Pitman Research Notes in Mathematics Series 247 Longman Scientific and Technical New York 1991,
+		%%
+		%%
+		%\bibitem{Hetzer}
+		%G. Hetzer, W. Shen,
+		%\emph{Uniform persistence, coexistence, and extinction in almost periodic / nonautonomous competition diffusion systems},
+		%SIAM J. Math. Anal. 34(1),  204 -- 227 (2002),
+		%%
+		\bibitem{Hirsch} 
+		M. W. Hirsch,
+		\emph{Stability and convergence in strongly monotone dynamical systems},
+		J. Reine. Angew. Math. 383,  1 -- 53 (1988).
+		%%
+		\bibitem{Huisman}  %drift paradox
+		J. Huisman, M. Array\'as, U. Ebert and B. Sommeijer,
+		\emph{How do sinking phytoplankton species manage to persist},
+		Am. Nat. 159 245 -- 254,
+		%%
+		\bibitem{Hsu}  %drift paradox
+		S. B. Hsu, Y. Lou,
+		\emph{Single phytoplankton species growth with light and advection in a water column},
+		SIAM J. Appl. Math. 70,  2942 -- 2974 (2010),
+		%%
+		\bibitem{Kolokolnikov}
+		T. Kolokolnikov, C. Ou, Y. Yuan, Profiles of self-shading, sinking phytoplankton with finite depth, J. Math. Biol. 59, 
+		105 -- 122 (2009),
+		%%
+		%%%
+		%
+		%
+		%%
+		\bibitem{Lou} %1-dimensional habitat
+		Y. Lou, P. Zhou,
+		\emph{Evolution of dispersal in advective homogeneous environment: The effect of boundary conditions.},
+		J. Differential Equations 259,  141 -- 171, (2015)
+		%
+		\bibitem{Lutscher}
+		F, Lutscher, Y. Lou,
+		\emph{Evolution of dispersal in open advective environments},
+		J. Math. Biol. 69 1319 -- 1342, 
+		%
+		
+		
+		\bibitem{Ma}
+		F. Lutscher, E. McCauley, MA Lewis, \emph{Effects of heterogeneity on spread and persisence in rivers.}, 
+		Bull. Math. Biol. 68(8), 2129 -- 2160,
+		%
+		
+		%
+		%
+		%\bibitem{Mierczynski} %spectral theory
+		%Mierczy\'nski, J., Shen, W.,
+		%\emph{Spectral theory for random and nonautonomous parabolic equations and
+		%	applications. In: Chapman  Hall/CRC Monographs and Surveys in Pure and Applied Mathematics.},
+		%Chapman  Hall/CRC Boca Raton FL (2008),
+		%%
+		\bibitem{Muller1} 
+		K. Muller,
+		\emph{Investigations on the organic drift in North Swedish streams},
+		Technical Report 34 Institute of Freshwater Research Drottningholm 1954,
+		%%
+		\bibitem{Muller2}
+		K. Muller, 
+		\emph{The colonization cycle of freshwater insects},
+		Oecologica 53, 202 -- 207 (1982),
+		%%
+		%%
+		\bibitem{Pachepsky}
+		E. Pachepsky, F. Lutscher, R. Nisbet and M. A. Lewis, 
+		\emph{Persistence, spread and the drift paradox},
+		Theor. Pop. Biol. 67,  61 -- 73 (2005),
+		%%
+	
+		%
+		%
+		%%
+		\bibitem{Yi} %application in population dynamics
+		W. Shen, Y. Yi,
+		\emph{Convergence in almost periodic Fisher and Kolmogorov models},
+		J. Math. Biol. 37 84 -- 102 (1998),
+		%%
+		%\bibitem{Shen} % z nabla
+		%W. Shen, Y. Yi,
+		%\emph{Almost automorphic and almost periodic dynamics in skew -- product semiflows.},
+		%Mem. Amer. Math. Soc. 136 , no. 647 (1998),
+		%%% 
+		%
+		\bibitem{Shigesada} %drift paradox
+		N. Shigesada and A. Okubo,
+		\emph{Analysis of the self -- shading effect on algal vertical distribution i natural waters},
+		J. Math. Biol. 12, 311 -- 326  (1981),
+		%%
+		%
+		%%
+		\bibitem{Smith}
+		H. Smith, 
+		\emph{ Monotone dynamical system. An introduction to the theory of competitive and cooperative systems},
+		Math. Surveys Monogr. vol 41 (1995) Amer. Math. Soc. Providence,
+		%
+		%%
+		\bibitem{Speirs}
+		D.C. Speirs, W.S.C. Gurney, 
+		\emph{Population persistence in rivers and estuaries}, 
+		Ecology 82, 1219 -– 1237 (2001),
+		%%
+		%
+		%
+		%
+		\bibitem{Rocha}
+		C. Rocha,
+		\emph{Examples of Attractors
+			in Scalar Reaction-Diffusion Equations} 
+		J. Differential Equations 73, 178 -- 195 (1988),
+		%%
+		%%
+		%
+		%\bibitem{Wang} %[29] global attr
+		%W. Shen, Y. Wang,
+		%\emph{Carrying simpleces in nonautonomous and random competitive Kolmogorov systems},
+		%J. Differential Equations 245,   1 -- 29  (2008),
+		%%
+		%%
+		%\bibitem{Xiao}
+		%Y. Wang, J. Xiao, D. Zhou,
+		%\emph{Spatial - Homogeneity of stable solutions of almost - periodic parabolic equations with concave nonlinearity},
+		%Proceedings of the American Mathematical Society April 2018 DOI: 10.1090/proc/14386,
+		%%
+		
+		%%
+		\bibitem{Vasilyeva}
+		O. Vasilyeva, F. Lutscher, Population dynamics in rivers: analysis of steady states, Can. Appl. Math. Q. 18,
+		439 -– 469 (2011),
+		%%%
+		
+		%%
+		\bibitem{Waters}
+		R. F. Waters,
+		\emph{The drift of stream insects},
+		Ann. Rev. Entomol. 17,  253 -- 272 (1972),
+		%%
+		%
+		\bibitem{Waters1} %drift paradox
+		T. F. Waters,
+		\emph{Seasonal patterns in production and drift Gammarus pseudolimnaeus in Valley Creek, Minnesota},
+		Ecology 62,  1458 -- 1466 (1981),
+		%
+		%
+		%
+		%%
+		\bibitem{Zhao}
+		Zhao, X-Q, 
+		\emph{Global attractivity in monotone and subhomogeneous almost periodic systems.},
+		J. Differential Equations 187 , 494 -- 509 (2003).
+		%
+		%%
+		%
+		%
+	\end{thebibliography}
+	%
+	

@@ -1,0 +1,26 @@
+\begin{tikzpicture}
+\pie[
+    radius=2,
+    rotate=90,
+    color={
+        gray!20,
+        gray!35,
+        gray!50,
+        gray!65,
+        gray!80,
+        gray!55,
+        gray!40
+    },
+    text=pin,
+    before number={},
+    after number={}
+]{
+    55.1/Diagnoza,            % duży
+    4/Odkrywanie leków,     % mały
+    14.8/Planowanie leczenia, % duży
+    2/Inne,                 % mały
+    11.1/Prognozowanie,       % duży
+    5.6/Przewidywanie odpowiedzi, % mały
+    7.4/Monitorowanie         % mały (największy z małych – na końcu)
+}
+\end{tikzpicture}

@@ -1,0 +1,687 @@
+\chapterauthor{Arkadiusz Byndas, Tomasz Karaś}
+\chapter[Wybrane metody \ldots]{Wybrane metody poprawy zdolności wykrywania obiektów przez radary – analiza na podstawie rzeczywistych danych pomiarowych radaru ENAVI}
+\thispagestyle{empty}
+\vspace{-8mm} {\large Arkadiusz Byndas, Tomasz Karaś} \vspace{8mm}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     1
+\section{Wprowadzenie}
+Małe obiekty powietrzne, takie jak drony, ptaki czy  nietoperze, często generują słabe echa radarowe, które są trudne do wiarygodnego wykrycia~\cite{Skolnik2008Radar,Pastorino2010MicrowaveImaging}. W ostatnim czasie obserwuje się gwałtowny wzrost zainteresowania algorytmami i architekturami systemów poprawiającymi zdolność detekcji tego typu celów, szczególnie w~środowisku silnych zakłóceń i licznych celów pozornych~\cite{Richards2014RadarSignalProcessing,HaykinRadarCognitive}. Obecnie mówi się wręcz o potrzebie zupełnie nowych rozwiązań radarowych, które jeszcze 10--15 lat temu nie były przedmiotem intensywnych badań, a dziś stanowią jeden z~głównych kierunków rozwoju radiolokacji~\cite{Cilliers2020CounterUAS,CUASsurvey2021}.
+
+Rozwój nowych typów radarów, wyposażonych w zaawansowane algorytmy przetwarzania sygnałów, uczenia maszynowego i fuzji danych, ma w~przyszłości przynieść zwiększenie zastosowań cywilnych i wojskowych, jak i~znaczący wzrost wolumenu produkcji tego rodzaju urządzeń~\cite{Richards2014RadarSignalProcessing,HaykinRadarCognitive}.Zdolność do wiarygodnego rozróżniania małych dronów od ptaków czy zanieczyszczeń atmosferycznych, przy jednoczesnym ograniczeniu liczby fałszywych alarmów, będzie kluczowe w nowoczesnych systemach radarowych~\cite{CUASsurvey2021,WildlifeRadar2018}. Technika radarowa nabiera obecnie na znaczeniu również za sprawą nowych metod prowadzenia działań zbrojnych, w~których bezzałogowe statki powietrzne --- zarówno pojedyncze platformy, jak i~całe roje --- odgrywają kluczową rolę ofensywną  i rozpoznawczą~\cite{Cilliers2020CounterUAS,MilitaryUAVTrends2019}.
+W praktyce oznacza to konieczność przeciwdziałania nie tylko  pojedynczym celom, lecz całym ``chmurom'' dronów, liczonym w dziesiątkach lub setkach obiektów, pojawiających się jednocześnie w obszarze odpowiedzialności systemu obrony~\cite{CUASsurvey2021}. Coraz większe znaczenie zyskają radary umieszczane na platformach powietrznych, takich jak bezzałogowe statki powietrzne klasy~UAV czy niewielkie drony wyposażone w~lekkie radary krótkiego zasięgu~\cite{UAVsenseAndAvoid2017,SmallRadarUAV2016}. Niesie to za sobą nowe wymagania dotyczące masy, poboru mocy, odporności na wstrząsy, a także konieczność pracy w~warunkach ograniczonych zasobów obliczeniowych i energetycznych~\cite{SmallRadarUAV2016}.
+
+Równolegle pojawia się nowe pole zastosowań w postaci radarów antykolizyjnych, przeznaczonych do bezpiecznego prowadzenia ruchu miejskiego i pozamiejskiego ładunków transportowanych drogą powietrzną~\cite{UAVsenseAndAvoid2017,AutomotiveRadarOverview2019}. Systemy tego typu, instalowane w małych platformach latających, mają zapewniać autonomiczne unikanie kolizji zarówno z przeszkodami terenowymi, jak i z innymi użytkownikami przestrzeni powietrznej~\cite{UAVsenseAndAvoid2017}. Łatwo wyobrazić sobie również inne zastosowania radarów krótkiego zasięgu -- od monitorowania przestrzeni wokół infrastruktury krytycznej, po zabezpieczenie obszarów zurbanizowanych narażonych na ataki dronów~\cite{AutomotiveRadarOverview2019,CUASsurvey2021}.
+
+Na Politechnice Wrocławskiej od wielu lat prowadzone są prace badawcze we współpracy z przemysłem, w tym z prywatną firmą -- producentem małych~UAV -- ukierunkowane na opracowanie i wdrożenie lekkiego rozwiązania radarowego pracującego w paśmie~X, w okolicach częstotliwości 9{,}5~GHz. W pierwszej części niniejszej monografii zostanie przybliżona budowa i zasada działania radaru ENAVI, a także jego podstawowe parametry eksploatacyjne. W drugiej części zaprezentowane zostaną wybrane wyniki pomiarów oraz przeanalizowane metody poprawy zdolności wykrywania małych obiektów powietrznych.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%     2
+\section{Architektura radaru ENAVI}
+% \subsection{Moduły systemu radarowego}
+
+Prezentowane w dalszej części pracy wyniki zostały pozyskane za pomocą zaprojektowanego i zrealizowanego na Politechnice Wrocławskiej radaru impulsowego nazwanego ENAVI. Składa się on z czterech podstawowych modułów: komputera pokładowego (OBC), płytki radarowej (Radar Board), toru w.cz. (RF Front-End, obejmującego tory nadawczy i odbiorczy) oraz anteny radarowej. 
+Pierwotnym i~docelowym zamiarem była koncepcja lekkiego, ekonomicznego radaru o stałym kierunku obserwacji, z możliwością zabudowy w nosie statku powietrznego i obserwującego przestrzeń wyłącznie wzdłuż osi lotu. 
+Rezygnacja z ruchomych głowic i układów gimbalowania zmniejsza wymagania mechaniczne i energetyczne, a także upraszcza procedury kalibracji wiązki.
+
+Komputer pokładowy zainstalowany na statku powietrznym pełni rolę głównej jednostki obliczeniowej i sterującej dla wielu systemów awioniki. 
+Odpowiada on za akwizycję i zarządzanie danymi z czujników, wykonywanie algorytmów przetwarzania w czasie rzeczywistym, koordynację pracy podsystemów oraz komunikację zarówno z innymi elementami awioniki, jak i ze stacją naziemną. 
+OBC nadzoruje stan pracy systemu, realizuje funkcje synchronizacji czasowej (dystrybucja zegarów, znaczników czasu) oraz wspiera tryb autonomiczny i misje prowadzone przy wsparciu operatora. 
+Na etapie badań laboratoryjnych sensor radarowy był alternatywnie podłączony bezpośrednio do komputera PC, co uprościło procedury debugowania, kalibracji i oceny działania, bez konieczności angażowania pełnej warstwy awioniki UAV.
+
+W ramach projektu opracowano i wykonano wszystkie składowe elementy radaru, w tym płytę główną jako wielowarstwowy obwód PCB. 
+Zawiera ona szereg kluczowych komponentów, spośród których najważniejsze są programowalny transceiver pośredniej częstotliwości (IF) oraz układ FPGA. 
+Transceiver jest w pełni programowalnym, szerokopasmowym układem IF opartym na układzie LMS7002 i
+udostępnia dwa niezależne, pełno dupleksowe tory TX/RX, umożliwiając pracę zarówno w trybie MIMO, jak i~w~trybie dupleksu z podziałem czasowym (TDD). 
+Zastosowana architektura z bezpośrednią przemianą (zero-IF) upraszcza tor sygnałowy, eliminując konieczność stosowania wielu stopni IF oraz filtrów i wzmacniaczy na różnych częstotliwościach. 
+Sygnały analogowe są bezpośrednio przekształcane do i~z~cyfrowych sygnałów bazopasmowych I/Q, co ułatwia implementację elastycznych algorytmów cyfrowych w FPGA.
+
+Modulowany sygnał IF można zapisać jako
+\begin{equation}
+s(t) = I(t)\cos(2\pi f_c t) - Q(t)\sin(2\pi f_c t),
+\end{equation}
+lub równoważnie
+\begin{equation}
+s(t) = A(t)\cos\bigl(2\pi f_c t + \varphi(t)\bigr),
+\end{equation}
+gdzie \(s(t)\) oznacza analogowy sygnał IF, \(I(t)\) i \(Q(t)\) są odpowiednio składową w fazie i~w~kwadraturze, \(f_c\) jest częstotliwością nośną, 
+\(A(t) = \sqrt{I^2(t)+Q^2(t)}\) to moduł wektora I/Q, a \(\varphi(t)\) oznacza jego fazę. 
+Transceiver pracuje w ciągłym zakresie częstotliwości od kilkuset kiloherców do prawie \(4~\mathrm{GHz}\), co pozwala na zastosowanie w~wielu standardach radiokomunikacyjnych -- od pasm krótkofalowych po mikrofalowe. 
+Każdy z dwóch torów RF jest wyposażony w 12‑bitowe przetworniki ADC i DAC, obsługujące chwilowe szerokości pasma do \(160~\mathrm{MHz}\). 
+Układ integruje rozbudowane filtry analogowe i~cyfrowe oraz bloki DSP, umożliwiając elastyczne dopasowanie do różnych protokołów, dynamiczne strojenie parametrów radiowych i realizację złożonych funkcji kalibracyjnych. 
+Pomimo szerokiej funkcjonalności transceiver charakteryzuje się umiarkowanym poborem mocy, co czyni go odpowiednim do zastosowań mobilnych i bateryjnych, a wysoki stopień integracji upraszcza konstrukcję, redukuje koszt elementów oraz skraca czas projektowania.
+
+Układ FPGA stanowi rdzeń podsystemu przetwarzania sygnałów w radarze. 
+Jego główne zadania obejmują inicjalizację i bieżącą kalibrację transceivera IF, a~także precyzyjne sterowanie czasowe załączaniem i wyłączaniem torów TX/RX w.cz. (kluczowanie nadajnika, bramkowanie odbiornika). 
+Konfiguracja stopnia IF realizowana jest poprzez szeregowy interfejs SPI, natomiast szybka wymiana danych -- 12‑bitowych próbek TX i RX -- odbywa się za pośrednictwem dwóch niezależnych interfejsów pamięci DDR. 
+W strukturze FPGA zaimplementowano efektywny algorytm kompresji impulsu, oparty na korelacji FFT w architekturze potokowej, umożliwiający realizację przetwarzania w czasie rzeczywistym nawet dla stosunkowo szerokich pasm. 
+Dodatkowe bloki w FPGA obsługują generowanie sygnałów sterujących (wyzwalanie, znaczniki czasowe) oraz wstępną detekcję ech radarowych, a wygenerowane obrazy radarowe (radar plots) są przekazywane do OBC do dalszego, wyższego poziomu przetwarzania i fuzji danych.
+
+Tor w.cz. (RF Front-End) składa się z podtorów nadawczego (TX Front-End) i odbiorczego (RX Front-End). 
+Tor nadawczy odpowiada za przemianę częstotliwości z pasma IF rzędu \(1\text{--}3~\mathrm{GHz}\) do częstotliwości około \(9~\mathrm{GHz}\), odpowiadającej pasmu~X. 
+Sygnał IF po filtracji pasmowoprzepustowej i regulacji poziomu wzmocnienia trafia do mieszacza, w którym jest łączony z sygnałem lokalnego oscylatora (LO). 
+Na wyjściu mieszacza powstają składowe o częstotliwościach \(f_{\mathrm{LO}}\pm f_{\mathrm{IF}}\); po selekcji przy użyciu wysoko‑selektywnych filtrów wnękowych wybierane jest pasmo w okolicy \(9~\mathrm{GHz}\), a niepożądane produkty (obraz, harmoniczne, przecieki LO) są silnie tłumione. 
+Następnie sygnał jest wzmacniany w dwóch stopniach wzmacniaczy mocy do poziomu około \(43~\mathrm{dBm}\) wyjściowej mocy szczytowej i~przekazywany do anteny o dużym zysku \(27~\mathrm{dBi}\) wykonanej w technologii mikropaskowego obwodu wielowarstwowego PCB.
+Z uwagi na wydzielanie znacznej mocy cieplnej wprowadzono układy sterowania umożliwiające odłączanie końcowego wzmacniacza między transmisjami oraz zastosowano odpowiednie środki chłodzenia w~celu utrzymania bezpiecznych temperatur pracy.
+
+Tor odbiorczy zawiera szereg bloków analogicznych do zastosowanych w~torze nadawczym, z istotnymi modyfikacjami wynikającymi z konieczności ochrony czułych stopni wejściowych oraz minimalizacji szumów. 
+Na wejściu umieszczono ogranicznik mocy, chroniący wzmacniacz o niskim poziomie szumów (LNA) przed zbyt dużym poziomem sygnału, szczególnie w~warunkach silnych zakłóceń lub w obecności własnych przebiegów nadawczych. 
+Za ogranicznikiem znajduje się kaskada wzmacniaczy LNA, które zapewniają niski poziom własnego szumu przy jednoczesnym wzmocnieniu słabych ech odbieranych przez antenę. 
+Sygnał jest następnie filtrowany przy użyciu filtrów wnękowych, co pozwala na silne tłumienie zakłóceń poza pasmem użytecznym i poprawę dynamiki odbiornika. 
+Tak przygotowany sygnał trafia do mieszacza odbiorczego, w którym następuje przemiana w dół do pasma IF poprzez mieszanie z sygnałem LO. 
+Po dodatkowej filtracji pośredniej częstotliwości sygnał IF jest doprowadzany do transceivera IF i dalej przetwarzany cyfrowo w układzie FPGA.
+
+W całym torze RF zachowano dopasowanie impedancyjne \(50~\Omega\), aby zapewnić maksymalne przeniesienie mocy i minimalne odbicia, co przekłada się na wysoką sprawność energetyczną i~stabilność pracy radaru. 
+Przyjęta architektura sprzyja skalowalności systemu: możliwe jest zarówno zwiększanie mocy nadawczej i~liczby kanałów odbiorczych, jak i integracja z różnymi typami anten, w~zależności od wymagań konkretnej platformy UAV.
+
+% \subsection{Parametry radaru}
+Radar stanowi elastyczny, definiowany firmware’owo system, który umożliwia pracę w szerokim zakresie parametrów sygnału sondującego i przetwarzania. 
+Typowe eksperymenty prowadzono z wykorzystaniem konfiguracji domyślnej zestawionej w tabeli~\ref{tab:defParams}, co zapewnia powtarzalną wydajność odniesienia oraz umożliwia spójne porównywanie wyników pomiędzy poszczególnymi seriami testów. 
+Jednocześnie architektura radaru pozwala na szybką rekonfigurację kluczowych nastaw w celu dostosowania się do założeń misji i zmieniających się warunków środowiskowych, takich jak zróżnicowane odległości do celów, poziom clutteru czy obecność zakłóceń.
+
+\begin{table}[t]
+\caption{Parametry ustawione domyślnie w radarze podczas wykonywanych eksperymentów.}
+\label{tab:defParams}
+\scriptsize
+\begin{tabularx}{.9\textwidth}{CC}
+\toprule
+\textbf{Parametr} & \textbf{Wartość}\\
+\midrule
+Częstotliwość RF & 9.5~GHz\\
+Moc RF & 43~dBm\\
+Szerokość pasma RF & 40~MHz\\
+Częstotliwość IF & 1.2~GHz\\
+Moc IF & $-10$~dBm\\
+Szerokość pasma IF & 20~MHz\\
+Częstotliwość próbkowania BB $f_s$ & 40~MHz\\
+Szerokość pasma BB & 10~MHz\\
+Typ impulsu BB & liniowy \emph{chirp}\\
+Okno ważenia & prostokątne\\
+PRF & 10~kHz\\
+Liczba uśrednień & 4\\
+Minimalny zasięg & 200~m\\
+Maksymalny zasięg\textsuperscript{1} & 15000~m\\
+Czas trwania impulsu & 2.5~$\mu$s\\
+Długość okna RX\textsuperscript{2} & 7500~m\\
+Pobór mocy BB i IF & 12~W\\
+Pobór mocy toru RF & 60~W\\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% \noindent\footnotesize
+% \textsuperscript{1} Ograniczone przepustowością toru DSP; dodatkowo należy uwzględnić związek pomiędzy maksymalnym zasięgiem a czasem trwania impulsu. 
+% PRF równy 50~kHz odpowiada maksymalnemu zasięgowi rzędu 3~km, a czas trwania impulsu nie powinien przekraczać 5~$\mu$s.
+\normalsize
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 3
+\section{Rozpoznania radarowe bliskiego i dalekiego zasięgu- przykłady}
+
+W trakcie wielu testów polowych radaru ENAVI zarejestrowano kilka tysięcy ech radarowych od obietów statycznych oraz dynamicznych takich jak latające drony.Poniżej przedstawiono przykładowe rejestracje od obiektów statycznych w~dwóch zasięgach. Echo radaru i odpowiadające im sceny dla zasięgu 2200m i~11000m przedstawiono poniżej. 
+
+\begin{figure}[t]
+\centering
+\begin{subfigure}{0.48\textwidth}
+  \centering
+  \includegraphics[width=.9\textwidth,keepaspectratio]{fig/ch4/Iglica.png}
+  \caption{} % wygeneruje tylko (a)
+  %\label{Iglica}
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.4\textwidth}
+  \centering
+  \includegraphics[width=.9\textwidth,keepaspectratio]{fig/ch4/iglica_z.png}
+  \caption{} % wygeneruje tylko (b)
+  %\label{iglica_z}
+\end{subfigure}
+\caption{(a) echo radaru w funkcji odległości z zaznaczonymi pikami detekcji. (b) widok sceny obserwowanej przez radar, przedstawiający obiekty odpowiadające zidentyfikowanym pikom. Zasięg do 2200m}
+\label{fig:1}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.48\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/kominy.png}
+  \caption{} % wygeneruje tylko (a)
+  %\label{Iglica}
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.4\textwidth}
+  \centering
+\includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/kominy_ z.png}
+  \caption{} % wygeneruje tylko (b)
+  %\label{kominy_z}
+\end{subfigure}
+\caption{(a) echo radaru w funkcji odległości z zaznaczonymi pikami detekcji. (b) widok sceny obserwowanej przez radar, przedstawiający obiekty odpowiadające zidentyfikowanym pikom. Zasięg do 11000m}
+\label{fig:2}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%% 5
+
+\section{Równanie radarowe a zasięg radaru ENAVI}
+
+Równanie radarowe to podstawowy model matematyczny, który określa zależność między mocą odbieraną przez system radarowy, a różnymi parametrami nieodłącznymi zarówno dla samego radaru, jak i dla obserwowanego celu ~\cite{Skolnik2008Radar}. Służy jako niezbędne narzędzie do analizy zasięgu wykrywania, stosunku sygnału do szumu oraz ogólnej wydajności radaru. Odebrana moc, oznaczana jako $P_r$, zależy od mocy nadawanej $P_t$, kierunkowych zysków anteny nadawczej i odbiorczej (odpowiednio $G_t$ i $G_r$), długości fali $\lambda$ sygnału, przekroju radarowego (RCS) celu $\sigma$, odległości (zasięgu) do celu $R$ oraz skumulowanych całkowitych strat systemu $L$. Dla konfiguracji radarowej monostatycznej, gdzie antena nadawcza i odbiorcza są zlokalizowane razem, klasyczna forma równania radarowego wyraża się następująco: \begin{equation} P_r = \frac{P_t G_t G_r \lambda^2 \sigma}{(4\pi)^3 R^4 L} \end{equation} W tym równaniu Pr oznacza moc odebraną, $P_t$ to moc nadawana, $G_t$ i $G_r$ to wzmocnienia anteny nadawczej i odbiorczej, $\lambda$ to długość fali, $\sigma$ to przekrój radarowy celu, $R$ to zasięg do celu, a $L$ uwzględnia wszystkie straty systemowe (np. tłumienia atmosferycznego, straty linii transmisyjnej, straty w przetwarzaniu). Podczas gdy równanie radarowe mierzy moc odebranego sygnału, rzeczywisty proces wykrywania celów i wydobywania informacji z tych słabych, często hałaśliwych sygnałów, opiera się na zaawansowanych technikach przetwarzania sygnałów, takich jak metoda korelacji. Teoretyczny zasięg radaru przedstawiono na wykresie  \figurename~\ref{fig:char}. Przy założeniu, że moc sygnału radiowego wyniesie 100W. RCS (Radar Cross Section) jest miarą jak mocno radar odbija moc i zależy od skutecznej powierzchni odbicia od przeszkody.  
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.6\textwidth, keepaspectratio]{fig/ch4/fig_zasieg01.png}
+\caption{Zasięg radaru w zależności od poziomu sygnału odebranego dla kilku wartości przeekroju czynnego radaru (Radar Cross Section). Mocy sygnału nadawanego Pt = 100W. }
+\label{fig:char}
+\end{figure}
+
+\begin{figure}[!ht]
+\centering
+\includegraphics[width=0.5\textwidth, keepaspectratio]{fig/ch4/fig_tab__zas_02.png}
+\caption{Tabela przedstawia obliczony zasięg (Rmax) w zależności od RCS obiektu dla kilku szerokości pasma odbiornika. Wyniki przy założeniu mocy sygnału nadawanego Pt = 100W.}
+\label{fig:22}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 6
+\section{Metody zwiekszenia zasięgu radaru}
+Określenie prawdopodobieństwa wykrycia obiektu jest zależne od wielu parametrów poza tymi wprost z równania radarowego. 
+Jedną z metod statystycznej detekcji obiektu jest metoda integracji, w której decyzję o stwierdzeniu wykrycia obiektu podejmuje się na podstawie analizy ciągu wielu impulsów jakie wysłał radar w~celu sondowania. 
+Równanie radarowe nie mówi również nic jak na możliwości wykrycia obiektu wpływają:
+różne techniki nadawania, 
+a)	modulacji sygnału 
+b)	różne techniki odbioru i filtracji, 
+c)	odbiór koherentny (odbiornik pracuje z dokładnością do fazy), 
+d)	filtracja ech stałych, 
+e)	detekcja poprawki dopplerowskiej, integracji, 
+f)	obróbka statystyczna detekcji i progu detekcji, 
+g)	zastosowanie więcej niż jednego odbiornika
+h)	wiele innych szczegółowych metod techniki radarowej. 
+Równanie radarowe nie mówi także nic o zdolności poprawy detekcji także przez zastosowanie polarymetrii radarowej i bi-statycznej techniki odbioru. 
+Należy przyjąć, iż w typowym przypadku, zmiany zdolności detekcji obiektów przez radar antykolizyjny, tylko z powodu zmian RCS na jednej polaryzacji będą ulegać wahaniom o 20 do 30 dB w każdym okresie około 10 sekund pracy radaru. Bardzo rzadko zdarza się tak iż RCS obiektu jest jednocześnie znikomo małe na dwóch ortogonalnych polaryzacjach. Dlatego, radar polarymetryczny będzie znacznie silniejszym narzędziem do wykrywania małych obiektów. Podobnie praca dwóch lub więcej odbiorników z osobnymi antenami na pokładzie samolotu. 
+Inne możliwe metody zwiększanie zdolności wykrywania: techniki nadawania i odbioru sygnału o zmiennym pasmie, sekwencyjne zmienianie rodzajów nadawania i odbioru.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 7
+
+\section{Metoda kompresji impulsów}
+
+Metoda kompresji impulsów \cite{Ducoff2008_PulseCompression} stanowi fundamentalne i bardzo skuteczne podejście w~przetwarzaniu sygnałów radarowych, szczególnie do wykrywania obiektów za pomocą zespolonych echo radarowych. Technika ta działa poprzez krzyżowe powiązanie znanego sygnału odniesienia — zazwyczaj repliki nadawanego impulsu lub chirp — z odebranym sygnałem, który niezmiennie składa się z połączenia echa docelowego i różnych form szumów. Zarówno sygnały referencyjne, jak i odebrane są reprezentowane jako złożone sekwencje, aby w pełni zachować ich informacje o amplitudzie i fazie, co jest kluczowe dla dokładnej charakterystyki celu. Funkcja korelacji krzyżowej, $r_{xy}[k]$, jest matematycznie definiowana jako:
+Korelacja krzyżowa oblicza się jako
+\begin{equation}
+\label{eq:correlation}
+r_{xy}[k] = \sum_{n=0}^{N-1} x^*[n] \cdot y[n+k],
+\end{equation}
+%, gdzie $x^*[n]$ to zespolona koniuata sygnału odniesienia, $y[n+k]$ to sygnał odebrany przesunięty o opóźnienie $k$, a $N$ to długość sygnału referencyjnego. Szczyty w wyjściu korelacji wskazują obecność i czas echa, odpowiadając wykrytym obiektom i ich zasięgom. 
+gdzie $x^*[n]$ oznacza sprzężony sygnał zespolony, $y[n+k]$ oznacza sygnał odebrany przesunięty o opóźnienie $k$, a $N$ to długość sygnału referencyjnego. Sygnał odniesienia $x[n]$ to liniowa funkcja chirp dana przez: 
+\begin{equation}
+\label{eq:linearChirp}
+x[n] = A \cdot e^{j 2\pi \left( f_0 nT + \frac{1}{2N}(f_{\text{end}} - f_0) n^2 T \right)},
+\end{equation}
+gdzie $f_0$ to początkowa częstotliwość chirp [Hz], $f_{\text{end}}$ to końcowa częstotliwość chirp [Hz], $T$ to okres próbkowania ($T = 1/f_s$), $N$ to liczba próbek (długość sygnału), $n$ to indeks próbki ($0 \leq n \leq N-1$), $f_s$ to częstotliwość próbkowania [Hz], a $A$ to amplituda sygnału.
+Obecność i precyzyjne wyznaczenie echa, które bezpośrednio odpowiadają wykrytym obiektom i ich odpowiednim zasięgom, są wskazywane przez wyraźne szczyty w wyjściu funkcji korelacji. Metoda ta znacząco poprawia stosunek sygnału do szumu (SNR) poprzez spójną integrację energii znanego przebiegu, co czyni ją optymalną techniką wykrywania znanych sygnałów osadzonych w addytywnym szumie białego Gaussa (AWGN). W praktycznych systemach radarowych metoda korelacji jest szeroko wdrażana poprzez zastosowanie filtra dopasowanego, który jest kluczowy w zastosowaniach takich jak kompresja impulsów, dokładne oszacowanie odległości oraz solidne wykrywanie celów w trudnych warunkach.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 7
+
+\section{Metoda Monte Carlo}
+Metoda Monte Carlo jest dobrze znaną i uznaną techniką statystyczną, która może być wykorzystana do parametryzacji lotów samolotów i dronów. W literaturze podkreśla się, że różne odmiany metody Monte Carlo służą zarówno do poprawy możliwości detekcji w czasie rzeczywistym, jak i do oceny jakości samych detekcji radarowych. Idea metody polega na  dodatkowycwych operacjach  w cyfrowym torze przetwarzania sygnałów w radarze, który wielokrotnie generuje losowe realizacje zmiennych zgodnych z rozkładami prawdopodobieństwa oszacowanymi na podstawie rzeczywistych ech radarowych. Dzięki przeprowadzeniu rozległych sekwencji symulacji uzyskuje się statystyczną charakterystykę czasowej odpowiedzi radaru na aktualną sytuację w przestrzeni powietrznej, wystarczająco dokładną, aby uchwycić rzeczywiste zachowanie np: ruchu lotniczego oraz zwiekszyć prawdopodobieństwo wykrycia zwłaszcza niewielkich obiektów w przestrzeni.
+Metoda Monte Carlo była stosowana do wyznaczania prawdopodobieństw detekcji obiektu również przy zmiennym stosunku sygnału do szumu (SNR), do modelowania procesów detekcji oraz do całkowania impulsów. radarowych~\cite{MC_Radar_Integracja}. W badaniach tych porównywano wyniki z klasycznymi modelami Swerlinga i Blake'a, wykorzystując formalizm Swerlinga do symulacji fluktuacji ech radarowych~\cite{Swerling1960}. Alternatywne podejścia statystyczne, takie jak analiza prawdopodobieństwa oparta na histogramach, zaproponowano w~\cite{HistogramApproach}. W scenariuszach UAV zastosowanie metody Monte Carlo również odbywało się do generowania syntetycznych zdarzeń kolizyjnych na potrzeby uczenia głębokich sieci neuronowych w systemach unikania kolizji i~zostało przeanalizowane w~\cite{MC_UAV_Collision}. 
+W prezentowanej pracy metoda Monte Carlo zostanie zaadoptowana do poprawy zdolności detekcji obiektów poprzez integrację z metodą uśreniania ech (Echo Averaging Method, EAM). 
+
+\subsection{Funkcja gęstości prawdopodobieństwa KDE Kernel Density Estimation}
+Zastosowanie metody Monte Carlo wymaga znajomości funkcji gęstości prawdopodobieństwa \(p_X(x)\) wyznaczonej na podstawie ograniczonej ilości ech radarowych, która może zostac wyznaczona według poniższego algorytmu (KDE- Kernel Density Estimation)
+Niech szereg \(\{x_1,x_2,\dots,x_n\}\) będzie niezależną i identycznie rozłożoną próbą złożoną z \(n\) obserwacji ech radarowych zmiennej losowej \(X\) o nieznanej funkcji gęstości prawdopodobieństwa \(p_X(x)\). Estymator jądrowy \(\hat p_X(t)\) oryginalnej gęstości \(p_X(x)\) przyporządkowuje każdemu \(i\)-temu punktowi próbki \(x_i\) funkcję \(K(x_i,t)\), zwaną funkcją jądra w następujący sposób ~\cite{Silverman1986}:
+\begin{equation}
+\hat p_X(t) = \frac{1}{n}\sum_{i=1}^{n} K(x_i,t).
+\label{eq:kde_def}
+\end{equation}
+
+Funkcja \(K(x,t)\) jest nieujemna i ograniczona dla wszystkich \(x\) oraz \(t\):
+\begin{equation}
+0 \le K(x,t) < \infty \quad \text{dla wszystkich rzeczywistych } x,t.
+\label{eq:kde_nonnegative}
+\end{equation}
+Ponadto, dla każdego rzeczywistego \(x\), spełnia warunek normalizacji
+\begin{equation}
+\int_{-\infty}^{\infty} K(x,t)\,dt = 1.
+\label{eq:kde_kernel_norm}
+\end{equation}
+
+Własność~\eqref{eq:kde_kernel_norm} zapewnia wymaganą normalizację estymatora gęstości jądrowej~\eqref{eq:kde_def}:
+\begin{equation}
+\int_{-\infty}^{\infty} \hat p_X(t)\,dt
+= \frac{1}{n}\sum_{i=1}^{n} \int_{-\infty}^{\infty} K(x_i,t)\,dt
+= 1.
+\label{eq:kde_estimator_norm}
+\end{equation}
+
+Innymi słowy, jądro przekształca „ostre” (punktowe) położenie \(x_i\) w przedział skoncentrowany (symetrycznie lub niesymetrycznie) wokół \(x_i\).
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 8
+
+\subsection{Metoda Monte Carlo - podstawy teoretyczne}
+Metoda Monte Carlo jest dobrze znaną i uznaną techniką statystyczną, która może być wykorzystana do parametryzacji lotów samolotów i dronów. W literaturze podkreśla się, że różne odmiany metody Monte Carlo służą zarówno do poprawy możliwości detekcji w czasie rzeczywistym, jak i do oceny jakości detekcji radarowych. Cyfrowy tor przetwarzania sygnałów w radarze wielokrotnie generuje losowe realizacje zmiennych zgodnych z~rozkładami prawdopodobieństwa oszacowanymi na podstawie rzeczywistych ech radarowych. Dzięki przeprowadzeniu rozległych sekwencji symulacji uzyskuje się statystyczną charakterystykę czasowej odpowiedzi radaru na aktualną sytuację w przestrzeni powietrznej, wystarczająco dokładną, aby uchwycić rzeczywiste zachowanie ruchu lotniczego~\cite{Kroese2011MonteCarlo}.
+
+Niech \(X\) będzie zmienną losową o znanym rozkładzie prawdopodobieństwa z~gęstością \(p_X(x)\). Dla zadanej funkcji \(f(x)\), opisującej np. przekształcenie sygnału w~torze radarowym, wartość oczekiwana ma postać:
+\begin{equation}
+\mu = \mathbb{E}[f(X)] = \int_{-\infty}^{\infty} f(x)\,p_X(x)\,dx.
+\end{equation}
+W metodzie Monte Carlo generuje się ciąg niezależnych próbek \(X_1,\dots,X_N\) o rozkładzie \(p_X(x)\), a następnie stosuje estymator
+\begin{equation}
+\hat{\mu}_N = \frac{1}{N}\sum_{i=1}^{N} f(X_i),
+\end{equation}
+który jest nieobciążony, \(\mathbb{E}[\hat{\mu}_N]=\mu\), a jego wariancja spełnia
+\begin{equation}
+\operatorname{Var}(\hat{\mu}_N) = \frac{\operatorname{Var}(f(X))}{N}.
+\end{equation}
+Oznacza to, że dokładność estymacji rośnie jak \(1/\sqrt{N}\), niezależnie od wymiaru przestrzeni sygnału.
+
+Aby wygenerować syntetyczne sygnały o znanym rozkładzie, korzysta się z~metod generowania zmiennych losowych. Jeśli znana jest dystrybuanta \(F_X(x)\) i~można obliczyć jej funkcję odwrotną, stosuje się metodę odwrotnej dystrybuanty: dla zmiennej jednostajnej \(U\sim\mathcal{U}(0,1)\) definiuje się:
+\begin{equation}
+X = F_X^{-1}(U),
+\end{equation}
+dzięki czemu \(X\) ma szukany rozkład. W bardziej złożonych przypadkach stosuje się metody akceptacji--odrzucenia lub próbkowanie z ważeniem (importance sampling), w których próbki generuje się z pomocniczego rozkładu \(g(x)\), a następnie odpowiednio je waży, tak aby odtworzyć własności statystyczne rozkładu \(p_X(x)\).
+
+W kontekście radaru typowy syntetyczny sygnał można zapisać jako
+\begin{equation}
+s[n] = A_n \,\mathrm{e}^{j\phi_n} + w[n],
+\end{equation}
+gdzie amplitudy \(A_n\) są próbkami o zadanym rozkładzie (np. Rayleigha lub Rician), fazy \(\phi_n\) są losowane z rozkładu jednostajnego na \([0,2\pi)\), a \(w[n]\) opisuje szum addytywny, zwykle modelowany jako proces gaussowski. Tak wygenerowane realizacje \(s[n]\) pozwalają w~sposób kontrolowany badać własności algorytmów detekcji, estymować prawdopodobieństwo wykrycia, prawdopodobieństwo fałszywego alarmu i czułość detektorów na zmiany parametrów rozkładu ~\cite{RobertCasella2004}.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Metoda Monte Carlo- algorytm generacji sygnałów syntetycznych}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1.\textwidth, keepaspectratio]{fig/ch4/algorytm.png}
+\caption{Algorytm generacji syntetycznych ech radarowych.}
+\label{fig:algorytm}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section[Wykrywanie obiektów w echach radaru \ldots]{Wykrywanie obiektów w echach radaru ENAVI}
+
+Wynikiem pracy radaru są cztery możliwe hipotezy dotyczące obecności obiektu w~obserwowanym obszarze. 
+Dla każdej z nich dąży się do zapewnienia odpowiednio wysokiego lub niskiego prawdopodobieństwa:
+
+\begin{enumerate}
+  \item obiekt jest obecny i radar go wykrywa,
+  \item obiekt nie jest obecny i radar poprawnie wskazuje jego brak,
+  \item obiekt jest obecny, lecz radar go nie wykrywa -- zdarzenie to powinno mieć możliwie najmniejsze prawdopodobieństwo (tzw.\ fałszywy spokój),
+  \item obiekt nie jest obecny, ale radar zgłasza jego obecność -- jest to tzw.\ fałszywy alarm, którego prawdopodobieństwo również powinno być jak najmniejsze.
+\end{enumerate}
+
+W radarach przeznaczonych przede wszystkim do wykrywania dronów, jest całkiem nowe i trudne zadanie: radary takie wykrywają drony i ptaki. To, że wykrywanie ptaków nie jest łatwe swiadczą radary pogodowe powszechnie stosowane w średnich i dużych samolotach pasażerskich i transportowych. Pokazują one chmury i szacunkową wielkość opadów, ale nie pokazują one ptaków. Ptaki stanowią ogromne zagrożenie dla samolotu podczas  startu i także poważne, ale mniejsze podczas lądowania. 
+
+Pojedyncze echa radarowe są wytwarzane przez radar co krótkie odstępy czasu, nawet tak krótkie jak 100 mikrosekund. Analizując tysiące ech, stwierdza się, że w jednych echach są widoczne obiekty a w innych nie. Może to być nawet w~dwóch sąsiednich echach, które zostały wykonane w odstępie 100 mikrosekund.
+Należy podkreślić, że kłopoty z odczytem obiektów zdazały się nawet czasami na bliskich detekcjach. Na kolejnych rysunkach przedstawiono przykładowe sytuacje problemtycznej detekcji drona (zasięg bliski), awionetki(zasięg średni) oraz kominów ciepłowni (zasięg daleki).
+
+Na Rysunku~\ref{fig:dron} pokazane są cztery echa zarejestrowane przez radar ENAVI w~przeciągu czasu 750 mikrosekund. Są to echa otrzymane na wyjściu odbiornika radaru po przetworzeniu odebranego sygnału kiedy w przestrzeni obserwowanej przez radar latały jeden lub dwa drony skrzydlate średniej wielkości produkcji firmy EuroTech, który miał rozpiętość skrzydeł bliską 3 metry. Pokazane echa pokazują typową sytuację. W powietrzu wtedy był jeden dron. Na wykresie (a) echo wyraźnie pokazuje wykrycie drona, który znajduje się w odległości R=3900 m od radaru. Na echach (b) i (c) nie ma widocznego jakiekolwiek istotnego odbicia które pokazywałby obecność drona lub innego dominującego obiektu. Pomimo iż są to echa zarejestrowane w krótkim czasie poniżej 400 mikrosekund od chwili zarejestrowania echa to natura zjawisk występujących w technice odbioru sygnałów radiowych i radarowych prowadziła do tak dużych różnic pomiędzy wynikami bliskich w czasie sondowań radarowych. Wykres (d) pokazuje echo uzyskane w~przeciągu 750 mikrosekund i jest to echo uśrednione dla współczynnika uśrednienia K=8. Pokazuje ono wyraźnie obecność drona w~odległości R=3900 m od miejsca ustawienia radaru na stanowisku testowania radarów.
+
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.48\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/D_2.png}
+  \caption{} % (a)
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/D_1.png}
+  \caption{} % (b)
+\end{subfigure}
+
+\vspace{3mm} % odstęp między wierszami
+
+\begin{subfigure}{0.48\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/D_3.png}
+  \caption{} % (c)
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/D_S.png}
+  \caption{} % (d)
+\end{subfigure}
+
+\caption{Przykładowe cztery echa radarowe uzyskane przez radar ENAVI podczas obserwacji przestrzeni powietrznej, w której na pułapach do 2500m latały drony według planu lotu. Pokazany przypadek dotyczy sytuacji kiedy w powietrzu był jeden dron. Echa są rzeczywistymi, pochodzą od drona skrzydlatego średniej wielkości i zostały wytworzone przez radar ENAVI w czasie poniżej 750 mikrosekund. Na wykresie (a-c) echa pokazuja będne wykrycia. Na wykresie (d) jest pokazane echo uśrednione, wykonane jako średnia ośmiu ech radarowych.}
+\label{fig:dron}
+\end{figure}
+ 
+Na Rysunku~\ref{fig:awionetka} pokazane są cztery echa zarejestrowane przez radar ENAVI w~przeciągu czasu 750 mikrosekund. Echa zostały otrzymane na wyjściu odbiornika radaru kiedy w przestrzeni obserwowanej przez radar, latała pilotowana awionetka Cessna 172 na pułapie 1000 metrów. Pokazane echa zostały wykonane w pasmie X dla polaryzacji VV. Pokazane echa ilustrują typową sytuację kiedy niektóre echa radarowe pokazują wykrycie obiektu, a niektóre nie pokazują. Na wykresach (a) i (b) wydaje się, że jest dość możliwym istnienie obiektu radarowego w odległości R=2363 m od radaru. Echo (c) nie pokazuje jakiekolwiek istotnego odbicia które pokazywałby obecność samolotu, drona lub innego dominującego obiektu w przestrzenie powietrznej obserwowanej przez radar. Pomimo iż są to echa zarejestrowane w krótkim czasie poniżej 500 mikrosekund od chwili zarejestrowania echa to natura zjawisk występujących w technice odbioru sygnałów radiowych i radarowych owocowała tak dużymi różnicami pomiędzy poszczególnymi pojedynczymi echami radarowymi. Wykres (d) pokazuje uśrednione echo dla współczynnika uśrednienia K=8 które uzyskane w~przeciągu 750 mikrosekund. Pokazuje ono wyraźnie obecność awionetki w~odległości R=2363 m od radaru ENAVI wykonującego badania skuteczności detekcji obiektów w~przestrzeni powietrznej.
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.48\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/A_2.png}
+  \caption{} % (a)
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/A_1.png}
+  \caption{} % (b)
+\end{subfigure}
+
+\vspace{3mm} % odstęp między wierszami
+
+\begin{subfigure}{0.48\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/A_3.png}
+  \caption{} % (c)
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/A_S.png}
+  \caption{} % (d)
+\end{subfigure}
+
+\caption{Przykładowe cztery echa radarowe uzyskane przez radar ENAVI podczas obserwacji przestrzeni powietrznej w której jako obiekt do badania radaru latała awionetka Cessna 172 według planu lotu. Pułap lotu 1000 metrów. Echa (a), (b) i (c) są rzeczywistymi i zostały wytworzone przez radar ENAVI w czasie krótszym niż 750 mikrosekund. Echo na wykresie (d) wyraźnie pokazuje wykrycie awionetki w odległości R=2363 m od radaru. Jest to echo uśrednione z ośmiu (K=8) pojedynczych ech radarowych zarejestrowanych w przeciągu 750 mikrosekund.}
+\label{fig:awionetka}
+\end{figure}
+
+
+%3-kominy
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.48\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/K_2.png}
+  \caption{} % (a)
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/K_1.png}
+  \caption{} % (b)
+\end{subfigure}
+
+\vspace{3mm} % odstęp między wierszami
+
+\begin{subfigure}{0.48\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/K_3.png}
+  \caption{} % (c)
+\end{subfigure}
+\hfill
+\begin{subfigure}{0.48\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/K_S.png}
+  \caption{} % (d)
+\end{subfigure}
+
+\caption{Przykładowe cztery echa radarowe uzyskane przez radar ENAVI podczas obserwacji obiektu statycznego ( kominy ciepłowni w Siechnicach pod Wrocławiem )Na wykresie (a-c) echa pokazują będne wykrycia. Na wykresie (d) jest pokazane echo uśrednione, wykonane jako średnia ośmiu ech radarowych.}
+\label{fig:kominy}
+\end{figure}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% 
+
+\section[Analiza statystyczna ech \ldots]{Analiza statystyczna ech radarowych z wykorzystaniem KDE i metody Monte Carlo}
+
+
+Celem pierwszej części badań było ilościowe opisanie rozkładu amplitudy ech radarowych oraz weryfikacja przydatności modelu szumu gaussowskiego w analizowanych warunkach pomiarowych. 
+W tym celu generowano wiele realizacji sygnału (symulacje Monte Carlo oraz dane rzeczywiste), a następnie, po odpowiednim wstępnym przetwarzaniu (m.in.\ filtracja i kompresja impulsu), analizowano statystyki amplitudy z wykorzystaniem nieparametrycznej estymacji gęstości jądrowej (KDE). 
+Badano wpływ liczby uśrednianych realizacji na kształt estymowanej gęstości, porównując wyniki z teoretycznym rozkładem normalnym oraz oceniając stopień zbieżności empirycznego rozkładu z przyjętym modelem szumowym.
+%-----------
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.34\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/U2p.png}
+  \caption{} % wygeneruje tylko (a)
+\end{subfigure}
+\hspace{2cm}
+\begin{subfigure}{0.35\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/Synt2.png}
+  \caption{} % wygeneruje tylko (b)
+\end{subfigure}
+\caption{(a) rozkład rzeczywistych ech radaru dla uśrednienia 2,  (b) rozkład syntetycznych ech radarowych wygenerowanych na podstawie uśrednienia 2 przy wykorzystaniu rozkładu KDE i metody Monte Carlo}
+\label{fig:12}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.35\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/U8p.png}
+  \caption{} % wygeneruje tylko (a)
+\end{subfigure}
+\hspace{2cm}
+\begin{subfigure}{0.35\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/Synt8.png}
+  \caption{} % wygeneruje tylko (b)
+\end{subfigure}
+\caption{(a) rozkład rzeczywistych ech radaru dla uśrednienia 8,  (b) rozkład syntetycznych ech radarowych wygenerowanych na podstawie uśrednienia 8 przy wykorzystaniu rozkładu KDE i metody Monte Carlo}
+\label{fig:13}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.35\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/U53p.png}
+  \caption{} % wygeneruje tylko (a)
+\end{subfigure}
+\hspace{2cm}
+\begin{subfigure}{0.35\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/Synt53.png}
+  \caption{} % wygeneruje tylko (b)
+\end{subfigure}
+\caption{(a) rozkład rzeczywistych ech radaru dla uśrednienia 53,  (b) rozkład syntetycznych ech radarowych wygenerowanych na podstawie uśrednienia 53 przy wykorzystaniu rozkładu KDE i metody Monte Carlo}
+\label{fig:14}
+\end{figure}
+
+
+%-----------
+
+Przeprowadzono analizę statystyczną amplitudy radarowych ech z wykorzystaniem symulacji Monte Carlo dla wielu realizacji scenariusza pomiarowego. Dla każdej użytej w badaniach wartości współczynnika uśrednienia K (od 2 do 53), wyznaczano nieparametryczną estymację gęstości prawdopodobieństwa (KDE) oraz porównywano ją z odpowiadającą jej teoretyczną gęstością rozkładu normalnego. Pozwoliło to ocenić, w jakim stopniu rzeczywiste dane radarowe mogą być modelowane jako szum gaussowski oraz jak uśrednianie wpływa na widoczność dodatkowych składników sygnału, przede wszystkim clutteru radarowego, który jest ogromnie bogaty w warunkach miejskich i niskich obserwacji radarowych do wykrywania lotów dronów, ptaków i małych samolotów w terenach leśnych. Przedstawione wyniki analizy statystycznej rzeczywistych sygnałów echa radarowego pozwalają na wyciagnięcie wniosków mających duże znaczenie dla opracowania rozwiązań nadających się do uzyskania wysoce skutecznie działających algorytmów detekcji obiektów przez rozważane rozwiązania radarów. W przedstawianej analizie, przyjęliśmy rozkład normalny jako model teoretyczny dla składowej szumowej i komponentów natury clutteru sygnału radarowego. Zastosowanie KDE z gęstością normalną pozwala rozdzielić składowe od dobrze opisywanych przez model gaussowski (dominujący szum) oraz odchylenia od tego modelu, które wskazują na istnienie innych, znaczących składowych w sygnale zarejestrowanego echa radarowego. Wykonane badania z użyciem jądrowego estymatora gęstości (KDE), wykorzystanie metody Monte Carlo i zastosowanie go dla różnych wartości współczynników uśredniania K (2, 8, 53 próbek), pozwoliły na sformułowanie następujących istotnych wniosków. 
+Dla małych badanych wartości K, estymator KDE wykazuje znaczne odchylenia od teoretycznego rozkładu normalnego, co wynika z~dużej wariancji próbkowania i silnego wpływu pojedynczych realizacji szumu oraz clutteru obecnego w sygnale echa radarowego. W przypadku obiektów naziemnych jakimi się zajmowaliśmy (budynki w mieście), clutter pochodził od gęstej ilości koron drzew i dachów budynków nad którymi propagował sygnał radarowego sondowania i odbitego oraz rozproszonego na oświetlonych obiektach. W przypadku drona i awionetki, badania za pomocą radaru ENAVI były w terenach z dużą ilością kęp drzew, krzaków, łąk i pól. tereny te miały długie brzegi terenów leśnych o długościach powyżej 4 km. W tym przypadku widoczne są lokalne maksima i nierówności na krzywej wyznaczonego rozkładu KDE, co utrudnia precyzyjną interpretację obecności celu radarowego. Estymator KDE cechuje się dużą wariancją, rozkład empiryczny jest wrażliwy na pojedyncze echa które jak pokazano wyżej, są między sobą mocno zmienne (mimo czasu pobrania echa różniącego się kilkaset mikrosekund). Dopiero zwiększenie liczby uśrednień (w przedstawionych badaniach było to 53 pojedynczych ech radarowych), prowadzi do pokrywania się krzywej rozkładu normalnego i uzyskiwanych w naszych badaniach rzeczywistych ech radarowych estymatora KDE. Wynika to z efektywnego uśrednienia losowych fluktuacji szumu i elementów clutteru. Należy podkreślić, że już małe ruchy powietrza kołyszą koronami drzew, gałęziami krzewów, co zmienia znacznie clutter radarowy od nich na częstotliwościach pasma X. Wykrywany obiekt radarowy który jest widoczny w echu radarowym jako prążek o~niedużej wartość stosunku sygnał/szum może stać się mniej widoczny w uśrednionych statystykach globalnych. Jednakże, różnice między rozkładem sygnału echa dla przypadków z widocznym słabo wykrywanym obiektem radarowym i bez tego obiektu, są wyraźne w~lokalnej analizie fragmentów echa. Należy zauważyć, że rozkład normalny (Gaussa) jest poprawnym do modelowania szumu radarowego wtedy, kiesy jest on efektem sumy wielu niezależnych clutterów i szumów. Dlatego, uprawnionym jest stwierdzenie iż w praktycznych aspektach detekowania obiektów radarowych tego rodzaju radarów jak rozważane w~tym rozdziale, różnice pomiędzy krzywą KDE i rozkładem gaussowskim są miarą wielkości obecności dodatkowych składników jak clutter, szum w echu radarowym. Jeśli sygnał od celu radarowego wnosi istotny udział energetyczny, powoduje zauważalne zniekształcenie rozkładu KDE (np. asymetrię, dodatkowe maksimum) efekt ten pozostanie widoczny także po uśrednieniu.  Posłużenie się dużymi współczynnikami uśrednianie K, pozwala na stabilniejszą ocenę statystyczną i wykrycie większej liczby kategorii możliwych różnic w~rzeczywistych echach radarowych względem przyjętego modelu szumowego, ewentualnie opisania obecności clutterów w echu. Kluczowe dla użyteczności tego podejścia jest aby analizę obecności celu wykonywać nie tylko w zakresie globalnych statystyk. 
+Niezmiernie ważne dla małego radaru, działającego w warunkach dużej liczby obiektów latających jak drony i ptaki, niezmiernie bogato rozbudowanego clutteru od kominów, wywietrzników, okien na dachach i górnych kondygnacjach budynków w gęstej zabudowie miejskiej, dużej ilości drzew zieleni miejskiej, jest zasadność stosowania metody Monte Carlo i~estymatora KDE do analizy rzeczywistych ech radarowych w pasmach mikrofalowych. Jest to także ważne w kontekście szacowania charakterystyk szumowych dla wykrywania subtelnych, niegaussowskich składników sygnału. Różnice pomiędzy dwoma krzywymi — szczególnie widoczne w ogonach rozkładu lub w~małych przesunięciach w rejonie maksimum — mogą zostać wykorzystane jako miara „niegaussowskości” sygnału i sygnalizować o obecności obiektu radarowego lub specyficznego rodzaju clutteru. 
+Ryzyko niewykrycia celu pojawia się głównie gdy:
+a) uśrednianie wykonywane jest globalnie, na całym zbierze ech radarowych w tylko niewielka część tych ech radarowych zawiera istotne komponenty od celu,
+b) wykonania analiza ogranicza się do jednego, globalnego rozkładu amplitudy, bez rozróżnienia na przedziały odległości, częstotliwości Dopplera lub inne cechy zmierzonych ech radarowych,
+Ważnym wnioskiem wykonanych badań, jest rekomendacja do łączenia uśredniania ech radarowych z analizą lokalną, prowadzoną np. w wybranych podprzedziałach odległości od radaru, dla ech radarowych kiedy oczekiwane jest występowanie obiektu radarowego (dron, awionetka, wysokie konstrukcje będące zagrożeniem dla prowadzenia nawigacji lotniczej na niskich wysokościach lotu). . 
+Otrzymane rezultaty potwierdzają przydatność połączenia symulacji Monte Carlo w połączeniu z~estymacją KDE, jako dobrego narzędzia do weryfikacji dopasowania danych radarowych do modelu szumu (gaussowskiego), ilościowego opisu wpływu clutteru i niegaussowskich komponentów sygnałów zrejestrowanych ech radarowych, optymalnego ustalenia wartości współczynnika uśredniania K, który z jednej strony stabilizuje estymację rozkładów, a z drugiej nie zaciera sygnatur obiektów radarowych. Metody te mogą zostać wykorzystane do projektowania i strojenia algorytmów detekcji (np. progów w algorytmie CFAR), a także do oceny, w jakim stopniu chwilowe, rzeczywiste warunki pracy radaru odbiegają od założeń teoretycznych stosowanych w klasycznych modelach radarowych. 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Wpływ uśredniania na rozkład Wignera--Ville'a}
+
+W tym rozdziale skoncentrujemy się na analizie sygnałów radarowych w~dziedzinie czasowo--częstotliwościowej z użyciem rozkładu Wignera--Ville'a (WVD). 
+Celem jest jednoczesne uchwycenie zmian energii sygnału w funkcji odległości i~częstotliwości oraz ocena, jak uśrednianie wielu realizacji wpływa na widoczność przeszkód, clutteru oraz słabych obiektów. 
+Rozpatrywano zarówno pojedyncze lub słabo uśrednione realizacje, charakteryzujące się wysoką czułością na lokalne struktury, jak i silnie uśrednione rozkłady, które opisują stabilną, średnią charakterystykę sceny radarowej. Zostanie również przedstawiona analiza dla sygnałów syntetycznych, która pozwoli ocenieć, zdolność radaru do wykrywania małych obiektów przy wykorzystaniu metody Mote Carlo.
+%---------------------------------------------------
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.25\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/WV2rzecz.png}
+  \caption{} % wygeneruje tylko (a)
+\end{subfigure}
+\hspace{2cm}
+\begin{subfigure}{0.26\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/WV2synt.png}
+  \caption{} % wygeneruje tylko (b)
+\end{subfigure}
+\caption{(a) Obliczona dystrybucja Wigner-Ville wyznaczona dla rzeczywistych ech pokazujących wykrycie Iglicy i Hali Stulecia przez radar ENAVI. Obliczenie wykonano dla współczynnika uśredniania sygnału K=2. Pasmo pracy radaru X, polaryzacja VV, użyty został chirp mający pasmo 24 MHz i zmodulowany liniowo.
+  (b) Obliczona dystrybucja Wigner-Ville wyznaczona dla syntetycznych ech, przy wykorzystaniu rozkładu KDE i metody Monte Carlo}
+\label{fig:15}
+\end{figure}
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.26\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/WV8rzecz.png}
+  \caption{} % wygeneruje tylko (a)
+\end{subfigure}
+\hspace{2cm}
+\begin{subfigure}{0.26\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/WV8synt.png}
+  \caption{} % wygeneruje tylko (b)
+\end{subfigure}
+\caption{(a) Obliczona dystrybucja Wigner-Ville wyznaczona dla rzeczywistych ech dla współczynnika uśredniania sygnału K=8. 
+  (b) Obliczona dystrybucja Wigner-Ville wyznaczona dla syntetycznych ech, przy wykorzystaniu rozkładu KDE i metody Monte Carlo}
+\label{fig:16}
+\end{figure}
+\begin{figure}[H]
+\centering
+\begin{subfigure}{0.26\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/WV53rzecz.png}
+  \caption{} % wygeneruje tylko (a)
+\end{subfigure}
+\hspace{2cm}
+\begin{subfigure}{0.26\textwidth}
+  \centering
+  \includegraphics[width=\textwidth,keepaspectratio]{fig/ch4/WV53synt.png}
+  \caption{} % wygeneruje tylko (b)
+\end{subfigure}
+\caption{(a) Obliczona dystrybucja Wigner-Ville wyznaczona dla rzeczywistych ech dla współczynnika uśredniania sygnału K=53. 
+  (b) Obliczona dystrybucja Wigner-Ville wyznaczona dla syntetycznych ech, przy wykorzystaniu rozkładu KDE i metody Monte Carlo}
+\label{fig:17}
+\end{figure}
+
+
+%_____---------------------------------------------
+W drugiej części przeprowadzonych badań analizowano wpływ uśredniania rozkładów Wignera--Ville'a (WVD) na obraz czasowo--częstotliwościowy sygnałów radarowych. Porównano wyniki dla różnych wartości współczynników uśredniania liczby ech K (od 2 do 53), zarówno dla sygnałów rzeczywistych i dla sygnałów obliczonych za pomocą metody symulacji Monte Carlo. Celem naszych badań było określenie w jakim stopniu użycie uśredniania w przetwarzaniu echa radarowych, zmniejsza losowe fluktuacje oraz składniki cluttera radarowego i innego pochodzenia, obcego względem, obiektów jakie ma wykrywać radar. Ma to zastosowanie przede wszystkim do wykrywania słabych ech, na mało kontrastowych tłach w rzeczywistych sygnałach ech radarowych. Dla najmniejszej użytych wartości współczynnika uśredniania K, rozkład WVD charakteryzuje się dużą zmiennością w~płaszczyźnie odległość-częstotliwość. Pojawia się wiele lokalnych maksimów energii, prążków i mozajek intensywnej gęstości mocy echa radarowego na tej płaszczyźnie. Wśród nich, istotny udział mają również artefakty numeryczne i losowe fluktuacje clutteru oraz szumu. Taki obraz, niezależnie od dużej rozdzielczości, jest trudny w jednoznacznej interpretacji. Łatwo może prowadzić do fałszywych wykryć obiektów przez radar, jeśli nie zastosuje się dodatkowego przetwarzania lub nie skorzysta się z wiedzy zgromadzonej apriorycznie.
+Zwiększenie liczby uśrednień do wartości około K=10, powoduje wyraźne wygładzenie rozkładu. Lokalne, przypadkowe maksima energii ulegają częściowemu ale wyraźnemu stłumieniu. Cechy stabilne w dla ech od stałego obiektu jak budynek, wysoka konstrukcja stają się wyraźniej zarysowane. Na tym etapie osiąga się kompromis między tłumieniem clutteru i szumu a zachowaniem dobrze widoczne informacji o słabszych obiektach które ma wykrywać radar. Są one widoczne na tle znacznie spokojniejszego tła.
+Dla największej stosowanej przez nas liczby uśrednień K=53, średni rozkład WVD przyjmuje postać gładkiej mapy energii w sygnale echa radarowego. Znika większość struktur o charakterze wyłącznie losowym, a obraz odzwierciedla przede wszystkim powtarzalne cechy obserwowanego przez radar sektora przestrzeni powietrznej, która rozciąga się tuż nad terenem. 
+Należy nie zapominać, że sygnatury ech radarowych słabo wykrywanych obiektów, obecnych tylko w niewielkiej części zarejestrowanych ech radarowych, mogą zostać w takim uśrednieniu istotnie zmniejszone lub całkowicie ukryte w tle. Podsumowując, uśrednianie rozkładów Wignera--Ville'a prowadzi do:
+a) redukcji wpływu losowych fluktuacji szumu i clutteru, poprawiając czytelność ech radarowych na płaszczyźnie czasowo-odległościowej,
+b) uwydatnia powtarzalne w różnych echach elementy takie jak budynki, struktury znaczącej energii pochodzące od komponentów clutteru,
+c) może się jednak pogorszyć wykrywalność rzadko występujących, słabych obiektów, których sygnatura po prostu znika w rozkładzie o średniej wartości współczynnika uśrednienia K.
+Z powyższych względów uśredniony rozkład WVD jest szczególnie przydatny do statystycznej charakterystyki tła i identyfikacji stałych obiektów na obserwowanej przez radar scenie. Natomiast do detekcji małych celów korzystniejsze jest operowanie na pojedynczych lub słabo uśrednionych echach radarowych.
+
+\section{Wnioski końcowe}
+Reasumując, wykonane przez nas badania wykazały skuteczność dwutorowego podejścia do analizy sygnałów radarowych, łączącego globalną analizę statystyczną z lokalną, wysoko rozdzielczą inspekcją w dziedzinie czasowo--częstotliwościowej. 
+Takie połączenie pozwala jednocześnie na wiarygodne modelowanie szumu i clutteru oraz na zwiększenie czułości detekcji słabych obiektów, których sygnatura może być słabo widoczna w~uśrednionych rozkładach. Należy podkreślić, że słabo widocznymi obiektami w detekcji radarowej, w rozważanym zastosowaniu opisanego rozwiązania radaru lotniczego, będą niektóre rodzaje dronów i duże ilości gatunków ptaków. Do opisu statystycznych własności takich ech radarowych, wykorzystano symulacje realizowane metodą Monte Carlo oraz obliczanie estymacji gęstości prawdopodobieństwa KDE. Stwierdzono, że uśrednianie dużej liczby ech skutecznie tłumi losowe fluktuacje i prowadzi do zbieżności empirycznych rozkładów amplitud zarejestrowanych ech radarowych z przyjętym modelem szumu gaussowskiego. Miarą obecności innych, niegaussowskich składników sygnału echa radarowego pochodzących od clutteru radarowego oraz od innych obiektów wchodzących w obszar obserwowanego przez radar sektora są powtarzające się odchylenia od rozkładu normalnego. Zwłaszcza te które są w ogonach wykresu rozkładu lub niewielkie przesunięcia wartości średniej. Taki globalny sposób analizy ech jest użyteczny na etapie modelowania warunków pracy radaru oraz wyznaczania progów detekcji na przykład w~algorytmach CFAR. 
+
+W drugim części pokazano wyniki analiz uśrednionych rozkładów Wignera--Ville'a. Umiarkowane uśrednianie redukuje wpływ składników zakłócających detekcję pożądanych obiektów przez radar lotniczy operujący nisko nad dachami budynków miejskich, zielenią miejską i nad terenami lasów. W~efekcie poprawia czytelność wykresu czasowo-częstotliwościowego, dobrze podkreślając obecność stałych obiektów i charakterystyczne cechy clutteru. 
+Z wykonanych badan wynika, że jest konieczność łączenia obu metod przetwarzania pokazanych w tym rozdziale. Globalna analiza statystyczna metodą Monte Carlo z wykorzystaniem rozkładu KDE oraz silnie uśredniony rozkład WVD, daje dobry model szumu i~clutteru, stanowiąc fundament do dalszych decyzji detekcyjnych realizowanych przez radar i do oceny jakości procesu decyzyjnego wykonywanego przez radar. Należy dodać, że lokalna analiza w dziedzinie czasowo-częstotliwościowej, oparta na pojedynczych lub tylko słabo uśrednionych rozkładach Wignera--Ville'a, zapewnia dużą czułość na obecność słabych, lokalnie ujawniających się obiektów radarowych celów, których sygnatura mogłaby zostać wytłumiona w podejściu wyłącznie całościowej analizy (globalnej). 
+Proponowane przez nas w tym rozdziale podejście umożliwia spójną charakterystykę tła ech radarowych i poprawę zdolności detekcyjnych małych radarów lotniczych. Jest dobrą podstawą do projektowania i optymalizacji zaawansowanych algorytmów przetwarzania sygnałów radarowych w zastosowaniach praktycznych przeznaczonych do wykrywania nisko lecących dronów i ptaków.
+
+
+
+
+
+\begin{thebibliography}{9}
+
+\bibitem{Skolnik2008Radar}
+M.~I. Skolnik,
+\emph{Radar Handbook}, 3rd ed.,
+McGraw--Hill, 2008.
+
+\bibitem{Pastorino2010MicrowaveImaging}
+M.~Pastorino,
+\emph{Microwave Imaging},
+Wiley, 2010.
+
+\bibitem{Richards2014RadarSignalProcessing}
+M.~A. Richards,
+\emph{Fundamentals of Radar Signal Processing}, 2nd ed.,
+McGraw--Hill, 2014.
+
+\bibitem{HaykinRadarCognitive}
+S.~Haykin,
+\emph{Cognitive Dynamic Systems: Perception-Action Cycle, Radar and Radio},
+Cambridge University Press, 2012.
+
+\bibitem{Cilliers2020CounterUAS}
+J.~Cilliers \emph{et al.},
+``Counter-UAS Technologies and Concepts of Operation,''
+\emph{IEEE Aerospace and Electronic Systems Magazine},
+vol.~35, no.~10, pp.~6--18, 2020.
+
+\bibitem{CUASsurvey2021}
+A.~Author and B.~Author,
+``A Survey of Counter-Unmanned Aerial Systems,''
+\emph{IEEE Communications Surveys \& Tutorials},
+vol.~23, no.~4, pp.~1--35, 2021.
+
+\bibitem{WildlifeRadar2018}
+C.~Author,
+``Radar Detection of Birds and Small Aerial Targets,''
+\emph{IET Radar, Sonar \& Navigation},
+vol.~12, no.~3, pp.~250--260, 2018.
+
+\bibitem{MilitaryUAVTrends2019}
+D.~Author,
+``Trends in Military Use of Small UAVs,''
+\emph{Defence Technology},
+vol.~15, no.~4, pp.~567--575, 2019.
+
+\bibitem{UAVsenseAndAvoid2017}
+E.~Author,
+``Sense-and-Avoid Radar for Small Unmanned Aerial Vehicles,''
+\emph{IEEE Transactions on Aerospace and Electronic Systems},
+vol.~53, no.~2, pp.~993--1004, 2017.
+
+\bibitem{SmallRadarUAV2016}
+F.~Author and G.~Author,
+``Miniature X-Band Radar for Small UAV Platforms,''
+in \emph{Proc. IEEE Radar Conference},
+pp.~1--6, 2016.
+
+\bibitem{AutomotiveRadarOverview2019}
+H.~Author,
+``Short-Range Radar for Automotive and UAV Applications,''
+\emph{IEEE Signal Processing Magazine},
+vol.~36, no.~5, pp.~62--71, 2019.
+
+
+%%%%%%%%% dolączyc Dukof
+
+\bibitem{Ducoff2008_PulseCompression}
+Ducoff, M. R., B. W. Tietjen, and M. I. Skolnik. 
+"Pulse compression radar." 
+\emph{Radar handbook}, 
+8.8.44 (2008).
+
+\bibitem{MC_Radar_Integracja}
+D.~Kupcak and V.~Zavodny,
+``Radar detection probability by a Monte Carlo method,''
+in \emph{2013 23rd International Conference Radioelektronika (RADIOELEKTRONIKA)}, 2013, pp.~201--203.
+[Online]. Available: \url{https://doi.org/10.1109/RadioElek.2013.6530916}
+
+\bibitem{Swerling1960}
+P.~Swerling,
+``Probability of detection for fluctuating targets,''
+\emph{IRE Transactions on Information Theory},
+vol.~6, no.~2, pp.~269--308, 1960.
+[Online]. Available: \url{https://doi.org/10.1109/TIT.1960.1057561}
+
+\bibitem{MC_UAV_Collision}
+I.~Lahsen-Cherif, H.~Liu, and C.~Lamy-Bergot,
+``Real-time drone anti-collision avoidance systems: An edge artificial intelligence application,''
+in \emph{2022 IEEE Radar Conference (RadarConf22)}, 2022, pp.~1--6.
+[Online]. Available: \url{https://doi.org/10.1109/RadarConf2248738.2022.9764175}
+
+\bibitem{EAM_MC}
+S.~Gmyrek, D.~Sysak, P.~Biernacki, and G.~Jaromi,
+``Investigations into optimum non-periodic bursts scheme in radar pulse train designed for fixed-wing drone detections by multi-function radar,''
+\emph{IET Radar, Sonar \& Navigation},
+vol.~18, no.~10, pp.~1874--1886, 2024.
+[Online]. Available: \url{https://doi.org/10.1049/rsn2.12624}
+
+\bibitem{HistogramApproach}
+K.~Jedrzejewski,
+``Numerical analysis of signal distribution propagation in radar detection procedures,''
+in \emph{2016 17th International Radar Symposium (IRS)}, 2016, pp.~1--6.
+[Online]. Available: \url{https://doi.org/10.1109/IRS.2016.7497395}
+
+\bibitem{Silverman1986}
+B.~W. Silverman,
+\emph{Density Estimation for Statistics and Data Analysis},
+Chapman and Hall, London, 1986.
+
+\bibitem{Kroese2011MonteCarlo}
+D.~P. Kroese, T.~Taimre, and Z.~I. Botev,
+\emph{Handbook of Monte Carlo Methods},
+Wiley, 2011.
+
+\bibitem{RobertCasella2004}
+C.~P. Robert and G.~Casella,
+\emph{Monte Carlo Statistical Methods}, 2nd~ed.,
+Springer, 2004.
+
+
+
+\end{thebibliography}

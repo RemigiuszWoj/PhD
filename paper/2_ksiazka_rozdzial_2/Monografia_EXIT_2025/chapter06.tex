@@ -1,0 +1,341 @@
+\chapterauthor{Bernadetta Maleszka}
+\chapter[Kolektywny System \ldots]{Kolektywny System Rekomendacji wykorzystujący dynamikę preferencji i opinii użytkowników}
+\thispagestyle{empty}
+\vspace{-8mm} {\large Bernadetta Maleszka} \vspace{8mm}
+
+
+\section{Wprowadzenie}
+
+Największymi wyzwaniami współczesnych systemów rekomendacji są: tzw. problem "zimnego startu" (\textit{ang. cold-start problem}) oraz dynamika preferencji użytkownika \cite{maleszka}. Dotyczą one sytuacji, w której system nie zna upodobań nowego użytkownika (przez co nie jest możliwa personalizacja) oraz zmiany preferencji i~zainteresowań użytkownika, który już korzysta z systemu rekomendacji. Efektywność klasycznych rozwiązań np. filtrowania kolaboratywnego czy profilowania użytkownika na podstawie jego aktywności, wzbogacane często przez algorytmy analizy danych z zakresu sztucznej inteligencji, nadal nie jest zadowalająca \cite{montaner}, \cite{patel}.
+
+Celem systemu rekomendacji jest dostarczenie użytkownikowi właściwych treści, produktów czy usług, zazwyczaj poprzez odfiltrowanie mniej interesujących elementów. Niestety, takie podejście może prowadzić do zbytniego zawężania wyników \cite{nguyen}, \cite{sukiennik}, co może wzmacniać zjawisko bańki informacyjnej (\textit{ang. the filter bubble}) \cite{areeb} oraz efekt komory pogłosowej (\textit{ang. the echo chamber effect}) \cite{terren}.
+
+Bańka informacyjna jest definiowana jako efekt algorytmów filtrujących, które udostępniają użytkownikowi jedynie wybraną zawartość \cite{lunardi}. Prezentacja użytkownikowi tylko treści zgodnych z jego poglądami może utwierdzić go w przekonaniu, że jego opinie są zgodne z opiniami ogółu lub znacznej większości społeczeństwa, co nie musi być prawdą \cite{areeb}. Często wykorzystywanym rozwiązaniem tego problemu jest dywersyfikacja rekomendowanych treści, która jednak obniża dokładność rekomendacji \cite{lunardi1}.
+
+W kontekście systemów rekomendacji często opisywany jest również efekt komory pogłosowej. Choć nie jest on precyzyjnie zdefiniowany, to dotyczy głównie sposobu rozprzestrzeniania się informacji w sieciach społecznych. Efekt ten powstaje, gdy podobne opinie są wielokrotnie powtarzane i cytowane wśród znajomych, czyli użytkowników należących do tej samej grupy  \cite{mahmoudi}. Powoduje to wzrost polaryzacji opinii wśród użytkowników sieci społecznych \cite{interian}.
+
+W niniejszej pracy została przedstawiona koncepcja Kolektywnego Systemu Rekomendacji jako sposobu rozwiązania problemu zimnego startu, który uwzględnia zmiany preferencji i opinii użytkownika. Głównym celem Kolektywnego Systemu Rekomendacji jest przedstawienie użytkownikowi zawartości (treści, produktu lub usług), dostosowanej do jego potrzeb na podstawie ewolucji opinii użytkownika na wybrane tematy. Wybrane komponenty systemu zostały opisane we wcześniejszych pracach autorki \cite{maleszka1}, \cite{mal}.
+
+Kolektywny System Rekomendacji przechowuje następujące informacje o każdym użytkowniku: jego cechy (np. preferencje, dane demograficzne, itp.), relacje z~innymi użytkownikami (mogą wystąpić różne typy relacji) oraz jego opinie na wybrane tematy (np. o produktach czy usługach). System ten gromadzi i przetwarza dane pochodzące z wielu autonomicznych źródeł. Takie kolektywne podejście pozwala na dywersyfikację rekomendacji, choć istnieje również ryzyko zwiększenia niepewności z uwagi np. na możliwe występowanie niespójności w danych.
+
+Rekomendacja kolektywna uwzględniająca użytkowników sieci społecznościowej odbywa się według następujących kroków:
+
+\begin{enumerate}
+\item Podział użytkowników na grupy według ustalonych cech (np. własności strukturalnych sieci społecznej lub innych parametrów sieci)
+\item Wyznaczenie zbioru najbardziej znaczących cech użytkowników, którzy zostali zaklasyfikowani do wspólnej grupy w pierwszym kroku (np. preferencji czy cech demograficznych)
+\item Wyznaczenie sentymentu opinii dla każdej z grup użytkowników dla ustalonych tematów
+\item Wyznaczenie warunków koniecznych do ponownego grupowania użytkowników sieci społecznej (z uwagi na zmiany poglądów i opinii użytkowników, ewolucji podlega również opinia całej grupy)
+\item Predykcja sentymentu nowych grup i rekomendacja zawartości zgodnej z~bieżącymi profilami grup.
+\end{enumerate}
+
+W systemach rekomendacji znane jest zjawisko bańki informacyjnej. Podstawowym założeniem takich systemów jest fakt, że użytkownicy o podobnych preferencjach czy zainteresowaniach będą otrzymywali podobne rekomendacje. W~sieciach społecznych, użytkownik może wielokrotnie otrzymywać podobne rekomendacje czy opinie zbliżone do jego poglądów. Dodatkowo, aby zwiększyć efektywność rekomendacji, system będzie filtrował rekomendacje czy opinie, które nie będą zgodne z poglądami użytkownika, co będzie wzmacniało efekt komory pogłosowej. Istotne jest zatem zapewnienie, żeby system rekomendacji kolektywnej nie powodował i nie wzmacniał powyżej opisanych mechanizmów.
+
+Zawartość pracy została podzielona w następujący sposób: w rozdziale \ref{rw} przedstawiono najczęściej spotykane problemy systemów rekomendacji oraz sposoby ich rozwiązania w istniejącej literaturze. Rozdział \ref{system} zawiera opis architektury Systemu Rekomendacji Kolektywnej oraz poszczególnych komponentów systemu. Rozdział \ref{ee} prezentuje koncepcję badań eksperymentalnych, a w ostatnim rozdziale \ref{sum} zebrano najważniejsze wnioski.
+
+
+\section{Przegląd literatury}\label{rw}
+
+Systemy rekomendacji są powszechnie stosowane i wciąż udoskonalane, jednak nadal wymagają rozwoju, w szczególności w zakresie modelowania profilu użytkownika i jego dynamiki oraz wyznaczania ewolucji grup użytkowników o podobnych preferencjach.
+
+
+\subsection{Wyzwania nowoczesnych systemów rekomendacji}
+
+Z powodu nadmiaru informacji, które docierają do każdego użytkownika, niezbędne jest wykorzystanie systemów rekomendacji i personalizacji. Ich celem jest odfiltrowanie nierelewantnych informacji oraz selekcja tych, które będą dla użytkownika przydatne. Najczęściej występującymi problemami opisywanymi w~literaturze przedmiotu są: modelowanie użytkownika (np. tworzenie profilu dla nowego użytkownika, o którym system nie posiada jeszcze żadnych informacji) oraz rekomendacja właściwych treści (produktów czy usług) we właściwym czasie.
+
+Pierwszy aspekt związany jest z problemem zimnego startu. Możliwe rozwiązania tego problemu obejmuje prośbę użytkownika o podanie niezbędnych informacji podczas pierwszego kontaktu z systemem. Może on przybierać formę np. ankiety z pytaniami o preferencje użytkownika  \cite{isinkaye}, bądź też prośby o ocenę kilku produktów, usług, utworów muzycznych, itp. Na podstawie tych danych możliwe jest wstępne wypełnienie jego profilu \cite{patel}. Niestety, tak przygotowany profil użytkownika często wymaga od samego użytkownika sporo cierpliwości (wypełnianie ankiet zwykle jest czasochłonne), a uzyskane dane można określić mianem danych deklaratywnych. 
+
+Drugą ważną kwestią w systemach rekomendacji jest aktualność profilu użytkownika i rekomendowanych mu treści. Informacje o użytkowniku powinny być stale adekwatne do jego rzeczywistych potrzeb i aktywności w~systemie. Wśród najczęściej stosowanych struktur profilu są wektory czy grafy (ontologie) przechowujące informacje o zainteresowaniach użytkownika, w~przypadku metod aktualizacji profilu -- adaptacja następująca po uzyskaniu nowych danych użytkowania, stopniowe zapominanie wcześniejszych preferencji, uczenie z wykorzystaniem sieci neuronowych czy dużych modeli językowych \cite{sob}, \cite{wu}.
+
+\subsection{Ewolucja opinii użytkownika}
+
+Opinia poszczególnych osób może się zmieniać ze względu na przynależność do określonych grup społecznych \cite{pedraza}. Może być kształtowana przez opinie, wiedzę, zachowania lub emocje innych osób. Użytkownik może zaakceptować tylko część opinii innych użytkowników (potwierdzających jego opinię) \cite{hou}. Trudno jest opracować model uwzględniający wszystkie możliwe parametry, które mogą mieć wpływ na ostateczną opinię użytkownika.
+
+W rzeczywistości większość ludzi ma swoje własne zdanie i trudno przekonać ich do jego zmiany. Na opinię pojedynczego użytkownika może wpływać wiele czynników, zarówno świadomych, jak i nieświadomych. Podejmowane są liczne próby modelowania zmian opinii, uwzględniające różne aspekty życia użytkownika. Zmiennymi kontrolnymi analizowanymi w pracy \cite{sobkowicz} są wiedza i emocje użytkownika. Popularne jest również podejście, w~którym użytkownik uzależnia swoją opinię od opinii przyjaciół oraz wpływów zewnętrznych. Liu i Fang \cite{liu} zaproponowali niebayesowski model uczenia się społecznego, który sprawdza podatność grupy użytkowników na osiągnięcie konsensusu.
+
+Aby określić ostateczną opinię użytkownika na dany temat, w literaturze można znaleźć wiele podejść. Użytkownik może zintegrować swoją opinię na podstawie opinii zebranych od innych użytkowników, stosując np. wartość średnią, model niebayesowski \cite{liu}, czy model probabilistyczny \cite{deng}.
+
+\subsection{Dynamika opinii w grupie użytkowników}
+
+Istnieją dwa najpopularniejsze modele dynamiki opinii \cite{tian}: modele oparte na fizyce statystycznej i sieciach złożonych (np. model Isinga i model wyborcy) oraz modele oparte na systemach wieloagentowych \cite{proskurnikov} (np. model Frencha-DeGroota, model Friedkina-Johnsena i model Hegselmanna-Krausego). Pierwsza kategoria koncentruje się na rozkładzie opinii w grupie użytkowników (całej sieci społecznościowej). Druga kategoria analizuje zachowania agentów lub użytkowników i~ich wpływ na opinię całej grupy.
+
+Hassani i in. \cite{hassani} przedstawiają przegląd istniejących  podejść do modelowania dynamiki opinii. Ich celem jest modelowanie procesu kształtowania opinii, który zazwyczaj zakłada, że wszyscy użytkownicy aktualizują swoje opinie, dostosowując je do średniej opinii sąsiadów. Su i in. \cite{su} podkreślili, że wiele modeli ewolucji opinii jest czasochłonnych i aby zmniejszyć ich złożoność, zaproponowali model heurystyczny oparty na naturze. Xie i in. \cite{xie} wykorzystali scenariusze podwójnego ryzyka do modelowania niepewności i~modelowania większej liczby czynników wpływających na wyniki.
+
+Istnieje wiele artykułów poświęconych fuzji opinii publicznej, którą można interpretować w pewnych kontekstach badań nad dynamiką opinii. Ianni \cite{ianni} opracował model fuzji informacji w sieci społecznościowej z różnymi typami relacji między użytkownikami: pozytywnymi i negatywnymi relacjami społecznymi, które zmieniają się w czasie. Artykuł koncentruje się na analizie możliwości osiągnięcia stanu równowagi w oparciu o konfigurację opinii.
+
+
+\subsection{Wykrywanie społeczności użytkowników o podobnych zainteresowaniach}
+
+Filtrowanie kolaboratywne (\textit{ang. collaborative filtering}) zakłada, że rekomendacje dla użytkowników o podobnych gustach powinny być podobne oraz, analogicznie, powinny różnić się dla użytkowników o różnych zainteresowaniach. W dobie sieci społecznościowych, realizacja powyższego założenia jest tym łatwiejsza, że relacje pomiędzy użytkownikami są dodatkowym źródłem informacji, które pozwalają analizować występowanie klik w grafach społecznych lub innych własności sieci użytkowników.
+
+Wyzwaniem pozostaje natomiast dynamika samych użytkowników i zmiany ich preferencji: niektórzy użytkownicy zmieniają swoje zainteresowania czy opinie (zmiana profilu jednego użytkownika), modyfikacjom może ulec zbiór użytkowników (np. pojawiają się nowi), a ponadto, zmieniać się mogą relacje pomiędzy użytkownikami -- krawędzie w grafie powiązań społecznych mogą być dodawane lub usuwane.
+
+Jin et al. \cite{jin} zaprezentował systematyczny przegląd metod wykrywania społeczności w sieciach społecznych. Obejmują one różne techniki: od modeli probabilistycznych do głębokiego uczenia sieci neuronowych.
+
+Na problem dynamiki klik użytkowników zwrócili uwagę Cazabet i Amblard \cite{cazabet}, którzy analizują zmiany grup profili użytkowników w czasie. Zaproponowali oni analizowanie zmian w sieci jako sekwencję kolejnych stanów sieci społecznej oraz model sieci temporalnej, w której podstawą jest początkowy stan sieci oraz sekwencja modyfikacji (dodawania lub usuwania wierzchołków  - użytkowników). W pracy tej rozpatrzone zostały 3 scenariusze:
+\begin{itemize}
+    \item Niezależne wykrywanie i dopasowywanie społeczności -- w tym przypadku założenie jest następujące: każda migawka (\textit{ang. snapshot}) jest wykonywana niezależnie (społeczności są określane dla każdej migawki), a różnice są dopasowywane między migawkami;
+    \item Sekwencyjne wykrywanie społeczności -- znalezienie społeczności w~bieżącej migawce opiera się na strukturze sieci w poprzedniej migawce i~bieżącej sieci;
+    \item Globalne wykrywanie społeczności na podstawie wszystkich migawek -- scalanie wszystkich migawek sieci i określanie społeczności.
+\end{itemize}
+
+Wszystkie te podejścia pozwalają na śledzenie ewolucji grup użytkowników w~sieci społecznej.
+
+Efektywność metod wykrywania grup użytkowników może opierać się na cechach sieci społecznej: minimalizacji krawędzi opuszczających społeczność \cite{baltsou} lub gęstości połączeń pomiędzy użytkownikami (dobrze wykryta społeczność powinna mieć wysoką gęstość w porównaniu z gęstością całej sieci).
+
+Z uwagi na wysoką złożoność obliczeniową algorytmów detekcji społeczności w dynamicznych sieciach społecznych, warto przeanalizować, jaka powinna być częstość migawek sieci, jak często należy wykrywać nowe grupy w sieciach społecznych oraz jakie są warunki niezbędne do przeliczania podziału sieci na grupy.
+
+
+\subsection{Miary polaryzacji opinii użytkowników}\label{s1}
+
+Aby sprawdzić skuteczność algorytmów detekcji zbiorowisk, konieczne jest zdefiniowanie pewnych miar jakości \cite{plantie}. Mogą one być przydatne w określaniu warunków, jakie powinny być spełnione, żeby ponownie grupować użytkowników.
+
+W literaturze można znaleźć wiele metod oceny jakości podziału klastrów. Można je podzielić na metody strukturalne (głównie statystyczne) oraz metody oparte na treści.
+
+W obszarze miar statystycznych i strukturalnych można znaleźć następujące przykłady. Autorzy pracy \cite{interian} wymienili poniższe miary polaryzacji:
+\begin{itemize}
+    \item Homofilia -- „preferencja dla podobnych” – to miara strukturalna definiowana jako średnia część sąsiadów każdego węzła należących do tego samego klastra podzielona przez liczbę wszystkich sąsiadów.
+\item Modułowość -- miara używana do wykrywania społeczności. Ocenia liczbę połączeń wewnątrz społeczności w stosunku do połączeń między społecznościami.
+\item Błądzenie losowe sprawdza, czy możliwe jest podzielenie grafu na dwa podgrafy w taki sposób, aby błędy losowe zaczynały się i kończyły w~tym samym podgrafie.
+\item Równowaga -- krawędzie w grafie mają atrybut, który mówi nam, czy krawędź jest dodatnia (przyjaciele), czy ujemna (wrogowie). Na podstawie następujących reguł: „przyjaciel mojego przyjaciela jest moim przyjacielem” i~„wróg mojego przyjaciela jest moim wrogiem”, równowaga jest definiowana dla każdej kliki trzech użytkowników: powinny występować tylko krawędzie dodatnie lub co najwyżej jedna ujemna.
+\end{itemize}
+
+Innym źródłem postulatów dotyczących reorganizacji klastra sieciowego może być unikanie problemu baniek informacyjnych i efektu komory pogłosowej. Opierają się one również na strukturze sieci: jednorodność \cite{lunardi}, \cite{sukiennik}; topologiczna stabilność społeczności \cite{kong}; gęstość, wzajemność oraz liczba silnych i słabych relacji \cite{duskin}.
+
+Lunardi i in. \cite{lunardi} zdefiniowali miarę jednorodności, aby sprawdzić, czy system jest podatny na generowanie baniek filtrujących. Miara jednorodności sprawdza, ilu użytkowników oceniło rekomendowany element. Jeśli prawie wszyscy użytkownicy podobnie ocenili większość rekomendowanych elementów, jednorodność jest wysoka.
+
+Autorzy pracy \cite{sukiennik} zaproponowali podobne podejście do analizy głębokich baniek informacyjnych. Określili, czy użytkownik znajduje się w bańce, czy poza nią, na podstawie liczby elementów, z którymi miał styczność. Ustalili kryterium na podstawie mediany elementów należących do każdej kategorii.
+
+Wszystkie wymienione powyżej miary są ważne i przydatne w ocenie jakości metod grupowania na poziomie struktury. Można je również wykorzystać do sprawdzenia jakości klastrów użytkowników w czasie.
+
+Inne rodzaje miar jakości są powiązane z treścią rekomendacji, np. jednorodność ideologiczna \cite{duskin}; kwalifikacja treści \cite{interian}; różnorodność treści rekomendacji \cite{nguyen}; czy spójność czasowa klastrów \cite{kong}.
+
+W kontekście rekomendacji wiadomości możliwe jest wykorzystanie analizy sentymentu i metod wykrywania opinii do oceny spójności klastrów. W~szczególności interesujące są trendy polaryzacji na poziomie pojedynczego użytkownika (analizowane w pracy autorki \cite{maleszka1}) i grup użytkowników.
+
+Duskin i in. \cite{duskin} zdefiniowali jednolitość ideologiczną w kategoriach partyjności na poziomie konta użytkownika oraz homogeniczność polityczną dla każdego konta. Polaryzacja publikowanych treści stanowi podstawę kwalifikacji treści \cite{interian} i różnorodności treści rekomendacji \cite{nguyen}. Aspekt spójności czasowej został omówiony w pracy \cite{kong}. 
+
+
+\section{Kolektywny System Rekomendacji}\label{system}
+
+W niniejszym rozdziale przedstawiono ogólną koncepcję Kolektywnego Systemu Rekomendacji. Jego głównym celem jest określanie dokładnych i istotnych informacji (np. wiadomości) dla użytkowników korzystając z metod dynamicznego grupowania oraz aktualizowanie grup użytkowników.
+
+
+\subsection{Sformułowanie problemu}
+
+W Kolektywnym Systemie Rekomendacji rozpatrujemy użytkowników w~sieci społecznościowej. Celem systemu jest rekomendacja interesujących treści w~oparciu o zainteresowania i preferencje użytkowników oraz relacje między użytkownikami.
+
+Rozważmy zbiór użytkowników $U=\{u_1, u_2, \ldots, u_n\}$, gdzie $n$ to liczba użytkowników. System powinien posiadać informacje o każdym użytkowniku, dotyczące jego danych demograficznych, zainteresowań, opinii na wybrane tematy, relacji z innymi użytkownikami, itp. Użytkownik nie może być zmuszony do wprowadzania wszystkich tych informacji podczas rejestracji. Najważniejsze elementy, takie jak np. opinie na wybrane tematy, powinny być obliczane na podstawie bieżącej aktywności użytkownika (publikowania postów lub czytanych wiadomości).
+
+Użytkownicy mogą kontaktować się z innymi użytkownikami w sieci społecznościowej. Strukturę sieci można przedstawić następująco: graf $G = (U, E)$, gdzie $U$ to zbiór wierzchołków (użytkowników), a $E$ to zbiór krawędzi -- relacji pomiędzy użytkownikami $u=\{(u_i, u_j)\}$. Znaczenie krawędzi nie zostało tutaj celowo określone, aby nie ograniczać potencjalnej interpretacji i zastosowania przedstawionego modelu. Może występować jednocześnie wiele typów relacji.
+
+Relacje pomiędzy użytkownikami mogą zostać zdefiniowane w różny sposób: w sieci społecznościowej są interpretowane jako przyjaźń, współautorstwo (w grafie nieskierowanym), obserwujący, cytowania (w grafie skierowanym), itp. Przykład takiej sieci przedstawiono w \cite{fairbanks}. Autorzy przeanalizowali model masowego strumieniowania danych, w którym dynamiczna sieć składa się z użytkowników i zdarzeń, które podlegają analizie ciągłego strumienia, w tym aktualizacji dla nowych krawędzi.
+
+Tego rodzaju relacje są raczej stabilne i nie zmieniają się znacząco w~czasie. W naszym podejściu chcielibyśmy uwzględnić słabsze relacje między użytkownikami, np. użytkownik $u_1$ jest połączony z użytkownikiem $u_2$ (wierzchołek skierowany), gdy $u_1$ polubi lub skomentuje ustaloną liczbę $u_2$ postów w określonym przedziale czasowym.
+
+Głównymi zadaniami systemu są: podzielenie całego zbioru użytkowników na grupy w oparciu o zainteresowania użytkowników i strukturę sieci tak, aby uzyskane grupy zawierały użytkowników o podobnych zainteresowaniach, gustach itp. oraz zebranie danych na temat ocen rekomendacji i predykcja kolejnych wiadomości, które należy polecić – jedna grupa otrzymuje tę samą rekomendację, ale oceny i opinie użytkowników mogą się różnić. Po wielu rekomendacjach grupa (klaster) może składać się z użytkowników o różnych opiniach na wybrany temat, co powoduje konieczność reorganizacji grup w całej sieci społecznościowej.
+
+Kolejny problem pojawia się, gdy traktujemy użytkowników jako obiekty statyczne – są oni dynamiczni, a ich opinie mogą zmieniać się w czasie. Co więcej, brak reorganizacji grup (klastrów) może prowadzić do efektu bańki informacyjnej. Pomimo faktu, że problem ten jest często poruszany w literaturze, nie jest on dobrze zdefiniowany ani rozwiązany.
+
+\begin{figure}[tb]
+    \centering
+    \includegraphics[width=1\textwidth]{fig/ch6/fig2.png}
+    \caption{Schemat Kolektywnego Systemu Rekomendacji}
+    \label{fig2}
+\end{figure}
+
+Na rysunku \ref{fig2} zaprezentowano ogólną ideę Kolektywnego Systemu Rekomendacji, a w kolejnych sekcjach szczegółowo opisano poszczególne elementy.
+
+\subsection{Grupowanie użytkowników}
+
+Problem ten znany jest jako detekcja społeczności. Celem tego modułu jest analiza struktury sieci społecznościowej i odkrycie grup użytkowników, którzy są np. ze sobą powiązani (kliki).
+
+Diboune i in. (\cite{diboune}) przedstawili systematyczny przegląd tych podejść. Rozróżniają oni modele oparte na grafach (detekcja wzorców, klasteryzacja widmowa i~metoda stochastyczna), modele uczenia maszynowego (uczenie nienadzorowane, półnadzorowane i nadzorowane), modele wielokryterialne (hierarchiczny lub metaheurystyczny) oraz model gry (kooperacyjny lub niekooperacyjny).
+
+Kolektywny System Rekomendacji gromadzi dane o użytkownikach, które pochodzą z wielu autonomicznych źródeł, dlatego proces grupowania powinien uwzględniać analizę i eliminację potencjalnych niespójności danych. W szczególności podobne preferencje czy nawet podobne opinie użytkowników na wybrany temat nie gwarantują, że użytkownicy będą mieli spójne poglądy na inne tematy.
+
+\subsection{Wyznaczanie kolektywnego sentymentu grupy}
+
+Aby rekomendować właściwą treść dla grupy użytkowników, należy przewidzieć "średnią" opinię członków grupy na wybrany temat. 
+
+Istnieje wiele podejść do wyznaczania "przeciętnej” opinii grupy lub polaryzacji grupy wobec wybranych tematów. Autorzy \cite{rathod} opisali podstawowe kategorie analizy sentymentu grupowego: odgórną i oddolną, a także podejścia hybrydowe, łączące obie te metody. W pierwszym przypadku analizowane są informacje kontekstowe o grupie w celu wykrycia cech tematu. W~przypadku podejść oddolnych system gromadzi dane dotyczące indywidualnych nastrojów i łączy je w celu określenia wyniku końcowego.
+
+Gdy nowy użytkownik pojawia się w systemie i zostaje zaklasyfikowany do tej grupy, np. na podstawie opinii podobnej do opinii innych członków grupy na wcześniej zdefiniowane tematy, system może przewidzieć, że podobne treści mogą być rekomendowane nowemu użytkownikowi i mogą być dla niego istotne. Stosując opisane podejście, rozwiązujemy problem zimnego startu.
+
+\subsection{Dynamika opinii użytkownika}
+
+Aby przewidzieć kierunek zmian polaryzacji grupy, konieczne jest prognozowanie trendu każdego członka grupy. We wcześniejszych pracach \cite{maleszka1} rozważany był problem modelowania trendu polaryzacji sentymentu na poziomie pojedynczego użytkownika. Metody analizy szeregów czasowych, np. model wygładzania wykładniczego Holta-Wintersa, pozwalają na skuteczne przewidywanie trendu i~sezonowości w modelu addytywnym lub multiplikatywnym.
+
+\subsection{Warunki ponownego grupowania}\label{con}
+
+Aby uniknąć problemu bańki informacyjnej i efektu komory pogłosowej, niezbędne jest śledzenie dynamiki członków grupy, która nie musi być spójna wśród użytkowników. W związku z pojawiającymi się nowymi opiniami użytkowników, może być konieczne ponowne pogrupowanie sieci.
+
+Podobnie, jak w przypadku określania sentymentu grupy użytkowników, możemy rozważyć dwa sposoby analizy grup. W przypadku analizy oddolnej skupiamy się na sekwencji zmian w systemie: które wierzchołki zostały dodane lub usunięte oraz które krawędzie zostały zmienione. Warunki brzegowe ponownego wyznaczania grup są dość trudne do zdefiniowania, ponieważ rodzaje i liczba zmian w zbiorach użytkowników i krawędzi nie mogą jednoznacznie określić rozmiaru tych zmian.
+
+W podejściu "z góry" możemy rozpocząć analizę sieci jako całości w wymaganym punkcie czasowym i niezależnie obliczyć niektóre charakterystyki grup. Kolejne kroki oceny jakości grupowania można przeprowadzić na dwa sposoby. Możliwe jest zdefiniowanie pewnych progów dla wybranych miar bez uwzględniania poprzedniej wersji sieci. Drugą możliwością jest porównanie własności sieciowych w tych samych grupach w różnych punktach czasowych.
+
+W oparciu o miary stosowane do oceny jakości metod grupowania występujących w literaturze (opisane w rozdziale \ref{s1}), przeanalizowano ich użyteczność w zadaniu ponownego grupowania sieci dynamicznych.
+
+Najbardziej użyteczne miary sprawdzające, czy początkowe grupy są nadal aktualne ze względu na dynamikę użytkowników, można podzielić na następujące typy:
+\begin{itemize}
+\item miary statystyczne spójności grupy;
+\item miary strukturalne związane ze stabilnością społeczności;
+\item miary związane z treścią rekomendacji.
+\end{itemize}
+
+Większość miar jest podejmowana w podejściu odgórnym. Koncentrują się one zarówno na aspektach strukturalnych, jak i na treści rekomendacji sieci, które powinny gwarantować jakość całego systemu.
+
+\paragraph{Miary statystyczne} to największa grupa miar, które są dobrze zdefiniowane i~zaimplementowane. Większość z nich jest również wykorzystywana jako wskaźniki jakości w metodach grupowania.
+
+W tej grupie miar można znaleźć np. gęstość krawędzi w obrębie każdego klastra i między klastrami, modułowość, jednorodność, błądzenia losowe lub statystyczne liczby silnych i słabych relacji \cite{interian}. Wszystkie one opierają się na obliczeniu podzieleniu liczby użytkowników lub krawędzi sąsiadów przez liczbę wszystkich użytkowników lub krawędzi sąsiadów (w grafie pełnym). Warunki ponownego grupowania użytkowników to osiągnięcie ustalonej wartości granicznej dla wymienionych miar. W takim przypadku, grupa może zastać podzielona, np. na dwa mniejsze klastry.
+
+Analiza każdego klastra oddzielnie nie pozwala na wykrycie sytuacji, w~których można by połączyć dwa lub więcej klastrów o podobnych zainteresowaniach użytkowników. Wymaga to jednoczesnej analizy większej liczby klastrów i~zwiększa złożoność obliczeniową procedury ponownego grupowania.
+
+\paragraph{Miary strukturalne} opierają się głównie na strukturze sieci i grafach z~wieloma rodzajami krawędzi. Mogą one wykorzystywać pewne parametry statystyczne do określania wyników końcowych. Są one częściej wykorzystywane do analizy grafów dynamicznych, w szczególności zmian w zbiorach użytkowników (gdy w~sieci pojawiają się nowi użytkownicy) lub krawędziach (jak użytkownicy współpracują ze sobą).
+
+Do tej grupy zaliczają się następujące miary: jednorodność \cite{lunardi}, \cite{sukiennik}, topologiczna stabilność społeczności \cite{kong}, wzajemność \cite{duskin}. Ich główną zaletą jest analiza całej sieci.
+
+W niniejszym systemie rekomendacji miary strukturalne są również wykorzystywane do oceny jakości wstępnego grupowania. Wykorzystanie tych wskaźników pozwala zapewnić spójność klastrów.
+
+\paragraph{Miary związane z treścią} to najbardziej użyteczna grupa miar do rozwiązania naszego problemu badawczego. Opierają się one na nastrojach użytkowników wobec rekomendowanych tematów, wiadomości itp. Celem systemu jest rekomendowanie tego samego elementu grupie użytkowników o podobnym nastawieniu do niego.
+
+W niniejszym systemie zakładamy, że użytkownicy są grupowani na podstawie swoich profili, a profile są aktualizowane zgodnie z bieżącą aktywnością użytkowników. Miary takie jak jednorodność ideologiczna, różnorodność treści czy spójność czasowa pozwalają wykryć niebezpieczną sytuację wymuszania efektu polaryzacji.
+
+Wymienione powyżej miary można obliczyć matematycznie. Warunki, które muszą zostać spełnione, aby ponownie przeprowadzić procedurę grupowania, można zdefiniować jako osiągnięcie ustalonych wartości. Progi te zależą od konkretnej sieci społecznościowej i jej zastosowania.
+
+
+\section{Koncepcja badań eksperymentalnych}\label{ee}
+
+Główna idea dynamiki sieci społecznościowej została przedstawiona na rys. \ref{fig}. Górna część rysunku zawiera 7 użytkowników i relacje między nimi. Na podstawie tych informacji, użytkowników można podzielić na 2 grupy w czasie $t$: pierwsza grupa składa się z użytkowników: $u_1, u_2$ i $u_3$, a druga grupa zawiera użytkowników: $u_4, \ldots, u_7$.
+
+W określonych momentach (np. co ustalony czas, liczba sesji, liczbę wysłanych wiadomości itd.) niezbędne jest sprawdzenie, czy struktura sieci uległa zmianie. Dla podanego przykładu do systemu dołączyli nowi użytkownicy ($u_8$ i $u_9$), inni -- usunięci (tutaj: $u_6$), a relacje między węzłami uległy zmianie. Najważniejsza i~najczęstsza zmiana dotyczy polaryzacji sentymentu – na rys. \ref{fig} użytkownik $u_3$ zmienił swoje opinie za wybrane tematy, przez co jego poglądy są bardziej zgodne z inną grupą użytkowników.
+
+Na podstawie nowego stanu sieci społecznościowej widać, że podział użytkowników nie jest właściwy i zachodzi potrzeba ponownego grupowania użytkowników w sieci społecznościowej.
+
+\begin{figure}
+    \centering
+    \includegraphics[width=.95\textwidth]{fig/ch6/fig1.png}
+    \caption{Przykład dynamiki sieci społecznościowej.}
+    \label{fig}
+\end{figure}
+
+
+Aby zweryfikować jakość proponowanego systemu rekomendacji, konieczne jest przygotowanie i przeprowadzenie eksperymentalnej oceny całego systemu.
+
+Metodologia badań eksperymentalnych systemów rekomendacji jest dobrze opisana w wielu pracach naukowych. Zazwyczaj autorzy wdrażają odpowiednie środowisko eksperymentalne z proponowanymi metodami rekomendacji i używają zestawu metryk do oceny jakości rekomendacji. Najpopularniejsze metryki to: średni błąd bezwzględny (MAE), pierwiastek średniego błędu kwadratowego (RMSE), czułość, precyzja, F-measure, krzywa ROC lub pole pod krzywą ROC (AUC) \cite{zangerle}.
+
+
+\section{Podsumowanie i plan przyszłych prac}\label{sum}
+
+Największymi wyzwaniami współczesnych systemów rekomendacji są: tzw. problem "zimnego startu" oraz dynamika preferencji użytkownika. Systemy rekomendacji mogą także generować efekt bańki informacyjnej i wzmacniać polaryzację w sieciach społecznościowych. Najpopularniejszym rozwiązaniem tego problemu jest dywersyfikacja proponowanych treści, która może prowadzić do spadku jakości rekomendacji. W niniejszym rozdziale przedstawiono opis Kolektywnego Systemu Rekomendacji, którego celem jest rekomendowanie trafnych treści, produktów czy usług użytkownikom, unikając problemu zimnego startu dzięki wykorzystaniu wiedzy kolektywnej o~opiniach użytkowników.
+
+W dalszej pracy planowane jest opracowanie środowiska eksperymentalnego i~przeprowadzenie kompleksowych badań eksperymentalnych Kolektywnego Systemu Rekomendacji.
+
+\begin{thebibliography}{88}
+\bibitem{areeb}
+Areeb, Q. M., Nadeem, M., Sohail, S. S., Imam, R., Doctor, F., Himeur, Y., Hussain, A., Amira, A. Filter bubbles in recommender systems: Fact or fallacy -- A systematic review. WIREs Data Mining and Knowledge Discovery, \textbf{13}(6), \url{https://doi.org/10.1002/widm.1512} (2023)
+
+\bibitem{baltsou}
+Baltsou G., Christopoulos K., Tsichlas K. Local Community Detection: A Survey. In: IEEE Access, vol. 10, pp. 110701--110726 (2022) \url{https://doi.org/10.1109/ACCESS.2022.3213980}
+
+\bibitem{cazabet}
+Cazabet, R., Amblard, F. (2014). Dynamic Community Detection. In: Alhajj, R., Rokne, J. (eds) Encyclopedia of Social Network Analysis and Mining. Springer, New York, NY. \url{https://doi.org/10.1007/978-1-4614-6170-8_383}
+
+\bibitem{deng} Deng L., Liu Y., Zeng Q.-A.: How information influences an individual opinion evolution. Physica A 391 pp. 6409--6417 (2012)
+
+\bibitem{diboune}
+Diboune A., Slimani H., Nacer H., Bey K. B. A comprehensive survey on community detection methods and applications in complex information networks. Social Network Analysis and Mining (2024) 14:93 \url{https://doi.org/10.1007/s13278-024-01246-5}
+
+\bibitem{duskin}
+Duskin K., Schafer J. S., West J. D., Spiro E. S. Echo Chambers in the Age of Algorithms: An Audit of Twitter’s Friend Recommender System. In: Proceedings of the 16th ACM Web Science Conference (WEBSCI '24) pp. 11--21 (2024) \url{https://doi.org/10.1145/3614419.3643996}
+
+\bibitem{fairbanks}
+Fairbanks J. P., Kannan R., Park H., Bader D. A. Behavioral clusters in dynamic graphs. Parallel Computing 47, pp. 38--50, ISSN 0167-8191 (2015) \url{https://doi.org/10.1016/j.parco.2015.03.002}
+
+\bibitem{interian}
+Interian, R., Marzo, R. G., Mendoza, I.,  Ribeiro, C. C. (2022). Network polarization, filter bubbles, and echo chambers: an annotated review of measures and reduction methods. International Transactions in Operational Research 30, pp. 3122--3158.
+
+\bibitem{hou} Hou J., Li W., Jiang M.: Opinion dynamics in modified expressed and private model with bounded confidence. Physica A 574 125968 (2021)
+
+\bibitem{hassani} Hassani H., Razavi-Far R., Saif M., Chiclana F., Krejcar O., Herrera-ViedmaE.: Classical dynamic consensus and opinion dynamics models: A survey of recent trends and methodologies. Information Fusion 88 pp. 22--40 (2022)
+
+\bibitem{isinkaye}
+Isinkaye F.O., Folajimi Y. O., Ojokoh B. A. Recommendation systems: Principles, methods and evaluation. Egyptian Informatics Journal,
+Volume 16, Issue 3 (2015) pp. 261--273, ISSN 1110-8665, \url{https://doi.org/10.1016/j.eij.2015.06.005}
+
+\bibitem{ianni} Ianni M. D.: Opinion evolution among friends and foes: The deterministic majority rule. Theoretical Computer Science 959 (2023) 113875
+
+\bibitem{jin}
+Jin D., Yu Z., Jiao P., Pan S., He D., Wu J., Yu P. S., Zhang W. A Survey of Community Detection Approaches: From Statistical Modeling to Deep Learning. 
+
+\bibitem{kong}
+Kong D., Zhang A., Li Y. Learning Persistent Community Structures in Dynamic Networks via Topological Data Analysis. IN: Proceedings of AAAI Conference (2024) pp. 8617--8626. \url{https://doi.org/10.1609/aaai.v38i8.28706}
+
+\bibitem{liu} Liu Y., Fang A.: Analysis of opinion evolution based on non-Bayesian social learning. Applied Mathematics and Computation 464 128399 (2024)
+
+\bibitem{lunardi1}
+Lunardi G. M. Representing the Filter Bubble: Towards a Model to Diversification in News. In Proceedings of ER 2019 Workshops, LNCS 11787, pp. 239--246 (2019). \url{https://doi.org/10.1007/978-3-030-34146-6_22}
+
+\bibitem{lunardi}
+Lunardi G. M., Machado G. M., Maran V., de Oliveira J. P. M. A metric for Filter Bubble measurement in recommender algorithms
+considering the news domain. Applied Soft Computing Journal 97 (2020) 106771
+
+\bibitem{mahmoudi}
+Mahmoudi A., Jemielniak D., Ciechanowski L. Echo Chambers in Online Social Networks: A Systematic Literature Review.  IEEE Access 12, pp. 9594--9620 (2024) \url{https://doi.org/10.1109/access.2024.3353054}
+
+\bibitem{maleszka}
+Maleszka B. A method for knowledge integration of ontology-based user profiles in personalised document retrieval systems. Enterprise Information Systems 13 (7--8) pp. 1143--1163 (2019)
+
+\bibitem{maleszka1}
+Maleszka B. Time Series Analysis of Sentiment Polarity Trends: A Case Study. In Proceedings of ICCCI 2024, CCIS 2165, pp. 395--406 (2024). \url{https://doi.org/10.1007/978-3-031-70248-8_31}
+
+\bibitem{mal}
+Maleszka, B. A General Framework for Collective Recommendation System Using Dynamic Users Clustering. W: Nguyen, N.T., et al. Advances in Computational Collective Intelligence. ICCCI 2025. Communications in Computer and Information Science, vol 2747 . Springer, Cham. (2026) \url{https://doi.org/10.1007/978-3-032-10202-7_3}
+
+
+
+\bibitem{montaner}
+Montaner, M., López, B., de la Rosa, J.L. A Taxonomy of Recommender Agents on the Internet. Artificial Intelligence Review 19, pp. 285--330 (2003). \url{https://doi.org/10.1023/A:1022850703159}
+
+\bibitem{nguyen}
+Nguyen T. T., Hui P.-M., Harper F. M., Terveen L., Konstan J. A. Exploring the filter bubble: the effect of using recommender systems on content diversity. In Proceedings of WWW '14. Association for Computing Machinery, pp. 677--686 (2014). \url{https://doi.org/10.1145/2566486.2568012}
+
+\bibitem{patel}
+Patel S.V., Jethva H.B., Patel V.P.: Music Recommendation Systems: Techniques, Use Cases, and Challenges. In: Kaiser, M.S., Xie, J., Rathore, V.S. (eds) ICT: Smart Systems and Technologies. ICTCS 2023. Lecture Notes in Networks and Systems, vol 878. Springer, Singapore. (2024). \url{https://doi.org/10.1007/978-981-99-9489-2_25}
+
+\bibitem{pedraza} Pedraza L., Pinasco J. P., Saintier N., Balenzuela P.: An analytical formulation for multidimensional continuous opinion models. Chaos, Solitons \& Fractals 152, pp. 111368. ISSN 0960-0779, \url{https://doi.org/10.1016/j.chaos.2021.111368.} (2021)
+
+\bibitem{plantie}
+Plantié M., Crampes M. Survey on Social Community Detection. Springer Publishers. Social Media Retrieval, Springer Publishers, pp. 65--85 (2013) Computer Communications and Networks, 978-
+1-4471-4554-7. \url{https://doi.org/10.1007/978-1-4471-4555-4_4}
+
+\bibitem{proskurnikov} Proskurnikov A. V., Tempo R., Cao M., Friedkin N. E.: Opinion evolution in time-varying social influence networks with prejudiced agents. IFAC PapersOnLine 50-1 pp. 11896--11901 (2017)
+
+\bibitem{rathod}
+Rathod B., Vanzara R., Pandya D. A recent survey on perceived group sentiment analysis. Journal of Visual Communication and Image Representation 97 (2023) 103988. \url{https://doi.org/10.1016/j.jvcir.2023.103988}
+
+\bibitem{sob}
+Sobecki J.: Rekomendacja interfejsu użytkowników w adaptacyjnych webowych systemach informacyjnych. Oficyna Wydawnicza Politechniki Wrocławskiej, Wrocław (2009)
+
+\bibitem{sobkowicz} Sobkowicz P.: Discrete Model of Opinion Changes Using Knowledge and Emotions as Control Variables. PLoS ONE 7(9): e44489. \url{doi:10.1371/journal.pone.0044489} (2012)
+
+\bibitem{su} Su Y., Li Y., Xuan S.: Prediction of complex public opinion evolution based on improved multi-objective grey wolf optimizer. Egyptian Informatics Journal 24 pp. 149--160 (2023)
+
+\bibitem{sukiennik}
+Sukiennik N., Li N., Gao Ch. Uncovering the Deep Filter Bubble: NarrowExposure in Short-Video Recommendation. In Proceedings of the ACM Web Conference 2024. ACM, (2024) \url{https://doi.org/10.1145/3589334}.
+3648159
+
+\bibitem{terren}
+Terren L., Borge R. Echo Chambers on Social Media: A Systematic Review of the Literature. Review of Communication Research 9. ISSN: 2255-4165 (2021)
+
+\bibitem{tian} Tian Y., Wang L.: Dynamics of opinion formation, social power evolution, and naive learning in social networks. Annual Reviews in Control 55 pp. 182--193 (2023)
+
+\bibitem{wu}
+Wu L., Zheng Z., Qiu Z. et al. A survey on large language models for recommendation. World Wide Web 27, 60 (2024). \url{https://doi.org/10.1007/s11280-024-01291-2}
+
+\bibitem{xie} Xie Z., Weng W., Pan Y., Du Z., Li X., Duan Y.: Public opinion changing patterns under the double-hazard scenario of natural disaster and public health event. Information Processing and Management 60 (2023) 103287
+
+\bibitem{zangerle}
+Zangerle E., Bauer Ch. Evaluating Recommender Systems: Survey and Framework. ACM Computing Surveys, Volume 55, Issue 8, pp. 1--38. 
+\url{https://doi.org/10.1145/3556536}
+
+
+\end{thebibliography}

@@ -2,7 +2,7 @@
 
 # General settings
 general:
-  input_file: "data/tai20_5.txt"
+  # input_file: "data/tai20_5.txt"
   # input_file: "data/tai20_10.txt"
   # input_file: "data/tai20_20.txt"
 
@@ -93,8 +93,8 @@ experiment:
   tabu_tenure: 10   
       # when true: run batch experiments (all instances); false -> compare mode
   instance_files: [
-    "data/tai20_5.txt", 
-    # "data/tai20_10.txt", 
+    # "data/tai20_5.txt", 
+    "data/tai20_10.txt", 
     # "data/tai20_20.txt",
     # "data/tai50_5.txt",
     # "data/tai50_10.txt", 

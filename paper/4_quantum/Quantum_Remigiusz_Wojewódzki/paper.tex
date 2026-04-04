@@ -15,13 +15,14 @@
 \usepackage{flushend}
 \usepackage[colorlinks=true, allcolors=bpastsblue, pdfborder={0 0 0}]{hyperref}
 \usepackage{xcolor}
-
+\usepackage{siunitx} 
+\usepackage{booktabs} 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% HEADER OF THE ARTICLE (Change all fields)
 \abtitle{Classical and Quantum Neighborhoods Evaluation in PFSP}
 \title{Classical and Quantum Neighborhoods Evaluation in Iterated Local Search and Simulated Annealing for the Permutational Flow Shop Problem}
 
-\abauthor{Autor(s) Name Last Name}
+\abauthor{Wojewódzki, Bożejko}
 \author{Remigiusz. Wojewódzki \email{remigiusz.wojewodzki@gmail.com} $^{1}$Wojciech Bożejko$^{2}$\email{wojciech.bozejko@pwr.edu.pl}}
 
 \Abstract{
@@ -71,7 +72,18 @@ C_{k,j} = \max\{C_{k,j-1},\, C_{k-1,j}\} + p_{k,\pi(j)}, \quad \text{for } k=1,\
 The value of the objective function equals $C_{\max} = C_{m,n}$, i.e., the completion time of the last job on the last machine. Hence, the PFSP reduces to finding a permutation $\pi$ that minimizes $C_{\max}$.
 
 
-\textcolor{red}{TODO: Dodać opis Tabu ILS?}
+\paragraph{Iterated Local Search} (ILS) combines local search with a tabu list to avoid cyclic revisiting of the same solutions. In each iteration, the algorithm identifies the best neighboring solution and checks whether the corresponding move is on the tabu list. A move is accepted despite being tabu if it satisfies the \emph{aspiration criterion}, i.e., it leads to a solution better than the current best.
+
+The tabu list stores forbidden moves for $\tau$ consecutive iterations (\emph{tabu tenure}, \texttt{tabu\_tenure}). For the \emph{Adjacent} and \emph{Fibonahi} neighborhoods, the algorithm selects the $\tau + 1$ best moves and chooses the first non-tabu move, ensuring the search can continue even with a full tabu list. For the remaining neighborhoods — \emph{Dynasearch}, \emph{Motzkin}, and their quantum counterparts — any conflict with the tabu list triggers a random restart: a new permutation is generated to replace the current solution, and its identifier is added to the tabu list.
+
+The algorithm runs within a time budget $t_{\max}$ (in milliseconds) and returns the best-found solution along with the history of improvements in $C_{\max}$ and timestamps of each enhancement.
+
+
+\paragraph{Simulated Annealing} (SA) is a local search metaheuristic inspired by the annealing process in metallurgy. In each iteration, the algorithm generates a neighboring solution and accepts it unconditionally if it improves the objective function, or with Boltzmann probability $\exp(-\Delta/T)$ if it worsens it, where $\Delta = C_{\max}^{\text{new}} - C_{\max}^{\text{cur}}$ is the change in the objective function and $T$ is the current temperature. This mechanism allows the search to escape local minima, with the likelihood of accepting worsening moves decreasing as the temperature drops.
+
+The temperature is geometrically reduced after each iteration according to $T \leftarrow \max(T \cdot \alpha,\, T_{\min})$, where $\alpha \in (0,1)$ is the cooling rate, and $T_{\min} = T_{\text{final}} \cdot f$ is a lower bound set by the floor parameter $f \ge 1$. To prevent stagnation, a reheating mechanism is implemented: if no improvement in the best solution is observed for at least $t_{\text{stag}}$ milliseconds, the temperature is multiplied by a factor $r > 1$ and restored to at most $T_{\text{init}}$. The algorithm runs within the time budget $t_{\max}$ (in milliseconds) and returns the best-found solution upon termination.
+
+
 
 \paragraph{Neighborhood structures.}
 Following \cite{vanlaarhoven1992}, a \emph{neighborhood} of a solution $x$ is the set of solutions obtained by an admissible modification of $x$. It determines how the solution space is explored and exploited during the search. The choice of the neighborhood structure determines the search pattern in the solution space, balancing exploration and exploitation for a given space.
@@ -145,15 +157,17 @@ The \emph{Quantum Motzkin} neighborhood formulates the selection of endpoint swa
 
 Two swaps $k = (i_k, j_k)$ and $l = (i_l, j_l)$ conflict if:
 \begin{equation}
-    \mathrm{conflict}(k,l) =
-    \begin{cases}
-        1 & \text{if } \{i_k, j_k\} \cap \{i_l, j_l\} \neq \emptyset
-            \quad \text{(shared endpoint)}, \\
-        1 & \text{if } i_k < i_l < j_k < j_l \;\vee\; i_l < i_k < j_l < j_k
-            \quad \text{(crossing segments)}, \\
-        0 & \text{otherwise (disjoint or nested).}
-    \end{cases}
+\mathrm{conflict}(k,l) =
+\begin{cases}
+1 & \text{if } \{i_k, j_k\} \cap \{i_l, j_l\} \neq \emptyset \\
+  & \quad (\text{shared endpoint}), \\
+1 & \text{if } i_k < i_l < j_k < j_l \;\vee\; i_l < i_k < j_l < j_k \\
+  & \quad (\text{crossing segments}), \\
+0 & \text{otherwise} \\
+  & \quad (\text{disjoint or nested}).
+\end{cases}
 \end{equation}
+
 Disjoint pairs ($j_k < i_l$) and nested pairs ($i_k < i_l < j_l < j_k$) are \emph{permissible} and are not penalized. The QUBO Hamiltonian is defined as:
 \begin{equation}
     H(x) = \sum_{k} \delta_k\, x_k
@@ -213,7 +227,7 @@ The following parameter values were used in the experiments:
 
 \paragraph{Metrics}
 \begin{itemize}
-  \item Best $C_{\max}$ vs.\ time.
+  \item Best $C_{\max}$ vs\ time.
   \item Convergence curves (multi-neighborhood overlay).
   \item Effective moves per second (normalized).
   \item Plateau detection latency.
@@ -224,9 +238,57 @@ solution quality, rather than evaluating the absolute performance of the
 algorithms.
 
 
+
+\begin{table}
+\caption{Average RPD~[\%] from the optimum, $t_{\mathrm{ms}}=100$~ms}
+\label{tab:results_100}
+\begin{tabular}{lS[table-format=2.2]S[table-format=2.2]S[table-format=2.2]S[table-format=2.2]}
+\input{tables/results_tl100}
+\end{tabular}
+\end{table}
+
+\begin{table}
+\caption{Average RPD~[\%] from the optimum, $t_{\mathrm{ms}}=500$~ms}
+\label{tab:results_500}
+\begin{tabular}{lS[table-format=2.2]S[table-format=2.2]S[table-format=2.2]S[table-format=2.2]}
+\input{tables/results_tl500}
+\end{tabular}
+\end{table}
+
+\begin{table}
+\caption{Average RPD~[\%] from the optimum, $t_{\mathrm{ms}}=1000$~ms}
+\label{tab:results_1000}
+\begin{tabular}{lS[table-format=2.2]S[table-format=2.2]S[table-format=2.2]S[table-format=2.2]}
+\input{tables/results_tl1000}
+\end{tabular}
+\end{table}
+
+\begin{table}
+\caption{Average RPD~[\%] from the optimum, $t_{\mathrm{ms}}=2000$~ms}
+\label{tab:results_2000}
+\begin{tabular}{lS[table-format=2.2]S[table-format=2.2]S[table-format=2.2]S[table-format=2.2]}
+\input{tables/results_tl2000}
+\end{tabular}
+\end{table}
+
+\begin{table}
+\caption{Average RPD~[\%] from the optimum, $t_{\mathrm{ms}}=5000$~ms}
+\label{tab:results_5000}
+\begin{tabular}{lS[table-format=2.2]S[table-format=2.2]S[table-format=2.2]S[table-format=2.2]}
+\input{tables/results_tl5000}
+\end{tabular}
+\end{table}
+
+\begin{table}
+\caption{Average RPD~[\%] from the optimum, $t_{\mathrm{ms}}=10000$~ms}
+\label{tab:results_10000}
+\begin{tabular}{lS[table-format=2.2]S[table-format=2.2]S[table-format=2.2]S[table-format=2.2]}
+\input{tables/results_tl10000}
+\end{tabular}
+\end{table}
+
+
 \section{Results and Discussion}
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ACKNOWLEDGEMENTS
 % \begin{acknowledgements}

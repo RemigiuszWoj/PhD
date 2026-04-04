@@ -1,0 +1,247 @@
+\documentclass[10pt,twoside,twocolumn,a4paper]{article}
+
+%% Default action is for double-blinded peer review where 
+%% authors, address and acknowledgements sections are hidden 
+%\usepackage[]{bpasts}
+%% For accepted papers enable option "accepted" to deanonymize
+%% your manuscript 
+\usepackage[accepted]{bpasts}
+
+\usepackage{t1enc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amsfonts}
+
+\usepackage{graphicx}
+\usepackage{flushend}
+\usepackage[colorlinks=true, allcolors=bpastsblue, pdfborder={0 0 0}]{hyperref}
+\usepackage{xcolor}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% HEADER OF THE ARTICLE (Change all fields)
+\abtitle{Classical and Quantum Neighborhoods Evaluation in PFSP}
+\title{Classical and Quantum Neighborhoods Evaluation in Iterated Local Search and Simulated Annealing for the Permutational Flow Shop Problem}
+
+\abauthor{Autor(s) Name Last Name}
+\author{Remigiusz. Wojewódzki \email{remigiusz.wojewodzki@gmail.com} $^{1}$Wojciech Bożejko$^{2}$\email{wojciech.bozejko@pwr.edu.pl}}
+
+\Abstract{
+This paper presents a comparison of classical neighborhood structures, analyzed from an implementation perspective in metaheuristics, with their hybrid classical--quantum counterparts. The study is conducted for the Permutation Flow Shop Scheduling Problem (PFSP), where classical neighborhood structures are executed entirely on a classical computing architecture (CPU), while their quantum counterparts are implemented in a hybrid manner, combining classical computations with the use of a real Quantum Processing Unit (QPU). The optimization objective is to minimize the makespan, i.e., the total completion time of all jobs on all machines, denoted as $C_{\max}$. Four classical neighborhood structures are considered: \emph{Adjacent}, \emph{Fibonahi}, \emph{Dynasearch}, and \emph{Motzkin}, along with their quantum counterparts formulated as Quadratic Unconstrained Binary Optimization (QUBO) models, namely: \emph{Quantum Adjacent}, \emph{Quantum Fibonahi}, \emph{Quantum Dynasearch}, and \emph{Quantum Motzkin}. The considered structures differ in terms of move generation mechanisms within the permutation space and computational complexity. The paper provides a detailed characterization of each neighborhood structure and its corresponding QUBO formulation. The proposed models are implemented in \texttt{Python} using the \texttt{dimod} library and experimentally validated on standard Taillard benchmark instances, using both classical CPU-based computations and a real QPU, enabling the assessment of the quality of the obtained solutions.
+}
+
+\Keywords{Flow shop scheduling; QUBO; Quantum computing; D-Wave; Neighborhood; Metaheuristics; Motzkin numbers; Fibonacci numbers}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% EDITOR SECTION (Do not change)
+\vol{XX} \no{Y} \year{2024}
+\setcounter{page}{1}
+\doi{10.24425/bpasts.yyyy.xxxxxx}
+\begin{document}
+\maketitle
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% BODY OF THE ARTICLE
+
+\section{Introduction}
+
+The Permutation Flow Shop Scheduling Problem (PFSP) is a classical combinatorial optimization problem, in which $n$ jobs must be processed on $m$ machines in the same sequence on each machine. The objective is to minimize the makespan $C_{\max}$, i.e., the completion time of the last job on the last machine. It is well-known that the problem is NP-hard for $m \ge 3$, rendering exact methods computationally inefficient for large instances and motivating the use of metaheuristic approaches~\cite{ref_bozejko_parallel}.
+
+In the context of metaheuristic algorithms, a \emph{neighborhood} of a solution $\pi$ is defined as the set of solutions reachable from $\pi$ by a single permissible modification~\cite{vanlaarhoven1992}. The structure and size of the neighborhood determine both the quality of the solutions obtained and the computational cost of a single iteration. Simple neighborhoods, such as adjacent swaps, allow for a high number of iterations per unit of time, but explore the solution space in a limited scope. More complex neighborhoods, such as Dynasearch or Motzkin, enable larger modifications of the permutation but require higher computational effort per step~\cite{WojewodzkiBozejko2026,Motzkin_PWR}.
+
+Quantum computing provides an alternative paradigm for solving combinatorial optimization problems. Quantum annealers, such as the D-Wave system, solve Quadratic Unconstrained Binary Optimization (QUBO) problems, which can encode a wide range of optimization and constraint satisfaction tasks~\cite{dwave_handbook}. The key idea of this work is to transform the neighborhood move selection — i.e., the decision of which swaps to perform — into a QUBO problem. The quantum annealer then enables the selection of the best permissible combination of swaps in a single optimization step, potentially considering a significantly larger number of combinations than classical greedy or dynamic approaches.
+
+This paper emphasizes the transformation of classical neighborhood structures into their corresponding QUBO-based formulations. An experimental comparison of classical and hybrid neighborhoods was subsequently conducted using a real Quantum Processing Unit (QPU). The study aims to assess the potential of quantum acceleration in solving scheduling problems. The paper extends the research presented in~\cite{Motzkin_PWR} and~\cite{WojewodzkiBozejko2026}, where classical Motzkin and Fibonahi neighborhoods were first proposed and evaluated.
+
+\section{Problem Definition}
+\paragraph{Permutation Flow Shop Problem.}
+Given a matrix of processing times $P = [p_{k,j}]_{m \times n}$, where $k=1,\dots,m$ denotes a machine and $j=1,\dots,n$ denotes a job, while a permutation $\pi$ determines the jobs performed in the same order on all machines.
+
+Properties of permutations and the relationships between them can be analyzed using positive definite functions on permutation groups. This provides theoretical foundations for studying dependencies between job sequences \cite{Bozejko2015}.
+
+Let $C_{k,j}$ denote the completion time of job $j$ executed in the order $\pi$ on machine $k$. The following relationship therefore holds:
+
+\begin{equation}\label{eq_c_1j_C_k1}
+    C_{1,j} = C_{1,j-1} + p_{1,\pi(j)},\quad
+    C_{k,1} = C_{k-1,1} + p_{k,\pi(1)},
+\end{equation}
+
+\begin{equation}\label{eq_c_kj}
+C_{k,j} = \max\{C_{k,j-1},\, C_{k-1,j}\} + p_{k,\pi(j)}, \quad \text{for } k=1,\dots,m,\; j=1,\dots,n.
+\end{equation}
+
+The value of the objective function equals $C_{\max} = C_{m,n}$, i.e., the completion time of the last job on the last machine. Hence, the PFSP reduces to finding a permutation $\pi$ that minimizes $C_{\max}$.
+
+
+\textcolor{red}{TODO: Dodać opis Tabu ILS?}
+
+\paragraph{Neighborhood structures.}
+Following \cite{vanlaarhoven1992}, a \emph{neighborhood} of a solution $x$ is the set of solutions obtained by an admissible modification of $x$. It determines how the solution space is explored and exploited during the search. The choice of the neighborhood structure determines the search pattern in the solution space, balancing exploration and exploitation for a given space.
+
+\subsection{Adjacent}
+The \emph{adjacent} neighborhood is defined as the set of permutations obtained by swapping two consecutive jobs in a permutation $\pi = (\pi_1, \pi_2, \dots, \pi_n)$. For each position $j = 1, \dots, n-1$, a single neighboring solution is generated by exchanging elements $\pi_j$ and $\pi_{j+1}$, resulting in a total of $n-1$ neighboring solutions. This neighborhood is inherently local, as each modification affects only a small fragment of the schedule.
+
+The evaluation of neighboring solutions, expressed in terms of the objective function value $C_{\max}$, is performed using the Head+Tail technique, which eliminates the need to recompute the entire schedule for each permutation. In particular, for a considered swap, completion times are computed only for the two modified positions, and the result is then combined with previously computed values for the prefix (Head) and suffix (Tail). This approach enables capturing the impact of the modification on both the preceding and subsequent parts of the schedule without requiring full reconstruction.
+
+This approach enables the evaluation of the entire neighborhood in time $O(m \cdot n)$, where $m$ denotes the number of machines and $n$ the number of jobs, representing a significant improvement over the naive approach. The \emph{adjacent} neighborhood is commonly used in local search algorithms as an intensification mechanism, allowing for gradual improvement of the solution through small, incremental modifications.
+
+
+\subsection{Fibonahi}
+The \emph{Fibonahi} neighborhood is a generalization of the classical \emph{adjacent} neighborhood and consists in performing multiple adjacent swaps simultaneously, provided that these operations do not overlap. This means that if a swap is applied at position $j$, then a swap at position $j+1$ is not allowed. As a result, a neighboring solution is obtained by applying a set of independent swaps to the original permutation.
+
+The name of the neighborhood stems from the fact that the number of all possible sets of non-overlapping swaps for a permutation of length $n$ corresponds to the $(n+1)$-th Fibonacci number, which implies an exponential growth of the solution space. In practice, instead of exhaustive enumeration, an efficient procedure is used to select the optimal (or a subset of the best) combinations of moves. The evaluation of individual swaps is performed using the Head+Tail technique, which allows the computation of the objective function increment for each candidate swap in time $O(m \cdot n)$.
+
+Subsequently, the problem of selecting an optimal subset of non-conflicting swaps is formulated as a dynamic programming problem, in which a binary decision is made at each position whether to apply or skip a given move, subject to the non-overlapping constraint. This approach enables the identification of the optimal combination of swaps in linear time with respect to the number of positions, while capturing the global impact of multiple modifications. The \emph{Fibonahi} neighborhood allows for larger transformations of the permutation compared to single swaps, thereby improving the ability of the algorithm to escape local minima and enhancing the overall search efficiency.
+
+
+\subsection{Motzkin Neighborhood (Non-Crossing Endpoint Swaps)}
+The \emph{Motzkin} neighborhood defines a set of permutations. Each move consists of swapping only the endpoints of a task segment $[i..j]$, while the middle part of the segment remains unchanged. All index pairs $(i,j)$ are considered, and the incremental change in the objective function ($\Delta$) is computed using the Head+Tail technique, enabling efficient assessment of the swap's impact on the total completion time.
+
+Selection of a subset of swaps that collectively minimizes the sum of $\Delta$ values is performed using dynamic programming, subject to strict constraints: swaps cannot cross each other or share segment endpoints, while fully nested swaps are allowed (an inner swap may be entirely contained within an outer swap). This formulation ensures that interactions between swaps are properly considered and prevents conflicts in the resulting permutation.
+
+If dynamic programming does not select any swaps, the algorithm can optionally apply a single least-cost swap. The resulting permutation is then updated, the new completion time ($C_{\max}$) is computed, and the set of applied swaps is returned. This neighborhood allows exploration of larger moves in the solution space than simple adjacent swaps, improving the algorithm's ability to escape local minima and enhancing the overall search efficiency, with a computational complexity of $O(n^3)$.
+
+
+\subsection{Dynasearch}
+The \emph{Dynasearch} neighborhood defines a set of permutations generated by swapping the endpoints of task segments within subsequences of a permutation. For each subsequence, the algorithm computes the incremental change in the objective function ($\Delta$) for endpoint swaps using precomputed \texttt{Head} and \texttt{Tail} matrices, enabling rapid assessment of each swap's impact on the total completion time ($C_{\max}$).
+
+The selection of an optimal set of non-overlapping subsequences is performed using dynamic programming, which minimizes the sum of the $\Delta$ values. All possible intervals $(i,j)$ are considered, with an optional maximum length constraint $L_{\max}$, and only non-overlapping combinations are accepted, allowing multiple moves to be applied simultaneously without conflicts.
+
+If the dynamic programming procedure does not select any moves, the algorithm can optionally apply a single swap with the smallest $\Delta$ to ensure progress. After executing the swaps, the new permutation is generated, the updated completion time is calculated, and the set of applied swaps is returned. This approach enables efficient exploration of the neighborhood, with a total computational complexity of $O(n^3)$, while keeping the computational cost manageable through the use of \texttt{Head/Tail} matrices and dynamic selection of non-overlapping segments.
+
+
+\section{QUBO Formulations}
+The QUBO (\emph{Quadratic Unconstrained Binary Optimization}) formulation is a popular approach for modeling combinatorial problems as a quadratic function of binary variables. In this framework, each decision is represented by a variable taking a value of 0 or 1, and the objective function includes both linear and quadratic terms corresponding to the costs and interactions between decisions.
+
+Solving a QUBO problem involves finding a binary vector that minimizes the objective function. QUBO formulations are particularly useful in the context of quantum computing as well as classical heuristic optimization methods for combinatorial problems, as they allow the application of algorithms such as quantum annealing and classical binary optimization techniques. Due to their universal quadratic form, many combinatorial problems, including scheduling, the maximum independent set, and the traveling salesman problem, can be naturally transformed into QUBO form.
+
+
+\subsection{Quantum Adjacent}
+The \emph{Quantum Adjacent} neighborhood represents the quantum counterpart of the classical adjacent-swap neighborhood, formulated as a QUBO problem. Each binary variable $x_i \in \{0,1\}$ corresponds to a single swap of elements at positions $(i, i+1)$, and the parameter $\delta_i$ denotes the increment in the objective function $C_{\max}$ resulting from performing this swap, computed using the Head+Tail technique. Unlike the classical version, where the entire neighborhood is explored to select the best move, the quantum approach encodes the selection of exactly one swap as a Hamiltonian minimization with a penalty term:
+\begin{equation}
+    H = \sum_{i=0}^{n-2} \delta_i\, x_i
+        + P \!\left(\sum_{i=0}^{n-2} x_i - 1\right)^{\!2},
+    \label{eq:qubo_adj}
+\end{equation}
+where $P = 2\max_i|\delta_i|+1$ is a penalty weight that enforces the constraint of selecting exactly one swap.
+
+Expanding the square and exploiting the idempotency of binary variables ($x_i^2 = x_i$), the full Hamiltonian takes a quadratic form with linear terms $Q_{ii} = \delta_i - P$ and quadratic terms $Q_{ij} = 2P$ for $i < j$. The QUBO matrix $Q$ is symmetric and dense, and the number of binary variables is $n-1$, corresponding to the size of the classical neighborhood. The computational complexity of constructing the $Q$ matrix is $O(n^2)$, while the permutation itself is updated by applying the single swap indicated by the QUBO solution.
+
+
+\subsection{Quantum Fibonahi}
+The \emph{Quantum Fibonahi} neighborhood generalizes the classical Fibonahi neighborhood by formulating the selection of a set of non-overlapping adjacent swaps as a QUBO problem. A binary variable $x_i \in \{0,1\}$ corresponds to a swap of positions $(i, i+1)$, and $\delta_i$ represents the resulting increment in $C_{\max}$. Two swaps, $i$ and $i+1$, are mutually exclusive since they share the element at position $i+1$; this constraint is enforced via a quadratic penalty term. The Hamiltonian takes a chain-like form:
+\begin{equation}
+    H = \sum_{i=0}^{n-2} \delta_i\, x_i
+        + P \sum_{i=0}^{n-3} x_i\, x_{i+1},
+    \label{eq:qubo_fib}
+\end{equation}
+where $P = \sum_i |\delta_i| + 1$ ensures that the penalty for violating the constraint dominates the benefit of performing a swap.
+
+The resulting QUBO matrix has a tridiagonal structure: $Q_{ii} = \delta_i$ (linear cost) and $Q_{i,i+1} = P$ (penalty for conflicting adjacent swaps). The combinatorial structure of feasible swap sets corresponds to Fibonacci numbers: the number of possible non-overlapping selections from $n-1$ positions is $F_{n+1}$, which motivates the neighborhood’s name. The construction of the QUBO matrix has complexity $O(n)$ in terms of variables and nonzero coefficients, making this formulation particularly efficient for both classical solvers and quantum hardware.
+
+The algorithm solves the QUBO formulation, selects the non-overlapping swaps that minimize the Hamiltonian, updates the permutation accordingly, and computes the resulting completion time $C_{\max}$. If no swaps are selected, the algorithm can optionally apply a single swap with the smallest $\delta_i$.
+
+
+\subsection{Quantum Motzkin}
+The \emph{Quantum Motzkin} neighborhood formulates the selection of endpoint swaps of permutation segments as a QUBO problem, following Motzkin rules. Each binary variable $x_k \in \{0,1\}$ corresponds to swapping the endpoints of a segment $[i_k..j_k]$, i.e., exchanging $\pi[i_k] \leftrightarrow \pi[j_k]$ while keeping the middle part unchanged. The associated cost $\delta_k = C_{\max}(\pi \text{ after swap } k) - C_{\max}(\pi)$ is computed using the Head and Tail matrices in $O(m \cdot (j_k - i_k + 1))$ per pair, giving a total complexity of $O(m \cdot n^3)$ for all candidates. Pairs with $\delta_k \ge 0$ are discarded before building the QUBO matrix, as the solver will never select non-improving moves.
+
+Two swaps $k = (i_k, j_k)$ and $l = (i_l, j_l)$ conflict if:
+\begin{equation}
+    \mathrm{conflict}(k,l) =
+    \begin{cases}
+        1 & \text{if } \{i_k, j_k\} \cap \{i_l, j_l\} \neq \emptyset
+            \quad \text{(shared endpoint)}, \\
+        1 & \text{if } i_k < i_l < j_k < j_l \;\vee\; i_l < i_k < j_l < j_k
+            \quad \text{(crossing segments)}, \\
+        0 & \text{otherwise (disjoint or nested).}
+    \end{cases}
+\end{equation}
+Disjoint pairs ($j_k < i_l$) and nested pairs ($i_k < i_l < j_l < j_k$) are \emph{permissible} and are not penalized. The QUBO Hamiltonian is defined as:
+\begin{equation}
+    H(x) = \sum_{k} \delta_k\, x_k
+          + P \!\sum_{\substack{k < l \\ \mathrm{conflict}(k,l)=1}} x_k\, x_l,
+    \label{eq:qubo_motz}
+\end{equation}
+where $P = \sum_k |\delta_k| + 1$ ensures that the penalty for any conflict dominates the total gain from any subset of swaps. The QUBO matrix $Q$ is upper-triangular with diagonal elements $Q_{kk} = \delta_k$ and off-diagonal elements $Q_{kl} = P$ for conflicting pairs; nested or disjoint pairs have $Q_{kl} = 0$.
+
+After solving the QUBO, selected indices $x_k = 1$ undergo a greedy validation: conflicting pairs are removed to guarantee feasibility in case of suboptimal sampler outcomes. If no swap is selected, the algorithm falls back to applying a single swap with minimal $\delta_k < 0$. The chosen endpoint swaps are then applied to the permutation (sorted in ascending order of $i_k$), and the new $C_{\max}$ is recomputed from scratch for verification. The number of binary variables is $K = O(n^2)$, and building the QUBO matrix requires $O(K^2)$ time.
+
+
+\subsection{Quantum Dynasearch}
+The \emph{Quantum Dynasearch} neighborhood translates the Dynasearch mechanism into the quantum paradigm, encoding the selection of a set of non-overlapping endpoint swaps as a QUBO problem. Each binary variable $x_k \in \{0,1\}$ represents the swap of the first and last elements of a segment $[i_k..j_k]$:
+$\pi[i_k..j_k] \to [\pi_{j_k}, \pi_{i_k+1}, \ldots, \pi_{j_k-1}, \pi_{i_k}]$.  
+The incremental cost $\delta_k = \Delta C_{\max}$ resulting from swap $k$ is computed using the Head and Tail matrices. Two segments $(i_1,j_1)$ and $(i_2,j_2)$ are considered overlapping if $\max(i_1,i_2) \le \min(j_1,j_2)$; in this case, both overlap and nesting are \emph{forbidden}. The QUBO Hamiltonian combines swap costs with penalties for conflicts:
+\begin{equation}
+    H = \sum_{k} \delta_k\, x_k
+        + P \!\sum_{\substack{k < l \\ \mathrm{overlap}(k,l)}} x_k\, x_l,
+    \label{eq:qubo_dyna}
+\end{equation}
+where $P = \sum_k |\delta_k| + 1$ ensures that the non-overlapping constraint dominates.
+
+The QUBO matrix $Q$ is defined with diagonal elements $Q_{kk} = \delta_k$ (linear cost) and off-diagonal elements $Q_{kl} = P$ for overlapping segment pairs. The number of binary variables is $K = O(n^2)$ (up to $n(n-1)/2$ segment pairs), and the number of nonzero quadratic coefficients is $O(n^4)$ for a dense conflict graph, motivating the use of a parameter $L_{\max}$ to limit segment lengths in classical implementations. Computing $\delta_k$ for all segment pairs requires $O(m \cdot n^3)$ time due to the precomputed Head and Tail matrices.
+
+After solving the QUBO, the algorithm selects non-overlapping segments minimizing $H$, applies the corresponding endpoint swaps, and computes the resulting completion time $C_{\max}$. If no swaps are selected, the algorithm may optionally apply a single swap with minimal $\delta_k$ to ensure progress in the search.
+
+
+\section{Experimental Setup}
+The experiment was conducted in the test environment defined in
+\cite{WojewodzkiBozejko2026}, as follows. All experiments were conducted on
+a MacBook Pro with an M4 Pro processor, 24~GB of RAM, running macOS 26.0.1
+(25A362) and Python~3.11.
+
+\paragraph{Benchmarks}
+Taillard instances \cite{ref_taillard} of varying $(n,m)$ (e.g.,
+$n\in\{20\}$, $m\in\{10,20\}$). Each run is constrained by a wall-clock
+time budget (e.g., 100~ms). Seeds are fixed for reproducibility.
+Classical neighborhoods were executed entirely on the local hardware
+described above. Quantum neighborhoods were evaluated in a hybrid manner:
+the QUBO matrix was constructed locally and subsequently submitted to the
+D-Wave Leap cloud service via the \texttt{DWaveSampler} with
+\texttt{EmbeddingComposite}. Each quantum neighborhood call incurs
+additional network latency and embedding overhead, which substantially
+increases the wall-clock time per iteration relative to the classical
+variants. Access to the QPU is furthermore subject to queue times imposed
+by the Leap cloud platform, rendering the quantum execution time
+non-deterministic and dependent on current system load. This asymmetry
+must be accounted for when interpreting the convergence results.
+
+\paragraph{Parameters}
+The following parameter values were used in the experiments:
+\begin{itemize}
+  \item ILS: $\tau_{\text{tabu}} = 10$
+  \item SA: $T_{\text{init}}=1000$, $T_{\text{final}}=1$, $\alpha=0.95$,
+        reheating factor $r = 1.5$, stagnation threshold $500$~(ms).
+\end{itemize}
+
+\paragraph{Metrics}
+\begin{itemize}
+  \item Best $C_{\max}$ vs.\ time.
+  \item Convergence curves (multi-neighborhood overlay).
+  \item Effective moves per second (normalized).
+  \item Plateau detection latency.
+\end{itemize}
+The choice of experimental parameters and metrics was primarily aimed at
+assessing the impact of the different neighborhood structures on the final
+solution quality, rather than evaluating the absolute performance of the
+algorithms.
+
+
+\section{Results and Discussion}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ACKNOWLEDGEMENTS
+% \begin{acknowledgements}
+% Avoid the stilted expression “one of us (R. B. G.) thanks ...”.  Instead, try “R. B. G. thanks...”. Put sponsor acknowledgements unnumbered at the end of the text and before References.
+% \end{acknowledgements}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% REFERENCES
+%% Since January 1st 2021, IEEE Citation Style should be applied.
+%\bibliographystyle{IEEEtran}
+\bibliographystyle{IEEEtranUrldate}
+
+%% Change to your *.bst file
+\bibliography{sampleBibFile}
+
+\end{document}
+
+

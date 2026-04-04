@@ -1,0 +1,279 @@
+%% Style for Bulletin of the Polish Academy of Science: Technical Sciencies 
+%% based on biul.sty
+%% Bartosz Sawicki, 2015-12-31
+%% 2016-01-14
+%% 2020-12-30
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{bpasts}
+
+%% Times New Roman font
+\RequirePackage{mathptmx}
+
+\usepackage[]{helvet}
+\usepackage[T1]{fontenc}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Options processing
+%%
+\newif\if@accepted\@acceptedfalse
+\DeclareOption{accepted}{
+  \@acceptedtrue
+}
+\ProcessOptions\relax
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Page format
+%%
+
+\textwidth  180mm
+\textheight 240mm
+\setlength{\columnsep}{5mm}
+\topmargin -1cm
+\setlength{\oddsidemargin}{-1cm}
+\setlength{\evensidemargin}{-1cm}
+
+\setlength\headheight{12\p@}
+\setlength\headsep   {12pt}
+\setlength\topskip   {10\p@}
+\setlength\footskip{2cc}
+\skip\footins=14pt plus6pt
+
+\topsep 6\p@ \@plus2\p@ \@minus2\p@
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Title page
+%%
+
+\def\footnoterule{\kern-3\p@
+  \hrule \@width 5cm \kern 2.6\p@} % the \hrule is .4pt high
+
+\def\invpap{}
+\def\ps@bplain{\let\@mkboth\@gobbletwo
+     \def\@oddhead{\noindent\vbox 
+     %to6pt{\footnotesize
+{\bannerfont \footnotesize BULLETIN OF THE POLISH ACADEMY OF SCIENCES\\
+TECHNICAL SCIENCES, %vol. \@vol, no. \@no, \@year
+\\
+{DOI: \@doi}\vss}\hfill\invpap}%
+\def\@oddfoot{\reset@font\hfil\thepage
+     \hfil}\let\@evenhead\@empty\let\@evenfoot\@oddfoot}
+
+\def\ps@myheadings{%
+    \def\@oddfoot{{\footnotesize\noindent \hfill\footnotesize\thepage}}%VOLUME \@vol, \@year%
+    \def\@oddhead{\noindent\hfil{\normalsize\itshape\@abtitle}\hfil}%
+    \def\@evenfoot{{\noindent\footnotesize\thepage\hfill\footnotesize}} %VOLUME \@vol, \@year}}%
+    \if@accepted\def\@evenhead{\noindent\hfil{\small\rm\@abauthor}\hfil}\fi%
+    \let\@mkboth\markboth
+ }
+
+\def\@listI{\leftmargin=0.45\leftmargini
+               \topsep 6\p@ \@plus2\p@ \@minus2\p@
+               \parsep 0\p@ %\@plus\p@ \@minus\p@
+               \itemsep \parsep}%
+\renewcommand\normalsize{%
+   \@setfontsize\normalsize\@xpt\@xiipt
+   \abovedisplayskip 6\p@ \@plus2\p@ \@minus2\p@
+   \abovedisplayshortskip \z@ \@plus2\p@
+   \belowdisplayshortskip 6\p@ \@plus2\p@ \@minus2\p@
+   \belowdisplayskip \abovedisplayskip
+   \let\@listi\@listI}
+\normalsize
+\renewcommand\small{%
+   \@setfontsize\small\@ixpt{11}%
+   \abovedisplayskip 4\p@ \@plus2\p@ \@minus2\p@
+   \abovedisplayshortskip \z@ \@plus2\p@
+   \belowdisplayshortskip 4\p@ \@plus2\p@ \@minus2\p@
+   \def\@listi{\leftmargin\leftmargini
+               \topsep 4\p@ \@plus2\p@ \@minus2\p@
+               \parsep 0\p@ %\@plus\p@ \@minus\p@
+               \itemsep \parsep}%
+   \belowdisplayskip \abovedisplayskip
+}
+
+
+\def\@fnsymbol#1{\ensuremath{\ifcase#1\or *\or **\or ***\or
+   ****\or *****\or ******\or \|\or **\or \dagger\dagger
+   \or \ddagger\ddagger \else\@ctrerr\fi}}
+
+\newcount\nr
+\newcount\nra
+\def\abtitle#1{\nr=1\gdef\@abtitle{#1}}
+\def\title#1{\ifnum\nr=1\else\gdef\@abtitle{#1}\fi\gdef\@title{#1}}
+\def\abauthor#1{\nra=1\gdef\@abauthor{#1}}
+
+\newcommand{\@vol}{}
+\newcommand{\@no}{}
+\newcommand{\@year}{}
+\newcommand{\@doi}{}
+\def\vol#1{\gdef\@vol{#1}}
+\def\no#1{\gdef\@no{#1}}
+\def\year#1{\gdef\@year{#1}}
+\def\doi#1{\gdef\@doi{#1}}
+\newcommand{\email}[1]{\thanks{e-mail: #1}}
+
+\newcommand{\@Address}{}
+\newcommand{\Address}[1]{\renewcommand{\@Address}{#1}}
+\newcommand{\@Keywords}{}
+\newcommand{\Keywords}[1]{\renewcommand{\@Keywords}{#1}}
+\newcommand{\@Abstract}{}
+\newcommand{\Abstract}[1]{\renewcommand{\@Abstract}{#1}}
+\renewcommand\maketitle{\par
+  \begingroup
+    \renewcommand\thefootnote{\fnsymbol{footnote}}%
+    \def\@makefnmark{\hbox to\z@{$\m@th^{\@thefnmark}$\hss}}%
+    \long\def\@makefntext##1{\parindent 1em\noindent
+            \hbox to1.8em{\hss $\m@th^{\@thefnmark}$}##1}%
+    \if@twocolumn
+      \ifnum \col@number=\@ne
+        \@maketitle
+      \else
+        \twocolumn[\@maketitle]%
+      \fi
+    \else
+      \newpage
+      \global\@topnum\z@   
+      \@maketitle
+    \fi
+    \thispagestyle{bplain}\@thanks
+  \endgroup
+  \setcounter{footnote}{0}%
+  \let\thanks\relax
+  \let\maketitle\relax\let\@maketitle\relax
+  \gdef\@thanks{}\gdef\@author{}\gdef\@title{}}
+
+%\color{bpastsblue}
+%PANTONE654C == CMYK 1 0.6 0 0.5 == RGB #003380
+\RequirePackage{color}
+\definecolor{bpastsblue}{cmyk}{1,.6,0,0.5}
+\definecolor{greycolor}{cmyk}{0,0,0,.8}
+
+\def\titlefont{\sffamily\fontencoding{T1}\fontseries{b}\fontsize{22}{25.4}\selectfont}
+\def\bannerfont{\sffamily\fontencoding{T1}\fontsize{7}{8.5}\selectfont}
+\def\authorfont{\sffamily\fontencoding{T1}\fontseries{b}\fontsize{9.9}{12}\selectfont}
+\def\abstractheadfont{\sffamily\fontencoding{T1}\fontseries{b}\fontsize{9}{12}\selectfont}
+\def\sectionAfont{\sffamily\fontencoding{T1}\fontseries{b}\fontsize{9}{12}\selectfont}
+\def\sectionBfont{\sffamily\fontencoding{T1}\fontseries{b}\fontshape{it}\fontsize{9}{12}\selectfont}
+\def\sectionCfont{\sffamily\fontencoding{T1}\fontseries{n}\fontsize{9}{12}\selectfont}
+
+\def\tablecapheadfont{\sffamily\fontencoding{T1}\fontseries{b}\fontsize{8}{9.4}\selectfont}
+\def\tableheadfont{\sffamily\fontencoding{T1}\fontseries{m}\fontsize{8}{9.4}\selectfont}
+\def\tablecapfont{\def\textit##1{{\sffamily\selectfont\itshape##1}}\sffamily\fontencoding{T1}\fontseries{m}\fontsize{7}{8.4}\selectfont}
+
+
+\def\@maketitle{%
+  \newpage
+  \vspace*{1cc}
+  \begin{center}%
+	  {\color{bpastsblue}\titlefont\@title}\par
+       \vspace*{1cc}
+       \if@accepted
+          \authorfont\@author\par
+          \vspace*{.5cc}\rm
+          \small
+          \@Address
+       \fi
+       \end{center}\vskip-\lastskip%
+       \vspace*{1.5cc}
+       \small        
+       {\color{bpastsblue}\abstractheadfont Abstract.} \@Abstract\unskip \vspace*{.5cc}\\
+       {\color{bpastsblue}\abstractheadfont Key words:} \@Keywords
+       \vspace*{.7cc}  
+       \par}
+
+\def\@seccntformat#1{\csname the#1\endcsname.\kern.5em\ignorespaces}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Sections
+%%
+\renewcommand\section{\@startsection{section}{1}{\z@}%
+                                     {-12pt \@plus -2pt \@minus -2pt}%
+                                     {4pt \@plus2pt}%
+                                     {\color{bpastsblue}\sectionAfont\uppercase}}
+\renewcommand\subsection{\@startsection{subsection}{2}{\z@}%
+                                       {-12pt \@plus -2pt \@minus -2pt}%
+                                       {2pt \@minus -2pt}% 
+                                       {\color{greycolor}\sectionBfont}}
+\renewcommand\subsubsection{\@startsection{subsubsection}{3}{\z@}%
+                                       {-12pt \@plus -2pt \@minus -2pt}%
+                                       {-4pt \@plus 2pt}%
+                                       {\color{greycolor}\sectionBfont}}
+\renewcommand\thesection      {\@arabic\c@section}
+\renewcommand\thesubsection   {\thesection.\@arabic\c@subsection}
+\renewcommand\thesubsubsection{\thesubsection.\@arabic\c@subsubsection}
+
+%\def\subsection{\@startsection{subsection}{2}{1pt}{-1pc plus -1pt minus -1pt}{1pt}{\raggedright\color{greycolor}\sectionBfont\uppercase}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Figures and tables
+%%
+
+\usepackage{caption}
+\captionsetup[table]{font={sf,footnotesize},labelfont={bf,color=bpastsblue},labelsep=period}
+\captionsetup[figure]{font={sf,footnotesize},labelfont={bf,color=bpastsblue}, labelsep=period}
+
+\renewenvironment{table}
+               {\@float{table}\begin{center}\begin{footnotesize}}
+               {\end{footnotesize}\end{center}\end@float}
+\renewenvironment{table*}
+               {\@dblfloat{table}\begin{center}\begin{footnotesize}}
+               {\end{footnotesize}\end{center}\end@dblfloat}
+
+\renewcommand{\figurename}{Fig.}
+\renewcommand{\tablename}{Table}
+
+\setlength{\abovecaptionskip}{3pt plus 2pt minus 2pt}
+\setlength{\belowcaptionskip}{3pt plus 2pt minus 2pt}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% References
+%% use Bibtex and IEEEtran.bst style
+\renewcommand{\refname}{REFERENCES}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Extra stuff
+%%
+\RequirePackage{comment}
+\excludecomment{acknowledgements}
+\if@accepted
+  \renewenvironment{acknowledgements}
+  { \section*{Acknowledgements} }
+  { }
+\fi
+
+\renewcommand{\arraystretch}{1.2}
+\renewcommand{\labelitemi}{$\bullet$}
+\renewcommand{\labelitemii}{$\bullet$}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Settings from old biul.sty 
+%% (TODO: cleanup)
+%%
+\setcounter{topnumber}{3}
+\renewcommand\topfraction{0.95}
+\setcounter{bottomnumber}{3}
+\renewcommand\bottomfraction{0.95}
+\setcounter{totalnumber}{4}
+\renewcommand\textfraction{0.00}
+\renewcommand\floatpagefraction{0.80}
+\floatsep12dd plus 2dd minus 3dd
+\textfloatsep12dd plus 2dd minus 3dd
+\intextsep12dd plus 2dd minus 3dd
+
+\setcounter{topnumber}{4}
+\setcounter{bottomnumber}{4}
+\setcounter{totalnumber}{4}
+\setcounter{dbltopnumber}{4}
+
+\pagestyle{myheadings}
+
+
+%% The last command 
+\endinput
+

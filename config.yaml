@@ -28,7 +28,7 @@ general:
 
 
 visualization:
-  save_plots: true
+  save_plots: false
   results_folder: "results"
   # Czy generować wielokrotne wykresy zbieżności w trybie czarno-białym (druk)?
   multi_convergence_grayscale: false

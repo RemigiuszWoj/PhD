@@ -31,7 +31,7 @@ Objective: Find binary assignment minimizing H, which enforces exactly one swap
 
 from typing import Dict, List, Tuple
 
-from src.neighborhoods.classical.common import apply_swaps, compute_deltas, solve_qubo
+from src.neighborhoods.common import apply_swaps, compute_deltas, solve_qubo
 from src.permutation_procesing import c_max
 
 

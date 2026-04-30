@@ -18,7 +18,7 @@ For n > 200 use quantum_qubo_enhanced/fibonacci.py instead.
 
 from typing import Dict, List, Tuple
 
-from src.neighborhoods.classical.common import (
+from src.neighborhoods.common import (
     apply_swaps,
     compute_deltas,
     solve_qubo,

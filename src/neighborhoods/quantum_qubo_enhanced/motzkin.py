@@ -17,7 +17,7 @@ to keep K ≤ 180 variables per window on D-Wave Advantage.
 import math
 from typing import Dict, List, Optional, Tuple
 
-from src.neighborhoods.classical.common import (
+from src.neighborhoods.common import (
     compute_endpoint_swap_delta,
     compute_head,
     compute_tail,
@@ -83,9 +83,7 @@ def _solve_window_motzkin_qubo(
     candidates: List[Tuple[int, int, float]] = []
     for i in range(start, end - 1):
         for j in range(i + 1, end):
-            delta = compute_endpoint_swap_delta(
-                pi, i, j, Head, Tail, processing_times, base_c
-            )
+            delta = compute_endpoint_swap_delta(pi, i, j, Head, Tail, processing_times, base_c)
             candidates.append((i, j, delta))
 
     if not candidates:
@@ -178,10 +176,20 @@ def quantum_motzkin_enhanced(
         if end - start < 2:
             break
         window_swaps = _solve_window_motzkin_qubo(
-            pi, processing_times, start, end,
-            Head, Tail, base_c,
-            num_reads, backend, dwave_token, solver,
-            annealing_time_us, chain_strength, num_spin_reversal_transforms,
+            pi,
+            processing_times,
+            start,
+            end,
+            Head,
+            Tail,
+            base_c,
+            num_reads,
+            backend,
+            dwave_token,
+            solver,
+            annealing_time_us,
+            chain_strength,
+            num_spin_reversal_transforms,
         )
         all_swaps.extend(window_swaps)
         if end == n:

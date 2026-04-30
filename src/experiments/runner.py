@@ -14,27 +14,32 @@ from src import visualization as viz
 from src.algorithms import iterated_local_search, simulated_annealing
 from src.parser import parser
 
-# Full canonical sets used for experiments (always applied regardless of config lists)
 ALGORITHMS_ALL = ("ils", "sa")
 
-# Default canonical neighborhoods
+# Trzy klasy sąsiedztw:
+#   classical          - CPU only
+#   quantum_qubo       - D-Wave, oryginalne sformułowania (małe n)
+#   quantum_qubo_enhanced - D-Wave, duże n (windowed / bez filtrów delta)
 _DEFAULT_NEIGHBORHOODS = (
+    # classical
     "adjacent",
-    "quantum_adjacent",
-    "quantum_fibonahi",
-    "quantum_dynasearch",
-    "quantum_motzkin",
-    "fibonahi",
+    "fibonacci",
     "dynasearch",
     "motzkin",
+    # quantum_qubo
+    "quantum_adjacent",
+    "quantum_fibonacci",
+    "quantum_dynasearch",
+    "quantum_motzkin",
+    # quantum_qubo_enhanced
+    "quantum_adjacent_enhanced",
+    "quantum_fibonacci_enhanced",
+    "quantum_dynasearch_enhanced",
+    "quantum_motzkin_enhanced",
 )
 
 
 def _load_neighborhoods_from_config() -> tuple | None:
-    """Try to read `experiment.neighborhoods` from config.yaml.
-
-    Returns tuple of names or None on any error / missing key.
-    """
     try:
         with open("config.yaml", "r", encoding="utf-8") as f:
             cfg = yaml.safe_load(f) or {}
@@ -51,18 +56,12 @@ NEIGHBORHOODS_ALL = _load_neighborhoods_from_config() or _DEFAULT_NEIGHBORHOODS
 
 @dataclass(frozen=True)
 class RunConfig:
-    """Minimal configuration of a single run.
-
-    Simplified: removed explicit SA parameters (we rely on fixed defaults).
-    ILS keeps an optional tabu_tenure (for the internal tabu list mechanism).
-    """
-
-    algorithm: str  # 'ils' | 'sa'
-    neighborhood: str  # 'adjacent' | 'fibonahi' | 'dynasearch' | 'motzkin' | 'quantum_*'
-    instance_file: str  # path to instance file
-    instance_number: int  # instance index inside file
-    seed: int  # seed RNG
-    time_limit_ms: int  # time budget in ms
+    algorithm: str
+    neighborhood: str
+    instance_file: str
+    instance_number: int
+    seed: int
+    time_limit_ms: int
     tabu_tenure: int | None = None
 
 
@@ -79,7 +78,6 @@ class RunResult:
     instance_machines: int
     upper_bound: int | None
     lower_bound: int | None
-    # Placeholder for future: evals_total, evals_to_best, accept_rate
 
     def gap_percent(self) -> float | None:
         if self.lower_bound is None:
@@ -92,7 +90,6 @@ class RunResult:
     def to_dict(self):
         d = asdict(self)
         d["gap_percent"] = self.gap_percent()
-        # Convert config to nested dict
         d["config"] = asdict(self.config)
         return d
 
@@ -103,17 +100,11 @@ class ExperimentRunner:
         base_results_dir: str = "results/experiments",
         quantum_config: dict | None = None,
     ):
-        """Runner no longer wipes the base directory.
-
-        Each batch gets its own timestamp directory; historical runs are preserved.
-        """
         self.base_dir = Path(base_results_dir)
         self.base_dir.mkdir(parents=True, exist_ok=True)
         self.timestamp_dir = self.base_dir / datetime.utcnow().strftime("%Y%m%d_%H%M%S")
         self.timestamp_dir.mkdir(parents=True, exist_ok=True)
-        # Quantum config (backend, dwave_token, num_reads, etc.)
         if quantum_config is None:
-            # Try to load from config.yaml
             try:
                 with open("config.yaml", "r") as f:
                     cfg = yaml.safe_load(f)
@@ -121,7 +112,6 @@ class ExperimentRunner:
             except Exception:
                 quantum_config = {}
         self.quantum_config = quantum_config
-        # Pre-defined dispatch map
         self._dispatch = {
             "ils": self._run_ils,
             "sa": self._run_sa,
@@ -134,7 +124,6 @@ class ExperimentRunner:
             result = self._run_single(cfg)
             results.append(result)
             self._persist_result(result)
-        # After batch, attempt to create multi-convergence plots
         try:
             viz.build_algorithm_multi_convergence_plots(self.timestamp_dir)
         except Exception as e:
@@ -143,7 +132,6 @@ class ExperimentRunner:
 
     def _run_single(self, cfg: RunConfig) -> RunResult:
         random.seed(cfg.seed)
-        # load instance
         data = parser(cfg.instance_file, cfg.instance_number)
         processing_times = data["processing_times"]
         jobs = data["info"]["jobs"]
@@ -157,10 +145,7 @@ class ExperimentRunner:
             raise ValueError(f"Unknown algorithm {cfg.algorithm}")
         best_pi, best_cmax, t_hist, c_hist = run_fn(processing_times, cfg)
         total_time_ms = int((time.time() - start) * 1000)
-        if t_hist:
-            time_to_best_ms = t_hist[-1]
-        else:
-            time_to_best_ms = total_time_ms
+        time_to_best_ms = t_hist[-1] if t_hist else total_time_ms
 
         return RunResult(
             config=cfg,
@@ -178,10 +163,11 @@ class ExperimentRunner:
 
     def _persist_result(self, result: RunResult) -> None:
         cfg = result.config
-        # Create dedicated subdirectory per run for clearer isolation.
         run_dir_name = (
-            f"algo={cfg.algorithm}__neigh={cfg.neighborhood}__file={Path(cfg.instance_file).stem}"
-            f"__inst={cfg.instance_number}__n{result.instance_jobs}__m{result.instance_machines}"
+            f"algo={cfg.algorithm}__neigh={cfg.neighborhood}"
+            f"__file={Path(cfg.instance_file).stem}"
+            f"__inst={cfg.instance_number}"
+            f"__n{result.instance_jobs}__m{result.instance_machines}"
             f"__tl={cfg.time_limit_ms}ms__seed={cfg.seed}"
         )
         run_dir = self.timestamp_dir / run_dir_name
@@ -190,8 +176,7 @@ class ExperimentRunner:
         with open(path, "w", encoding="utf-8") as f:
             json.dump(result.to_dict(), f, indent=2)
         print(f"[Experiment] Saved {path}")
-        # Also save a flat copy at timestamp root so visualization utilities
-        # that look for <timestamp>/*.json can find per-run results.
+
         flat_name = (
             f"result__algo={cfg.algorithm}__neigh={cfg.neighborhood}"
             f"__file={Path(cfg.instance_file).stem}__inst={cfg.instance_number}"
@@ -204,7 +189,6 @@ class ExperimentRunner:
         except Exception:
             pass
 
-        # Generate per-run convergence plot
         try:
             times = result.time_history_ms or []
             c_hist = result.cmax_history or []
@@ -212,9 +196,8 @@ class ExperimentRunner:
                 conv_path = run_dir / "convergence.png"
                 viz.save_convergence_plot_to(times, c_hist, str(conv_path))
         except Exception as e:
-            print(f"[Experiment] Failed to create convergence plot for {path}: {e}")
+            print(f"[Experiment] Failed to create convergence plot: {e}")
 
-    # --- private algorithm implementations used via dispatch ---
     def _run_ils(self, processing_times, cfg: RunConfig):
         return iterated_local_search(
             processing_times,
@@ -249,70 +232,54 @@ def generate_basic_plan(
     algorithms: Iterable[str] | None = None,
     neighborhoods: Iterable[str] | None = None,
 ) -> List[RunConfig]:
-    """Generate plan; if algorithms/neighborhoods omitted, use full canonical sets.
-
-    NOTE: If `algorithms` or `neighborhoods` are provided they will be used;
-    otherwise the canonical full sets (ALGORITHMS_ALL, NEIGHBORHOODS_ALL)
-    are used. (This allows overriding via `config.yaml`.)
-    """
-    # Use provided subsets when present, otherwise default to full sets.
     algorithms = tuple(algorithms) if algorithms is not None else ALGORITHMS_ALL
     neighborhoods = tuple(neighborhoods) if neighborhoods is not None else NEIGHBORHOODS_ALL
     configs: List[RunConfig] = []
-    base_seeds = list(range(repeats))
     for algo in algorithms:
         for neigh in neighborhoods:
-            for seed in base_seeds:
-                cfg = RunConfig(
-                    algorithm=algo,
-                    neighborhood=neigh,
-                    instance_file=instance_file,
-                    instance_number=instance_number,
-                    seed=seed,
-                    time_limit_ms=time_limit_ms,
-                    tabu_tenure=10 if algo == "ils" else None,
+            for seed in range(repeats):
+                configs.append(
+                    RunConfig(
+                        algorithm=algo,
+                        neighborhood=neigh,
+                        instance_file=instance_file,
+                        instance_number=instance_number,
+                        seed=seed,
+                        time_limit_ms=time_limit_ms,
+                        tabu_tenure=10 if algo == "ils" else None,
+                    )
                 )
-                configs.append(cfg)
     return configs
 
 
 def count_instances_in_file(instance_file: str) -> int:
-    """Count how many instances are present in a Taillard-format file using parser logic.
-
-    We iterate parser until exhaustion; cheap because file small vs runtime.
-    """
-    # Re-parse similarly to parser but counting; reuse parser by reading all then len(list)
-    instances: List[int] = []
+    instances = 0
     try:
         with open(instance_file, "r") as f:
             lines = [line.strip() for line in f if line.strip()]
         it = iter(lines)
         for line in it:
             if line.startswith("number of jobs"):
-                # skip header lines matching parser expectations
                 try:
                     header = next(it)
                 except StopIteration:
                     break
-                # skip 'processing times :' label
                 try:
                     next(it)
                 except StopIteration:
                     break
-                # header holds: jobs machines seed upper lower
                 parts = header.split()
                 if len(parts) >= 5:
                     machines = int(parts[1])
-                    # consume machines lines of processing times
                     for _ in range(machines):
                         try:
                             next(it)
                         except StopIteration:
                             break
-                    instances.append(1)
+                    instances += 1
     except FileNotFoundError:
         return 0
-    return len(instances)
+    return instances
 
 
 def generate_plan_all_instances(
@@ -324,17 +291,14 @@ def generate_plan_all_instances(
     neighborhoods: Iterable[str] | None = None,
 ) -> List[RunConfig]:
     total = count_instances_in_file(instance_file)
-    configs: List[RunConfig] = []
     if total == 0:
-        return configs
-    # Determine list of time limits
-    limits: List[int]
-    if time_limits_ms:
-        limits = list(time_limits_ms)
-    elif time_limit_ms is not None:
-        limits = [time_limit_ms]
-    else:
-        limits = [1000]
+        return []
+    limits: List[int] = (
+        list(time_limits_ms)
+        if time_limits_ms
+        else ([time_limit_ms] if time_limit_ms is not None else [1000])
+    )
+    configs: List[RunConfig] = []
     for inst_num in range(total):
         for tl in limits:
             configs.extend(
@@ -357,17 +321,12 @@ def generate_plan_for_files(
     algorithms: Iterable[str] | None = None,
     neighborhoods: Iterable[str] | None = None,
 ) -> List[RunConfig]:
-    """Build a combined plan for a list of instance files.
-
-    For each file enumerate all contained instances and each time limit.
-    """
     all_configs: List[RunConfig] = []
     for inst_file in instance_files:
         all_configs.extend(
             generate_plan_all_instances(
                 instance_file=inst_file,
                 repeats=repeats,
-                time_limit_ms=None,
                 time_limits_ms=time_limits_ms,
                 algorithms=algorithms,
                 neighborhoods=neighborhoods,

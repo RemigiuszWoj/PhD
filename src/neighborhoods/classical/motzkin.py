@@ -16,7 +16,7 @@ Complexity: O(m·n²) for deltas + O(n³) for DP = O(n³) total
 
 from typing import List, Optional, Tuple
 
-from src.neighborhoods.common import compute_endpoint_swap_delta, compute_head, compute_tail
+from src.neighborhoods.classical.common import compute_endpoint_swap_delta, compute_head, compute_tail
 from src.permutation_procesing import c_max
 
 

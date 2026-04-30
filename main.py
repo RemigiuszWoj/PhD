@@ -14,9 +14,9 @@ from src.experiments.aggregate import (
     write_wide_gap_table,
 )
 from src.experiments.runner import (
+    NEIGHBORHOODS_ALL,
     ExperimentRunner,
     generate_plan_for_files,
-    NEIGHBORHOODS_ALL,
 )
 from src.parser import parser
 from src.taillard_gen import generate_taillard_instance
@@ -27,6 +27,7 @@ from src.visualization import (
     save_gantt_chart_with_name,
     save_multi_convergence_plot,
 )
+
 # NEIGHBORHOODS_ALL is imported from src.experiments.runner
 
 # main is now compare-only; run_algorithm wrapper removed to keep code minimal
@@ -256,45 +257,73 @@ def main() -> None:
     # Only run comparison flows (neighborhood comparisons) — simplify main.
     if algorithm == "ils_compare":
         labels = {
+            # classical
             "adjacent": "ILS: adjacent",
-            "quantum_adjacent": "ILS: quantum_adjacent",
-            "quantum_fibonahi": "ILS: quantum_fibonahi",
-            "quantum_dynasearch": "ILS: quantum_dynasearch",
-            "quantum_motzkin": "ILS: quantum_motzkin",
-            "fibonahi": "ILS: fibonahi",
+            "fibonacci": "ILS: fibonacci",
             "dynasearch": "ILS: dynasearch",
             "motzkin": "ILS: motzkin",
+            # quantum_qubo
+            "quantum_adjacent": "ILS: q-adjacent",
+            "quantum_fibonacci": "ILS: q-fibonacci",
+            "quantum_dynasearch": "ILS: q-dynasearch",
+            "quantum_motzkin": "ILS: q-motzkin",
+            # quantum_qubo_enhanced
+            "quantum_adjacent_enhanced": "ILS: q-adjacent-enh",
+            "quantum_fibonacci_enhanced": "ILS: q-fibonacci-enh",
+            "quantum_dynasearch_enhanced": "ILS: q-dynasearch-enh",
+            "quantum_motzkin_enhanced": "ILS: q-motzkin-enh",
         }
         colors = {
-            "adjacent": "#00FFFF",  # neon cyan
-            "quantum_adjacent": "#FF0066",  # neon pink (quantum!)
-            "quantum_fibonahi": "#9900FF",  # neon purple (quantum fibonahi!)
-            "quantum_dynasearch": "#00FF99",  # neon green (quantum dynasearch!)
-            "quantum_motzkin": "#FFFF00",  # neon yellow (quantum motzkin!)
-            "fibonahi": "#FF00CC",  # neon magenta
-            "dynasearch": "#7CFF00",  # neon lime
-            "motzkin": "#FF9900",  # orange (high complexity warning)
+            # classical — odcienie szarości/neutralne
+            "adjacent": "#00FFFF",
+            "fibonacci": "#FF00CC",
+            "dynasearch": "#7CFF00",
+            "motzkin": "#FF9900",
+            # quantum_qubo — intensywne
+            "quantum_adjacent": "#FF0066",
+            "quantum_fibonacci": "#9900FF",
+            "quantum_dynasearch": "#00FF99",
+            "quantum_motzkin": "#FFFF00",
+            # quantum_qubo_enhanced — jaśniejsze warianty quantum
+            "quantum_adjacent_enhanced": "#FF6699",
+            "quantum_fibonacci_enhanced": "#BB66FF",
+            "quantum_dynasearch_enhanced": "#66FFCC",
+            "quantum_motzkin_enhanced": "#FFFF88",
         }
     elif algorithm == "simulated_annealing_compare":
         labels = {
+            # classical
             "adjacent": "SA: adjacent",
-            "quantum_adjacent": "SA: quantum_adjacent",
-            "quantum_fibonahi": "SA: quantum_fibonahi",
-            "quantum_dynasearch": "SA: quantum_dynasearch",
-            "quantum_motzkin": "SA: quantum_motzkin",
-            "fibonahi": "SA: fibonahi",
+            "fibonacci": "SA: fibonacci",
             "dynasearch": "SA: dynasearch",
             "motzkin": "SA: motzkin",
+            # quantum_qubo
+            "quantum_adjacent": "SA: q-adjacent",
+            "quantum_fibonacci": "SA: q-fibonacci",
+            "quantum_dynasearch": "SA: q-dynasearch",
+            "quantum_motzkin": "SA: q-motzkin",
+            # quantum_qubo_enhanced
+            "quantum_adjacent_enhanced": "SA: q-adjacent-enh",
+            "quantum_fibonacci_enhanced": "SA: q-fibonacci-enh",
+            "quantum_dynasearch_enhanced": "SA: q-dynasearch-enh",
+            "quantum_motzkin_enhanced": "SA: q-motzkin-enh",
         }
         colors = {
-            "adjacent": "#00FFFF",  # neon cyan
-            "quantum_adjacent": "#FF0066",  # neon pink (quantum!)
-            "quantum_fibonahi": "#9900FF",  # neon purple (quantum fibonahi!)
-            "quantum_dynasearch": "#00FF99",  # neon green (quantum dynasearch!)
-            "quantum_motzkin": "#FFFF00",  # neon yellow (quantum motzkin!)
-            "fibonahi": "#FF00CC",  # neon magenta
-            "dynasearch": "#7CFF00",  # neon lime
-            "motzkin": "#FF9900",  # orange
+            # classical
+            "adjacent": "#00FFFF",
+            "fibonacci": "#FF00CC",
+            "dynasearch": "#7CFF00",
+            "motzkin": "#FF9900",
+            # quantum_qubo
+            "quantum_adjacent": "#FF0066",
+            "quantum_fibonacci": "#9900FF",
+            "quantum_dynasearch": "#00FF99",
+            "quantum_motzkin": "#FFFF00",
+            # quantum_qubo_enhanced
+            "quantum_adjacent_enhanced": "#FF6699",
+            "quantum_fibonacci_enhanced": "#BB66FF",
+            "quantum_dynasearch_enhanced": "#66FFCC",
+            "quantum_motzkin_enhanced": "#FFFF88",
         }
     else:
         raise ValueError("Unknown algorithm: use 'ils_compare' or 'simulated_annealing_compare'")

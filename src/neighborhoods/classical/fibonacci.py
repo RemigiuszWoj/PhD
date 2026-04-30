@@ -12,7 +12,7 @@ Complexity: O(m·n) for deltas + O(n·k) for DP = O(m·n) total
 
 from typing import Dict, List, Tuple
 
-from src.neighborhoods.common import apply_swaps, compute_head, compute_tail
+from src.neighborhoods.classical.common import apply_swaps, compute_head, compute_tail
 from src.permutation_procesing import c_max
 
 
@@ -160,7 +160,7 @@ def _solve_dp_topk(
     return solve(0)
 
 
-def fibonahi_neighborhood_topk(
+def fibonacci_neighborhood_topk(
     pi: List[int],
     processing_times: List[List[int]],
     k: int,

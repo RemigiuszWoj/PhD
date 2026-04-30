@@ -8,7 +8,7 @@ Complexity: O(n) neighbors, each computed in O(m) with Head+Tail → O(m·n) tot
 
 from typing import Iterator, List, Tuple
 
-from src.neighborhoods.common import compute_head_and_tail, swap_jobs
+from src.neighborhoods.classical.common import compute_head_and_tail, swap_jobs
 from src.permutation_procesing import c_max
 
 

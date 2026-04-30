@@ -50,7 +50,7 @@ Objective: Find binary assignment minimizing H, selecting non-overlapping
 
 from typing import Dict, List, Optional, Tuple
 
-from src.neighborhoods.common import (
+from src.neighborhoods.classical.common import (
     compute_endpoint_swap_delta,
     compute_head,
     compute_tail,

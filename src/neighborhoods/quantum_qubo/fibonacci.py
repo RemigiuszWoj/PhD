@@ -1,4 +1,4 @@
-"""Quantum Fibonahi neighborhood - select non-overlapping swaps using QUBO.
+"""Quantum Fibonacci neighborhood - select non-overlapping swaps using QUBO.
 
 QUBO formulation (no-overlap constraint):
     H = Σᵢ δᵢ·xᵢ + P·Σᵢ xᵢ·xᵢ₊₁
@@ -42,7 +42,7 @@ Objective: Find binary assignment minimizing H, selecting non-overlapping
 
 from typing import Dict, List, Tuple
 
-from src.neighborhoods.common import (
+from src.neighborhoods.classical.common import (
     apply_swaps,
     compute_deltas,
     solve_qubo,
@@ -51,7 +51,7 @@ from src.neighborhoods.common import (
 from src.permutation_procesing import c_max
 
 
-def quantum_fibonahi_neighborhood(
+def quantum_fibonacci_neighborhood(
     pi: List[int],
     processing_times: List[List[int]],
     num_reads: int = 5,
@@ -62,7 +62,7 @@ def quantum_fibonahi_neighborhood(
     chain_strength: float | None = None,
     num_spin_reversal_transforms: int | None = None,
 ) -> Tuple[List[int], int, List[int]]:
-    """Quantum fibonahi neighborhood - selects non-overlapping swaps via QUBO.
+    """Quantum fibonacci neighborhood - selects non-overlapping swaps via QUBO.
 
     Args:
         pi: Current permutation
@@ -114,10 +114,10 @@ def quantum_fibonahi_neighborhood(
     return new_pi, new_cmax, valid_swaps
 
 
-def generate_neighbors_fibonahi_qubo(
+def generate_neighbors_fibonacci_qubo(
     pi: List[int],
     processing_times: List[List[int]],
     num_reads: int = 5,
 ) -> Tuple[List[int], int, List[int]]:
-    """Alias for quantum_fibonahi_neighborhood (backward compatibility)."""
-    return quantum_fibonahi_neighborhood(pi, processing_times, num_reads)
+    """Alias for quantum_fibonacci_neighborhood (backward compatibility)."""
+    return quantum_fibonacci_neighborhood(pi, processing_times, num_reads)

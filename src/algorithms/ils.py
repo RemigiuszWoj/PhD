@@ -41,7 +41,7 @@ def handle_tabu_move_topk(
 ) -> Tuple[List[int] | None, int | None, Any]:
     """Handle tabu - find first non-tabu move from top_moves.
 
-    Works for both adjacent and fibonahi neighborhoods.
+    Works for both adjacent and fibonacci neighborhoods.
 
     Parameters:
         top_moves: list of dicts [{"pi": [...], "cmax": int, "move": ...}, ...] sorted ascending
@@ -77,11 +77,11 @@ def handle_tabu_move(
 
     Behavior depends on neighborhood type:
     - adjacent: use top_moves (from get_neighbor), find first non-tabu
-    - fibonahi: use top_moves (from get_neighbor), find first non-tabu
+    - fibonacci: use top_moves (from get_neighbor), find first non-tabu
     - dynasearch: random restart (new permutation)
     - motzkin: random restart (new permutation)
     - quantum_adjacent: random restart (new permutation)
-    - quantum_fibonahi: random restart (new permutation)
+    - quantum_fibonacci: random restart (new permutation)
 
     Parameters:
         neigh_mode: neighborhood type
@@ -89,21 +89,32 @@ def handle_tabu_move(
         processing_times: processing times matrix
         tabu_list: dictionary of tabu moves
         n: number of jobs
-        top_moves: list of top-k moves from get_neighbor (adjacent/fibonahi)
+        top_moves: list of top-k moves from get_neighbor (adjacent/fibonacci)
 
     Returns:
         (new_pi, new_cmax, move_id) or (None, None, None) if iteration should be skipped
     """
-    if neigh_mode in ("adjacent", "fibonahi"):
+    if neigh_mode in ("adjacent", "fibonacci"):
         return handle_tabu_move_topk(top_moves, tabu_list, state.iteration)
 
-    elif neigh_mode in ("dynasearch", "motzkin", "quantum_adjacent", "quantum_fibonahi"):
+    elif neigh_mode in (
+        "dynasearch",
+        "motzkin",
+        "quantum_adjacent",
+        "quantum_fibonacci",
+        "quantum_dynasearch",
+        "quantum_motzkin",
+        "quantum_adjacent_enhanced",
+        "quantum_fibonacci_enhanced",
+        "quantum_dynasearch_enhanced",
+        "quantum_motzkin_enhanced",
+    ):
         # Restart: generate completely new random permutation
         new_pi = generate_random_permutation(n, state.current_pi)
         if new_pi is None:
             return None, None, None
         new_cmax = c_max(new_pi, processing_times)
-        move_id = tuple(new_pi)  # unique restart identification
+        move_id = tuple(new_pi)
         return new_pi, new_cmax, move_id
 
     else:
@@ -152,8 +163,8 @@ def iterated_local_search(
 
     with open_log_file(iter_log_path, "iterated_local_search") as log_file:
         while time.time() - state.start_time < max_time_seconds:
-            # Find best neighbor (for adjacent/fibonahi: pass tenure to get top_moves)
-            tabu_len = tenure if neigh_mode in ("adjacent", "fibonahi") else None
+            # Find best neighbor (for adjacent/fibonacci: pass tenure to get top_moves)
+            tabu_len = tenure if neigh_mode in ("adjacent", "fibonacci") else None
             new_pi, new_c, move_id, top_moves = get_neighbor(
                 neigh_mode, state.current_pi, processing_times, n, tabu_len, quantum_config
             )

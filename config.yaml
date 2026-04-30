@@ -85,8 +85,8 @@ experiment:
   enabled: true
   tabu_tenure: 10
   instance_files: [
-    # "data/tai20_5.txt",
-    "data/tai20_10.txt",
+    "data/tai20_5.txt",
+    # "data/tai20_10.txt",
     # "data/tai20_20.txt",
     # "data/tai50_5.txt",
     # "data/tai50_10.txt",

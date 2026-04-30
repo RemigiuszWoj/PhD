@@ -15,7 +15,7 @@ from typing import Any, Iterator, List, Tuple
 from src.neighborhoods.classical.adjacent import generate_neighbors_adjacent
 from src.neighborhoods.classical.dynasearch import dynasearch_full
 from src.neighborhoods.classical.fibonacci import (
-    fibonahi_neighborhood_topk as fibonacci_neighborhood_topk,
+    fibonacci_neighborhood_topk,
 )
 from src.neighborhoods.classical.motzkin import motzkin_neighborhood_full
 
@@ -23,7 +23,7 @@ from src.neighborhoods.classical.motzkin import motzkin_neighborhood_full
 from src.neighborhoods.quantum_qubo.adjacent import quantum_adjacent_neighborhood
 from src.neighborhoods.quantum_qubo.dynasearch import quantum_dynasearch_neighborhood
 from src.neighborhoods.quantum_qubo.fibonacci import (
-    quantum_fibonahi_neighborhood as quantum_fibonacci_neighborhood,
+    quantum_fibonacci_neighborhood,
 )
 from src.neighborhoods.quantum_qubo.motzkin import quantum_motzkin_neighborhood
 

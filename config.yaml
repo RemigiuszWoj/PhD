@@ -2,7 +2,7 @@
 
 # General settings
 general:
-  # input_file: "data/tai20_5.txt"
+  input_file: "data/tai20_5.txt"
   # input_file: "data/tai20_10.txt"
   # input_file: "data/tai20_20.txt"
 
@@ -14,7 +14,6 @@ general:
   # input_file: "data/tai100_10.txt"
   # input_file: "data/tai100_20.txt"
 
-# Od tad lepsiejsze
   # input_file: "data/tai200_10.txt"
   # input_file: "data/tai200_20.txt"
 
@@ -30,11 +29,9 @@ general:
 visualization:
   save_plots: false
   results_folder: "results"
-  # Czy generować wielokrotne wykresy zbieżności w trybie czarno-białym (druk)?
   multi_convergence_grayscale: false
 
 algorithm_common:
-  # Time limit can be specified in seconds (recommended) or milliseconds.
   time_limit_s: 0.1
 
 quantum:
@@ -42,24 +39,29 @@ quantum:
   backend: "dwave"
   # D-Wave API token (required only when backend: "dwave")
   dwave_token: "fdMX-33e2e246f5df29cf5bff170adcc763d694ae4046"
-  # Number of samples for QUBO solver (lower = faster, higher = better quality)
-  # Reduced from 50 to 5 for performance (250x speedup vs simulated annealing)
+
+  # --- quantum_qubo (oryginalne sąsiedztwa, małe n) ---
   num_reads: 100
-  # Optional: choose a specific Leap solver (e.g. "Advantage_system1", "Advantage2_prototype")
-  # Leave empty/null to let the client pick a default solver for your token/account.
+
+  # --- quantum_qubo_enhanced (duże n) ---
+  num_reads_enhanced: 100       # num_reads dla trybów *_enhanced (zalecane >= 100 na QPU)
+
+  # Windowed decomposition dla quantum_dynasearch_enhanced i quantum_motzkin_enhanced:
+  #   window_size: null = auto (obliczane z pojemności D-Wave, ~19 dla Advantage)
+  #   overlap_ratio: 0.5 = 50% zakładka między oknami
+  window_size: null
+  overlap_ratio: 0.5
+
+  # Optional: choose a specific Leap solver
   solver: null
   # Optional sampler parameters forwarded to D-Wave .sample():
-  # annealing_time is in microseconds (integer)
   annealing_time_us: null
-  # chain_strength is a float value applied to embeddings
   chain_strength: null
-  # number of spin-reversal transforms to perform (int)
   num_spin_reversal_transforms: null
-  # Optional: limit maximum segment length for quantum_dynasearch (reduces O(n²) variables)
-  # Set to constrain interval endpoints to max distance L_max apart
-  # Leave empty/commented for full O(n²) enumeration
+
+  # Limit segmentów dla quantum_dynasearch i quantum_motzkin (oryginalne, nie-enhanced)
+  # null = pełne O(n²) — używaj tylko dla małych n (n <= 20)
   L_max_dynasearch: null
-  # Optional: same for quantum_motzkin
   L_max_motzkin: null
 
 iterated_local_search:
@@ -69,59 +71,60 @@ simulated_annealing:
   initial_temp: 1000.0
   final_temp: 1.0
   alpha: 0.95
-  # Time-based reheating parameters (restored 2025-10-05)
-  reheat_factor: 1.5          # multiply temperature by this on stagnation (capped at initial_temp)
-  stagnation_ms: 5000         # no improvement for this many ms -> attempt reheat
-  temp_floor_factor: 1.0      # floor = final_temp * factor (>=1)
+  reheat_factor: 1.5
+  stagnation_ms: 5000
+  temp_floor_factor: 1.0
 
-# Optional generator: if provided, `main.py` will generate a synthetic instance
-# instead of reading from `general.input_file`.
 generator:
-  enabled: true
-  # number of machines
+  enabled: false
   m: 20
-  # number of jobs
   n: 50
-  # RNG seed for reproducibility
   seed: 42
-  # Taillard-only generator (no low/high)
-  # type is fixed to 'taillard'
 
-# Experiment batch mode (new)
 experiment:
-  enabled: true  
-  tabu_tenure: 10   
-      # when true: run batch experiments (all instances); false -> compare mode
+  enabled: false
+  tabu_tenure: 10
   instance_files: [
-    # "data/tai20_5.txt", 
-    "data/tai20_10.txt", 
+    "data/tai20_5.txt",
+    # "data/tai20_10.txt",
     # "data/tai20_20.txt",
     # "data/tai50_5.txt",
-    # "data/tai50_10.txt", 
+    # "data/tai50_10.txt",
     # "data/tai50_20.txt",
-    # "data/tai100_5.txt", 
-    # "data/tai100_10.txt", 
+    # "data/tai100_5.txt",
+    # "data/tai100_10.txt",
     # "data/tai100_20.txt",
-    # "data/tai200_10.txt", 
+    # "data/tai200_10.txt",
     # "data/tai200_20.txt",
     # "data/tai500_20.txt"
   ]
-  repeats: 1             # number of RNG seeds per (algorithm, neighborhood, instance, time_limit)
+  repeats: 1
   time_limits_s: [0.1, 0.5, 1, 2, 5, 10]
 
-  # Optional: explicitly restrict which neighborhoods to run for comparisons/experiments.
-  # If omitted, the code uses the full canonical set.
+  # Trzy klasy sąsiedztw:
+  #   classical          - CPU only
+  #   quantum_qubo       - D-Wave, oryginalne (małe n, n <= 20)
+  #   quantum_qubo_enhanced - D-Wave, duże n (windowed / bez filtrów delta)
+  #
+  # Uwaga na rozmiar instancji:
+  #   quantum_dynasearch / quantum_motzkin        → tylko n <= 20 (K=O(n²), brak podziału)
+  #   quantum_dynasearch_enhanced / _motzkin_enhanced → n <= 50  (windowed, window~19)
+  #   quantum_adjacent_enhanced                   → n <= 200 (gęste QUBO)
+  #   quantum_fibonacci_enhanced                  → n <= 500 (trójdiagonalne QUBO)
   neighborhoods: [
+    # --- classical ---
     "adjacent",
+    "fibonacci",
+    "dynasearch",
+    "motzkin",
+    # --- quantum_qubo (małe n) ---
     "quantum_adjacent",
-    "quantum_fibonahi",
+    "quantum_fibonacci",
     "quantum_dynasearch",
     "quantum_motzkin",
-    "fibonahi",
-    "dynasearch",
-    "motzkin"
+    # --- quantum_qubo_enhanced (duże n) ---
+    "quantum_adjacent_enhanced",
+    "quantum_fibonacci_enhanced",
+    "quantum_dynasearch_enhanced",
+    "quantum_motzkin_enhanced",
   ]
-
-
-
-

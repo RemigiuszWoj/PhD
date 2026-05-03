@@ -1,19 +1,56 @@
-"""Common structures and helper functions for search algorithms."""
+"""Common structures and helper functions for search algorithms.
+
+Neighborhood classes:
+    classical/          - CPU-only, fully classical
+    quantum_qubo/       - D-Wave / SimulatedAnnealingSampler, original formulations
+    quantum_qubo_enhanced/ - D-Wave, large-n extensions (windowed / no delta filter)
+"""
 
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from typing import Any, Iterator, List, Tuple
 
-from src.neighborhoods.adjacent import generate_neighbors_adjacent
-from src.neighborhoods.dynasearch import dynasearch_full
-from src.neighborhoods.fibonahi import fibonahi_neighborhood_topk
-from src.neighborhoods.motzkin import motzkin_neighborhood_full
-from src.neighborhoods.quantum_adjacent import quantum_adjacent_neighborhood
-from src.neighborhoods.quantum_dynasearch import quantum_dynasearch_neighborhood
-from src.neighborhoods.quantum_fibonahi import quantum_fibonahi_neighborhood
-from src.neighborhoods.quantum_motzkin import quantum_motzkin_neighborhood
+# --- classical ---
+from src.neighborhoods.classical.adjacent import generate_neighbors_adjacent
+from src.neighborhoods.classical.dynasearch import dynasearch_full
+from src.neighborhoods.classical.fibonacci import (
+    fibonacci_neighborhood_topk,
+)
+from src.neighborhoods.classical.motzkin import motzkin_neighborhood_full
+
+# --- quantum_qubo ---
+from src.neighborhoods.quantum_qubo.adjacent import quantum_adjacent_neighborhood
+from src.neighborhoods.quantum_qubo.dynasearch import quantum_dynasearch_neighborhood
+from src.neighborhoods.quantum_qubo.fibonacci import (
+    quantum_fibonacci_neighborhood,
+)
+from src.neighborhoods.quantum_qubo.motzkin import quantum_motzkin_neighborhood
+
+# --- quantum_qubo_enhanced ---
+from src.neighborhoods.quantum_qubo_enhanced.adjacent import quantum_adjacent_enhanced
+from src.neighborhoods.quantum_qubo_enhanced.dynasearch import quantum_dynasearch_enhanced
+from src.neighborhoods.quantum_qubo_enhanced.fibonacci import quantum_fibonacci_enhanced
+from src.neighborhoods.quantum_qubo_enhanced.motzkin import quantum_motzkin_enhanced
 from src.permutation_procesing import c_max
+
+# ---------------------------------------------------------------------------
+# Valid neighborhood mode names
+# ---------------------------------------------------------------------------
+CLASSICAL_MODES = ("adjacent", "fibonacci", "dynasearch", "motzkin")
+QUANTUM_QUBO_MODES = (
+    "quantum_adjacent",
+    "quantum_fibonacci",
+    "quantum_dynasearch",
+    "quantum_motzkin",
+)
+QUANTUM_ENHANCED_MODES = (
+    "quantum_adjacent_enhanced",
+    "quantum_fibonacci_enhanced",
+    "quantum_dynasearch_enhanced",
+    "quantum_motzkin_enhanced",
+)
+ALL_MODES = CLASSICAL_MODES + QUANTUM_QUBO_MODES + QUANTUM_ENHANCED_MODES
 
 
 @dataclass
@@ -30,7 +67,6 @@ class SearchState:
     iteration: int = 0
 
     def update_best(self) -> bool:
-        """Update best solution. Returns True if improved."""
         if self.current_cmax < self.best_cmax:
             self.best_cmax = self.current_cmax
             self.best_pi = self.current_pi.copy()
@@ -41,13 +77,11 @@ class SearchState:
         return False
 
     def elapsed_ms(self) -> int:
-        """Return elapsed time from start in ms."""
         return int((time.time() - self.start_time) * 1000)
 
 
 @contextmanager
 def open_log_file(path: str | None, algo_name: str) -> Iterator[Any]:
-    """Context manager for log file handling."""
     log_file = None
     if path:
         try:
@@ -68,7 +102,6 @@ def open_log_file(path: str | None, algo_name: str) -> Iterator[Any]:
 
 
 def log_iteration(log_file: Any, state: SearchState) -> None:
-    """Write iteration to log file."""
     if log_file:
         try:
             permutation_str = " ".join(map(str, state.current_pi))
@@ -78,6 +111,32 @@ def log_iteration(log_file: Any, state: SearchState) -> None:
             )
         except Exception:
             pass
+
+
+def _extract_quantum_params(quantum_config: dict | None, mode: str) -> dict:
+    """Extract per-mode quantum parameters from quantum_config dict."""
+    if not quantum_config:
+        return {}
+    params = {
+        "num_reads": quantum_config.get("num_reads", 5),
+        "backend": quantum_config.get("backend", "simulator"),
+        "dwave_token": quantum_config.get("dwave_token"),
+        "solver": quantum_config.get("solver"),
+        "annealing_time_us": quantum_config.get("annealing_time_us"),
+        "chain_strength": quantum_config.get("chain_strength"),
+        "num_spin_reversal_transforms": quantum_config.get("num_spin_reversal_transforms"),
+    }
+    # Enhanced modes: higher default num_reads
+    if "enhanced" in mode:
+        params["num_reads"] = quantum_config.get("num_reads_enhanced", 100)
+        params["window_size"] = quantum_config.get("window_size")  # None = auto
+        params["overlap_ratio"] = quantum_config.get("overlap_ratio", 0.5)
+    # mode-specific L_max for non-enhanced dynasearch/motzkin
+    if mode == "quantum_dynasearch":
+        params["L_max"] = quantum_config.get("L_max_dynasearch")
+    if mode == "quantum_motzkin":
+        params["L_max"] = quantum_config.get("L_max_motzkin")
+    return params
 
 
 def get_neighbor(
@@ -90,46 +149,30 @@ def get_neighbor(
 ) -> Tuple[List[int], int, Any, List[dict] | None]:
     """Generate the best neighbor for a given neighborhood mode.
 
-    Parameters:
-        neigh_mode: neighborhood type
-        current_pi: current permutation
-        processing_times: m x n processing times matrix
-        n: number of jobs
-        tabu_len: if provided, also returns top (tabu_len + 1) moves (adjacent only)
-        quantum_config: optional dict with quantum params (num_reads, L_max_dynasearch, etc.)
-
     Returns:
         (new_pi, new_cmax, move_id, top_moves)
-        top_moves: list of dicts [{"pi": [...], "cmax": int, "move": (i,j)}, ...] sorted by cmax ascending
-                   or None if tabu_len not provided or other neighborhood
+        top_moves: only for adjacent/fibonacci in ILS (tabu_len provided)
     """
+    # ------------------------------------------------------------------
+    # CLASSICAL
+    # ------------------------------------------------------------------
     if neigh_mode == "adjacent":
-        # Collect all neighbors with their cmax
         neighbors_with_cmax = []
         for neighbor, move in generate_neighbors_adjacent(current_pi):
             c = c_max(neighbor, processing_times)
             neighbors_with_cmax.append({"pi": neighbor, "cmax": c, "move": move})
-
-        # Sort by cmax (ascending)
         neighbors_with_cmax.sort(key=lambda x: x["cmax"])
-
-        # Best neighbor
         best = neighbors_with_cmax[0] if neighbors_with_cmax else None
         if best is None:
             return current_pi, c_max(current_pi, processing_times), None, None
-
-        # Top-k moves if tabu_len provided
         top_moves = None
         if tabu_len is not None:
-            k = tabu_len + 1
-            top_moves = neighbors_with_cmax[:k]
-
+            top_moves = neighbors_with_cmax[: tabu_len + 1]
         return best["pi"], best["cmax"], best["move"], top_moves
 
-    elif neigh_mode == "fibonahi":
-        # Get top-k solutions (k = tabu_len + 1, or 1 if no tabu)
+    elif neigh_mode == "fibonacci":
         k = (tabu_len + 1) if tabu_len is not None else 1
-        top_moves = fibonahi_neighborhood_topk(current_pi, processing_times, k)
+        top_moves = fibonacci_neighborhood_topk(current_pi, processing_times, k)
         if top_moves:
             best = top_moves[0]
             return best["pi"], best["cmax"], best["move"], top_moves if tabu_len else None
@@ -141,54 +184,142 @@ def get_neighbor(
 
     elif neigh_mode == "motzkin":
         if n > 150:
-            print(f"[motzkin] Warning: n={n} may be slow; consider lower time limit.")
-        new_pi, new_c, selected_pairs = motzkin_neighborhood_full(current_pi, processing_times)
-        move_id = tuple(selected_pairs) if selected_pairs else tuple(new_pi)
+            print(f"[motzkin] Warning: n={n} may be slow.")
+        new_pi, new_c, selected = motzkin_neighborhood_full(current_pi, processing_times)
+        move_id = tuple(selected) if selected else tuple(new_pi)
         return new_pi, new_c, move_id, None
 
+    # ------------------------------------------------------------------
+    # QUANTUM QUBO (original formulations)
+    # ------------------------------------------------------------------
     elif neigh_mode == "quantum_adjacent":
-        num_reads = quantum_config.get("num_reads", 5) if quantum_config else 5
-        backend = quantum_config.get("backend", "simulator") if quantum_config else "simulator"
-        dwave_token = quantum_config.get("dwave_token") if quantum_config else None
+        p = _extract_quantum_params(quantum_config, neigh_mode)
         new_pi, new_c, move = quantum_adjacent_neighborhood(
-            current_pi, processing_times, num_reads=num_reads,
-            backend=backend, dwave_token=dwave_token,
+            current_pi,
+            processing_times,
+            num_reads=p.get("num_reads", 5),
+            backend=p.get("backend", "simulator"),
+            dwave_token=p.get("dwave_token"),
+            solver=p.get("solver"),
+            annealing_time_us=p.get("annealing_time_us"),
+            chain_strength=p.get("chain_strength"),
+            num_spin_reversal_transforms=p.get("num_spin_reversal_transforms"),
         )
         return new_pi, new_c, move, None
 
-    elif neigh_mode == "quantum_fibonahi":
-        num_reads = quantum_config.get("num_reads", 5) if quantum_config else 5
-        backend = quantum_config.get("backend", "simulator") if quantum_config else "simulator"
-        dwave_token = quantum_config.get("dwave_token") if quantum_config else None
-        new_pi, new_c, swaps = quantum_fibonahi_neighborhood(
-            current_pi, processing_times, num_reads=num_reads,
-            backend=backend, dwave_token=dwave_token,
+    elif neigh_mode == "quantum_fibonacci":
+        p = _extract_quantum_params(quantum_config, neigh_mode)
+        new_pi, new_c, swaps = quantum_fibonacci_neighborhood(
+            current_pi,
+            processing_times,
+            num_reads=p.get("num_reads", 5),
+            backend=p.get("backend", "simulator"),
+            dwave_token=p.get("dwave_token"),
+            solver=p.get("solver"),
+            annealing_time_us=p.get("annealing_time_us"),
+            chain_strength=p.get("chain_strength"),
+            num_spin_reversal_transforms=p.get("num_spin_reversal_transforms"),
         )
         return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
 
     elif neigh_mode == "quantum_dynasearch":
-        L_max = quantum_config.get("L_max_dynasearch") if quantum_config else None
-        num_reads = quantum_config.get("num_reads", 5) if quantum_config else 5
-        backend = quantum_config.get("backend", "simulator") if quantum_config else "simulator"
-        dwave_token = quantum_config.get("dwave_token") if quantum_config else None
+        p = _extract_quantum_params(quantum_config, neigh_mode)
         new_pi, new_c, swaps = quantum_dynasearch_neighborhood(
-            current_pi, processing_times, num_reads=num_reads, L_max=L_max,
-            backend=backend, dwave_token=dwave_token,
+            current_pi,
+            processing_times,
+            num_reads=p.get("num_reads", 5),
+            L_max=p.get("L_max"),
+            backend=p.get("backend", "simulator"),
+            dwave_token=p.get("dwave_token"),
+            solver=p.get("solver"),
+            annealing_time_us=p.get("annealing_time_us"),
+            chain_strength=p.get("chain_strength"),
+            num_spin_reversal_transforms=p.get("num_spin_reversal_transforms"),
         )
-        move_id = tuple(swaps) if swaps else tuple(new_pi)
-        return new_pi, new_c, move_id, None
+        return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
 
     elif neigh_mode == "quantum_motzkin":
-        num_reads = quantum_config.get("num_reads", 5) if quantum_config else 5
-        L_max = quantum_config.get("L_max_motzkin") if quantum_config else None
-        backend = quantum_config.get("backend", "simulator") if quantum_config else "simulator"
-        dwave_token = quantum_config.get("dwave_token") if quantum_config else None
+        p = _extract_quantum_params(quantum_config, neigh_mode)
         new_pi, new_c, swaps = quantum_motzkin_neighborhood(
-            current_pi, processing_times, num_reads=num_reads, L_max=L_max,
-            backend=backend, dwave_token=dwave_token,
+            current_pi,
+            processing_times,
+            num_reads=p.get("num_reads", 5),
+            L_max=p.get("L_max"),
+            backend=p.get("backend", "simulator"),
+            dwave_token=p.get("dwave_token"),
+            solver=p.get("solver"),
+            annealing_time_us=p.get("annealing_time_us"),
+            chain_strength=p.get("chain_strength"),
+            num_spin_reversal_transforms=p.get("num_spin_reversal_transforms"),
         )
-        move_id = tuple(swaps) if swaps else tuple(new_pi)
-        return new_pi, new_c, move_id, None
+        return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
+
+    # ------------------------------------------------------------------
+    # QUANTUM QUBO ENHANCED (large-n extensions)
+    # ------------------------------------------------------------------
+    elif neigh_mode == "quantum_adjacent_enhanced":
+        p = _extract_quantum_params(quantum_config, neigh_mode)
+        new_pi, new_c, move = quantum_adjacent_enhanced(
+            current_pi,
+            processing_times,
+            num_reads=p.get("num_reads", 100),
+            backend=p.get("backend", "simulator"),
+            dwave_token=p.get("dwave_token"),
+            solver=p.get("solver"),
+            annealing_time_us=p.get("annealing_time_us"),
+            chain_strength=p.get("chain_strength"),
+            num_spin_reversal_transforms=p.get("num_spin_reversal_transforms"),
+        )
+        return new_pi, new_c, move, None
+
+    elif neigh_mode == "quantum_fibonacci_enhanced":
+        p = _extract_quantum_params(quantum_config, neigh_mode)
+        new_pi, new_c, swaps = quantum_fibonacci_enhanced(
+            current_pi,
+            processing_times,
+            num_reads=p.get("num_reads", 100),
+            backend=p.get("backend", "simulator"),
+            dwave_token=p.get("dwave_token"),
+            solver=p.get("solver"),
+            annealing_time_us=p.get("annealing_time_us"),
+            chain_strength=p.get("chain_strength"),
+            num_spin_reversal_transforms=p.get("num_spin_reversal_transforms"),
+        )
+        return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
+
+    elif neigh_mode == "quantum_dynasearch_enhanced":
+        p = _extract_quantum_params(quantum_config, neigh_mode)
+        new_pi, new_c, swaps = quantum_dynasearch_enhanced(
+            current_pi,
+            processing_times,
+            window_size=p.get("window_size"),
+            overlap_ratio=p.get("overlap_ratio", 0.5),
+            num_reads=p.get("num_reads", 100),
+            backend=p.get("backend", "simulator"),
+            dwave_token=p.get("dwave_token"),
+            solver=p.get("solver"),
+            annealing_time_us=p.get("annealing_time_us"),
+            chain_strength=p.get("chain_strength"),
+            num_spin_reversal_transforms=p.get("num_spin_reversal_transforms"),
+        )
+        return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
+
+    elif neigh_mode == "quantum_motzkin_enhanced":
+        p = _extract_quantum_params(quantum_config, neigh_mode)
+        new_pi, new_c, swaps = quantum_motzkin_enhanced(
+            current_pi,
+            processing_times,
+            window_size=p.get("window_size"),
+            overlap_ratio=p.get("overlap_ratio", 0.5),
+            num_reads=p.get("num_reads", 100),
+            backend=p.get("backend", "simulator"),
+            dwave_token=p.get("dwave_token"),
+            solver=p.get("solver"),
+            annealing_time_us=p.get("annealing_time_us"),
+            chain_strength=p.get("chain_strength"),
+            num_spin_reversal_transforms=p.get("num_spin_reversal_transforms"),
+        )
+        return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
 
     else:
-        raise ValueError(f"Unknown neigh_mode={neigh_mode}")
+        raise ValueError(f"Unknown neigh_mode='{neigh_mode}'. " f"Valid modes: {ALL_MODES}")

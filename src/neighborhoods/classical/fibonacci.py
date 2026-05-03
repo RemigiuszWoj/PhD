@@ -160,7 +160,7 @@ def _solve_dp_topk(
     return solve(0)
 
 
-def fibonahi_neighborhood_topk(
+def fibonacci_neighborhood_topk(
     pi: List[int],
     processing_times: List[List[int]],
     k: int,

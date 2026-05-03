@@ -64,6 +64,7 @@ def run_compare_mode(
     algorithm_common,
     labels,
     colors,
+    linestyles,
     out_dir: str = None,
     results_folder: str = "results",
     neighborhoods: list | None = None,
@@ -142,6 +143,7 @@ def run_compare_mode(
         results,
         labels=labels,
         colors=colors,
+        linestyles=linestyles,
         filepath=multi_path,
         time_limit_ms=algorithm_common.get("time_limit_ms"),
         grayscale=multi_gray,
@@ -275,20 +277,37 @@ def main() -> None:
         }
         colors = {
             # classical — odcienie szarości/neutralne
-            "adjacent": "#00FFFF",
-            "fibonacci": "#FF00CC",
-            "dynasearch": "#7CFF00",
-            "motzkin": "#FF9900",
+            "adjacent": "#00CCCC",
+            "fibonacci": "#CC00CC",
+            "dynasearch": "#44BB00",
+            "motzkin": "#FF8800",
             # quantum_qubo — intensywne
-            "quantum_adjacent": "#FF0066",
-            "quantum_fibonacci": "#9900FF",
-            "quantum_dynasearch": "#00FF99",
-            "quantum_motzkin": "#FFFF00",
+            "quantum_adjacent": "#00CCCC",
+            "quantum_fibonacci": "#CC00CC",
+            "quantum_dynasearch": "#44BB00",
+            "quantum_motzkin": "#FF8800",
             # quantum_qubo_enhanced — jaśniejsze warianty quantum
-            "quantum_adjacent_enhanced": "#FF6699",
-            "quantum_fibonacci_enhanced": "#BB66FF",
-            "quantum_dynasearch_enhanced": "#66FFCC",
-            "quantum_motzkin_enhanced": "#FFFF88",
+            "quantum_adjacent_enhanced": "#00CCCC",
+            "quantum_fibonacci_enhanced": "#CC00CC",
+            "quantum_dynasearch_enhanced": "#44BB00",
+            "quantum_motzkin_enhanced": "#FF8800",
+        }
+        linestyles = {
+            # classical — ciągła
+            "adjacent": "-",
+            "fibonacci": "-",
+            "dynasearch": "-",
+            "motzkin": "-",
+            # quantum_qubo — przerywana
+            "quantum_adjacent": "--",
+            "quantum_fibonacci": "--",
+            "quantum_dynasearch": "--",
+            "quantum_motzkin": "--",
+            # quantum_qubo_enhanced — kropkowana
+            "quantum_adjacent_enhanced": ":",
+            "quantum_fibonacci_enhanced": ":",
+            "quantum_dynasearch_enhanced": ":",
+            "quantum_motzkin_enhanced": ":",
         }
     elif algorithm == "simulated_annealing_compare":
         labels = {
@@ -310,20 +329,34 @@ def main() -> None:
         }
         colors = {
             # classical
-            "adjacent": "#00FFFF",
-            "fibonacci": "#FF00CC",
-            "dynasearch": "#7CFF00",
-            "motzkin": "#FF9900",
+            "adjacent": "#00CCCC",
+            "fibonacci": "#CC00CC",
+            "dynasearch": "#44BB00",
+            "motzkin": "#FF8800",
             # quantum_qubo
-            "quantum_adjacent": "#FF0066",
-            "quantum_fibonacci": "#9900FF",
-            "quantum_dynasearch": "#00FF99",
-            "quantum_motzkin": "#FFFF00",
+            "quantum_adjacent": "#00CCCC",
+            "quantum_fibonacci": "#CC00CC",
+            "quantum_dynasearch": "#44BB00",
+            "quantum_motzkin": "#FF8800",
             # quantum_qubo_enhanced
-            "quantum_adjacent_enhanced": "#FF6699",
-            "quantum_fibonacci_enhanced": "#BB66FF",
-            "quantum_dynasearch_enhanced": "#66FFCC",
-            "quantum_motzkin_enhanced": "#FFFF88",
+            "quantum_adjacent_enhanced": "#00CCCC",
+            "quantum_fibonacci_enhanced": "#CC00CC",
+            "quantum_dynasearch_enhanced": "#44BB00",
+            "quantum_motzkin_enhanced": "#FF8800",
+        }
+        linestyles = {
+            "adjacent": "-",
+            "fibonacci": "-",
+            "dynasearch": "-",
+            "motzkin": "-",
+            "quantum_adjacent": "--",
+            "quantum_fibonacci": "--",
+            "quantum_dynasearch": "--",
+            "quantum_motzkin": "--",
+            "quantum_adjacent_enhanced": ":",
+            "quantum_fibonacci_enhanced": ":",
+            "quantum_dynasearch_enhanced": ":",
+            "quantum_motzkin_enhanced": ":",
         }
     else:
         raise ValueError("Unknown algorithm: use 'ils_compare' or 'simulated_annealing_compare'")
@@ -351,6 +384,7 @@ def main() -> None:
         algorithm_common,
         labels,
         colors,
+        linestyles,
         out_dir=out_dir,
         results_folder=base_results,
         neighborhoods=cfg_neigh,

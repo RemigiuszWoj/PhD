@@ -2,7 +2,7 @@
 
 # General settings
 general:
-  # input_file: "data/tai20_5.txt"
+  input_file: "data/tai20_5.txt"
   # input_file: "data/tai20_10.txt"
   # input_file: "data/tai20_20.txt"
 
@@ -76,13 +76,13 @@ simulated_annealing:
   temp_floor_factor: 1.0
 
 generator:
-  enabled: true
+  enabled: false
   m: 20
   n: 50
   seed: 42
 
 experiment:
-  enabled: true
+  enabled: false
   tabu_tenure: 10
   instance_files: [
     "data/tai20_5.txt",

@@ -97,6 +97,7 @@ def save_multi_convergence_plot(
     histories: dict,
     labels: dict = None,
     colors: dict = None,
+    linestyles: dict = None,
     filepath: str = None,
     results_folder: str = "results",
     time_limit_ms: int = None,
@@ -122,6 +123,8 @@ def save_multi_convergence_plot(
         labels = {}
     if colors is None:
         colors = {}
+    if linestyles is None:
+        linestyles = {}
     # Definicja cyklu stylów dla trybu czarno-białego (powtarzalny jeśli więcej serii)
     style_cycle = [
         {"linestyle": "-", "marker": "o"},
@@ -184,6 +187,7 @@ def save_multi_convergence_plot(
             )
         else:
             color = colors.get(key, None)
+            ls = linestyles.get(key, "-")
             ax.plot(
                 times_local,
                 cmax_local,
@@ -194,6 +198,7 @@ def save_multi_convergence_plot(
                 markerfacecolor="white",
                 markeredgewidth=1.0,
                 color=color,
+                linestyle=ls,
             )
         if times_local and cmax_local:
             ax.annotate(
@@ -225,13 +230,58 @@ def save_multi_convergence_plot(
             )
         except Exception:
             pass
-    # Legend outside on the right
+    # Legend — grouped with section headers
+    handles, legend_labels = ax.get_legend_handles_labels()
+
+    # Build grouped legend: Classical | Quantum QUBO | Enhanced
+    from matplotlib.lines import Line2D
+
+    def make_header(text):
+        return Line2D([], [], color="none", label=f"── {text} ──")
+
+    classical_keys = [k for k in histories if not k.startswith("quantum")]
+    qubo_keys = [k for k in histories if k.startswith("quantum") and not k.endswith("enhanced")]
+    enhanced_keys = [k for k in histories if k.endswith("enhanced")]
+
+    grouped_handles = []
+    grouped_labels = []
+
+    if classical_keys:
+        grouped_handles.append(make_header("Classical  (—)"))
+        grouped_labels.append("")
+        for k in classical_keys:
+            idx = list(histories.keys()).index(k)
+            grouped_handles.append(handles[idx])
+            grouped_labels.append(legend_labels[idx])
+
+    if qubo_keys:
+        grouped_handles.append(make_header("Quantum QUBO  (--)"))
+        grouped_labels.append("")
+        for k in qubo_keys:
+            idx = list(histories.keys()).index(k)
+            grouped_handles.append(handles[idx])
+            grouped_labels.append(legend_labels[idx])
+
+    if enhanced_keys:
+        grouped_handles.append(make_header("Enhanced  (⋯)"))
+        grouped_labels.append("")
+        for k in enhanced_keys:
+            idx = list(histories.keys()).index(k)
+            grouped_handles.append(handles[idx])
+            grouped_labels.append(legend_labels[idx])
+
     ax.legend(
+        grouped_handles,
+        grouped_labels,
         loc="center left",
         bbox_to_anchor=(1.02, 0.5),
-        frameon=False,
+        frameon=True,
         fontsize=9,
         borderaxespad=0.0,
+        handlelength=3.0,  # dłuższe linie żeby widać styl
+        handleheight=1.2,
+        labelspacing=0.4,
+        framealpha=0.9,
     )
     if filepath is None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -427,20 +477,58 @@ def build_algorithm_multi_convergence_plots(
         seeds_per[(alg, inst, tl, neigh)].append(seed)
 
     neigh_order = [
+        # classical — linia ciągła
         "adjacent",
-        "quantum_adjacent",
-        "quantum_fibonahi",
-        "fibonahi",
+        "fibonacci",
         "dynasearch",
         "motzkin",
+        # quantum_qubo — linia przerywana
+        "quantum_adjacent",
+        "quantum_fibonacci",
+        "quantum_dynasearch",
+        "quantum_motzkin",
+        # quantum_qubo_enhanced — linia kropkowana
+        "quantum_adjacent_enhanced",
+        "quantum_fibonacci_enhanced",
+        "quantum_dynasearch_enhanced",
+        "quantum_motzkin_enhanced",
     ]
+    # Kolor koduje sąsiedztwo (4 kolory x 3 klasy = ten sam kolor, inny styl linii)
     base_colors = {
-        "adjacent": "#00FFFF",
-        "quantum_adjacent": "#FF0066",
-        "quantum_fibonahi": "#9900FF",
-        "fibonahi": "#FF00CC",
-        "dynasearch": "#7CFF00",
-        "motzkin": "#FF9900",
+        # adjacent — cyan
+        "adjacent": "#00CCCC",
+        "quantum_adjacent": "#00CCCC",
+        "quantum_adjacent_enhanced": "#00CCCC",
+        # fibonacci — magenta
+        "fibonacci": "#CC00CC",
+        "quantum_fibonacci": "#CC00CC",
+        "quantum_fibonacci_enhanced": "#CC00CC",
+        # dynasearch — zielony
+        "dynasearch": "#44BB00",
+        "quantum_dynasearch": "#44BB00",
+        "quantum_dynasearch_enhanced": "#44BB00",
+        # motzkin — pomarańczowy
+        "motzkin": "#FF8800",
+        "quantum_motzkin": "#FF8800",
+        "quantum_motzkin_enhanced": "#FF8800",
+    }
+    # Styl linii koduje klasę sąsiedztwa
+    base_linestyles = {
+        # classical — ciągła
+        "adjacent": "-",
+        "fibonacci": "-",
+        "dynasearch": "-",
+        "motzkin": "-",
+        # quantum_qubo — przerywana
+        "quantum_adjacent": "--",
+        "quantum_fibonacci": "--",
+        "quantum_dynasearch": "--",
+        "quantum_motzkin": "--",
+        # quantum_qubo_enhanced — kropkowana
+        "quantum_adjacent_enhanced": ":",
+        "quantum_fibonacci_enhanced": ":",
+        "quantum_dynasearch_enhanced": ":",
+        "quantum_motzkin_enhanced": ":",
     }
     group_keys = sorted({(k[0], k[1], k[2]) for k in index.keys()})
     outputs: List[Path] = []
@@ -448,6 +536,7 @@ def build_algorithm_multi_convergence_plots(
         histories = {}
         labels = {}
         colors = {}
+        linestyles = {}
         any_curve = False
         for neigh in neigh_order:
             seeds = seeds_per.get((alg, inst, tl, neigh), [])
@@ -466,6 +555,7 @@ def build_algorithm_multi_convergence_plots(
                     histories[neigh] = (times, cmax_hist)
                     labels[neigh] = f"{alg.upper()} {neigh} (seed {selected_seed})"
                     colors[neigh] = base_colors.get(neigh)
+                    linestyles[neigh] = base_linestyles.get(neigh, "-")
                     any_curve = True
             except Exception:
                 continue
@@ -483,6 +573,7 @@ def build_algorithm_multi_convergence_plots(
                     histories,
                     labels=labels,
                     colors=colors,
+                    linestyles=linestyles,
                     filepath=str(out_path),
                     time_limit_ms=int(tl),
                     grayscale=grayscale,

@@ -1,4 +1,4 @@
-"""Fibonahi neighborhood - non-overlapping adjacent swaps.
+"""Fibonacci neighborhood - non-overlapping adjacent swaps.
 
 Selects the optimal set of non-overlapping adjacent swaps
 minimizing the total Cmax change.
@@ -8,21 +8,36 @@ of non-overlapping swaps from n-1 positions equals F_{n+1}.
 
 Method: Dynamic programming O(n)
 Complexity: O(m·n) for deltas + O(n·k) for DP = O(m·n) total
+
+Accelerator: block property (Smutnicki 7.9) optionally filters swaps that
+cannot improve Cmax before the DP selection step.
 """
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from src.neighborhoods.common import apply_swaps, compute_head, compute_tail
+from src.neighborhoods.accelerator import (
+    compute_block_boundaries,
+    filter_blocked_swaps,
+)
 from src.permutation_procesing import c_max
 
 
 def _compute_deltas_fast(
     pi: List[int],
     processing_times: List[List[int]],
+    use_block_accelerator: bool = True,
 ) -> Tuple[int, List[Tuple[int, float]]]:
     """Compute deltas for all adjacent swaps using Head+Tail technique.
 
     Complexity: O(m·n) instead of O(n²·m).
+    With block accelerator: skips dominated swaps, reducing candidates
+    to at most 2*(m-1) on average.
+
+    Args:
+        pi: Current permutation
+        processing_times: m × n processing times matrix
+        use_block_accelerator: If True, skip blocked swaps (Smutnicki 7.9)
 
     Returns:
         (base_cmax, candidates) where candidates = [(position, delta), ...]
@@ -33,63 +48,57 @@ def _compute_deltas_fast(
     if n < 2:
         return c_max(pi, processing_times), []
 
-    # Compute Head (completion times) and Tail matrices
     Head = compute_head(pi, processing_times)
     Tail = compute_tail(pi, processing_times)
 
     base_cmax = Head[m - 1][n - 1]
+
+    # Compute block boundaries once if accelerator enabled
+    boundaries: Optional[List[int]] = None
+    if use_block_accelerator:
+        boundaries = compute_block_boundaries(Head, processing_times, pi)
+
     candidates: List[Tuple[int, float]] = []
 
     for j in range(n - 1):
-        # Swap positions j and j+1
-        job_a = pi[j]  # originally at j, will go to j+1
-        job_b = pi[j + 1]  # originally at j+1, will go to j
+        # Block property: skip swap if both positions inside same block
+        if boundaries is not None and _is_blocked(j, boundaries):
+            continue
 
-        # Compute new Cmax after swap using Head + local + Tail
-        new_cmax = 0
+        job_a = pi[j]
+        job_b = pi[j + 1]
 
-        # Local completion times for swapped positions
-        # C_new[i][j] and C_new[i][j+1]
-        C_j = [0] * m  # completion at position j (now has job_b)
-        C_j1 = [0] * m  # completion at position j+1 (now has job_a)
+        C_j = [0] * m
+        C_j1 = [0] * m
 
         for i in range(m):
-            # Completion at position j with job_b
-            if j == 0:
-                left = 0
-            else:
-                left = Head[i][j - 1]
-
-            if i == 0:
-                top = 0
-            else:
-                top = C_j[i - 1]
-
+            left = Head[i][j - 1] if j > 0 else 0
+            top = C_j[i - 1] if i > 0 else 0
             C_j[i] = max(top, left) + processing_times[i][job_b]
 
-            # Completion at position j+1 with job_a
             top_j1 = C_j[i]
             if i == 0:
                 C_j1[i] = C_j[i] + processing_times[i][job_a]
             else:
                 C_j1[i] = max(C_j1[i - 1], C_j[i]) + processing_times[i][job_a]
 
-        # Combine with tail from position j+2 using true Head+Tail formula
-        # Cmax = max over all machines i of (C_j1[i] + Tail[i][j+2])
         if j + 2 < n:
-            new_cmax = 0
-            for i in range(m):
-                # C_j1[i] = completion time at position j+1 after swap
-                # Tail[i][j+2] = time to complete from position j+2 on machine i
-                new_cmax = max(new_cmax, C_j1[i] + Tail[i][j + 2])
+            new_cmax = max(C_j1[i] + Tail[i][j + 2] for i in range(m))
         else:
-            # j+1 is the last position
             new_cmax = C_j1[m - 1]
 
         delta = new_cmax - base_cmax
         candidates.append((j, delta))
 
     return base_cmax, candidates
+
+
+def _is_blocked(a: int, boundaries: List[int]) -> bool:
+    """Inline version of is_blocked_adjacent_swap for performance."""
+    for u in boundaries:
+        if u == a or u == a + 1:
+            return False
+    return True
 
 
 def _solve_dp_topk(
@@ -114,24 +123,20 @@ def _solve_dp_topk(
         return [(0.0, ())]
 
     m = len(candidates)
-
-    # dp[pos] = list of top-k (delta, chosen_set) from position pos onwards
     dp: Dict[int, List[Tuple[float, Tuple[int, ...]]]] = {}
 
     def solve(pos: int) -> List[Tuple[float, Tuple[int, ...]]]:
-        """DP with memoization - returns top-k solutions from pos onwards."""
         if pos >= m:
             return [(0.0, ())]
-
         if pos in dp:
             return dp[pos]
 
         idx, delta = candidates[pos]
 
-        # Option 1: skip this swap - take all solutions from pos+1
+        # Option 1: skip this swap
         skip_solutions = solve(pos + 1)
 
-        # Option 2: take this swap - skip overlapping position
+        # Option 2: take this swap — skip next overlapping position
         next_pos = pos + 1
         while next_pos < m and candidates[next_pos][0] == idx + 1:
             next_pos += 1
@@ -141,7 +146,6 @@ def _solve_dp_topk(
             (delta + rest_delta, (idx,) + rest_set) for rest_delta, rest_set in take_rest
         ]
 
-        # Merge and keep top-k unique
         all_solutions = skip_solutions + take_solutions
         all_solutions.sort(key=lambda x: x[0])
 
@@ -164,6 +168,7 @@ def fibonacci_neighborhood_topk(
     pi: List[int],
     processing_times: List[List[int]],
     k: int,
+    use_block_accelerator: bool = True,
 ) -> List[dict]:
     """Find top-k best sets of non-overlapping swaps.
 
@@ -171,6 +176,8 @@ def fibonacci_neighborhood_topk(
         pi: Current permutation
         processing_times: m × n processing times matrix
         k: Number of top solutions to return
+        use_block_accelerator: If True, apply block property filter
+            before DP selection (Smutnicki 7.9 accelerator).
 
     Returns:
         List of dicts [{"pi": [...], "cmax": int, "move": (positions...)}, ...]
@@ -181,25 +188,24 @@ def fibonacci_neighborhood_topk(
         c = c_max(pi, processing_times)
         return [{"pi": pi.copy(), "cmax": c, "move": ()}]
 
-    base_c, candidates = _compute_deltas_fast(pi, processing_times)
+    base_c, candidates = _compute_deltas_fast(
+        pi,
+        processing_times,
+        use_block_accelerator=use_block_accelerator,
+    )
 
     if not candidates:
         return [{"pi": pi.copy(), "cmax": base_c, "move": ()}]
 
-    # Get top-k solutions from DP
     topk_solutions = _solve_dp_topk(candidates, k)
 
     results = []
     for total_delta, chosen in topk_solutions:
-        # Skip empty set - means no swap is better, but we want actual moves
         if not chosen:
             continue
-
         new_pi = apply_swaps(pi, list(chosen))
         final_c = c_max(new_pi, processing_times)
         results.append({"pi": new_pi, "cmax": final_c, "move": chosen})
 
-    # Sort by cmax to ensure correct ordering
     results.sort(key=lambda x: x["cmax"])
-
     return results[:k]

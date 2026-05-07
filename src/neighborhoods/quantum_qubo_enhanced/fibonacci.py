@@ -25,9 +25,11 @@ from typing import Dict, List, Tuple
 from src.neighborhoods.common import (
     apply_swaps,
     compute_deltas,
+    compute_head,
     solve_qubo,
     validate_no_overlap,
 )
+from src.neighborhoods.accelerator import compute_block_boundaries, filter_blocked_swaps
 from src.permutation_procesing import c_max
 
 
@@ -69,17 +71,25 @@ def quantum_fibonacci_enhanced(
 
     # Compute deltas for all adjacent swaps — O(m·n)
     deltas = compute_deltas(pi, processing_times)
-    num_vars = len(deltas)  # = n - 1
+    candidates = list(enumerate(deltas))  # [(pos, delta), ...]
 
-    # Build tridiagonal QUBO — no delta filtering (unlike quantum_qubo version)
-    # Q[i,i]   = delta_i          (linear cost)
-    # Q[i,i+1] = P                (penalty for overlapping adjacent swaps)
-    penalty = sum(abs(d) for d in deltas) + 1
+    # Block accelerator (Smutnicki 7.9): filter dominated swaps
+    Head = compute_head(pi, processing_times)
+    boundaries = compute_block_boundaries(Head, processing_times, pi)
+    candidates = filter_blocked_swaps(candidates, boundaries)
+
+    num_vars = len(candidates)
+    positions = [pos for pos, _ in candidates]
+    delta_vals = [d for _, d in candidates]
+
+    # Build tridiagonal QUBO — only penalize physically adjacent positions
+    penalty = sum(abs(d) for d in delta_vals) + 1
     Q: Dict[Tuple[str, str], float] = {}
     for i in range(num_vars):
-        Q[(f"x{i}", f"x{i}")] = deltas[i]
+        Q[(f"x{i}", f"x{i}")] = delta_vals[i]
     for i in range(num_vars - 1):
-        Q[(f"x{i}", f"x{i + 1}")] = penalty
+        if positions[i + 1] == positions[i] + 1:  # only truly adjacent
+            Q[(f"x{i}", f"x{i + 1}")] = penalty
 
     # Solve QUBO
     solution = solve_qubo(
@@ -92,14 +102,15 @@ def quantum_fibonacci_enhanced(
         chain_strength=chain_strength,
         num_spin_reversal_transforms=num_spin_reversal_transforms,
     )
-    selected = sorted(int(v[1:]) for v, val in solution.items() if val == 1)
-    valid_swaps = validate_no_overlap(selected)
+    selected_local = sorted(int(v[1:]) for v, val in solution.items() if val == 1)
+    selected_orig = [positions[i] for i in selected_local]
+    valid_swaps = validate_no_overlap(selected_orig)
 
     # Fallback: if nothing selected, pick best single swap
     if not valid_swaps:
-        best_idx = min(range(num_vars), key=lambda i: deltas[i])
-        if deltas[best_idx] < 0:
-            valid_swaps = [best_idx]
+        best_local = min(range(num_vars), key=lambda i: delta_vals[i])
+        if delta_vals[best_local] < 0:
+            valid_swaps = [positions[best_local]]
 
     new_pi = apply_swaps(pi, valid_swaps)
     new_cmax = c_max(new_pi, processing_times)

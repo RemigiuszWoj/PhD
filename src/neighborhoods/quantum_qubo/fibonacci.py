@@ -1,43 +1,19 @@
 """Quantum Fibonacci neighborhood - select non-overlapping swaps using QUBO.
 
-QUBO formulation (no-overlap constraint):
+QUBO formulation (no-overlap constraint, tridiagonal):
     H = Σᵢ δᵢ·xᵢ + P·Σᵢ xᵢ·xᵢ₊₁
 
-Where:
-    xᵢ ∈ {0,1} indicates whether to perform swap at position i
-    δᵢ = ΔCₘₐₓ after swapping positions (i, i+1)
-    P = penalty weight for overlapping swaps
-
-Overlap definition:
-    Swaps at positions i and i+1 are overlapping because they share
-    the element at position i+1:
-      - Swap i:   (posᵢ, posᵢ₊₁)
-      - Swap i+1: (posᵢ₊₁, posᵢ₊₂)
-    Therefore xᵢ·xᵢ₊₁ = 1 is forbidden.
-
-QUBO matrix Q where H = Σᵢⱼ Q[i,j]·xᵢ·xⱼ:
-    Q[i,i] = δᵢ                  (linear term: cost of selecting swap i)
-    Q[i,i+1] = P  for i=0..n-3   (quadratic term: penalty for adjacent pair)
-    Q[i,j] = 0    for |i-j|>1    (non-adjacent swaps don't overlap)
+QUBO matrix Q:
+    Q[i,i]   = δᵢ       (linear cost)
+    Q[i,i+1] = P        (penalty for adjacent overlapping swaps)
 
 Penalty weight:
-    P = Σᵢ |δᵢ| + 1              (ensures no-overlap constraint dominates)
+    P = Σᵢ |δᵢ| + 1
 
-Complexity:
-    - Variables: n-1 binary variables
-    - Coefficients: O(n) non-zero entries (chain graph structure)
-
-Combinatorial structure:
-    The number of valid non-overlapping swap sets from n-1 positions
-    equals the Fibonacci number F_{n+1}:
-        F₀=0, F₁=1, F₂=1, F₃=2, F₄=3, F₅=5, F₆=8, F₇=13, ...
-    This is because:
-        - If we don't select swap 0: F_n solutions from positions 1..n-2
-        - If we select swap 0: can't select swap 1, so F_{n-1} solutions from 2..n-2
-        - Total: F_{n+1} = F_n + F_{n-1}
-
-Objective: Find binary assignment minimizing H, selecting non-overlapping
-           improving swaps
+Accelerator: block property (Smutnicki 7.9) optionally filters blocked
+swaps before QUBO construction. For Fibonacci the QUBO is already sparse
+(tridiagonal), but filtering reduces variable count and may improve
+QPU solution quality by removing irrelevant variables.
 """
 
 from typing import Dict, List, Tuple
@@ -45,9 +21,11 @@ from typing import Dict, List, Tuple
 from src.neighborhoods.common import (
     apply_swaps,
     compute_deltas,
+    compute_head,
     solve_qubo,
     validate_no_overlap,
 )
+from src.neighborhoods.accelerator import compute_block_boundaries, filter_blocked_swaps
 from src.permutation_procesing import c_max
 
 
@@ -61,6 +39,7 @@ def quantum_fibonacci_neighborhood(
     annealing_time_us: int | None = None,
     chain_strength: float | None = None,
     num_spin_reversal_transforms: int | None = None,
+    use_block_accelerator: bool = True,
 ) -> Tuple[List[int], int, List[int]]:
     """Quantum fibonacci neighborhood - selects non-overlapping swaps via QUBO.
 
@@ -70,6 +49,8 @@ def quantum_fibonacci_neighborhood(
         num_reads: Number of samples for the solver
         backend: "simulator" or "dwave"
         dwave_token: D-Wave API token (required when backend="dwave")
+        use_block_accelerator: If True, apply block property filter before
+            QUBO construction (Smutnicki 7.9).
 
     Returns:
         (new_pi, new_cmax, swaps): New permutation, Cmax, list of swap positions
@@ -79,15 +60,37 @@ def quantum_fibonacci_neighborhood(
         return pi.copy(), c_max(pi, processing_times), []
 
     deltas = compute_deltas(pi, processing_times)
-    num_vars = len(deltas)
 
-    # Build QUBO no-overlap: non-overlapping swaps
-    penalty = sum(abs(d) for d in deltas) + 1
+    # Build candidate list
+    candidates = list(enumerate(deltas))
+
+    # Block accelerator: filter dominated swaps
+    if use_block_accelerator:
+        Head = compute_head(pi, processing_times)
+        boundaries = compute_block_boundaries(Head, processing_times, pi)
+        candidates = filter_blocked_swaps(candidates, boundaries)
+
+    # Remap to contiguous indices
+    positions = [pos for pos, _ in candidates]
+    delta_vals = [d for _, d in candidates]
+    num_vars = len(candidates)
+
+    if num_vars == 0:
+        return pi.copy(), c_max(pi, processing_times), []
+
+    # Build tridiagonal QUBO
+    # After filtering, consecutive positions in delta_vals may no longer
+    # be physically adjacent — we must check original positions overlap.
+    penalty = sum(abs(d) for d in delta_vals) + 1
     Q: Dict[Tuple[str, str], float] = {}
+
     for i in range(num_vars):
-        Q[(f"x{i}", f"x{i}")] = deltas[i]
+        Q[(f"x{i}", f"x{i}")] = delta_vals[i]
+
     for i in range(num_vars - 1):
-        Q[(f"x{i}", f"x{i + 1}")] = penalty
+        # Only penalize if original positions are adjacent (overlap possible)
+        if positions[i + 1] == positions[i] + 1:
+            Q[(f"x{i}", f"x{i + 1}")] = penalty
 
     # Solve QUBO
     solution = solve_qubo(
@@ -100,14 +103,17 @@ def quantum_fibonacci_neighborhood(
         chain_strength=chain_strength,
         num_spin_reversal_transforms=num_spin_reversal_transforms,
     )
-    selected = sorted(int(v[1:]) for v, val in solution.items() if val == 1)
-    valid_swaps = validate_no_overlap(selected)
+    selected_local = sorted(int(v[1:]) for v, val in solution.items() if val == 1)
 
-    # Fallback: if nothing selected, pick best single swap
+    # Map back to original positions and validate non-overlap
+    selected_orig = [positions[i] for i in selected_local]
+    valid_swaps = validate_no_overlap(selected_orig)
+
+    # Fallback: best single improving swap
     if not valid_swaps:
-        best_idx = min(range(num_vars), key=lambda i: deltas[i])
-        if deltas[best_idx] < 0:
-            valid_swaps = [best_idx]
+        best_local = min(range(num_vars), key=lambda i: delta_vals[i])
+        if delta_vals[best_local] < 0:
+            valid_swaps = [positions[best_local]]
 
     new_pi = apply_swaps(pi, valid_swaps)
     new_cmax = c_max(new_pi, processing_times)
@@ -119,5 +125,5 @@ def generate_neighbors_fibonacci_qubo(
     processing_times: List[List[int]],
     num_reads: int = 5,
 ) -> Tuple[List[int], int, List[int]]:
-    """Alias for quantum_fibonacci_neighborhood (backward compatibility)."""
+    """Alias for backward compatibility."""
     return quantum_fibonacci_neighborhood(pi, processing_times, num_reads)

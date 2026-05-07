@@ -275,105 +275,15 @@ from src.neighborhoods.common import (
     compute_tail,
     solve_qubo,
 )
+from src.neighborhoods.accelerator import (
+    compute_block_boundaries,
+    filter_blocked_pairs_npi,
+    motzkin_conflict as _motzkin_conflict,
+    validate_motzkin_selection as _validate_motzkin_selection,
+)
 from src.permutation_procesing import c_max
 
 
-def _motzkin_conflict(i1: int, j1: int, i2: int, j2: int) -> bool:
-    """Check if two pairs (i1,j1) and (i2,j2) conflict under Motzkin rules.
-
-    Conflict occurs when:
-      1. Shared endpoint: {i1,j1} ∩ {i2,j2} ≠ ∅
-         → same position cannot be endpoint of two swaps simultaneously
-      2. Crossing: i1 < i2 < j1 < j2  or  i2 < i1 < j2 < j1
-         → arcs intersect
-
-    Admissible (no conflict) when:
-      1. Disjoint: j1 < i2  or  j2 < i1
-         → arcs don't touch at all
-      2. Nested: i1 < i2 < j2 < j1  (or symmetric)
-         → inner arc fits inside outer
-         → both swaps exchange only THEIR OWN endpoints, middle untouched
-         → therefore no interference
-
-    Mathematically, for i1 < i2 (WLOG):
-        - i1 < i2 < j2 < j1  →  nesting  →  OK  (return False)
-        - i1 < i2 < j1 < j2  →  crossing →  BAD (return True)
-        - j1 < i2             →  disjoint →  OK  (return False)
-        - j1 == i2            →  shared   →  BAD (return True)
-
-    Args:
-        i1, j1: First pair endpoints (i1 < j1).
-        i2, j2: Second pair endpoints (i2 < j2).
-
-    Returns:
-        True  → pairs conflict (cannot select both simultaneously).
-        False → pairs are admissible (Motzkin-compatible).
-    """
-    # ── Condition 1: Shared endpoint ──
-    # If any index of one pair == any index of the other,
-    # the same permutation position would be swapped twice.
-    # E.g. (0,3) and (3,5): position 3 is endpoint of BOTH pairs → conflict.
-    if i1 == i2 or i1 == j2 or j1 == i2 or j1 == j2:
-        return True
-
-    # ── Condition 2: Crossing ──
-    # Two arcs cross when one starts inside the other
-    # but ends outside.
-    # Visually:    i1────j1
-    #                  i2────j2
-    #               ← arcs intersect
-    if i1 < i2 < j1 < j2:
-        return True
-    if i2 < i1 < j2 < j1:
-        return True
-
-    # ── No conflict ──
-    # If we reach here, pairs are either disjoint or nested.
-    # Both cases are admissible.
-    return False
-
-
-def _validate_motzkin_selection(
-    selected: List[Tuple[int, int]],
-) -> List[Tuple[int, int]]:
-    """Post-validation: greedily remove conflicting pairs.
-
-    The QUBO solver (especially SimulatedAnnealingSampler) may return
-    a solution violating Motzkin rules — it's a heuristic, not a guarantee.
-    Therefore we perform greedy validation after QUBO:
-
-    Algorithm:
-        1. Sort pairs by left endpoint (i ascending)
-        2. For each pair (i,j) in order:
-           - Check if it conflicts with ANY already accepted pair
-           - If not → add to admissible set
-           - If yes → discard
-
-    Sorting by left endpoint favors pairs closer to the start of permutation.
-    This is not an optimal algorithm (that would be NP-hard in general
-    for maximum weight independent set), but it's fast and sufficient.
-
-    Complexity: O(K²) worst case (K = number of selected pairs)
-
-    Args:
-        selected: List of (i, j) pairs chosen by the QUBO solver.
-
-    Returns:
-        List of (i, j) pairs satisfying Motzkin rules.
-    """
-    if not selected:
-        return []
-
-    valid: List[Tuple[int, int]] = []
-    for i, j in sorted(selected):
-        conflict = False
-        for vi, vj in valid:
-            if _motzkin_conflict(i, j, vi, vj):
-                conflict = True
-                break
-        if not conflict:
-            valid.append((i, j))
-    return valid
 
 
 def quantum_motzkin_neighborhood(
@@ -461,6 +371,10 @@ def quantum_motzkin_neighborhood(
 
     if not all_candidates:
         return pi.copy(), base_c, []
+
+    # NPI block property: skip pairs where no boundary lies in [i, j]
+    boundaries = compute_block_boundaries(Head, processing_times, pi)
+    all_candidates = filter_blocked_pairs_npi(all_candidates, boundaries)
 
     # ══════════════════════════════════════════════════════════════════════
     # STEP 3: Filter candidates — O(K)

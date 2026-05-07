@@ -1,0 +1,382 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{parskip}
+\usepackage{enumitem}
+\setlist{nosep, topsep=3pt}
+
+\hypersetup{colorlinks=true, urlcolor=blue!70!black, citecolor=blue!70!black}
+
+\newcommand{\anonA}{[Anonymous,~2026a]}
+\newcommand{\anonB}{[Anonymous,~2026b]}
+\newcommand{\anonC}{[Anonymous,~2015]}
+\newcommand{\anonD}{[Anonymous,~2017]}
+\newcommand{\anonE}{[Anonymous,~2024]}
+
+\begin{document}
+
+% ---------------------------------------------------------------
+\begin{center}
+  {\LARGE\bfseries Gate-Based Quantum Neighborhood Search\\[4pt]
+  for the Permutation Flow Shop Problem\\[6pt]
+  on the Willow Processor}\\[12pt]
+  {\large Willow Early Access Program --- Research Proposal}\\[4pt]
+  {\normalsize Anonymous Submission}
+\end{center}
+
+\bigskip\hrule\bigskip
+
+% ---------------------------------------------------------------
+\section*{Scientific Motivation}
+
+The Permutation Flow Shop Scheduling Problem (PFSP) is a classical NP-hard
+combinatorial problem in which $n$ jobs must be processed on $m$ machines
+in identical order, minimizing makespan $C_{\max}$. Neighborhood-based
+local search is the dominant practical approach for large instances.
+
+\paragraph{Prior work on classical neighborhoods.}
+In \anonA{} we introduced and analyzed four neighborhood structures of
+increasing complexity for the PFSP: \emph{Adjacent} (single adjacent
+swap), \emph{Fibonacci} (optimal set of non-overlapping adjacent swaps
+selected via dynamic programming, with solution count growing as Fibonacci
+numbers), \emph{Dynasearch} (optimal set of non-overlapping endpoint swaps
+over arbitrary segments), and \emph{Motzkin} (optimal set of non-crossing
+nested endpoint swaps, with solution count given by Motzkin numbers $M_n$).
+Experiments on Taillard benchmark instances with $n \in \{50,100,200,500\}$
+in Iterated Local Search and Simulated Annealing showed that richer
+neighborhoods (Dynasearch, Motzkin) consistently achieve lower makespan
+within identical time budgets, at the cost of higher per-iteration
+complexity.
+The Head+Tail makespan evaluation technique employed in all four
+neighborhoods builds on the block-decomposition framework for flow
+shop acceleration developed in~\anonC{} and applied to parallel
+metaheuristics in~\anonD{}.
+
+\paragraph{Prior work on quantum neighborhoods.}
+In \anonB{} we formulated all four neighborhoods as QUBO problems and
+executed them on D-Wave quantum annealing hardware, providing the first
+empirical comparison of classical and hybrid quantum variants under
+identical wall-clock time budgets on Taillard instances ($n=20$, $m=5$).
+The results revealed a large and consistent performance gap: the best
+quantum variant achieved average RPD (Relative Percentage Deviation from
+best-known makespans) of $18.4\%$, versus $2.6\%$ for classical Dynasearch
+at a 10-second budget. The gap was traced to D-Wave hardware
+overhead---cloud network latency, QPU queue time, and embedding
+cost---which drastically reduces the number of neighborhood evaluations
+per second relative to the CPU baseline.
+This contrasts with the hybrid quantum-classical branch-and-bound
+approach of~\anonE{}, which achieves competitive results for single-machine
+scheduling by tightly coupling D-Wave with classical bounding, suggesting
+that problem structure---not quantum hardware per se---determines
+the achievable quality.
+
+\paragraph{This proposal.}
+The results of \anonB{} leave open a critical question:
+
+\begin{center}
+\emph{Does the classical--quantum performance gap arise from fundamental
+limits of quantum optimization, or from the overhead of the annealing
+paradigm on cloud hardware?}
+\end{center}
+
+The Willow processor is uniquely suited to answer this. Gate-based QAOA
+execution eliminates cloud and embedding overhead entirely. However, unlike
+quantum annealing, gate-based circuits accumulate error with each two-qubit
+gate. This imposes a hard constraint on circuit depth that differs
+fundamentally across the four neighborhood structures, depending on the
+density of the corresponding QUBO interaction graph. We performed a
+detailed feasibility analysis (error rate 0.14\% per CZ gate, Device~2
+specification) to determine the tractable experimental regime for each
+neighborhood.
+
+% ---------------------------------------------------------------
+\section*{Feasibility Analysis}
+
+The number of CZ gates per QAOA layer equals twice the number of nonzero
+off-diagonal entries $|J_{ij}|$ in the Ising Hamiltonian $H_C$. The
+accumulated circuit error at depth $p$ is:
+\[
+\varepsilon(p) = 1 - (1 - \varepsilon_{\mathrm{CZ}})^{2\,|J_{ij}|\,p},
+\qquad \varepsilon_{\mathrm{CZ}} = 0.0014.
+\]
+Table~\ref{tab:feasibility} summarizes the analysis across all four
+neighborhoods and instance sizes. We label a configuration \emph{feasible}
+if $\varepsilon < 10\%$, \emph{marginal} if $10\% \le \varepsilon < 25\%$
+(used with ZNE mitigation), and \emph{infeasible} otherwise.
+
+\begin{table}[h]
+\centering
+\caption{Accumulated CZ error per circuit, feasibility classification,
+and assigned experimental role. $K$ = number of QUBO variables (qubits).
+CZ/layer computed from QUBO graph structure (see text). ZNE = Zero-Noise
+Extrapolation applied for marginal configurations.}
+\label{tab:feasibility}
+\smallskip
+\begin{tabular}{@{}llrrrrll@{}}
+\toprule
+Neighborhood & $n$ & $K$ & CZ/layer & $p$ & $\varepsilon(p)$ &
+  Status & Role \\
+\midrule
+Fibonacci  & 10 & 9  & 16  & 1 &  2.2\% & feasible   & primary \\
+Fibonacci  & 10 & 9  & 16  & 2 &  4.4\% & feasible   & primary \\
+Fibonacci  & 10 & 9  & 16  & 3 &  6.5\% & feasible   & primary \\
+Fibonacci  & 20 & 19 & 36  & 1 &  4.9\% & feasible   & primary \\
+Fibonacci  & 20 & 19 & 36  & 2 &  9.6\% & feasible   & primary \\
+Fibonacci  & 30 & 29 & 56  & 1 &  7.5\% & feasible   & scaling \\
+Fibonacci  & 50 & 49 & 96  & 1 & 12.6\% & marginal+ZNE & scaling \\
+Fibonacci  & 100& 99 & 196 & 1 & 24.0\% & marginal+ZNE & scaling \\
+\midrule
+Adjacent   & 10 & 9  & 72  & 1 &  9.6\% & feasible   & baseline \\
+\midrule
+Motzkin    & 6  & 15 & 42  & 1 &  5.7\% & feasible   & small-$n$ \\
+Motzkin    & 7  & 21 & 84  & 1 & 11.1\% & marginal+ZNE & small-$n$ \\
+\midrule
+Dynasearch & 5  & 10 & 22  & 1 &  3.0\% & feasible   & small-$n$ \\
+Dynasearch & 6  & 15 & 52  & 1 &  7.0\% & feasible   & small-$n$ \\
+\midrule
+Fibonacci  & 20 & 19 & 36  & 3 & 14.0\% & marginal   & (excluded) \\
+Adjacent   & 20 & 19 & 342 & 1 & 38.1\% & infeasible & excluded \\
+Dynasearch & 10 & 45 & $\gg$1000 & 1 & $\approx$100\% & infeasible & excluded \\
+Motzkin    & 10 & 45 & $\gg$1000 & 1 & $\approx$100\% & infeasible & excluded \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The analysis reveals a fundamental asymmetry: \emph{Fibonacci} is the
+only neighborhood that scales to large $n$ on current gate-based hardware,
+owing to its tridiagonal QUBO structure (only $n-2$ nonzero off-diagonal
+entries). \emph{Adjacent} is feasible only at $n=10$ due to its dense,
+all-to-all penalty structure. \emph{Dynasearch} and \emph{Motzkin}, with
+$K=O(n^2)$ variables and dense conflict graphs, are restricted to
+$n \le 6$--$7$ on Willow. This boundary is itself a publishable result.
+
+% ---------------------------------------------------------------
+\section*{Experiment Design}
+
+\subsection*{Instance structure}
+
+The experiment is organized in three groups reflecting the feasibility
+analysis above.
+
+\paragraph{Group A --- Fibonacci, scaling study ($n = 10, 20, 30, 50, 100$).}
+Fibonacci is the primary experimental subject. Its tridiagonal QUBO
+maps naturally to a nearest-neighbor chain on the Willow qubit grid,
+minimizing routing overhead. Instances for $n \in \{10, 20, 30\}$ use
+standard Taillard benchmarks generated with the published Taillard
+generator (5 machines); instances for $n \in \{50, 100\}$ are generated
+with the same generator. Circuit depths $p \in \{1,2,3\}$ for $n \le 20$;
+$p = 1$ for $n \ge 30$ (feasibility constraint). At $n=100$, $K=99$
+qubits, the QAOA simulation requires $2^{99}$ amplitudes classically ---
+genuinely beyond the simulable regime, making Willow results irreplaceable.
+
+\paragraph{Group B --- Adjacent, baseline ($n = 10$, $p = 1$).}
+Adjacent at $n=10$ provides a direct comparison point against D-Wave
+results from \anonB{} and classical ILS/SA results from \anonA{} at the
+same instance size. It is included as a baseline, not scaled to larger $n$
+due to its dense QUBO graph ($\varepsilon = 38\%$ already at $n=20$,
+$p=1$).
+
+\paragraph{Group C --- Dynasearch and Motzkin, small-$n$ ($n \le 7$).}
+To include all four neighborhoods in the gate-based comparison, Dynasearch
+($n \le 6$) and Motzkin ($n \le 7$) are executed on small instances.
+Since no standard Taillard benchmarks exist for $n < 10$, instances are
+generated using the same Taillard random generator with $m = 5$ machines
+and seeds fixed for reproducibility. This group establishes that
+gate-based QAOA can solve all four QUBO neighborhood formulations, and
+provides the first comparison of the four neighborhoods under a gate-based
+quantum model, even if at small scale.
+
+\subsection*{QUBO and Ising formulation}
+
+Each neighborhood defines a cost matrix $Q$ over $K$ binary variables
+(full derivations in \anonB{}):
+\[
+\min_{\mathbf{x}\in\{0,1\}^K}\;\mathbf{x}^\top Q\,\mathbf{x}
+\;\xrightarrow{\;x_i = \frac{1-Z_i}{2}\;}\;
+H_C = \sum_i h_i Z_i + \sum_{i<j} J_{ij} Z_i Z_j.
+\]
+Linear terms $h_i$ encode swap costs $\delta_i$ computed via the
+Head+Tail makespan technique; quadratic terms $J_{ij}$ encode conflict
+penalties. The mapping is exact.
+
+\medskip
+\noindent\textbf{Adjacent} ($K=n-1$, dense $Q$): $Q_{ii} = \delta_i - P$,
+$Q_{ij} = 2P$ for all $i \neq j$, with $P = 2\max_i|\delta_i|+1$.
+
+\noindent\textbf{Fibonacci} ($K=n-1$, tridiagonal $Q$): $Q_{ii} = \delta_i$,
+$Q_{i,i+1} = P$, all other entries zero. Only $n-2$ nonzero off-diagonal
+entries.
+
+\noindent\textbf{Dynasearch} ($K=O(n^2)$): variables for all segment
+endpoint-swap pairs; $Q$ penalizes overlapping segments.
+
+\noindent\textbf{Motzkin} ($K=O(n^2)$): variables for all endpoint-swap
+pairs; $Q$ penalizes crossing and shared-endpoint pairs; nested and
+disjoint pairs unconstrained.
+
+\subsection*{QAOA circuits}
+
+We implement QAOA of depth $p$:
+\[
+|\psi(\boldsymbol{\gamma},\boldsymbol{\beta})\rangle =
+\prod_{l=1}^{p}
+e^{-i\beta_l \sum_i X_i}\,
+e^{-i\gamma_l H_C}\,
+|{+}\rangle^{\otimes K}.
+\]
+Gate decomposition uses only native Willow gates: each $J_{ij}Z_iZ_j$
+term maps to CZ\,--\,$R_Z(2\gamma J_{ij})$\,--\,CZ (two CZ gates); each
+$h_i Z_i$ term maps to $R_Z(2\gamma h_i)$; the mixer maps to $R_X(2\beta)$
+per qubit. No mid-circuit measurements, no adaptive feedback, no error
+correction, no two-qubit gates other than CZ.
+
+Variational parameters $(\boldsymbol\gamma, \boldsymbol\beta)$ are
+optimized classically via gradient-free COBYLA with multi-start
+initialization pre-warmed from analytic $p=1$ solutions.
+
+% ---------------------------------------------------------------
+\section*{Hardware Feasibility Summary}
+
+All circuits in Groups A--C fit within the ${\sim}105$-qubit Willow grid.
+The deepest feasible circuit (Fibonacci $n=20$, $p=2$: $K=19$, 72 CZ
+gates total) runs in ${\sim}0.25\,\mu$s, a factor of ${\sim}400\times$
+below the T1\,=\,98\,$\mu$s coherence limit (Device~2). Marginal
+configurations ($n \ge 50$, $p=1$) reach at most ${\sim}0.7\,\mu$s.
+Fibonacci at any $n$ maps to a linear qubit chain, requiring minimal
+routing on the 2D Willow grid. Adjacent at $n=10$ requires all-to-all
+connectivity within 9 qubits, achievable via SWAP routing within the
+Willow grid at modest overhead.
+
+\paragraph{Throughput.}
+Total distinct circuits: Group~A ($5$ sizes $\times$ $\{1\text{--}3\}$
+depths $\times$ 3 ZNE scales $\times$ 10 seeds $= 300$--$450$) $+$
+Group~B ($1\times1\times3\times10 = 30$) $+$ Group~C ($4$ configs
+$\times3\times10 = 120$). Total $\approx600$ circuits. At 60 circuits/s:
+$\sim$10\,s QPU time. Well within one day.
+
+% ---------------------------------------------------------------
+\section*{Noise Mitigation}
+
+We apply Zero-Noise Extrapolation (ZNE) via gate folding at
+$\lambda \in \{1, 2, 3\}$, with Richardson polynomial extrapolation
+to $\lambda=0$. The noise-impact observable
+$\Delta_{\text{ZNE}} = \langle H_C\rangle_{\text{raw}} -
+\langle H_C\rangle_{\text{ZNE}}$
+is reported for all configurations and plotted as a function of $K$ and
+$p$, providing empirical characterization of noise scaling across the
+four neighborhood structures.
+
+% ---------------------------------------------------------------
+\section*{Observables and Planned Figures}
+
+All observables are derived from bit-string measurement outcomes.
+
+\begin{enumerate}
+
+  \item \textbf{RPD vs.\ paradigm (primary result).}
+        Average $\mathrm{RPD} = (C_{\max} - C^*)/C^* \times 100\%$
+        for Classical CPU \anonA{}, D-Wave \anonB{}, and Willow QAOA,
+        compared at identical $n$ and neighborhood. For Groups A and B
+        ($n \le 20$, Taillard instances), this is a direct three-way
+        comparison under identical QUBO formulations. This figure
+        answers the central question of the proposal.
+
+  \item \textbf{RPD vs.\ instance size --- Fibonacci scaling.}
+        RPD as a function of $n \in \{10, 20, 30, 50, 100\}$ for
+        Fibonacci QAOA versus classical ILS baseline from \anonA{}.
+        At $n \ge 50$, the Willow results are genuinely beyond the
+        classically simulable regime ($2^{49}$--$2^{99}$ amplitudes).
+        This is the novel hardware-only result.
+
+  \item \textbf{Energy vs.\ circuit depth.}
+        $\langle H_C\rangle$ as a function of $p \in \{1,2,3\}$
+        with and without ZNE, for Fibonacci at $n=10$ and $n=20$.
+
+  \item \textbf{Noise impact vs.\ qubit count.}
+        $\Delta_{\text{ZNE}}$ as a function of $K$ across all groups,
+        quantifying empirical noise scaling with problem size.
+
+  \item \textbf{All-neighborhood comparison at small $n$.}
+        RPD for all four neighborhoods (Groups A--C) at the largest
+        mutually feasible instance size, establishing a gate-based
+        baseline across the full neighborhood hierarchy from \anonA{}
+        and \anonB{}.
+
+\end{enumerate}
+
+% ---------------------------------------------------------------
+\section*{Expected Scientific Impact}
+
+\paragraph{Answering the overhead question.}
+If QAOA on Willow achieves lower RPD than D-Wave for identical QUBO
+instances, this is direct empirical evidence that the performance gap
+reported in \anonB{} is driven by hardware overhead rather than
+algorithmic limitations of quantum optimization. This would be a
+significant and concrete result.
+
+\paragraph{Novel scaling result.}
+The Fibonacci scaling study (Group~A) addresses a question inaccessible
+to both classical simulation and D-Wave: how does gate-based quantum
+neighborhood search scale with $n$ for a linearly-scaling QUBO
+neighborhood? At $n=100$, $K=99$ qubits, the Willow results are
+irreplaceable by any classical means.
+
+\paragraph{Structural insight.}
+The contrast between Adjacent (dense $Q$) and Fibonacci (tridiagonal $Q$)
+at $n=10$, $K=9$ isolates the effect of QUBO interaction graph sparsity
+on QAOA performance --- a theoretically important question answered on
+hardware for a practically motivated problem.
+
+\paragraph{Hardware boundary.}
+The feasibility analysis precisely maps where each of the four
+neighborhoods becomes intractable on current gate-based hardware. This
+boundary is itself a publishable result and a concrete benchmark for
+future devices.
+
+\paragraph{Publication target.}
+\textit{npj Quantum Information}, \textit{Physical Review Applied},
+or a top operations research venue.
+
+% ---------------------------------------------------------------
+\section*{Dedicated Researcher}
+
+A dedicated PhD-level researcher will be exclusively assigned to this
+experiment. The researcher has implemented all four QUBO neighborhood
+formulations from scratch and validated them experimentally on D-Wave
+hardware (\anonB{}). The full classical pipeline is implemented and
+tested: QUBO matrix construction, $C_{\max}$ evaluation via the Head+Tail
+technique, RPD benchmarking against Taillard instances, and a random
+instance generator for small-$n$ experiments. The implementation of QAOA
+circuits in Cirq, noise mitigation via ZNE, and integration with the
+Willow processor constitute the planned contribution within this project.
+
+A prototype QAOA implementation for the Fibonacci neighborhood
+has been developed and validated on the Cirq simulator, including
+circuit construction, COBYLA parameter optimization, and
+end-to-end makespan improvement on Taillard-generated instances.
+This codebase serves as the starting point for Willow integration.
+
+% ---------------------------------------------------------------
+\bigskip\hrule\bigskip
+
+\paragraph{Note on prior work.}
+\anonA{} and \anonB{} are two accepted conference papers (ICAISC 2026 and SOCO 2026)
+from the proposing research group, withheld here to preserve anonymity.
+Both are available upon request.
+\anonC{} and \anonD{} are peer-reviewed journal publications in
+\textit{Computers \& Industrial Engineering} and
+\textit{Computers \& Operations Research} by the same group,
+describing the block-decomposition acceleration framework and
+parallel metaheuristic implementations underlying the present work.
+\anonE{} is a recent publication in \textit{Future Generation Computer
+Systems} from the same group on quantum annealing for scheduling,
+available upon request.
+
+\end{document}

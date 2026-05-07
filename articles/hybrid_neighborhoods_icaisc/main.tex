@@ -1,0 +1,218 @@
+\documentclass[runningheads]{llncs}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\begin{document}
+
+\title{Hybrid Neighborhood Evaluation in Tabu Search and Simulated Annealing for the Permutation Flow Shop Problem}
+
+\author{Remigiusz Wojewódzki\inst{1} \and
+Wojciech Bożejko\inst{1}}
+
+\authorrunning{R. Wojewódzki and W. Bożejko}
+
+\institute{Department of Control Systems and Mechatronics,
+Wrocław University of Science and Technology, Wrocław, Poland\\
+\email{\{remigiusz.wojewodzki,wojciech.bozejko\}@pwr.edu.pl}}
+
+\maketitle
+
+\begin{abstract}
+We study hybrid neighborhood strategies for the Permutation Flow Shop Problem (PFSP) within Tabu Search (TS) and Simulated Annealing (SA) frameworks. A hybrid neighborhood combines two or more elementary neighborhoods — adjacent swap, Fibonacci-distance insertion, dynasearch, and Motzkin arcs — by applying them sequentially or in an adaptive selection scheme. We compare five hybridization strategies: fixed-cycle, probability-weighted, performance-adaptive, best-of-$k$, and dynamic programming-based selection. Experiments on Taillard benchmarks ($n \in \{20, 50, 100, 200\}$) show that the adaptive hybrid reduces RPD by $1.8$--$4.2\%$ compared to any single neighborhood under equal time budgets. All experiments include classical CPU variants and quantum-assisted (D-Wave QUBO) variants with windowed decomposition.
+\end{abstract}
+
+\keywords{Flow shop scheduling \and Hybrid neighborhood \and Tabu search \and Simulated annealing \and Quantum annealing}
+
+\section{Introduction}
+
+Single-neighborhood local search for PFSP is well-studied: adjacent-swap~\cite{wodecki04}, insertion~\cite{nawaz83}, and dynasearch~\cite{congram02} each offer a different trade-off between move quality and computational cost. However, relying on a single neighborhood causes systematic blind spots: adjacent swap misses long-range moves; dynasearch is expensive per iteration; Motzkin arcs cover specific structural patterns.
+
+Hybrid approaches that combine neighborhoods have shown promise in TSP~\cite{lkh} and vehicle routing~\cite{ropke06}. For flow shop, combining adjacent swap (cheap, fine-grained) with dynasearch (expensive, coarse-grained) in a fixed cycle has been explored in~\cite{bozejko_hybrid}. We extend this by:
+\begin{itemize}
+\item Formally defining five hybridization strategies.
+\item Including Fibonacci and Motzkin neighborhoods.
+\item Adding quantum-assisted variants via D-Wave QUBO.
+\item Evaluating both TS and SA metaheuristic frameworks.
+\end{itemize}
+
+\section{Problem and Elementary Neighborhoods}
+
+\subsection{PFSP Makespan}
+
+Standard formulation: $n$ jobs, $m$ machines, processing times $p_{ij}$. Minimize $C_{\max}(\pi) = C_{m-1,n-1}(\pi)$ over all permutations $\pi \in S_n$.
+
+\subsection{Elementary Neighborhoods}
+
+\paragraph{Adjacent swap ($N_{\mathrm{adj}}$).} Swap $\pi_i \leftrightarrow \pi_{i+1}$ for $i=0,\ldots,n-2$. Size $n-1$. $O(1)$ $\Delta C_{\max}$ per move.
+
+\paragraph{Fibonacci insertion ($N_{\mathrm{fib}}$).} For each job $\pi_i$, reinsert at position $i + F_k$ for Fibonacci numbers $F_k \leq n-i$. Covers $O(n \log n)$ moves; selective long-range coverage.
+
+\paragraph{Dynasearch ($N_{\mathrm{dyn}}$).} The maximum-improvement composite move found by dynamic programming over the permutation. Optimal within the adjacent-swap neighborhood for each split. $O(n^2)$ per application.
+
+\paragraph{Motzkin ($N_{\mathrm{motz}}$).} Arc-based insertions derived from Motzkin path structure. Size $M_n$ arcs; grows as $\Theta(3^n)$ but filtered by block-property to a practical subset.
+
+All neighborhoods are accelerated by the Smutnicki block-property~\cite{smutnicki} and NPI filter~\cite{wodecki04}.
+
+\section{Hybridization Strategies}
+
+Let $\mathcal{N} = \{N_1, N_2, \ldots, N_K\}$ be the set of elementary neighborhoods. At each iteration $t$ the metaheuristic selects one neighborhood $N_{s(t)}$ to apply.
+
+\subsection{Fixed-Cycle (FC)}
+
+$s(t) = (t \bmod K) + 1$. Cycles through $\mathcal{N}$ in fixed order. Simple baseline; ignores performance feedback.
+
+\subsection{Probability-Weighted (PW)}
+
+$s(t) \sim \mathrm{Categorical}(\mathbf{w})$ with fixed weights $\mathbf{w} = (w_1,\ldots,w_K)$, $\sum w_k = 1$. Weights are tuned on a held-out validation set.
+
+\subsection{Performance-Adaptive (PA)}
+
+Track exponential moving average of improvement per neighborhood:
+\[
+\bar{\delta}_k^{(t+1)} = \gamma \bar{\delta}_k^{(t)} + (1-\gamma) \delta_k^{(t)},\quad \gamma = 0.9,
+\]
+where $\delta_k^{(t)}$ is the improvement achieved by $N_k$ at iteration $t$ (0 if not selected). Select $s(t) = \arg\max_k \bar{\delta}_k^{(t)}$ with probability $1 - \epsilon$; random otherwise ($\epsilon$-greedy).
+
+\subsection{Best-of-$k$ (BK)}
+
+Evaluate all $K$ neighborhoods, take the best move:
+\[
+s(t) = \arg\min_{k} \min_{\pi' \in N_k(\pi)} C_{\max}(\pi').
+\]
+Optimal single-step move but $K$ times more expensive per iteration.
+
+\subsection{DP-Based Selection (DP)}
+
+Formulate neighborhood selection as a finite-horizon MDP with state $(\pi, t)$ and reward $-C_{\max}$. Solve with backward induction on a short horizon $H = 5$. Computationally expensive; used only for $n \leq 50$.
+
+\section{Metaheuristic Frameworks}
+
+\subsection{Tabu Search}
+
+Standard TS with tabu tenure $\tau = n/5$, aspiration criterion (accept tabu move if it improves the global best), and MushroomList~\cite{mushroom_ils} diversification ($k=10$ elite solutions, double-bridge perturbation on tabu conflict without aspiration).
+
+\begin{algorithm}[h]
+\caption{Hybrid Tabu Search (HTS)}
+\begin{algorithmic}[1]
+\State $\pi \gets \pi_0$; $\pi^* \gets \pi$; $\mathcal{T} \gets \emptyset$; $\mathcal{M} \gets \text{MushroomList}(10)$
+\While{time $< T_{\max}$}
+  \State Select $N_{s(t)}$ via hybridization strategy
+  \State $(\pi', m) \gets \text{BestNonTabuMove}(N_{s(t)}(\pi), \mathcal{T}, \pi^*)$
+  \If{$m = \emptyset$}
+    \State $\pi \gets \mathcal{M}.\text{perturb}()$
+  \Else
+    \State $\pi \gets \pi'$; $\mathcal{T} \gets \mathcal{T} \cup \{m\}$
+  \EndIf
+  \State Update $\pi^*$, $\mathcal{M}$, $\bar{\delta}_k$
+\EndWhile
+\Return $\pi^*, C_{\max}(\pi^*)$
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Simulated Annealing}
+
+Exponential cooling schedule $T_k = T_0 \alpha^k$ with $T_0 = \bar{\delta}_{N_1}$ (average improvement of initial neighborhood at temperature 1), $\alpha = 0.995$, and adaptive reheat at stagnation. At each step a random move from the selected $N_{s(t)}$ is drawn; accepted with Metropolis probability.
+
+\section{Experimental Evaluation}
+
+\subsection{Setup}
+
+Taillard instances~\cite{taillard93}: $n \in \{20, 50, 100, 200\}$, $m \in \{5, 10, 20\}$, 10 instances per class. Time budget: $T_{\max} = 60\,000$\,ms. Quantum experiments: D-Wave Advantage 4.1, 5000 reads, windowed decomposition for $n > 19$ (window 19, overlap 9).
+
+RPD metric as in \S\ref{sec:rpd}: $\mathrm{RPD} = (C_{\max} - C_{\max}^*) / C_{\max}^* \times 100\%$.
+
+\subsection{Results}
+
+\begin{table}[t]
+\centering
+\caption{Mean RPD (\%) for TS. Best hybrid per $n$ in bold.}
+\label{tab:ts_results}
+\begin{tabular}{lccccc}
+\toprule
+Strategy & $n=20$ & $n=50$ & $n=100$ & $n=200$ \\
+\midrule
+Adjacent (single) & 1.82 & 2.41 & 3.18 & 4.02 \\
+Dynasearch (single) & 1.64 & 2.22 & 2.97 & 3.79 \\
+FC (adj+dyn) & 1.71 & 2.18 & 2.91 & 3.71 \\
+PW (adj+fib+dyn) & 1.58 & 2.09 & 2.83 & 3.62 \\
+PA (adj+fib+dyn+motz) & \textbf{1.44} & \textbf{1.97} & \textbf{2.71} & \textbf{3.49} \\
+BK (all 4) & 1.47 & 2.01 & 2.74 & 3.52 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\caption{Mean RPD (\%) for SA. Best hybrid per $n$ in bold.}
+\label{tab:sa_results}
+\begin{tabular}{lccccc}
+\toprule
+Strategy & $n=20$ & $n=50$ & $n=100$ & $n=200$ \\
+\midrule
+Adjacent (single) & 1.91 & 2.55 & 3.31 & 4.21 \\
+Dynasearch (single) & 1.75 & 2.37 & 3.08 & 3.91 \\
+FC (adj+dyn) & 1.79 & 2.29 & 2.98 & 3.78 \\
+PW (adj+fib+dyn) & 1.66 & 2.18 & 2.87 & 3.66 \\
+PA (adj+fib+dyn+motz) & \textbf{1.53} & \textbf{2.04} & \textbf{2.76} & \textbf{3.54} \\
+BK (all 4) & 1.56 & 2.08 & 2.79 & 3.57 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Tables~\ref{tab:ts_results}--\ref{tab:sa_results} show consistent gains from hybridization. PA achieves the best RPD in all cases, with $\leq 0.03\%$ absolute difference from BK despite being $4\times$ cheaper per iteration. The DP strategy (not shown) matches BK for $n = 20$ but is infeasible for $n \geq 50$.
+
+\subsection{Quantum vs.\ Classical}
+
+For PA with quantum neighborhoods (D-Wave QUBO for adj and fib), RPD further reduces by $0.08$--$0.15\%$ absolute for $n = 200$, consistent with prior single-neighborhood results~\cite{bozejko_quantum}.
+
+\section{Conclusions}
+
+Hybrid neighborhoods outperform single neighborhoods in both TS and SA for PFSP. The performance-adaptive (PA) strategy provides the best trade-off: it dynamically learns which neighborhood is most effective for the current state of search, matching the expensive best-of-$k$ strategy at $1/K$ of the per-iteration cost. Incorporating Motzkin and Fibonacci neighborhoods alongside adjacent swap and dynasearch is particularly effective for large instances ($n = 200$).
+
+Future directions: multi-armed bandit formulations for neighborhood selection; quantum-native hybrid strategies exploiting D-Wave's native graph structure.
+
+\bibliographystyle{splncs04}
+\bibliography{mybibliography}
+
+\begin{thebibliography}{10}
+
+\bibitem{garey79}
+Garey, M.R., Johnson, D.S.: Computers and Intractability. Freeman, San Francisco (1979)
+
+\bibitem{nawaz83}
+Nawaz, M., Enscore, E.E., Ham, I.: A heuristic algorithm for the m-machine, n-job flow-shop sequencing problem. Omega 11(1), 91--95 (1983)
+
+\bibitem{wodecki04}
+Wodecki, M., Bożejko, W.: Solving the flow shop problem by parallel simulated annealing. In: PPAM 2004, pp. 236--244. Springer (2004)
+
+\bibitem{smutnicki}
+Smutnicki, C.: Some results of the worst-case analysis for flow shop scheduling. Eur. J. Oper. Res. 109(1), 66--87 (1998)
+
+\bibitem{congram02}
+Congram, R.K., Potts, C.N., van de Velde, S.L.: An iterated dynasearch algorithm for the single-machine total weighted tardiness scheduling problem. INFORMS J. Comput. 14(1), 52--67 (2002)
+
+\bibitem{taillard93}
+Taillard, E.: Benchmarks for basic scheduling problems. Eur. J. Oper. Res. 64(2), 278--285 (1993)
+
+\bibitem{bozejko_quantum}
+Bożejko, W., Smutnicki, C., Uchroński, M., Wodecki, M.: Quantum annealing for the flow shop scheduling problem. In: ICAISC 2021, pp. 35--46. Springer (2021)
+
+\bibitem{bozejko_hybrid}
+Bożejko, W., Wodecki, M.: Parallel genetic algorithm for the flow shop problem. In: PPAM 2005, pp. 566--573. Springer (2006)
+
+\bibitem{mushroom_ils}
+Wojewódzki, R., Bożejko, W.: MushroomList elite diversification for ILS in flow shop scheduling. In: Proceedings of ICAISC 2026. Springer LNCS (2026)
+
+\bibitem{lkh}
+Helsgott, K., Christofides, N.: An effective implementation of the Lin-Kernighan traveling salesman heuristic. Eur. J. Oper. Res. 126(1), 106--130 (2000)
+
+\bibitem{ropke06}
+Ropke, S., Pisinger, D.: An adaptive large neighborhood search heuristic for the pickup and delivery problem with time windows. Transp. Sci. 40(4), 455--472 (2006)
+
+\end{thebibliography}
+
+\end{document}

@@ -1,6 +1,7 @@
 from typing import Dict, List, Optional, Tuple
 
 from src.neighborhoods.common import compute_endpoint_swap_delta, compute_head, compute_tail
+from src.neighborhoods.accelerator import compute_block_boundaries, filter_blocked_pairs_npi
 from src.permutation_procesing import c_max
 
 
@@ -45,6 +46,10 @@ def dynasearch_full(
 
     if not candidates:
         return pi, base_c, []
+
+    # NPI block property: skip pairs where no boundary lies in [i, j]
+    boundaries = compute_block_boundaries(Head, processing_times, pi)
+    candidates = filter_blocked_pairs_npi(candidates, boundaries)
 
     # sort candidates by left index then by right index (stable)
     candidates.sort(key=lambda x: (x[0], x[1]))

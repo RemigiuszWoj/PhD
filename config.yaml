@@ -66,13 +66,14 @@ quantum:
 
 iterated_local_search:
   tabu_tenure: 10
+  mushroom_k: 10   # rozmiar puli elite w MushroomList
 
 simulated_annealing:
   initial_temp: 1000.0
   final_temp: 1.0
   alpha: 0.95
   reheat_factor: 1.5
-  stagnation_ms: 5000
+  stagnation_ms: 500
   temp_floor_factor: 1.0
 
 generator:
@@ -81,50 +82,119 @@ generator:
   n: 50
   seed: 42
 
-experiment:
-  enabled: false
-  tabu_tenure: 10
-  instance_files: [
-    "data/tai20_5.txt",
-    # "data/tai20_10.txt",
-    # "data/tai20_20.txt",
-    # "data/tai50_5.txt",
-    # "data/tai50_10.txt",
-    # "data/tai50_20.txt",
-    # "data/tai100_5.txt",
-    # "data/tai100_10.txt",
-    # "data/tai100_20.txt",
-    # "data/tai200_10.txt",
-    # "data/tai200_20.txt",
-    # "data/tai500_20.txt"
-  ]
-  repeats: 1
-  time_limits_s: [0.1, 0.5, 1, 2, 5, 10]
+# =============================================================================
+# EKSPERYMENT — artykuł "Windowed QUBO / Quantum QUBO Enhanced"
+#
+# Struktura: 3 klasy × 4 sąsiedztwa = 12 wariantów
+#   classical              — CPU, bez limitu n
+#   quantum_qubo           — D-Wave oryginalne, n <= 20
+#   quantum_qubo_enhanced  — D-Wave enhanced:
+#       adjacent_enhanced   n <= 200  (gęste QUBO, bez filtra delta)
+#       fibonacci_enhanced  n <= 500  (trójdiagonalne QUBO, bez filtra delta)
+#       dynasearch_enhanced n <= 50   (windowed, w=19, ρ=0.5)
+#       motzkin_enhanced    n <= 50   (windowed, w=19, ρ=0.5)
+#
+# Harmonogram instancji (zgodny z tractability Table 1 w artykule):
+#
+#   FAZA 1 — baseline classical + wszystkie quantum na n=20
+#     → tai20_5, tai20_10, tai20_20
+#     → wszystkie 12 sąsiedztw
+#
+#   FAZA 2 — skalowanie enhanced (classical + enhanced, bez quantum_qubo)
+#     tai50_5, tai50_10, tai50_20
+#       → classical (4) + enhanced wszystkie (4) = 8 sąsiedztw
+#     tai100_5, tai100_10, tai100_20
+#       → classical (4) + adj_enhanced + fib_enhanced = 6 sąsiedztw
+#     tai200_10, tai200_20
+#       → classical (4) + adj_enhanced + fib_enhanced = 6 sąsiedztw
+#     tai500_20
+#       → classical (4) + fib_enhanced = 5 sąsiedztw
+#
+# Poniższy config odpowiada FAZIE 1.
+# Skomentuj/odkomentuj odpowiednie linie żeby przełączyć fazę.
+# =============================================================================
 
-  # Trzy klasy sąsiedztw:
-  #   classical          - CPU only
-  #   quantum_qubo       - D-Wave, oryginalne (małe n, n <= 20)
-  #   quantum_qubo_enhanced - D-Wave, duże n (windowed / bez filtrów delta)
-  #
-  # Uwaga na rozmiar instancji:
-  #   quantum_dynasearch / quantum_motzkin        → tylko n <= 20 (K=O(n²), brak podziału)
-  #   quantum_dynasearch_enhanced / _motzkin_enhanced → n <= 50  (windowed, window~19)
-  #   quantum_adjacent_enhanced                   → n <= 200 (gęste QUBO)
-  #   quantum_fibonacci_enhanced                  → n <= 500 (trójdiagonalne QUBO)
-  neighborhoods: [
-    # --- classical ---
-    "adjacent",
-    "fibonacci",
-    "dynasearch",
-    "motzkin",
-    # --- quantum_qubo (małe n) ---
-    "quantum_adjacent",
-    "quantum_fibonacci",
-    "quantum_dynasearch",
-    "quantum_motzkin",
-    # --- quantum_qubo_enhanced (duże n) ---
-    "quantum_adjacent_enhanced",
-    "quantum_fibonacci_enhanced",
-    "quantum_dynasearch_enhanced",
-    "quantum_motzkin_enhanced",
-  ]
+experiment:
+  enabled: true
+  tabu_tenure: 10
+  mushroom_k: 10
+  repeats: 5          # seeds 0..4 → wystarczy do testu Wilcoxona (n=50 obs.)
+  time_limits_s: [0.1, 0.5, 1.0, 2.0, 5.0, 10.0]
+
+  # --- FAZA 1: n=20, wszystkie 12 sąsiedztw ---
+  instance_files:
+    - "data/tai20_5.txt"
+    - "data/tai20_10.txt"
+    - "data/tai20_20.txt"
+
+  # --- FAZA 2a: n=50, classical + wszystkie enhanced ---
+  # instance_files:
+  #   - "data/tai50_5.txt"
+  #   - "data/tai50_10.txt"
+  #   - "data/tai50_20.txt"
+
+  # --- FAZA 2b: n=100, classical + adj_enhanced + fib_enhanced ---
+  # instance_files:
+  #   - "data/tai100_5.txt"
+  #   - "data/tai100_10.txt"
+  #   - "data/tai100_20.txt"
+
+  # --- FAZA 2c: n=200 ---
+  # instance_files:
+  #   - "data/tai200_10.txt"
+  #   - "data/tai200_20.txt"
+
+  # --- FAZA 2d: n=500, tylko fib_enhanced mieści się na QPU ---
+  # instance_files:
+  #   - "data/tai500_20.txt"
+
+  # -------------------------------------------------------------------------
+  # FAZA 1 — wszystkie 12 sąsiedztw (n=20 mieści się w każdej klasie)
+  neighborhoods:
+    # classical
+    - "adjacent"
+    - "fibonacci"
+    - "dynasearch"
+    - "motzkin"
+    # quantum_qubo (oryginalne, n <= 20)
+    - "quantum_adjacent"
+    - "quantum_fibonacci"
+    - "quantum_dynasearch"
+    - "quantum_motzkin"
+    # quantum_qubo_enhanced
+    - "quantum_adjacent_enhanced"
+    - "quantum_fibonacci_enhanced"
+    - "quantum_dynasearch_enhanced"
+    - "quantum_motzkin_enhanced"
+
+  # -------------------------------------------------------------------------
+  # FAZA 2a — n=50 (quantum_qubo oryginalne wykluczone, dyn/motz_enhanced OK)
+  # neighborhoods:
+  #   - "adjacent"
+  #   - "fibonacci"
+  #   - "dynasearch"
+  #   - "motzkin"
+  #   - "quantum_adjacent_enhanced"
+  #   - "quantum_fibonacci_enhanced"
+  #   - "quantum_dynasearch_enhanced"
+  #   - "quantum_motzkin_enhanced"
+
+  # -------------------------------------------------------------------------
+  # FAZA 2b — n=100 (dyn/motz_enhanced poza limitem n<=50)
+  # neighborhoods:
+  #   - "adjacent"
+  #   - "fibonacci"
+  #   - "dynasearch"
+  #   - "motzkin"
+  #   - "quantum_adjacent_enhanced"
+  #   - "quantum_fibonacci_enhanced"
+
+  # -------------------------------------------------------------------------
+  # FAZA 2c/2d — n=200/500
+  # neighborhoods:
+  #   - "adjacent"
+  #   - "fibonacci"
+  #   - "dynasearch"
+  #   - "motzkin"
+  #   - "quantum_adjacent_enhanced"   # pomiń dla n=500
+  #   - "quantum_fibonacci_enhanced"

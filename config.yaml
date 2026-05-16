@@ -120,6 +120,7 @@ experiment:
   mushroom_k: 10
   repeats: 5          # seeds 0..4 → wystarczy do testu Wilcoxona (n=50 obs.)
   time_limits_s: [0.1, 0.5, 1.0, 2.0, 5.0, 10.0]
+  resume_dir: results/experiments/20260508_200411
 
   # --- FAZA 1: n=20, wszystkie 12 sąsiedztw ---
   instance_files:

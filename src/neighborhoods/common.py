@@ -12,9 +12,40 @@ Functions:
     apply_swaps             - apply adjacent swaps to permutation
     validate_no_overlap     - remove overlapping adjacent swaps
     solve_qubo              - solve QUBO via D-Wave or SimulatedAnnealingSampler
+    reset_qpu_stats         - zero the per-run QPU call counters
+    get_qpu_stats           - snapshot the per-run QPU call counters
 """
 
 from typing import Dict, List, Tuple
+
+
+# Per-run QPU stats (module-level singleton; reset_qpu_stats() at start of each run).
+# Fields:
+#   calls               - total solve_qubo() invocations
+#   qpu_success         - calls answered by real QPU (timing dict populated)
+#   fallback_quota      - "insufficient remaining solver access time" → SA fallback
+#   fallback_embedding  - "no embedding found" → SA fallback
+#   fallback_other      - any other exception → SA fallback
+#   simulator_calls     - backend != "dwave" (intentional SA, not a failure)
+_qpu_stats: Dict[str, int] = {
+    "calls": 0,
+    "qpu_success": 0,
+    "fallback_quota": 0,
+    "fallback_embedding": 0,
+    "fallback_other": 0,
+    "simulator_calls": 0,
+}
+
+
+def reset_qpu_stats() -> None:
+    """Zero the per-run QPU counters. Call before each experiment run."""
+    for k in _qpu_stats:
+        _qpu_stats[k] = 0
+
+
+def get_qpu_stats() -> Dict[str, int]:
+    """Return a copy of the per-run QPU counters."""
+    return dict(_qpu_stats)
 
 
 def swap_jobs(pi: List[int], i: int, j: int) -> List[int]:
@@ -149,6 +180,46 @@ def validate_no_overlap(indices: List[int]) -> List[int]:
     return valid
 
 
+def _log_qpu_timing(result, num_variables: int) -> None:
+    """Extract QPU timing breakdown from D-Wave result and append to results/qpu_timing.jsonl."""
+    import json, logging, os, time as _time
+    timing = result.info.get("timing", {})
+    if not timing:
+        return
+
+    solver_id = result.info.get("solver_id") or result.info.get("problem_id", "unknown")
+    record = {
+        "ts": _time.time(),
+        "solver_id": solver_id,
+        "num_variables": num_variables,
+        "qpu_sampling_time_us":            timing.get("qpu_sampling_time"),
+        "qpu_anneal_time_per_sample_us":   timing.get("qpu_anneal_time_per_sample"),
+        "qpu_readout_time_per_sample_us":  timing.get("qpu_readout_time_per_sample"),
+        "qpu_access_time_us":              timing.get("qpu_access_time"),
+        "qpu_access_overhead_time_us":     timing.get("qpu_access_overhead_time"),
+        "qpu_programming_time_us":         timing.get("qpu_programming_time"),
+        "total_real_time_us":              timing.get("total_real_time"),
+        "charge_time_us":                  timing.get("charge_time"),
+        "post_processing_overhead_time_us": timing.get("post_processing_overhead_time"),
+    }
+
+    os.makedirs("results", exist_ok=True)
+    with open("results/qpu_timing.jsonl", "a") as fh:
+        fh.write(json.dumps(record) + "\n")
+
+    logging.info(
+        "[QPU timing] vars=%d  access=%s µs  total=%s µs  overhead=%s µs  "
+        "anneal=%s µs/read  readout=%s µs/read  programming=%s µs",
+        num_variables,
+        timing.get("qpu_access_time"),
+        timing.get("total_real_time"),
+        timing.get("qpu_access_overhead_time"),
+        timing.get("qpu_anneal_time_per_sample"),
+        timing.get("qpu_readout_time_per_sample"),
+        timing.get("qpu_programming_time"),
+    )
+
+
 def solve_qubo(
     Q: Dict[Tuple[str, str], float],
     num_reads: int = 5,
@@ -161,7 +232,9 @@ def solve_qubo(
 ) -> Dict[str, int]:
     """Solve QUBO via SimulatedAnnealingSampler or real D-Wave QPU.
 
-    Falls back to SimulatedAnnealingSampler if no QPU embedding is found.
+    Falls back to SimulatedAnnealingSampler if no QPU embedding is found,
+    QPU quota is exhausted, or any other error occurs. Per-call disposition
+    is recorded in module-level _qpu_stats (see reset_qpu_stats / get_qpu_stats).
     """
     if not Q:
         return {}
@@ -169,38 +242,84 @@ def solve_qubo(
     from dimod import BinaryQuadraticModel
     bqm = BinaryQuadraticModel.from_qubo(Q)
 
-    if backend == "dwave":
-        if not dwave_token:
-            raise ValueError("dwave_token required when backend='dwave'")
-        from dwave.system import DWaveSampler, EmbeddingComposite
-        import logging
+    _qpu_stats["calls"] += 1
 
-        sample_kwargs = {"num_reads": num_reads}
-        if annealing_time_us is not None:
-            sample_kwargs["annealing_time"] = annealing_time_us
-        if chain_strength is not None:
-            sample_kwargs["chain_strength"] = chain_strength
-        if num_spin_reversal_transforms is not None:
-            sample_kwargs["num_spin_reversal_transforms"] = num_spin_reversal_transforms
-
-        try:
-            ctx = DWaveSampler(token=dwave_token, solver=solver) if solver \
-                else DWaveSampler(token=dwave_token)
-            with ctx as dw_sampler:
-                sampler = EmbeddingComposite(dw_sampler)
-                result = sampler.sample(bqm, **sample_kwargs)
-        except ValueError as e:
-            if "no embedding found" in str(e):
-                logging.warning(
-                    "[solve_qubo] No QPU embedding found (%d vars). "
-                    "Falling back to SimulatedAnnealingSampler.", bqm.num_variables
-                )
-                from dimod import SimulatedAnnealingSampler
-                result = SimulatedAnnealingSampler().sample(bqm, num_reads=num_reads)
-            else:
-                raise
-    else:
+    # Intentional simulator backend — not a failure, just classical.
+    if backend != "dwave":
         from dimod import SimulatedAnnealingSampler
+        _qpu_stats["simulator_calls"] += 1
         result = SimulatedAnnealingSampler().sample(bqm, num_reads=num_reads)
+        return dict(result.first.sample)
 
-    return dict(result.first.sample)
+    # backend == "dwave"
+    if not dwave_token:
+        raise ValueError("dwave_token required when backend='dwave'")
+    from dwave.system import DWaveSampler, EmbeddingComposite
+    import logging
+
+    sample_kwargs = {"num_reads": num_reads}
+    if annealing_time_us is not None:
+        sample_kwargs["annealing_time"] = annealing_time_us
+    if chain_strength is not None:
+        sample_kwargs["chain_strength"] = chain_strength
+    if num_spin_reversal_transforms is not None:
+        sample_kwargs["num_spin_reversal_transforms"] = num_spin_reversal_transforms
+
+    def _classify_and_fallback(exc: Exception) -> Dict[str, int]:
+        """Bump the right counter and return an SA sample."""
+        msg = str(exc).lower()
+        if "insufficient remaining solver access time" in msg or "insufficient" in msg and "access time" in msg:
+            _qpu_stats["fallback_quota"] += 1
+            logging.warning(
+                "[solve_qubo] QPU quota exhausted (%d vars): %s. "
+                "Falling back to SimulatedAnnealingSampler.",
+                bqm.num_variables, exc,
+            )
+        elif "no embedding found" in msg:
+            _qpu_stats["fallback_embedding"] += 1
+            logging.warning(
+                "[solve_qubo] No QPU embedding found (%d vars). "
+                "Falling back to SimulatedAnnealingSampler.",
+                bqm.num_variables,
+            )
+        else:
+            _qpu_stats["fallback_other"] += 1
+            logging.warning(
+                "[solve_qubo] QPU request failed: %s. "
+                "Falling back to SimulatedAnnealingSampler.",
+                exc,
+            )
+        from dimod import SimulatedAnnealingSampler
+        fb = SimulatedAnnealingSampler().sample(bqm, num_reads=num_reads)
+        return dict(fb.first.sample)
+
+    # Submit to QPU (lazy SampleSet — failures may surface here OR during resolution).
+    result = None
+    submission_error: Exception | None = None
+    try:
+        ctx = DWaveSampler(token=dwave_token, solver=solver) if solver \
+            else DWaveSampler(token=dwave_token)
+        with ctx as dw_sampler:
+            sampler = EmbeddingComposite(dw_sampler)
+            result = sampler.sample(bqm, **sample_kwargs)
+    except Exception as e:
+        submission_error = e
+
+    if submission_error is not None:
+        return _classify_and_fallback(submission_error)
+
+    # Resolve the SampleSet — this is where "insufficient solver access time" typically surfaces.
+    try:
+        sample = dict(result.first.sample)
+    except Exception as e:
+        return _classify_and_fallback(e)
+
+    # Real QPU success: timing dict present iff response came from QPU.
+    timing = (result.info or {}).get("timing")
+    if timing:
+        _qpu_stats["qpu_success"] += 1
+        _log_qpu_timing(result, bqm.num_variables)
+    else:
+        # No timing → result wasn't from a real QPU annealer (defensive).
+        _qpu_stats["fallback_other"] += 1
+    return sample

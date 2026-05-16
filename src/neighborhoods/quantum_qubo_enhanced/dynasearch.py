@@ -35,6 +35,12 @@ from src.neighborhoods.common import (
     compute_tail,
     solve_qubo,
 )
+from src.neighborhoods.accelerator import (
+    compute_block_boundaries,
+    filter_blocked_pairs_npi,
+    intervals_overlap as _intervals_overlap,
+    validate_no_overlap_intervals as _validate_no_overlap_intervals,
+)
 from src.permutation_procesing import c_max
 
 # Conservative D-Wave effective variable capacity for dense QUBO
@@ -47,21 +53,6 @@ def _auto_window_size(n: int, capacity: int = _DWAVE_EFFECTIVE_CAPACITY) -> int:
     return max(4, min(w, n))
 
 
-def _intervals_overlap(i1: int, j1: int, i2: int, j2: int) -> bool:
-    return max(i1, i2) <= min(j1, j2)
-
-
-def _validate_no_overlap_intervals(
-    selected: List[Tuple[int, int]],
-) -> List[Tuple[int, int]]:
-    """Greedy removal of overlapping intervals (sort by left endpoint)."""
-    valid: List[Tuple[int, int]] = []
-    for i, j in sorted(selected):
-        if not valid or i > valid[-1][1]:
-            valid.append((i, j))
-    return valid
-
-
 def _solve_window_qubo(
     pi: List[int],
     processing_times: List[List[int]],
@@ -70,6 +61,7 @@ def _solve_window_qubo(
     Head: List[List[int]],
     Tail: List[List[int]],
     base_c: int,
+    boundaries: List[int],
     num_reads: int,
     backend: str,
     dwave_token: str | None,
@@ -79,12 +71,16 @@ def _solve_window_qubo(
     num_spin_reversal_transforms: int | None,
 ) -> List[Tuple[int, int]]:
     """Build and solve QUBO for window [start..end-1]. Returns global swap indices."""
-    m = len(processing_times)
     candidates: List[Tuple[int, int, float]] = []
     for i in range(start, end - 1):
         for j in range(i + 1, end):
-            delta = compute_endpoint_swap_delta(pi, i, j, Head, Tail, processing_times, base_c)
+            delta = compute_endpoint_swap_delta(
+                pi, i, j, Head, Tail, processing_times, base_c
+            )
             candidates.append((i, j, delta))
+
+    # NPI block property: skip pairs with no boundary in [i, j]
+    candidates = filter_blocked_pairs_npi(candidates, boundaries)
 
     if not candidates:
         return []
@@ -167,6 +163,9 @@ def quantum_dynasearch_enhanced(
     m_machines = len(processing_times)
     base_c = Head[m_machines - 1][n - 1]
 
+    # NPI block boundaries computed once for full permutation
+    boundaries = compute_block_boundaries(Head, processing_times, pi)
+
     # Collect swaps from all windows
     all_swaps: List[Tuple[int, int]] = []
     step = max(1, int(w * (1 - overlap_ratio)))
@@ -176,20 +175,10 @@ def quantum_dynasearch_enhanced(
         if end - start < 2:
             break
         window_swaps = _solve_window_qubo(
-            pi,
-            processing_times,
-            start,
-            end,
-            Head,
-            Tail,
-            base_c,
-            num_reads,
-            backend,
-            dwave_token,
-            solver,
-            annealing_time_us,
-            chain_strength,
-            num_spin_reversal_transforms,
+            pi, processing_times, start, end,
+            Head, Tail, base_c, boundaries,
+            num_reads, backend, dwave_token, solver,
+            annealing_time_us, chain_strength, num_spin_reversal_transforms,
         )
         all_swaps.extend(window_swaps)
         if end == n:

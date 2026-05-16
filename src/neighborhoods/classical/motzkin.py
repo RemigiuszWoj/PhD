@@ -17,6 +17,7 @@ Complexity: O(m·n²) for deltas + O(n³) for DP = O(n³) total
 from typing import List, Optional, Tuple
 
 from src.neighborhoods.common import compute_endpoint_swap_delta, compute_head, compute_tail
+from src.neighborhoods.accelerator import compute_block_boundaries
 from src.permutation_procesing import c_max
 
 
@@ -49,10 +50,16 @@ def motzkin_neighborhood_full(
     m = len(processing_times)
     base_c = Head[m - 1][n - 1]
 
+    # NPI block property: skip pairs where no boundary lies in [i, j]
+    boundaries = compute_block_boundaries(Head, processing_times, pi)
+    boundary_set = set(boundaries)
+
     # Delta matrix for all pairs - using Head+Tail
     delta: List[List[float]] = [[float("inf")] * n for _ in range(n)]
     for i in range(n - 1):
         for j in range(i + 1, n):
+            if not any(i <= u <= j for u in boundary_set):
+                continue  # NPI: no boundary in span, skip
             delta[i][j] = compute_endpoint_swap_delta(
                 pi, i, j, Head, Tail, processing_times, base_c
             )

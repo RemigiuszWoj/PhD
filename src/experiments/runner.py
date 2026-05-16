@@ -12,6 +12,7 @@ import yaml
 
 from src import visualization as viz
 from src.algorithms import iterated_local_search, simulated_annealing
+from src.neighborhoods.common import get_qpu_stats, reset_qpu_stats
 from src.parser import parser
 
 ALGORITHMS_ALL = ("ils", "sa")
@@ -78,6 +79,7 @@ class RunResult:
     instance_machines: int
     upper_bound: int | None
     lower_bound: int | None
+    qpu_stats: dict | None = None
 
     def gap_percent(self) -> float | None:
         if self.lower_bound is None:
@@ -87,9 +89,19 @@ class RunResult:
         except ZeroDivisionError:
             return None
 
+    def used_qpu_fallback(self) -> bool:
+        """True if any QPU call fell back to SA (quota / embedding / other)."""
+        s = self.qpu_stats or {}
+        return bool(
+            s.get("fallback_quota", 0)
+            or s.get("fallback_embedding", 0)
+            or s.get("fallback_other", 0)
+        )
+
     def to_dict(self):
         d = asdict(self)
         d["gap_percent"] = self.gap_percent()
+        d["used_qpu_fallback"] = self.used_qpu_fallback()
         d["config"] = asdict(self.config)
         return d
 
@@ -99,10 +111,16 @@ class ExperimentRunner:
         self,
         base_results_dir: str = "results/experiments",
         quantum_config: dict | None = None,
+        resume_dir: str | None = None,
     ):
         self.base_dir = Path(base_results_dir)
         self.base_dir.mkdir(parents=True, exist_ok=True)
-        self.timestamp_dir = self.base_dir / datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        if resume_dir is not None:
+            self.timestamp_dir = Path(resume_dir)
+            self._resume_from = self.timestamp_dir
+        else:
+            self.timestamp_dir = self.base_dir / datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+            self._resume_from = None
         self.timestamp_dir.mkdir(parents=True, exist_ok=True)
         if quantum_config is None:
             try:
@@ -120,6 +138,9 @@ class ExperimentRunner:
     def run(self, configs: Sequence[RunConfig]) -> List[RunResult]:
         results: List[RunResult] = []
         for idx, cfg in enumerate(configs, start=1):
+            if self._already_done(cfg):
+                print(f"[Experiment] ({idx}/{len(configs)}) Skipping (done): {cfg}")
+                continue
             print(f"[Experiment] ({idx}/{len(configs)}) Running: {cfg}")
             result = self._run_single(cfg)
             results.append(result)
@@ -130,6 +151,18 @@ class ExperimentRunner:
             print(f"[Experiment] Failed to build multi-convergence plots: {e}")
         return results
 
+    def _already_done(self, cfg: RunConfig) -> bool:
+        if self._resume_from is None:
+            return False
+        from pathlib import Path as _Path
+        stem = _Path(cfg.instance_file).stem
+        pattern = (
+            f"algo={cfg.algorithm}__neigh={cfg.neighborhood}"
+            f"__file={stem}__inst={cfg.instance_number}"
+            f"__*__tl={cfg.time_limit_ms}ms__seed={cfg.seed}"
+        )
+        return any(self._resume_from.glob(f"{pattern}/result.json"))
+
     def _run_single(self, cfg: RunConfig) -> RunResult:
         random.seed(cfg.seed)
         data = parser(cfg.instance_file, cfg.instance_number)
@@ -139,6 +172,9 @@ class ExperimentRunner:
         upper = data["info"].get("upper_bound")
         lower = data["info"].get("lower_bound")
 
+        # Per-run QPU bookkeeping (covers all solve_qubo() invocations during this run)
+        reset_qpu_stats()
+
         start = time.time()
         run_fn = self._dispatch.get(cfg.algorithm)
         if run_fn is None:
@@ -146,6 +182,24 @@ class ExperimentRunner:
         best_pi, best_cmax, t_hist, c_hist = run_fn(processing_times, cfg)
         total_time_ms = int((time.time() - start) * 1000)
         time_to_best_ms = t_hist[-1] if t_hist else total_time_ms
+
+        qpu_stats = get_qpu_stats()
+
+        # Loud, single-line summary if this quantum run silently fell back.
+        is_quantum = cfg.neighborhood.startswith("quantum_")
+        if is_quantum and (
+            qpu_stats["fallback_quota"]
+            or qpu_stats["fallback_embedding"]
+            or qpu_stats["fallback_other"]
+        ):
+            print(
+                f"[Experiment] WARNING: {cfg.algorithm}/{cfg.neighborhood} "
+                f"seed={cfg.seed} tl={cfg.time_limit_ms}ms "
+                f"used QPU fallback — qpu_success={qpu_stats['qpu_success']}/"
+                f"{qpu_stats['calls']}, quota={qpu_stats['fallback_quota']}, "
+                f"embed={qpu_stats['fallback_embedding']}, "
+                f"other={qpu_stats['fallback_other']}"
+            )
 
         return RunResult(
             config=cfg,
@@ -159,6 +213,7 @@ class ExperimentRunner:
             instance_machines=machines,
             upper_bound=upper,
             lower_bound=lower,
+            qpu_stats=qpu_stats,
         )
 
     def _persist_result(self, result: RunResult) -> None:

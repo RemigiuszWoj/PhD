@@ -56,36 +56,17 @@ from src.neighborhoods.common import (
     compute_tail,
     solve_qubo,
 )
+from src.neighborhoods.accelerator import (
+    compute_block_boundaries,
+    filter_blocked_pairs_npi,
+    validate_no_overlap_intervals,
+)
 from src.permutation_procesing import c_max
 
 
 def _intervals_overlap(i1: int, j1: int, i2: int, j2: int) -> bool:
     """Check if two intervals [i1, j1] and [i2, j2] overlap."""
     return max(i1, i2) <= min(j1, j2)
-
-
-def _validate_no_overlap_intervals(
-    selected: List[Tuple[int, int]],
-) -> List[Tuple[int, int]]:
-    """Remove overlapping intervals, keeping non-overlapping ones greedily.
-
-    Greedy strategy: sort by left endpoint, keep interval if it doesn't
-    overlap with any previously kept interval.
-
-    Args:
-        selected: List of (i, j) interval pairs, sorted by left endpoint
-
-    Returns:
-        List of non-overlapping intervals
-    """
-    if not selected:
-        return []
-
-    valid: List[Tuple[int, int]] = []
-    for i, j in sorted(selected):
-        if not valid or i > valid[-1][1]:
-            valid.append((i, j))
-    return valid
 
 
 def quantum_dynasearch_neighborhood(
@@ -142,6 +123,10 @@ def quantum_dynasearch_neighborhood(
     if not all_candidates:
         return pi.copy(), base_c, []
 
+    # NPI block property: skip pairs where no boundary lies in [i, j]
+    boundaries = compute_block_boundaries(Head, processing_times, pi)
+    all_candidates = filter_blocked_pairs_npi(all_candidates, boundaries)
+
     # NOTE(classical-only): Filter out non-improving candidates (δ ≥ 0) to reduce
     # QUBO size for SimulatedAnnealingSampler. This is mathematically equivalent
     # within the additive-delta QUBO model — the solver would set these x_k = 0
@@ -192,7 +177,7 @@ def quantum_dynasearch_neighborhood(
 
     # Extract selected intervals and validate no-overlap
     selected_intervals = [(candidates[k][0], candidates[k][1]) for k in selected_indices]
-    valid_swaps = _validate_no_overlap_intervals(selected_intervals)
+    valid_swaps = validate_no_overlap_intervals(selected_intervals)
 
     # Fallback: if nothing selected, pick the single swap with minimal delta
     if not valid_swaps:

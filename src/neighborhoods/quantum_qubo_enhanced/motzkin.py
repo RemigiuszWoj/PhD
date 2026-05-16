@@ -23,6 +23,12 @@ from src.neighborhoods.common import (
     compute_tail,
     solve_qubo,
 )
+from src.neighborhoods.accelerator import (
+    compute_block_boundaries,
+    filter_blocked_pairs_npi,
+    motzkin_conflict as _motzkin_conflict,
+    validate_motzkin_selection as _validate_motzkin,
+)
 from src.permutation_procesing import c_max
 
 _DWAVE_EFFECTIVE_CAPACITY = 180
@@ -33,36 +39,6 @@ def _auto_window_size(n: int, capacity: int = _DWAVE_EFFECTIVE_CAPACITY) -> int:
     return max(4, min(w, n))
 
 
-def _motzkin_conflict(i1: int, j1: int, i2: int, j2: int) -> bool:
-    """True if swaps (i1,j1) and (i2,j2) conflict under Motzkin rules.
-
-    Conflicts:
-        - Shared endpoint: {i1,j1} ∩ {i2,j2} ≠ ∅
-        - Crossing: i1 < i2 < j1 < j2  or  i2 < i1 < j2 < j1
-
-    Allowed (no conflict):
-        - Disjoint: j1 < i2  or  j2 < i1
-        - Nested:   i1 < i2 < j2 < j1  or  i2 < i1 < j1 < j2
-    """
-    if {i1, j1} & {i2, j2}:  # shared endpoint
-        return True
-    # crossing check
-    if i1 < i2 < j1 < j2:
-        return True
-    if i2 < i1 < j2 < j1:
-        return True
-    return False
-
-
-def _validate_motzkin(selected: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
-    """Greedy feasibility repair: remove conflicting pairs (keep first seen)."""
-    valid: List[Tuple[int, int]] = []
-    for pair in selected:
-        if all(not _motzkin_conflict(pair[0], pair[1], v[0], v[1]) for v in valid):
-            valid.append(pair)
-    return valid
-
-
 def _solve_window_motzkin_qubo(
     pi: List[int],
     processing_times: List[List[int]],
@@ -71,6 +47,7 @@ def _solve_window_motzkin_qubo(
     Head: List[List[int]],
     Tail: List[List[int]],
     base_c: int,
+    boundaries: List[int],
     num_reads: int,
     backend: str,
     dwave_token: str | None,
@@ -83,8 +60,13 @@ def _solve_window_motzkin_qubo(
     candidates: List[Tuple[int, int, float]] = []
     for i in range(start, end - 1):
         for j in range(i + 1, end):
-            delta = compute_endpoint_swap_delta(pi, i, j, Head, Tail, processing_times, base_c)
+            delta = compute_endpoint_swap_delta(
+                pi, i, j, Head, Tail, processing_times, base_c
+            )
             candidates.append((i, j, delta))
+
+    # NPI block property: skip pairs with no boundary in [i, j]
+    candidates = filter_blocked_pairs_npi(candidates, boundaries)
 
     if not candidates:
         return []
@@ -168,6 +150,9 @@ def quantum_motzkin_enhanced(
     m_machines = len(processing_times)
     base_c = Head[m_machines - 1][n - 1]
 
+    # NPI block boundaries computed once for full permutation
+    boundaries = compute_block_boundaries(Head, processing_times, pi)
+
     all_swaps: List[Tuple[int, int]] = []
     step = max(1, int(w * (1 - overlap_ratio)))
 
@@ -176,20 +161,10 @@ def quantum_motzkin_enhanced(
         if end - start < 2:
             break
         window_swaps = _solve_window_motzkin_qubo(
-            pi,
-            processing_times,
-            start,
-            end,
-            Head,
-            Tail,
-            base_c,
-            num_reads,
-            backend,
-            dwave_token,
-            solver,
-            annealing_time_us,
-            chain_strength,
-            num_spin_reversal_transforms,
+            pi, processing_times, start, end,
+            Head, Tail, base_c, boundaries,
+            num_reads, backend, dwave_token, solver,
+            annealing_time_us, chain_strength, num_spin_reversal_transforms,
         )
         all_swaps.extend(window_swaps)
         if end == n:

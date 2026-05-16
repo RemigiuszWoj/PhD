@@ -61,6 +61,27 @@ research/**
 **/results_incremental_*.json
 
 ############################################
+# LaTeX build artifacts (articles/)
+############################################
+articles/**/*.aux
+articles/**/*.log
+articles/**/*.out
+articles/**/*.toc
+articles/**/*.lof
+articles/**/*.lot
+articles/**/*.fls
+articles/**/*.fdb_latexmk
+articles/**/*.synctex.gz
+articles/**/*.bbl
+articles/**/*.blg
+articles/**/*.nav
+articles/**/*.snm
+articles/**/*.vrb
+articles/**/*.bcf
+articles/**/*.run.xml
+articles/**/*.pdf
+
+############################################
 # Local developer documentation (not for repo)
 ############################################
 CODE_WALKTHROUGH.md
@@ -78,3 +99,7 @@ figures/
 paper/
 tables/
 figures/
+.claude/
+CLAUDE.md
+szkola_doktorska_2026/
+*.spl

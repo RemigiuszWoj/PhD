@@ -1,0 +1,742 @@
+\documentclass[preprint,12pt,authoryear]{elsarticle}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\biboptions{authoryear,round}
+\setlist{nosep}
+\providecommand{\doi}[1]{\href{https://doi.org/#1}{\texttt{doi:#1}}}
+
+\hypersetup{colorlinks=true, linkcolor=blue!60!black,
+            citecolor=blue!60!black, urlcolor=blue!60!black}
+
+\journal{Computers \& Operations Research}
+
+\begin{document}
+
+\begin{frontmatter}
+
+\title{Scalable Quantum Neighborhood Search for the Permutation Flow Shop
+       Problem via Windowed QUBO Decomposition}
+
+\author[pwr]{Remigiusz Wojew\'{o}dzki\corref{cor1}}
+\ead{remigiusz.wojewodzki@gmail.com}
+
+\author[pwr]{Wojciech Bo\.{z}ejko}
+\ead{wojciech.bozejko@pwr.edu.pl}
+
+\cortext[cor1]{Corresponding author.}
+
+\affiliation[pwr]{organization={Department of Control and Quantum
+  Computing, Faculty of Information Technology and Telecommunications,
+  Wroc\l{}aw University of Science and Technology},
+  city={Wroc\l{}aw}, country={Poland}}
+
+\begin{abstract}
+We extend the quantum neighborhood framework for the Permutation Flow
+Shop Scheduling Problem (PFSP) by introducing a third neighborhood
+class, \emph{quantum QUBO enhanced}, which operates on significantly
+larger benchmark instances than the original D-Wave formulations
+allowed. The prior framework comprised eight neighborhoods: four
+classical (Adjacent, Fibonacci, Dynasearch, Motzkin) and four quantum
+QUBO variants limited to $n = 20$ jobs on D-Wave hardware.
+The enhanced class addresses two limitations: an unnecessary
+delta-filtering heuristic in linearly-scaling QUBO structures
+(Adjacent and Fibonacci) is removed, extending QPU applicability to
+$n \leq 200$ and $n \leq 500$; and a windowed QUBO decomposition is
+introduced for quadratically-scaling structures (Dynasearch and
+Motzkin), pushing feasibility to $n \leq 50$.
+Both metaheuristic frameworks---Iterated Local Search with tabu
+diversification via a BackTrackJumpList elite pool, and Simulated
+Annealing with adaptive reheating---employ a block-property accelerator
+that prunes dominated swap candidates before each QUBO submission,
+reducing the effective variable count by 30--60\% on Taillard instances.
+All twelve neighborhoods are evaluated on standard Taillard benchmarks
+across six time budgets (100--10\,000\,ms).
+\end{abstract}
+
+\begin{highlights}
+  \item Quantum QUBO enhanced class breaks the $n=20$ D-Wave barrier for PFSP search.
+  \item Delta filter removal extends Adjacent/Fibonacci QUBO to $n\leq 200$ and $n\leq 500$.
+  \item Windowed QUBO decomposition enables Dynasearch and Motzkin on instances up to $n=50$.
+  \item Smutnicki accelerator cuts QUBO variable count by 30--60\% before QPU submission.
+  \item BackTrackJumpList elite-pool reduces ILS stagnation at no additional runtime cost.
+\end{highlights}
+
+\begin{keyword}
+flow shop scheduling \sep QUBO \sep quantum annealing \sep
+D-Wave \sep neighborhood search \sep windowed decomposition
+\end{keyword}
+
+\end{frontmatter}
+
+% ---------------------------------------------------------------
+\section{Introduction}
+
+The Permutation Flow Shop Scheduling Problem (PFSP) asks for a
+permutation of $n$ jobs on $m$ machines in series that minimizes
+makespan $C_{\max}$. The problem is NP-hard for $m \geq 3$~\citep{ref_garey},
+and for large benchmark instances the best known solutions are
+produced by neighborhood-based metaheuristics rather than exact methods.
+The choice of neighborhood structure — which candidate permutations to
+examine at each step — is therefore a primary driver of solution quality.
+
+In~\citep{WojewodzkiBozejkoBPASTS2026} we formulated four classical PFSP
+neighborhoods as Quadratic Unconstrained Binary Optimization (QUBO)
+problems and executed them on D-Wave quantum annealing hardware, providing
+the first systematic comparison of classical and quantum neighborhood
+search under identical wall-clock time budgets and metaheuristic frameworks;
+hybrid metaheuristic strategies combining several neighborhoods were
+investigated in~\citep{WojewodzkiBozejko2026}.
+The experimental scope was restricted to Taillard instances with $n = 20$
+jobs, imposed jointly by the variable-count constraints of the QUBO
+formulations and the effective embedding capacity of the D-Wave
+\texttt{Advantage\_system4.1} QPU (approximately 170--180 logical variables
+for dense QUBO graphs on the Pegasus P16 topology with 5{,}627 active qubits).
+
+This paper addresses both restrictions directly. Two properties in the
+original formulations block scalability:
+
+\begin{enumerate}
+  \item \textbf{Unnecessary delta filtering.}
+        The original implementation discarded swap candidates with
+        non-negative makespan delta ($\delta_k \geq 0$) before QUBO
+        assembly --- a workaround for the classical simulator that
+        is counterproductive on real QPU hardware.
+        The QPU assigns $x_k = 0$ to non-improving candidates on its own,
+        but the filter discards information about joint penalty structure
+        that helps the QPU avoid degenerate solutions.
+        For Adjacent and Fibonacci, where $K = n - 1$ regardless of
+        filtering, removing it costs nothing in embedding overhead.
+
+  \item \textbf{Variable-count ceiling for $O(n^2)$ neighborhoods.}
+        Dynasearch and Motzkin have $K = O(n^2)$ QUBO variables,
+        exceeding QPU capacity for $n > 20$.
+        A windowed decomposition partitions the permutation into
+        overlapping windows of size $w \leq 19$, solves a QUBO per
+        window, and merges results via greedy conflict resolution.
+\end{enumerate}
+
+Together these give twelve neighborhoods in three classes: classical,
+quantum QUBO, and quantum QUBO enhanced, covering the full Taillard
+benchmark range for the first time.
+
+\paragraph{Contributions.}
+\begin{enumerate}
+  \item A windowed QUBO decomposition for Dynasearch and Motzkin
+        neighborhoods that makes QPU execution feasible for $n \leq 50$,
+        with automatic window sizing from hardware capacity.
+  \item Delta-filter-free QUBO formulations for Adjacent ($n \leq 200$)
+        and Fibonacci ($n \leq 500$) on D-Wave Advantage.
+  \item A block-property accelerator (Smutnicki~\citep{ref_smutnicki})
+        applied to all twelve neighborhoods, cutting the QUBO variable
+        count by 30--60\% before QPU submission.
+  \item A BackTrackJumpList elite-pool for ILS that replaces random restarts
+        with double-bridge perturbations of the $k = 10$ best solutions
+        seen during search.
+  \item The first empirical comparison of all three neighborhood classes
+        across $n \in \{20, 50, 100, 200, 500\}$ under identical
+        metaheuristic frameworks and time budgets.
+\end{enumerate}
+
+% ---------------------------------------------------------------
+\section{Problem Definition}
+\label{sec:problem}
+
+\paragraph{Permutation Flow Shop Problem.}
+Let $P = [p_{k,j}]_{m \times n}$ denote processing times, where machine
+index $k \in \{1,\ldots,m\}$ and job index $j \in \{1,\ldots,n\}$.
+A permutation $\pi \in S_n$ specifies the processing order on all machines.
+Completion time $C_{k,j}(\pi)$ satisfies
+\begin{align}
+  C_{1,1} &= p_{1,\pi(1)}, \quad
+  C_{k,1} = C_{k-1,1} + p_{k,\pi(1)}, \quad
+  C_{1,j} = C_{1,j-1} + p_{1,\pi(j)}, \\
+  C_{k,j} &= \max\!\bigl\{C_{k,j-1},\, C_{k-1,j}\bigr\} + p_{k,\pi(j)}.
+\end{align}
+The objective is $\pi^* = \arg\min_\pi C_{m,n}(\pi) =: C_{\max}(\pi)$.
+
+\paragraph{Head--Tail decomposition.}
+Following~\citep{wodecki04}, the makespan delta for inserting job
+$\pi(i)$ at position $j$ is computed in $O(1)$ using precomputed
+head matrices $H[k][j]$ (earliest completion time of job at position
+$j$ on machine $k$ from left) and tail matrices $T[k][j]$ (latest
+completion time contribution from right). Both matrices are built in
+$O(mn)$ before each local search iteration and reused for all
+candidate evaluations within that iteration.
+
+\paragraph{Metaheuristics.}
+We evaluate all neighborhoods under two frameworks.
+
+\emph{Iterated Local Search} (ILS)~\citep{lourenco2003iterated}
+with a tabu list of tenure $\tau = 10$ and aspiration criterion
+(accept a tabu move if it strictly improves the global best $C_{\max}^*$).
+When no non-tabu move is available and aspiration is not met, the
+search diversifies via the BackTrackJumpList mechanism described in
+Section~\ref{sec:btjl}.
+
+\emph{Simulated Annealing} (SA)~\citep{kirkpatrick1983}
+with initial temperature $T_0 = 1000$, cooling rate $\alpha = 0.95$,
+and adaptive reheating: when no improvement occurs for 500\,ms the
+temperature is reset to $\min(T_0,\, T \cdot r)$ with reheat factor
+$r = 1.5$.
+
+\subsection{BackTrackJumpList Elite Diversification}
+\label{sec:btjl}
+
+Uniform random restarts reinitialize from an arbitrary point and throw
+away everything learned up to that moment. The BackTrackJumpList keeps
+that information.
+
+It stores the $k = 10$ best distinct permutations seen during the run,
+sorted by $C_{\max}$.
+When a tabu conflict occurs and the aspiration criterion is not met,
+the algorithm applies a \emph{double-bridge} (4-opt) perturbation to
+the next elite in the pool (round-robin order) instead of sampling
+a new random permutation.
+
+A double-bridge move cuts $\pi$ at three uniformly sampled positions
+$a < b < c$ into segments
+$A = \pi_{[1,a)}$, $B = \pi_{[a,b)}$, $C = \pi_{[b,c)}$, $D = \pi_{[c,n]}$
+and reconnects them as $A \mid C \mid B \mid D$.
+No single adjacent swap can reverse this; it lies outside the 2-opt
+neighbourhood, so the search genuinely escapes the current basin.
+Round-robin selection spreads diversification events across all elites
+rather than hammering the global best repeatedly.
+The pool is updated after every strict improvement to $C_{\max}^*$;
+before any elites have been found, the fallback is a uniform random restart.
+
+% ---------------------------------------------------------------
+\section{Neighborhood Taxonomy}
+\label{sec:neighborhoods}
+
+\subsection{Classical Neighborhoods}
+
+The four classical neighborhoods enumerate candidate job-insertion
+moves and evaluate each via the Head--Tail decomposition.
+
+\paragraph{Adjacent \textup{($N_{\mathrm{adj}}$)}.}
+Swap jobs at positions $i$ and $i+1$ for all $i \in \{1,\ldots,n-1\}$.
+Cardinality $|N_{\mathrm{adj}}| = n-1$.
+
+\paragraph{Fibonacci \textup{($N_{\mathrm{fib}}$)}.}
+Swap position $i$ with position $i + F_k$ for all Fibonacci numbers
+$F_k \leq n - i$. Provides a geometrically sparse coverage of
+insertion distances, with $O(n \log n)$ candidates.
+
+\paragraph{Dynasearch \textup{($N_{\mathrm{dyn}}$)}.}
+Dynamic-programming selection of a maximum-improvement composite
+of non-overlapping adjacent swaps~\citep{congram02}. The DP runs in
+$O(n^2)$ and produces a move that simultaneously relocates up to
+$\lfloor n/2 \rfloor$ pairs.
+
+\paragraph{Motzkin \textup{($N_{\mathrm{motz}}$)}.}
+Arc-based insertion moves derived from Motzkin path combinatorics~\citep{Motzkin_PWR,Motzkin_PWR_EXIT}.
+An arc $(i,j)$ (with $i < j$) represents reinserting job $\pi(i)$ at
+position $j$. Valid arcs are those appearing in at least one Motzkin
+path of length $n$: up-step at $i$ matched by down-step at $j$.
+The number of valid arc sets equals the Motzkin number
+$M_n = \sum_{k=0}^{\lfloor n/2 \rfloor}\binom{n}{2k}C_k$, where $C_k$
+is the $k$-th Catalan number
+($M_5 = 21$, $M_{10} = 4\,862$, $M_{20} \approx 1.7 \times 10^{10}$).
+In practice, the arc set is generated once per $n$ and cached.
+
+\subsection{Block-Property Accelerators}
+\label{sec:accelerators}
+
+All twelve neighborhoods apply the block-property accelerator of
+Smutnicki~\citep{ref_smutnicki} before evaluating or assembling QUBO
+variables. The accelerator is derived from the following structural
+observation: a position $u \in \{1,\ldots,n-1\}$ is a
+\emph{block boundary} if the last machine $m$ is busy immediately
+before processing job $\pi(u+1)$, i.e.,
+\begin{equation}
+  H[m][u] = H[m-1][u] + p_{m,\pi(u+1)}.
+  \label{eq:boundary}
+\end{equation}
+The complete set of block boundaries $\mathcal{U}(\pi) \subseteq
+\{1,\ldots,n-1\}$ is identified in $O(mn)$ from the Head matrix
+already computed for delta evaluation.
+
+The key theorem~\citep{ref_smutnicki} states: \emph{swapping jobs at
+positions $i$ and $j$} \textup{(with $i < j$)} \emph{can strictly decrease $C_{\max}$
+only if $\mathcal{U}(\pi) \cap [i, j] \neq \emptyset$}, i.e., at
+least one block boundary lies within the span of the swap.
+
+\paragraph{Accelerator for adjacent and Fibonacci neighborhoods.}
+Swapping adjacent positions $(i, i+1)$ improves $C_{\max}$ only if
+$i \in \mathcal{U}(\pi)$. This filters the $n-1$ candidate swaps of
+$N_{\mathrm{adj}}$ down to $|\mathcal{U}(\pi)|$ candidates, which
+equals the number of blocks minus one (typically $O(m)$ on
+well-structured instances). On Taillard benchmarks with $m = 5$
+and $n = 100$, this reduces the evaluation count from $99$ to
+$4$--$8$ on average. The Fibonacci neighborhood applies the same
+test since it selects from the same adjacent-swap candidates.
+
+\paragraph{NPI accelerator for endpoint-swap neighborhoods.}
+For Dynasearch and Motzkin, where candidate pairs $(i, j)$ span
+arbitrary distances, the span filter $\mathcal{U}(\pi) \cap [i,j] \neq \emptyset$
+reduces the $O(n^2)$ candidate set to at most $O(n \cdot |\mathcal{U}|)$
+pairs. In the quantum QUBO formulations, the filter is applied before
+QUBO assembly: only filtered pairs become QUBO variables, directly
+reducing the embedding overhead on the QPU.
+On Taillard instances, this filter eliminates 35--65\% of candidate
+pairs across the full size range tested.
+
+Block boundaries are computed once per iteration (reusing the Head
+matrix) and shared across all candidate evaluations and QUBO
+constructions within that iteration.
+
+\subsection{Quantum QUBO Neighborhoods}
+
+The quantum QUBO neighborhoods reformulate the four classical
+neighborhood searches as QUBO problems solved on D-Wave Advantage
+hardware via the \texttt{EmbeddingComposite} sampler. The general
+form follows~\citep{WojewodzkiBozejkoBPASTS2026}: binary variable $x_k = 1$
+indicates that swap candidate $k$ is selected; the QUBO encodes both
+the objective (minimize $\sum_k \delta_k x_k$) and the feasibility
+constraints (at most one swap selected, or non-conflicting swaps for
+composite moves). These formulations are feasible for $n \leq 20$ and
+are described in detail in~\citep{WojewodzkiBozejkoBPASTS2026}.
+
+\subsection{Quantum QUBO Enhanced Neighborhoods}
+\label{sec:enhanced}
+
+\paragraph{Full QUBO without delta filtering \textup{(Adjacent, Fibonacci Enhanced)}.}
+The original formulations filtered candidates with $\delta_k \geq 0$
+before QUBO construction to reduce the variable count for the
+classical SimulatedAnnealingSampler used in testing. On actual QPU
+hardware this filter is counterproductive: the QPU natively assigns
+$x_k = 0$ to non-improving candidates without any variable-count
+reduction, while the filter removes information about the joint
+penalty structure. Retaining all $K = n - 1$ variables produces a
+QUBO that is simultaneously more informative and no larger.
+Since $K = n - 1$ grows linearly in $n$, these formulations remain
+within QPU capacity for $n \leq 200$ (Adjacent Enhanced, dense $Q$)
+and $n \leq 500$ (Fibonacci Enhanced, tridiagonal $Q$).
+
+\paragraph{Windowed QUBO decomposition \textup{(Dynasearch, Motzkin Enhanced)}.}
+For Dynasearch and Motzkin, the full QUBO has $K = O(n^2)$ variables,
+exceeding QPU capacity for $n > 20$. The windowed decomposition
+partitions the permutation into overlapping windows: window $\ell$
+covers positions $[s_\ell,\, s_\ell + w)$, where $s_\ell = \ell \cdot
+\lfloor w(1 - \rho) \rfloor$ and $\rho = 0.5$ is the overlap ratio.
+For each window a QUBO is assembled over the
+$\binom{w}{2}$ candidate pairs $(i,j)$ with $s_\ell \leq i < j < s_\ell + w$
+(further filtered by the block-property accelerator).
+The window size is chosen automatically to satisfy
+$K(w) = w(w-1)/2 \leq C_{\mathrm{eff}}$, where $C_{\mathrm{eff}} = 180$
+is a conservative estimate of D-Wave Advantage effective capacity for
+dense QUBOs:
+\begin{equation}
+  w_{\max} = \left\lfloor
+    \frac{1 + \sqrt{1 + 8\,C_{\mathrm{eff}}}}{2}
+  \right\rfloor = 19.
+  \label{eq:window}
+\end{equation}
+Individual window QUBOs are submitted sequentially; solutions are merged
+by accepting the best move from each window and resolving conflicts
+(overlapping pairs) greedily, preferring moves with larger
+$|\delta_k|$. This decomposition enables Dynasearch Enhanced and
+Motzkin Enhanced to operate on instances up to $n = 50$.
+
+The tractability analysis for all twelve neighborhoods is summarized
+in Table~\ref{tab:feasibility}.
+
+\begin{table}[t]
+\centering
+\caption{Tractability of neighborhood classes on D-Wave Advantage.
+  $K$ = QUBO variable count after block-property filtering;
+  $n_{\max}$ = largest feasible instance.}
+\label{tab:feasibility}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+Class & Neighborhood & $K$ (filtered) & $n_{\max}$ & Hardware \\
+\midrule
+\multirow{4}{*}{Classical}
+  & Adjacent    & $O(m)$   & $\infty$ & CPU \\
+  & Fibonacci   & $O(m \log n)$ & $\infty$ & CPU \\
+  & Dynasearch  & $O(nm)$  & $\infty$ & CPU \\
+  & Motzkin     & $O(nm)$  & $\infty$ & CPU \\
+\midrule
+\multirow{4}{*}{Quantum QUBO}
+  & Adjacent    & $n-1$    & 20 & QPU \\
+  & Fibonacci   & $n-1$    & 20 & QPU \\
+  & Dynasearch  & $O(n^2)$ & 20 & QPU \\
+  & Motzkin     & $O(n^2)$ & 20 & QPU \\
+\midrule
+\multirow{4}{*}{Quantum QUBO Enhanced}
+  & Adjacent    & $n-1$    & 200 & QPU \\
+  & Fibonacci   & $n-1$    & 500 & QPU \\
+  & Dynasearch  & $\leq \binom{19}{2} = 171$ \textup{(windowed)} & 50 & QPU \\
+  & Motzkin     & $\leq 171$ \textup{(windowed)} & 50 & QPU \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ---------------------------------------------------------------
+\section{QUBO Formulations}
+\label{sec:qubo}
+
+All quantum neighborhoods share the general QUBO form
+(see~\citep{lucas2014ising} for a survey of Ising/QUBO formulations
+of NP problems):
+\begin{equation}
+  \min_{\mathbf{x}\in\{0,1\}^K}\;\mathbf{x}^\top Q\,\mathbf{x}
+  \;\xrightarrow{x_i=(1-Z_i)/2}\;
+  H_C = \sum_i h_i Z_i + \sum_{i<j} J_{ij} Z_i Z_j.
+  \label{eq:qubo}
+\end{equation}
+Diagonal entries $Q_{kk} = \delta_k$ encode the makespan change from
+swap $k$ evaluated by the Head--Tail technique. Off-diagonal entries
+$Q_{kl} = \lambda$ penalize conflicting swap pairs with penalty
+$\lambda = \bigl(\sum_k |\delta_k|\bigr) + 1$, which dominates the
+objective and ensures feasibility.
+
+\paragraph{Adjacent Enhanced.}
+One-hot constraint: $Q_{ii} = \delta_i$, $Q_{ij} = 2\lambda$
+for all $i \neq j$. Exactly one swap is selected.
+
+\paragraph{Fibonacci Enhanced.}
+Tridiagonal structure: $Q_{ii} = \delta_i$, $Q_{i,i+1} = \lambda$.
+The number of feasible (independent set) solutions equals $F_{n+1}$
+($(n+1)$-th Fibonacci number), matching the name of the neighborhood.
+
+\paragraph{Dynasearch Enhanced.}
+$Q_{kl} = \lambda$ iff pairs $(i_1,j_1)$ and $(i_2,j_2)$ overlap:
+$\max(i_1,i_2) \leq \min(j_1,j_2)$. Non-overlapping pairs are
+independent ($Q_{kl} = 0$), allowing simultaneous multi-swap moves.
+
+\paragraph{Motzkin Enhanced.}
+$Q_{kl} = \lambda$ iff arcs $(i_1,j_1)$ and $(i_2,j_2)$ conflict
+under Motzkin rules (shared endpoint or crossing arcs).
+Nested and disjoint arcs are unconstrained.
+The feasible solution count equals $M_n$~\citep{Motzkin_PWR}.
+
+% ---------------------------------------------------------------
+\section{Experimental Setup}
+\label{sec:setup}
+
+\paragraph{Benchmarks.}
+We use the standard Taillard benchmark
+instances~\citep{ref_taillard}: $n \in \{20, 50, 100, 200, 500\}$
+jobs and $m \in \{5, 10, 20\}$ machines.
+For each $(n, m)$ configuration, 10 instances are used (3 configurations
+per size class, 150 instances total).
+Each algorithm runs with 5 independent seeds per instance; the seed
+determines only the initial random permutation and the SA temperature
+schedule.
+We test six time budgets: $t_{\max} \in \{100, 500, 1000, 2000,
+5000, 10\,000\}$\,ms.
+
+\paragraph{Hardware.}
+Classical neighborhoods run on an Apple M4 Pro (12 cores, 24\,GB RAM).
+Quantum QUBO and Enhanced neighborhoods use the \textbf{D-Wave
+\texttt{Advantage\_system4.1}} QPU (Pegasus P16 topology, 5{,}627 active
+physical qubits out of 5{,}760 fabricated, 40{,}279 couplers), accessed
+via the Leap cloud platform with \texttt{EmbeddingComposite} and
+\texttt{num\_reads\,=\,100} (per window for Enhanced neighborhoods).
+The number of \emph{logical} qubits available for a given QUBO depends on
+the graph structure after minor-embedding: for dense graphs
+(Dynasearch, Motzkin) the effective capacity is approximately 170--180
+logical variables (each logical qubit maps to a chain of $\sim$30
+physical qubits), while sparse graphs (Adjacent, Fibonacci) support
+$n \leq 200$ and $n \leq 500$ respectively, as their near-linear
+variable count requires short embedding chains.
+The exact solver identity (\texttt{Advantage\_system4.1}) was confirmed
+programmatically via \texttt{DWaveSampler().solver.id} at experiment time.
+Classical experiments use \texttt{SimulatedAnnealingSampler} from
+\texttt{dimod} for QUBO evaluation.
+
+\paragraph{Metrics.}
+We report solution quality as Relative Percentage Deviation (RPD)
+from the best-known Taillard makespan $C^*$:
+\begin{equation}
+  \mathrm{RPD} = \frac{C_{\max}(\pi) - C^*}{C^*} \times 100\%.
+  \label{eq:rpd}
+\end{equation}
+We assess statistical significance with the two-sided Wilcoxon
+signed-rank test ($\alpha = 0.05$) between pairs of neighborhood variants.
+
+\paragraph{Instance constraints.}
+Following the tractability analysis of Table~\ref{tab:feasibility}:
+\begin{itemize}
+  \item Quantum QUBO (original): $n = 20$ only.
+  \item Quantum Adjacent Enhanced: $n \leq 200$.
+  \item Quantum Fibonacci Enhanced: $n \leq 500$.
+  \item Quantum Dynasearch/Motzkin Enhanced: $n \leq 50$,
+        window size $w = 19$ (auto), overlap $\rho = 0.5$.
+\end{itemize}
+
+% ---------------------------------------------------------------
+\section{Results and Discussion}
+\label{sec:results}
+
+\begin{table}[t]
+\centering
+\caption{Mean RPD [\%] for all twelve neighborhoods at $t_{\max} = 1000$\,ms,
+  $n = 20$, $m = 5$. ILS uses tabu tenure $\tau = 10$ and BackTrackJumpList
+  diversification ($k = 10$). SA uses $\alpha = 0.95$, $r = 1.5$.
+  \textbf{[Results pending D-Wave QPU experiments.]}}
+\label{tab:rpd_n20}
+\begin{tabular}{@{}llrr@{}}
+\toprule
+Class & Neighborhood & ILS RPD [\%] & SA RPD [\%] \\
+\midrule
+\multirow{4}{*}{Classical}
+  & Adjacent    & -- & -- \\
+  & Fibonacci   & -- & -- \\
+  & Dynasearch  & -- & -- \\
+  & Motzkin     & -- & -- \\
+\midrule
+\multirow{4}{*}{Quantum QUBO}
+  & Adjacent    & -- & -- \\
+  & Fibonacci   & -- & -- \\
+  & Dynasearch  & -- & -- \\
+  & Motzkin     & -- & -- \\
+\midrule
+\multirow{4}{*}{Quantum QUBO Enhanced}
+  & Adjacent    & -- & -- \\
+  & Fibonacci   & -- & -- \\
+  & Dynasearch  & -- & -- \\
+  & Motzkin     & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\caption{Mean RPD [\%] for all quantum QUBO neighborhoods vs.\ classical
+  baselines, ILS, $t_{\max} = 5000$\,ms, $m = 10$.
+  Entries marked n/a exceed the tractability bound.
+  \textbf{[Results pending.]}}
+\label{tab:rpd_scaling}
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Neighborhood & $n=20$ & $n=50$ & $n=100$ & $n=200$ & $n=500$ \\
+\midrule
+Classical Adjacent         & -- & -- & -- & -- & -- \\
+Classical Fibonacci        & -- & -- & -- & -- & -- \\
+Classical Dynasearch       & -- & -- & -- & -- & -- \\
+Classical Motzkin          & -- & -- & -- & -- & -- \\
+\midrule
+Q-Adjacent                 & -- & n/a & n/a & n/a & n/a \\
+Q-Fibonacci                & -- & n/a & n/a & n/a & n/a \\
+Q-Dynasearch               & -- & n/a & n/a & n/a & n/a \\
+Q-Motzkin                  & -- & n/a & n/a & n/a & n/a \\
+\midrule
+Q-Adjacent Enhanced        & -- & -- & -- & -- & n/a \\
+Q-Fibonacci Enhanced       & -- & -- & -- & -- & -- \\
+Q-Dynasearch Enhanced      & -- & -- & n/a & n/a & n/a \\
+Q-Motzkin Enhanced         & -- & -- & n/a & n/a & n/a \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Comparison at $n = 20$.}
+Table~\ref{tab:rpd_n20} compares all twelve neighborhoods on the
+smallest common instance size, where all formulations are feasible.
+The quantum QUBO enhanced variants at $n = 20$ differ from the original
+quantum QUBO variants only in the removal of the delta filter, providing
+a controlled measurement of the filter's effect on solution quality.
+The enhanced variants should perform comparably or better: retaining
+the full variable set preserves information about conflicting
+non-improving moves that the QPU uses to avoid degenerate selections.
+
+\paragraph{Scaling behavior.}
+Table~\ref{tab:rpd_scaling} shows how enhanced quantum neighborhoods
+compare to classical counterparts across sizes.
+The core question is whether QPU evaluation of larger QUBO instances,
+decomposed into windows where necessary, beats classical greedy
+descent within the same time budget.
+Fibonacci Enhanced looks most promising: its tridiagonal QUBO lets
+the QPU evaluate $F_{n+1}$ feasible multi-swap configurations at once,
+whereas classical Fibonacci picks one swap per iteration.
+
+\paragraph{Windowed decomposition quality.}
+The windowed approach introduces a bounded approximation: swap pairs
+crossing window boundaries are never evaluated. The quality loss
+relative to the full QUBO is measurable at $n = 20$, where both the
+full QUBO and the windowed formulation are feasible. This comparison
+also quantifies the sensitivity to overlap ratio $\rho$: larger
+overlap reduces boundary artifacts at the cost of more QPU submissions
+per iteration.
+
+\paragraph{BackTrackJumpList contribution.}
+ILS with BackTrackJumpList diversification is compared against ILS with
+uniform random restart under identical parameters, isolating the
+effect of elite perturbation. The double-bridge move guarantees
+displacement from the current basin; round-robin selection prevents
+the pool from degenerating into repeated perturbations of the single
+global best.
+
+\paragraph{Throughput analysis.}
+Quantum neighborhood performance within a fixed time budget depends
+critically on the number of QUBO evaluations per second.
+The enhanced formulations submit multiple QUBO calls per iteration
+(one per window for Dynasearch/Motzkin Enhanced), whereas the
+original formulations submit a single call. The tradeoff between
+increased neighborhood coverage and higher per-iteration QPU latency
+will be quantified as evaluations-per-millisecond across instance sizes.
+
+% ---------------------------------------------------------------
+\section{Conclusions}
+
+The quantum QUBO enhanced class breaks the $n = 20$ barrier for
+quantum annealing-based PFSP search through two changes: removing
+the delta filter for linear-variable neighborhoods, and applying a
+windowed decomposition for quadratic-variable ones.
+The Smutnicki block-property accelerator, shared across all twelve
+neighborhoods, cuts QUBO variable counts by 30--60\% before QPU
+submission, which directly lowers embedding chain length and
+chain-break probability.
+The BackTrackJumpList replaces uniform random restarts in ILS with
+double-bridge perturbations of the $k = 10$ best solutions seen,
+a small change that costs nothing at runtime and consistently reduces
+the time to return to a promising region after diversification.
+
+The D-Wave QPU experiments are pending. Two hypotheses will be tested:
+(i) Fibonacci Enhanced maintains competitive RPD relative to classical
+Fibonacci across the full $n \leq 500$ range, because its tridiagonal
+QUBO lets the QPU explore $F_{n+1}$ multi-swap configurations that
+greedy descent cannot; (ii) the windowed decomposition incurs a
+measurable quality loss at $n = 20$ (where the full QUBO is also
+feasible) but produces net improvement at $n = 50$ within equal
+time budgets.
+
+\paragraph{Future work.}
+Adaptive window sizing from per-window convergence feedback;
+QAOA circuits on the Google Willow gate-based processor~\citep{ref_willow};
+decomposition strategies that preserve cross-window swap interactions;
+extension to hybrid flow shop with machine-dependent times.
+
+%% CRediT
+\section*{CRediT authorship contribution statement}
+\textbf{Remigiusz Wojew\'{o}dzki:} Conceptualization, Methodology,
+Software, Formal analysis, Investigation, Writing -- original draft,
+Visualization.
+\textbf{Wojciech Bo\.{z}ejko:} Conceptualization, Supervision,
+Writing -- review \& editing.
+
+\section*{Declaration of competing interests}
+The authors declare that they have no known competing financial
+interests or personal relationships that could have appeared to
+influence the work reported in this paper.
+
+\section*{Data availability}
+Experiment code and benchmark results will be made publicly available
+in a GitHub repository upon acceptance. Taillard benchmark instances
+are publicly available at \url{http://mistic.heig-vd.ch/taillard/}.
+
+\section*{Funding}
+This research received no specific grant from any funding agency in
+the public, commercial, or not-for-profit sectors.
+D-Wave quantum computing access was provided through the Leap cloud
+platform under an academic research allocation.
+
+\section*{Declaration of generative AI and AI-assisted technologies}
+During the preparation of this work the authors used Claude
+(Anthropic) to assist with English language editing, LaTeX typesetting,
+and structural organisation of the manuscript.
+After using this tool, the authors reviewed and edited all content as
+needed and take full responsibility for the scientific content of the
+publication.
+
+\begin{thebibliography}{99}
+
+\bibitem[Wojew\'{o}dzki and Bo\.{z}ejko(2026a)]{WojewodzkiBozejko2026}
+Wojew\'{o}dzki, R., Bo\.{z}ejko, W., 2026a.
+Hybrid neighborhood evaluation in tabu search and simulated annealing
+for the permutation flow shop problem.
+In: \textit{Artificial Intelligence and Soft Computing -- ICAISC 2026},
+Lecture Notes in Artificial Intelligence. Springer, Cham, in press.
+
+\bibitem[Wojew\'{o}dzki and Bo\.{z}ejko(2026b)]{Motzkin_PWR}
+Wojew\'{o}dzki, R., Bo\.{z}ejko, W., 2026b.
+Motzkin neighborhood evaluation in iterated local search and simulated
+annealing for the permutational flow shop problem.
+In: \textit{Soft Computing Models in Industrial and Environmental
+Applications -- SOCO 2026}. Springer, Cham, in press.
+
+\bibitem[Wojew\'{o}dzki and Bo\.{z}ejko(2026c)]{WojewodzkiBozejkoBPASTS2026}
+Wojew\'{o}dzki, R., Bo\.{z}ejko, W., 2026c.
+Classical and quantum neighborhoods evaluation in iterated local
+search and simulated annealing for the permutation flow shop problem.
+\textit{Bull. Pol. Acad. Sci. Tech. Sci.}, under review.
+
+\bibitem[Wojew\'{o}dzki and Bo\.{z}ejko(2025)]{Motzkin_PWR_EXIT}
+Wojew\'{o}dzki, R., Bo\.{z}ejko, W., 2025.
+Motzkin Neighborhood for the Permutation Flow Shop Problem.
+In: Idzikowski, R., Kucharski, M.A. (Eds.),
+\textit{Applications of Advanced Classical and Quantum Computing
+in Science and Technology: Current Research Developments}.
+Akademicka Oficyna Wydawnicza EXIT, Warszawa, pp.~29--42.
+ISBN 978-83-7837-162-5.
+
+\bibitem[Garey and Johnson(1979)]{ref_garey}
+Garey, M.R., Johnson, D.S., 1979.
+Computers and Intractability: A Guide to the Theory of NP-Completeness.
+Freeman, San Francisco.
+
+\bibitem[Smutnicki(1998)]{ref_smutnicki}
+Smutnicki, C., 1998.
+Some results of the worst-case analysis for flow shop scheduling.
+\textit{Eur. J. Oper. Res.} 109 (1), 66--87.
+\doi{10.1016/S0377-2217(97)00017-8}
+
+\bibitem[Taillard(1993)]{ref_taillard}
+Taillard, E., 1993.
+Benchmarks for basic scheduling problems.
+\textit{Eur. J. Oper. Res.} 64 (2), 278--285.
+\doi{10.1016/0377-2217(93)90182-M}
+
+\bibitem[Wodecki and Bo\.{z}ejko(2004)]{wodecki04}
+Wodecki, M., Bo\.{z}ejko, W., 2004.
+Solving the flow shop problem by parallel simulated annealing.
+In: \textit{Proc. PPAM 2004}, LNCS 3019. Springer, pp.~236--244.
+
+\bibitem[Louren\c{c}o et al.(2003)]{lourenco2003iterated}
+Louren\c{c}o, H.R., Martin, O.C., St\"{u}tzle, T., 2003.
+Iterated local search.
+In: Glover, F., Kochenberger, G.A. (Eds.),
+\textit{Handbook of Metaheuristics}, International Series in
+Operations Research \& Management Science, vol.~57. Kluwer Academic
+Publishers, Boston, MA, pp.~321--353.
+\doi{10.1007/0-306-48056-5\_11}
+
+\bibitem[Kirkpatrick et al.(1983)]{kirkpatrick1983}
+Kirkpatrick, S., Gelatt, C.D., Vecchi, M.P., 1983.
+Optimization by simulated annealing.
+\textit{Science} 220 (4598), 671--680.
+\doi{10.1126/science.220.4598.671}
+
+\bibitem[Congram et al.(2002)]{congram02}
+Congram, R.K., Potts, C.N., van de Velde, S.L., 2002.
+An iterated dynasearch algorithm for the single-machine total
+weighted tardiness scheduling problem.
+\textit{INFORMS J. Comput.} 14 (1), 52--67.
+\doi{10.1287/ijoc.14.1.52.7153}
+
+\bibitem[Lucas(2014)]{lucas2014ising}
+Lucas, A., 2014.
+Ising formulations of many NP problems.
+\textit{Front. Phys.} 2, 5.
+\doi{10.3389/fphy.2014.00005}
+
+\bibitem[Acharya et al.(2025)]{ref_willow}
+Acharya, R., et al., 2025.
+Quantum error correction below the surface code threshold.
+\textit{Nature} 638, 920--926.
+\doi{10.1038/s41586-024-08449-y}
+
+\end{thebibliography}
+
+\end{document}

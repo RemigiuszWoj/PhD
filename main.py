@@ -200,7 +200,8 @@ def main() -> None:
             neighborhoods=exp_cfg.get("neighborhoods"),
         )
         # We no longer delete historical results – each run gets its own timestamped directory
-        runner = ExperimentRunner()
+        resume_dir = exp_cfg.get("resume_dir") or None
+        runner = ExperimentRunner(resume_dir=resume_dir)
         runner.run(plan)
         try:
             summary_path = write_summary_csv(runner.timestamp_dir)

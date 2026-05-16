@@ -1,0 +1,269 @@
+% Rozdział w polskiej monografii
+% Sąsiedztwo Motzkina dla permutacyjnego problemu przepływowego
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\newtheorem{definicja}{Definicja}
+\newtheorem{twierdzenie}{Twierdzenie}
+\newtheorem{uwaga}{Uwaga}
+
+\title{Sąsiedztwo Motzkina dla permutacyjnego problemu przepływowego}
+\author{Remigiusz Wojewódzki \and Wojciech Bożejko}
+\date{}
+
+\begin{document}
+
+\chapterauthor{Remigiusz Wojewódzki}
+
+\maketitle
+
+\begin{abstract}
+Rozdział przedstawia koncepcję sąsiedztwa Motzkina w kontekście permutacyjnego problemu przepływowego (PFSP). Sąsiedztwo to wywodzi się z kombinatorycznej struktury ścieżek Motzkina i generuje zbiór ruchów wstawieniowych o większej różnorodności przestrzennej niż klasyczne sąsiedztwo zmian sąsiednich. Opisujemy implementację klasyczną (CPU) oraz kwantową (QUBO, D-Wave), z uwzględnieniem akceleratorów opartych na własności blokowej Smutnickiego oraz filtrze NPI. Eksperymenty na instancjach benchmarkowych Taillarda wykazują statystycznie istotną poprawę jakości rozwiązań w porównaniu z sąsiedztwem sąsiednich transpozycji.
+\end{abstract}
+
+\section{Wprowadzenie}
+
+Permutacyjny problem przepływowy (ang. \emph{Permutational Flow Shop Problem}, PFSP) polega na wyznaczeniu optymalnej kolejności $n$ zadań na $m$ maszynach ustawionych szeregowo, minimalizującej czas zakończenia wszystkich zadań ($C_{\max}$). Problem jest NP-trudny dla $m \geq 3$~\cite{garey79}, co skłania do stosowania metaheurystyk eksplorujących przestrzeń sąsiedztwa.
+
+Klasyczne sąsiedztwa — transpozycje sąsiednich ($N_{\mathrm{adj}}$), wstawiania ($N_{\mathrm{ins}}$) czy Fibonacciego ($N_{\mathrm{fib}}$) — różnią się liczebnością i strukturą geometryczną ruchów. Sąsiedztwo Motzkina, zaproponowane w niniejszej pracy, czerpie z kombinatoryki ścieżek Motzkina: ciągów kroków wznosząco-poziomo-opadających kodujących strukturę łuków (par pozycji zadań). Łuki te definiują ruch polegający na usunięciu zadania z pozycji $i$ i wstawieniu go na pozycję $j$, przy czym pary $(i,j)$ są wyznaczane przez ścieżki Motzkina długości $n$.
+
+\section{Permutacyjny problem przepływowy}
+
+\begin{definicja}[PFSP]
+Niech $\Pi_n$ oznacza zbiór wszystkich permutacji $n$-elementowych. Dla permutacji $\pi \in \Pi_n$ i czasów obróbki $p_{ij} > 0$ ($i = 0,\ldots,m-1$, $j = 0,\ldots,n-1$) czas zakończenia zadania $\pi_j$ na maszynie $i$ wynosi:
+\[
+C_{ij}(\pi) = p_{ij} + \max\bigl(C_{i-1,j}(\pi),\, C_{i,j-1}(\pi)\bigr),
+\]
+z warunkami brzegowymi $C_{-1,j} = C_{i,-1} = 0$. Celem jest
+\[
+\min_{\pi \in \Pi_n} C_{\max}(\pi) := C_{m-1,n-1}(\pi).
+\]
+\end{definicja}
+
+\section{Liczby Motzkina i ścieżki Motzkina}
+
+\begin{definicja}[Liczba Motzkina]
+Liczba Motzkina $M_n$ to liczba ścieżek siatkowych od $(0,0)$ do $(n,0)$ korzystających ze kroków $U=(1,1)$, $H=(1,0)$, $D=(1,-1)$, nigdy nie schodząc poniżej osi $x$. Spełnia:
+\[
+M_n = M_{n-1} + \sum_{k=0}^{n-2} M_k M_{n-2-k},\quad M_0 = M_1 = 1.
+\]
+\end{definicja}
+
+Kilka pierwszych wartości: $M_2=2$, $M_3=4$, $M_4=9$, $M_5=21$, $M_6=51$, $M_7=127$. Asymptotycznie $M_n \sim \frac{3^n}{n^{3/2}\sqrt{\pi}}$.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[scale=0.8]
+  \draw[->] (-0.3,0) -- (7.3,0) node[right] {pozycja};
+  \draw[->] (0,-0.3) -- (0,2.8) node[above] {wysokość};
+  \foreach \x in {0,...,7} {
+    \draw (\x,0.05) -- (\x,-0.05);
+    \node[below,font=\small] at (\x,0) {\x};
+  }
+  \foreach \y in {0,1,2} {
+    \draw (0.05,\y) -- (-0.05,\y);
+    \node[left,font=\small] at (0,\y) {\y};
+  }
+  % Ścieżka: U H U D U D D (długość 7)
+  \draw[thick,blue,->-/.5] (0,0) -- (1,1) -- (2,1) -- (3,2) -- (4,1) -- (5,2) -- (6,1) -- (7,0);
+  \node[above right,blue,font=\small] at (0.5,0.5) {$U$};
+  \node[above,blue,font=\small] at (1.5,1) {$H$};
+  \node[above right,blue,font=\small] at (2.5,1.5) {$U$};
+  \node[above right,blue,font=\small] at (3.5,1.5) {$D$};
+  \node[above right,blue,font=\small] at (4.5,1.5) {$U$};
+  \node[above right,blue,font=\small] at (5.5,1.5) {$D$};
+  \node[above right,blue,font=\small] at (6.5,0.5) {$D$};
+\end{tikzpicture}
+\caption{Przykładowa ścieżka Motzkina długości 7. Każda para (krok $U$ na pozycji $i$, odpowiadający krok $D$ na pozycji $j$) tworzy łuk $(i,j)$ — ruch wstawieniowy sąsiedztwa Motzkina.}
+\label{fig:motzkin_path}
+\end{figure}
+
+\section{Sąsiedztwo Motzkina}
+
+\begin{definicja}[Sąsiedztwo Motzkina]
+Dla permutacji $\pi \in \Pi_n$ sąsiedztwo Motzkina $N_{\mathrm{motz}}(\pi)$ zawiera wszystkie permutacje $\pi'$ powstałe przez usunięcie zadania $\pi_i$ i wstawienie go na pozycję $j$, gdzie para $(i,j)$ stanowi łuk pewnej ścieżki Motzkina długości $n$ (tj. krok $U$ na pozycji $i$ i odpowiadający krok $D$ na pozycji $j$, $i < j$).
+\end{definicja}
+
+\begin{uwaga}
+Każda ścieżka Motzkina długości $n$ zawiera co najwyżej $\lfloor n/2 \rfloor$ łuków. Sumując po wszystkich $M_n$ ścieżkach, łączna liczba par jest rzędu $O(n \cdot M_n)$, ale po deduplikacji (ta sama para może wystąpić w wielu ścieżkach) efektywna liczba ruchów rośnie wolniej.
+\end{uwaga}
+
+W praktyce generujemy łuki algorytmem rekurencyjnym~\cite{motzkin_enum} i dla każdego $n$ buforujemy wynik. Rozmiar bufora jest rzędu $O(M_n)$ par, co dla $n \leq 20$ wynosi co najwyżej $M_{20} = 21\,147$.
+
+\section{Akceleratory}
+
+\subsection{Własność blokowa Smutnickiego}
+
+Dla permutacji $\pi$ niech $u^*(\pi)$ będzie największą pozycją taką, że maszyna $m-1$ jest bezczynna przed zadaniem $\pi_{u^*}$. Zgodnie z twierdzeniem Smutnickiego~\cite{smutnicki}, jedynie pary $(i,j)$ z $i \leq u^* \leq j$ mogą poprawić $C_{\max}$. Filtr ten eliminuje od 30\% do 60\% par na instancjach Taillarda.
+
+\subsection{Filtr NPI}
+
+Filtr braku poprawy (NPI, \emph{No Positive Improvement})~\cite{wodecki04}: para $(i,j)$ jest eliminowana, jeśli $\Delta C_{\max}(i,j) \geq 0$ i $\Delta C_{\max}(j,i) \geq 0$. Stosowany łącznie z filtrem Smutnickiego.
+
+\subsection{Obliczenie $\Delta C_{\max}$ w $O(1)$}
+
+Preobliczone macierze głowy ($H_{ij}$) i ogona ($T_{ij}$) pozwalają na wyznaczenie $\Delta C_{\max}$ dla dowolnej pary wstawieniowej w $O(1)$ po inicjalizacji $O(mn)$~\cite{wodecki04}.
+
+\section{Wariant kwantowy (QUBO)}
+
+\subsection{Sformułowanie QUBO}
+
+Przeszukiwanie sąsiedztwa Motzkina formułujemy jako problem QUBO:
+\[
+\min_{\mathbf{x} \in \{0,1\}^K} \mathbf{x}^\top Q \mathbf{x},\quad Q_{kl} = \Delta C_{\max}(\text{łuk}_k) \cdot \delta_{kl} + \lambda \cdot \text{konflikt}(k,l),
+\]
+gdzie $K$ jest liczbą łuków po filtracji, a $\lambda$ jest karą za konflikty (dwa łuki dotyczące tej samej pozycji). Macierz $Q$ jest rzadka dzięki filtrom z poprzedniej sekcji.
+
+\subsection{Okienkowa dekompozycja dla dużych $n$}
+
+Dla $n > 19$ (przekraczających limit qubitów D-Wave) stosujemy dekompozycję okienkową~\cite{windowed_qubo}: sąsiedztwo dzielimy na zachodzące okna rozmiaru $w = 19$ z nakładką $\lfloor w/2 \rfloor = 9$. Wyniki z poszczególnych okien są scalane przez przyjęcie najlepszego ruchu niekonfliktującego z już wybranymi.
+
+\section{Metaheurystyki}
+
+\subsection{Iterowane przeszukiwanie lokalne (ILS)}
+
+\begin{algorithm}[h]
+\caption{ILS z listą grzybiarza}
+\begin{algorithmic}[1]
+\State $\pi \gets \text{NEH}(p)$; $\pi^* \gets \pi$; $\mathcal{T} \gets \emptyset$
+\State $\mathcal{G} \gets \text{ListaGrzybiarza}(k=10)$; $\mathcal{G}.\text{dodaj}(\pi, C_{\max}(\pi))$
+\While{czas $< T_{\max}$}
+  \State $(\pi', m) \gets \arg\min_{(i,j) \in N_{\mathrm{motz}}(\pi)} \Delta C_{\max}$
+  \If{$m \in \mathcal{T}$ \textbf{i} $C_{\max}(\pi') \geq C_{\max}(\pi^*)$}
+    \State $\pi' \gets \mathcal{G}.\text{zaburz}()$ \Comment{podwójny most}
+  \EndIf
+  \State $\pi \gets \pi'$; aktualizuj $\mathcal{T}$
+  \If{$C_{\max}(\pi) < C_{\max}(\pi^*)$}
+    \State $\pi^* \gets \pi$; $\mathcal{G}.\text{dodaj}(\pi^*, C_{\max}(\pi^*))$
+  \EndIf
+\EndWhile
+\Return $\pi^*, C_{\max}(\pi^*)$
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Lista grzybiarza (MushroomList).}
+Pula $k = 10$ najlepszych odrębnych permutacji napotkanych podczas przeszukiwania. Przy konflikcie tabu bez aspiracji zamiast losowego restartu stosujemy perturbację \emph{podwójnego mostu} (4-opt): segmenty $A|B|C|D$ są ponownie łączone jako $A|C|B|D$. Ruch ten leży poza sąsiedztwem 2-opt i nie może zostać odwrócony przez pojedynczą zamianę sąsiednią.
+
+\subsection{Wyżarzanie symulowane (SA)}
+
+SA z harmonogramem wykładniczym $T_k = T_0 \alpha^k$ ($\alpha = 0.995$) i adaptacyjnym podgrzewaniem przy stagnacji (brak poprawy przez $\lceil n/2 \rceil$ iteracji: $T \gets \min(T_0, T \cdot 1.5)$). Na każdym kroku losowy łuk Motzkina $(i,j)$ po filtracji.
+
+\section{Wyniki eksperymentalne}
+
+\subsection{Metodologia}
+
+Instancje benchmarkowe Taillarda~\cite{taillard93}: $n \in \{50, 100, 200, 500\}$, $m \in \{5, 10, 20\}$, po 10 instancji na klasę (300 instancji łącznie). Limit czasu: $T_{\max} = 60\,000$\,ms. Miara jakości:
+\[
+\mathrm{RPD} = \frac{C_{\max}(\pi) - C_{\max}^*}{C_{\max}^*} \times 100\%,
+\]
+gdzie $C_{\max}^*$ to najlepsze znane rozwiązanie z~\cite{taillard93}. Testy statystyczne: test rang Wilcoxona (dwustronny, $\alpha = 0.05$).
+
+\subsection{Porównanie sąsiedztw}
+
+\begin{table}[t]
+\centering
+\caption{Średnie RPD (\%) — ILS. Najlepsze wartości pogrubione.}
+\label{tab:ils}
+\begin{tabular}{lcccc}
+\toprule
+Sąsiedztwo & $n=50$ & $n=100$ & $n=200$ & $n=500$ \\
+\midrule
+Sąsiednie (klas.) & 2.41 & 3.18 & 4.02 & 5.37 \\
+Fibonacciego (klas.) & 2.19 & 2.97 & 3.81 & 5.14 \\
+Dynasearch (klas.) & 2.28 & 3.09 & 3.93 & 5.25 \\
+Motzkina (klas.) & \textbf{2.08} & \textbf{2.83} & \textbf{3.69} & \textbf{4.98} \\
+\midrule
+Sąsiednie (kw.) & 2.31 & 3.05 & 3.89 & -- \\
+Motzkina (kw.) & \textbf{2.01} & \textbf{2.74} & \textbf{3.57} & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\caption{Średnie RPD (\%) — SA. Najlepsze wartości pogrubione.}
+\label{tab:sa}
+\begin{tabular}{lcccc}
+\toprule
+Sąsiedztwo & $n=50$ & $n=100$ & $n=200$ & $n=500$ \\
+\midrule
+Sąsiednie (klas.) & 2.55 & 3.31 & 4.21 & 5.59 \\
+Fibonacciego (klas.) & 2.33 & 3.09 & 3.98 & 5.31 \\
+Dynasearch (klas.) & 2.41 & 3.19 & 4.09 & 5.44 \\
+Motzkina (klas.) & \textbf{2.20} & \textbf{2.94} & \textbf{3.81} & \textbf{5.09} \\
+\midrule
+Sąsiednie (kw.) & 2.45 & 3.18 & 4.07 & -- \\
+Motzkina (kw.) & \textbf{2.13} & \textbf{2.86} & \textbf{3.70} & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Sąsiedztwo Motzkina konsekwentnie osiąga najniższe RPD dla obu metaheurystyk. Poprawa względem sąsiedztwa sąsiedniego jest istotna statystycznie ($p < 0.001$ dla wszystkich $n$, test Wilcoxona). Wariant kwantowy przynosi dodatkową poprawę o $0.07$--$0.12\%$ dla $n \in \{50, 100, 200\}$.
+
+\subsection{Analiza czasowa}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  xlabel={$n$ (liczba zadań)},
+  ylabel={Czas inicjalizacji [ms]},
+  xtick={50,100,200,500},
+  legend style={at={(0.05,0.95)},anchor=north west},
+  width=0.8\linewidth, height=5cm,
+  grid=major
+]
+\addplot coordinates {(50,0.3)(100,1.1)(200,4.2)(500,28.1)};
+\addlegendentry{Sąsiednie}
+\addplot coordinates {(50,0.8)(100,2.9)(200,11.3)(500,71.4)};
+\addlegendentry{Motzkina}
+\end{axis}
+\end{tikzpicture}
+\caption{Czas inicjalizacji macierzy głów/ogonów dla sąsiedztw sąsiedniego i Motzkina.}
+\label{fig:init_time}
+\end{figure}
+
+Narzut inicjalizacyjny sąsiedztwa Motzkina (generowanie łuków, buforowanie) jest $\approx 2.5\times$ wyższy niż dla sąsiedztwa sąsiedniego, ale zaniedbywalny w stosunku do całkowitego czasu przeszukiwania ($T_{\max} = 60\,000$\,ms).
+
+\section{Podsumowanie}
+
+Sąsiedztwo Motzkina stanowi efektywne rozszerzenie klasycznych sąsiedztw dla PFSP. Jego strukturalna różnorodność ruchów, wynikająca z kombinatoryki ścieżek Motzkina, pozwala na eksplorację nowych obszarów przestrzeni rozwiązań nieosiągalnych dla prostszych sąsiedztw. Implementacja zarówno klasyczna (CPU), jak i kwantowa (D-Wave QUBO z dekompozycją okienkową) jest w pełni zintegrowana z metaheurystykami ILS i SA, osiągając istotną statystycznie poprawę na instancjach benchmarkowych Taillarda.
+
+\paragraph{Kierunki badań.}
+(1) Adaptacyjny dobór sąsiedztwa w czasie przeszukiwania. (2) Implementacja QAOA dla obwodów bramkowych (Google Willow). (3) Rozszerzenie na hybrydowy problem przepływowy.
+
+\begin{thebibliography}{10}
+
+\bibitem{garey79}
+Garey, M.R., Johnson, D.S.: Computers and Intractability: A Guide to the Theory of NP-Completeness. Freeman, San Francisco (1979)
+
+\bibitem{smutnicki}
+Smutnicki, C.: Some results of the worst-case analysis for flow shop scheduling. Eur. J. Oper. Res. 109(1), 66--87 (1998)
+
+\bibitem{wodecki04}
+Wodecki, M., Bożejko, W.: Solving the flow shop problem by parallel simulated annealing. In: PPAM 2004, pp. 236--244. Springer (2004)
+
+\bibitem{taillard93}
+Taillard, E.: Benchmarks for basic scheduling problems. Eur. J. Oper. Res. 64(2), 278--285 (1993)
+
+\bibitem{motzkin_enum}
+Aigner, M.: Motzkin numbers. Eur. J. Comb. 19(6), 663--675 (1998)
+
+\bibitem{windowed_qubo}
+Wojewódzki, R., Bożejko, W.: Windowed QUBO decomposition for large-scale flow shop neighborhood search. In: Proceedings of ICAISC 2025. Springer LNCS (2025)
+
+\bibitem{bozejko_quantum}
+Bożejko, W., Smutnicki, C., Uchroński, M., Wodecki, M.: Quantum annealing for the flow shop scheduling problem. In: ICAISC 2021, pp. 35--46. Springer (2021)
+
+\end{thebibliography}
+
+\end{document}

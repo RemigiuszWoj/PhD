@@ -10,6 +10,7 @@ from src.algorithms.base import (
     log_iteration,
     open_log_file,
 )
+from src.algorithms.mushroom_list import MushroomList
 from src.permutation_procesing import c_max
 
 
@@ -72,16 +73,15 @@ def handle_tabu_move(
     tabu_list: dict[Any, int],
     n: int,
     top_moves: List[dict] | None = None,
+    mushroom_list: MushroomList | None = None,
 ) -> Tuple[List[int] | None, int | None, Any]:
     """Handle situation when the best move is tabu (without aspiration).
 
     Behavior depends on neighborhood type:
     - adjacent: use top_moves (from get_neighbor), find first non-tabu
     - fibonacci: use top_moves (from get_neighbor), find first non-tabu
-    - dynasearch: random restart (new permutation)
-    - motzkin: random restart (new permutation)
-    - quantum_adjacent: random restart (new permutation)
-    - quantum_fibonacci: random restart (new permutation)
+    - dynasearch/motzkin/quantum*: perturb elite from mushroom_list (double-bridge),
+      fallback to random restart if pool is empty
 
     Parameters:
         neigh_mode: neighborhood type
@@ -90,6 +90,7 @@ def handle_tabu_move(
         tabu_list: dictionary of tabu moves
         n: number of jobs
         top_moves: list of top-k moves from get_neighbor (adjacent/fibonacci)
+        mushroom_list: elite pool for diversification
 
     Returns:
         (new_pi, new_cmax, move_id) or (None, None, None) if iteration should be skipped
@@ -109,8 +110,12 @@ def handle_tabu_move(
         "quantum_dynasearch_enhanced",
         "quantum_motzkin_enhanced",
     ):
-        # Restart: generate completely new random permutation
-        new_pi = generate_random_permutation(n, state.current_pi)
+        # Diversify: perturb elite solution, fallback to random restart
+        new_pi = None
+        if mushroom_list is not None and len(mushroom_list) > 0:
+            new_pi = mushroom_list.perturb()
+        if new_pi is None:
+            new_pi = generate_random_permutation(n, state.current_pi)
         if new_pi is None:
             return None, None, None
         new_cmax = c_max(new_pi, processing_times)
@@ -128,6 +133,7 @@ def iterated_local_search(
     neigh_mode: str = "adjacent",
     iter_log_path: str | None = None,
     quantum_config: dict | None = None,
+    mushroom_k: int = 10,
 ) -> Tuple[List[int], int, List[int], List[int]]:
     """Iterated Local Search for flow shop scheduling problem.
 
@@ -138,6 +144,7 @@ def iterated_local_search(
         neigh_mode: neighborhood type
         iter_log_path: path to CSV log file
         quantum_config: optional dict with quantum params (num_reads, L_max_dynasearch, etc.)
+        mushroom_k: elite pool size for diversification (MushroomList)
 
     Returns:
         (best_pi, best_cmax, iteration_history, cmax_history)
@@ -160,6 +167,8 @@ def iterated_local_search(
     tabu_list: dict[Any, int] = {}
     max_time_seconds = max_time_ms / 1000.0
     tenure = tabu_tenure if tabu_tenure else 10
+    mushroom_list = MushroomList(k=mushroom_k)
+    mushroom_list.offer(initial_pi, initial_cmax)
 
     with open_log_file(iter_log_path, "iterated_local_search") as log_file:
         while time.time() - state.start_time < max_time_seconds:
@@ -172,9 +181,9 @@ def iterated_local_search(
             # Check tabu with aspiration
             tabu_active = move_id in tabu_list and tabu_list[move_id] > state.iteration
             if tabu_active and new_c >= state.best_cmax:
-                # Move is tabu and doesn't meet aspiration - handle based on neighborhood
+                # Move is tabu and doesn't meet aspiration - diversify via mushroom list
                 alt_pi, alt_c, alt_move = handle_tabu_move(
-                    neigh_mode, state, processing_times, tabu_list, n, top_moves
+                    neigh_mode, state, processing_times, tabu_list, n, top_moves, mushroom_list
                 )
                 if alt_pi is None:
                     # No alternative - skip iteration
@@ -188,7 +197,11 @@ def iterated_local_search(
             state.current_cmax = new_c
             tabu_list[move_id] = state.iteration + tenure
 
+            prev_best = state.best_cmax
             state.update_best()
+            if state.best_cmax < prev_best:
+                mushroom_list.offer(state.best_pi, state.best_cmax)
+
             log_iteration(log_file, state)
             state.iteration += 1
 

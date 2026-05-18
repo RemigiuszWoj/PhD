@@ -1,0 +1,31 @@
+# Keep the build context small — results/ alone holds tens of thousands of files.
+.git
+.github
+.venv
+.venv311
+venv
+__pycache__
+**/__pycache__
+*.pyc
+.mypy_cache
+.pytest_cache
+.ruff_cache
+
+# Experiment output and figures — mounted as volumes, never baked in.
+results
+figures
+docs
+
+# Papers and unrelated documents.
+articles
+szkola_doktorska_2026
+*.pdf
+*.log
+
+# Secrets — injected at run time via --env-file, never baked into the image.
+.env
+
+# Tooling / local state.
+.claude
+build
+*.egg-info

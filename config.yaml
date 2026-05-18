@@ -37,8 +37,10 @@ algorithm_common:
 quantum:
   # Backend: "simulator" (dimod SimulatedAnnealingSampler) or "dwave" (real D-Wave QPU via Leap)
   backend: "dwave"
-  # D-Wave API token (required only when backend: "dwave")
-  dwave_token: "fdMX-33e2e246f5df29cf5bff170adcc763d694ae4046"
+  # D-Wave API token (required only when backend: "dwave").
+  # Leave null — the token is read from the DWAVE_API_TOKEN environment
+  # variable, loaded from the gitignored .env file (see .env.example).
+  dwave_token: null
 
   # --- quantum_qubo (oryginalne sąsiedztwa, małe n) ---
   num_reads: 100

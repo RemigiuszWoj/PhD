@@ -253,7 +253,15 @@ def solve_qubo(
 
     # backend == "dwave"
     if not dwave_token:
-        raise ValueError("dwave_token required when backend='dwave'")
+        # Fall back to the DWAVE_API_TOKEN environment variable
+        # (loaded from the gitignored .env file; see .env.example).
+        import os
+        dwave_token = os.environ.get("DWAVE_API_TOKEN")
+    if not dwave_token:
+        raise ValueError(
+            "D-Wave token required for backend='dwave': set it in config.yaml "
+            "or, preferably, in the DWAVE_API_TOKEN environment variable."
+        )
     from dwave.system import DWaveSampler, EmbeddingComposite
     import logging
 

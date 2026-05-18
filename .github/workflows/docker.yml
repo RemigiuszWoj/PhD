@@ -1,0 +1,38 @@
+name: docker
+
+# Build the experiment image on every commit pushed to any branch.
+on:
+  push:
+    branches: ['**']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/remigiuszwoj/phd:latest
+            ghcr.io/remigiuszwoj/phd:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

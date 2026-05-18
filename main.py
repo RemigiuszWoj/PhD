@@ -6,6 +6,15 @@ import sys
 
 import yaml
 
+# Load secrets (e.g. DWAVE_API_TOKEN) from a local .env file if present.
+# .env is gitignored; in Docker the variables are injected via --env-file.
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass
+
 from src.algorithms import iterated_local_search, simulated_annealing
 from src.experiments.aggregate import (
     write_matrix_gap_table,

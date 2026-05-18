@@ -1,0 +1,10 @@
+# Runtime dependencies for the experiment Docker image.
+# Pinned to the versions used during development (.venv311).
+# Sub-dependencies (numpy, dwave-cloud-client, minorminer, networkx, ...)
+# are resolved automatically by pip.
+
+dimod==0.12.21
+dwave-system==1.34.0
+matplotlib==3.10.9
+PyYAML==6.0.3
+python-dotenv==1.2.2

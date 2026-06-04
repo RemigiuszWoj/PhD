@@ -51,6 +51,9 @@ data/
 charts/
 charts_test/
 *.png
+# but keep image assets bundled with presentations and articles
+!presentations/**/*.png
+!articles/**/*.png
 
 ############################################
 # Research benchmark outputs (large / volatile)
@@ -59,6 +62,18 @@ research/
 research/**
 !research/.gitkeep
 **/results_incremental_*.json
+
+############################################
+# Presentations (Beamer) — keep .tex and .pdf, drop build artifacts
+############################################
+presentations/**/*.aux
+presentations/**/*.log
+presentations/**/*.out
+presentations/**/*.toc
+presentations/**/*.nav
+presentations/**/*.snm
+presentations/**/*.vrb
+presentations/**/*.synctex.gz
 
 ############################################
 # Local developer documentation (not for repo)

@@ -1,0 +1,212 @@
+\documentclass[aspectratio=169]{beamer}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{tikz}
+\usepackage{tabularx}
+\usepackage{booktabs}
+
+% --- PWr color scheme (same as CtF template) ---
+\xdefinecolor{pwrone}{rgb}{0.6015625,0.203125,0.17578125}
+\xdefinecolor{pwrtwo}{rgb}{0.94140625,0.81640625,0.6328125}
+\mode<presentation>
+{
+    \usetheme{Warsaw}
+    \setbeamercolor{structure}{fg=pwrone}
+    \setbeamercolor*{palette primary}{use=structure,fg=pwrtwo,bg=pwrone}
+    \setbeamercolor*{palette quaternary}{use=structure,fg=pwrone,bg=pwrtwo}
+}
+\usetheme{Warsaw}
+
+% --- Frame counter in footer ---
+\newcommand*\oldmacro{}
+\let\oldmacro\insertshortauthor
+\renewcommand*\insertshortauthor{%
+    \leftskip=.3cm%
+    \insertframenumber\,/\,\inserttotalframenumber\hfill\oldmacro%
+}
+
+\newcolumntype{C}{>{\centering\arraybackslash}X}
+
+\title[Motzkin Neighborhood for PFSP]
+{Motzkin Neighborhood Evaluation\\
+in Iterated Local Search and Simulated Annealing\\
+for the Permutational Flow Shop Problem}
+\author[R.~Wojew\'odzki, W.~Bo\.zejko]
+{Remigiusz Wojew\'odzki \and Wojciech Bo\.zejko}
+\institute{
+Wroc{\l}aw University of Science and Technology\\
+{\tt remigiusz.wojewodzki@gmail.com} \quad {\tt wojciech.bozejko@pwr.edu.pl}\\[3mm]
+\includegraphics[height=9mm]{logo_PWR.png}
+}
+\date{SOCO 2025}
+
+\begin{document}
+
+% ===== SLIDE 1: TITLE =====
+\frame{\thispagestyle{empty}\titlepage}
+
+% ===== SLIDE 2: OUTLINE =====
+\begin{frame}{Outline}
+    \tableofcontents
+\end{frame}
+
+% ===== SLIDE 3 =====
+\section{Introduction}
+\begin{frame}{Introduction}
+    \begin{itemize}
+        \item \textbf{Permutation Flow Shop Problem (PFSP):} $n$ jobs processed in the same order on $m$ machines; minimize $C_{\max}$.
+        \item NP-hard for $m \geq 3$, motivating the use of metaheuristics.
+        \item Solution quality depends not only on the algorithm, but also on the \textbf{neighborhood structure}.
+        \item Classical neighborhoods (adjacent swap, Fibonacci) explore the search space locally and shallowly.
+        \item \textbf{Composite neighborhoods} perform multiple swaps per iteration --- potentially faster convergence at higher per-iteration cost.
+        \item This work: a Motzkin-based composite neighborhood compared with Adjacent, Fibonacci, and Dynasearch under ILS and SA.
+    \end{itemize}
+\end{frame}
+
+% ===== SLIDE 4 =====
+\section{Motzkin Neighborhood}
+\begin{frame}{Motzkin Numbers and Neighborhood Structure}
+    Motzkin numbers $M_n$ count \emph{non-crossing} arc configurations on $n$ ordered points, allowing isolated points.
+
+    \vspace{0.3cm}
+    Example of an admissible composite move on 7 points --- arcs $(0,4),(2,3),(5,6)$:
+
+    \vspace{0.3cm}
+    \centering
+    \begin{tikzpicture}[scale=1.1]
+        \foreach \x in {0,1,2,3,4,5,6}
+            \fill (\x,0) circle (3pt) node[below=4pt] {\x};
+        \draw[thick, pwrone] (0,0) to[bend left=55] (4,0);
+        \draw[thick, pwrone] (2,0) to[bend left=70] (3,0);
+        \draw[thick, pwrone] (5,0) to[bend left=70] (6,0);
+    \end{tikzpicture}
+
+    \vspace{0.3cm}
+    Growth: $M_n \sim c \cdot 3^n / n^{3/2}$ --- exponential, but dynamic programming avoids explicit enumeration.
+\end{frame}
+
+% ===== SLIDE 5 =====
+\begin{frame}{Formal Definition}
+    For permutation $\pi=(\pi_0,\dots,\pi_{n-1})$ and indices $0 \leq i < j < n$, the \textbf{end swap} exchanges $\pi_i \leftrightarrow \pi_j$, leaving intermediate elements unchanged.
+
+    \vspace{0.2cm}
+    A \textbf{composite move} $\mathcal{M} = \{(i_1,j_1),\dots,(i_k,j_k)\}$ is admissible iff:
+    \begin{enumerate}
+        \item \textbf{Index disjointness:} $\{i_a,j_a\}\cap\{i_b,j_b\}=\varnothing$.
+        \item \textbf{No crossings:} $i_a < i_b < j_a < j_b$ is forbidden.
+        \item \textbf{Nesting allowed:} $i_a < i_b < j_b < j_a$ is admissible.
+    \end{enumerate}
+
+    \vspace{0.2cm}
+    \begin{columns}
+        \begin{column}{.55\textwidth}
+            First Motzkin numbers:
+            \begin{center}\small
+            \begin{tabular}{l|ccccccc}
+                $n$   & 2 & 3 & 4 & 5 & 6 & 8 & 10 \\ \hline
+                $M_n$ & 2 & 4 & 9 & 21 & 51 & 323 & 2188 \\
+            \end{tabular}
+            \end{center}
+        \end{column}
+        \begin{column}{.45\textwidth}
+            \small Each Motzkin number gives the size of the neighborhood for a permutation of length $n$.
+        \end{column}
+    \end{columns}
+\end{frame}
+
+% ===== SLIDE 6 =====
+\section{Algorithm}
+\begin{frame}{Constructing the Best Composite Move}
+    Single-iteration optimization via dynamic programming:
+    \begin{enumerate}
+        \item Compute Head and Tail completion-time matrices --- $O(mn)$.
+        \item Evaluate all pairwise end-swap deltas $\Delta_{i,j}$ using Head+Tail --- $O(mn^2)$.
+        \item DP picks the optimal set of non-crossing, non-overlapping pairs minimizing total $\Delta$ --- $O(n^3)$.
+        \item Apply the chosen swaps and recompute $C_{\max}$.
+    \end{enumerate}
+
+    \vspace{0.3cm}
+    \textbf{Trade-off:}
+    \begin{itemize}
+        \item One Motzkin iteration explores up to $M_n$ configurations in $O(n^3)$ time.
+        \item One Adjacent iteration explores $n{-}1$ swaps in $O(mn)$ time.
+        \item Fewer, richer moves \emph{vs.} many, simple moves --- balanced empirically.
+    \end{itemize}
+\end{frame}
+
+% ===== SLIDE 7 =====
+\section{Experiments}
+\begin{frame}{Experimental Setup}
+    \begin{itemize}
+        \item \textbf{Platform:} MacBook Pro M4 Pro, 24~GB RAM, macOS 26.0.1, Python 3.11.
+        \item \textbf{Benchmarks:} Taillard instances with $n \in \{20, 50, 100, 200, 500\}$, $m \in \{5, 10, 20\}$ --- 12 configurations, 10 instances each.
+        \item \textbf{Time limits:} $t_{\max} \in \{100, 500, 1000, 2000, 5000, 10000\}$ ms.
+        \item \textbf{Algorithms:}
+            \begin{itemize}
+                \item \textbf{ILS} with tabu list, $\tau_{\text{tabu}} = 10$.
+                \item \textbf{SA}: $T_0 = 1000$, $T_{\min} = 1$, $\alpha = 0.95$, reheat $r = 1.5$, stagnation 500~ms.
+            \end{itemize}
+        \item \textbf{Compared neighborhoods:} Adjacent, Fibonacci, Dynasearch, Motzkin.
+        \item \textbf{Metric:} mean relative percentage deviation (RPD) to lower bound.
+    \end{itemize}
+\end{frame}
+
+% ===== SLIDE 8 =====
+\begin{frame}{Results --- Gap vs.\ Time Limit}
+    \begin{columns}
+        \begin{column}{.5\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{img/ils_gap.png}
+        \end{column}
+        \begin{column}{.5\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{img/sa_gap.png}
+        \end{column}
+    \end{columns}
+
+    \vspace{0.2cm}
+    \begin{itemize}
+        \item \textbf{Dynasearch} achieves the lowest gap across all budgets.
+        \item \textbf{Motzkin} consistently outperforms Adjacent at larger $t_{\max}$.
+        \item \textbf{Fibonacci} converges fastest but stagnates at the highest gap.
+    \end{itemize}
+\end{frame}
+
+% ===== SLIDE 9 =====
+\begin{frame}{Statistical Analysis}
+    Wilcoxon signed-rank test on mean gaps across 12 instance configurations:
+    \begin{itemize}
+        \item \textbf{Dynasearch} is significantly better than all other neighborhoods ($p < 0.01$, all $t_{\max}$).
+        \item \textbf{Motzkin vs.\ Fibonacci:} significant for $t_{\max} \geq 5000$~ms ($p < 0.05$).
+        \item \textbf{Motzkin vs.\ Adjacent:} not significant --- two competing effects (Motzkin: few rich moves; Adjacent: many simple moves) tend to offset.
+    \end{itemize}
+
+    \vspace{0.3cm}
+    \textbf{Observation:} Fibonacci converges rapidly to a local optimum and then stagnates --- adding an anti-stagnation mechanism is a promising direction.
+\end{frame}
+
+% ===== SLIDE 10 =====
+\section{Conclusion}
+\begin{frame}{Conclusion and Future Work}
+    \textbf{Summary:}
+    \begin{itemize}
+        \item Motzkin gives a structured multi-swap neighborhood based on non-crossing arcs.
+        \item DP enables $O(n^3)$ exploration of an exponentially large move set.
+        \item Outperforms Adjacent at larger time budgets in both ILS and SA.
+        \item Falls behind Dynasearch, which has a richer candidate set at lower cost.
+    \end{itemize}
+
+    \vspace{0.2cm}
+    \textbf{Future work:}
+    \begin{itemize}
+        \item Improve the computational efficiency of Motzkin and Fibonacci implementations to allow more iterations per budget.
+        \item Quantum-assisted Motzkin evaluation (D-Wave QUBO, QAOA).
+        \item Hybrid neighborhood strategies --- cyclic / adaptive selection.
+    \end{itemize}
+\end{frame}
+
+\end{document}

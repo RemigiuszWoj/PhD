@@ -8,7 +8,6 @@
 \usepackage{tikz}
 \usepackage{tabularx}
 \usepackage{booktabs}
-\usepackage[ruled,vlined,noend]{algorithm2e}
 
 % --- PWr color scheme (same as CtF/SOCO templates) ---
 \xdefinecolor{pwrone}{rgb}{0.6015625,0.203125,0.17578125}
@@ -32,9 +31,9 @@
 
 \newcolumntype{C}{>{\centering\arraybackslash}X}
 
-\title[Hybrid Neighborhoods for PFSP]
+\title[Fibonacci Neighborhood for PFSP]
 {Hybrid Neighborhood Evaluation\\
-in Tabu Search and Simulated Annealing\\
+with focus on the Fibonacci-distance Neighborhood\\
 for the Permutation Flow Shop Problem}
 \author[R.~Wojew\'odzki, W.~Bo\.zejko]
 {Remigiusz Wojew\'odzki \and Wojciech Bo\.zejko}
@@ -58,154 +57,114 @@ for the Permutation Flow Shop Problem}
 \section{Introduction}
 \begin{frame}{Introduction}
     \begin{itemize}
-        \item \textbf{Permutation Flow Shop Problem (PFSP):} NP-hard for $m \geq 3$. Metaheuristics rely on a chosen \emph{neighborhood} to explore the solution space.
-        \item Single-neighborhood local search has systematic blind spots:
+        \item \textbf{Permutation Flow Shop Problem (PFSP):} NP-hard for $m \geq 3$. Neighborhood choice drives metaheuristic quality.
+        \item Classical neighborhoods trade off coverage and cost:
             \begin{itemize}
-                \item \textbf{Adjacent swap:} cheap, but only short-range moves.
-                \item \textbf{Dynasearch:} expensive per iteration.
-                \item \textbf{Motzkin arcs:} cover specific structural patterns only.
+                \item \textbf{Adjacent swap:} $n{-}1$ moves, only short-range.
+                \item \textbf{Dynasearch:} $O(n^2)$ candidates, expensive per call.
+                \item \textbf{Motzkin arcs:} structured but $O(n^3)$ DP --- breaks beyond $n \sim 100$.
             \end{itemize}
-        \item \textbf{Idea:} combine multiple elementary neighborhoods into a hybrid scheme that adapts to the current state of the search.
-        \item This work: five hybridization strategies, two metaheuristic frameworks (TS, SA), four elementary neighborhoods --- on Taillard benchmarks.
+        \item \textbf{Fibonacci-distance insertion:} $O(n \log n)$ moves spanning short \emph{and} long range. Stays tractable up to $n = 500$ and beyond.
+        \item This talk: define the Fibonacci neighborhood, position it among the other elementary moves, and show its role within hybrid local search (TS, SA).
     \end{itemize}
 \end{frame}
 
 % ===== SLIDE 4 =====
-\section{Elementary Neighborhoods}
-\begin{frame}{Problem and Elementary Neighborhoods}
-    \textbf{PFSP makespan:} minimize $C_{\max}(\pi) = C_{m{-}1,n{-}1}(\pi)$ over $\pi \in S_n$.
+\section{Fibonacci Neighborhood}
+\begin{frame}{The Fibonacci-distance Neighborhood}
+    \textbf{Definition.} Given $\pi = (\pi_0, \dots, \pi_{n-1})$, define moves
+    \[
+        N_{\mathrm{fib}}(\pi) \;=\; \bigl\{\, \mathrm{insert}(\pi_i \to i + F_k) \;:\; 0 \leq i < n,\ F_k \leq n - i \,\bigr\},
+    \]
+    where $F_k = 1, 2, 3, 5, 8, 13, 21, \dots$ are Fibonacci numbers.
 
-    \vspace{0.3cm}
-    Four elementary neighborhoods:
-    \begin{center}\small
-    \begin{tabular}{lll}
-        \toprule
-        Symbol & Move & Size / cost \\
-        \midrule
-        $N_{\mathrm{adj}}$  & swap $\pi_i \leftrightarrow \pi_{i+1}$               & $n{-}1$,\quad $O(1)$ per $\Delta$ \\
-        $N_{\mathrm{fib}}$  & reinsert at $i + F_k$ (Fibonacci jumps)              & $O(n\log n)$, selective long-range \\
-        $N_{\mathrm{dyn}}$  & DP-optimal composite swap                            & $O(n^2)$ per application \\
-        $N_{\mathrm{motz}}$ & non-crossing arc moves                               & $M_n \sim 3^n/n^{3/2}$, filtered \\
-        \bottomrule
-    \end{tabular}
+    \textbf{Size:} $|N_{\mathrm{fib}}(\pi)| = O(n \log n)$. Local + long-range coverage from a single rule.
+
+    \vspace{0.2cm}
+    \textbf{Idea.} A geometric, golden-ratio-scaled set of move distances from position $i$:
+    \begin{center}
+    \begin{tikzpicture}[scale=0.75]
+        \foreach \x in {0,1,2,...,12} \fill (\x,0) circle (2pt);
+        \node[below=2pt] at (0,0) {\small$i$};
+        \draw[thick,pwrone,->] (0,0.1) to[bend left=35] (1,0.1); \node[pwrone] at (0.5,0.45) {\tiny$F_1$};
+        \draw[thick,pwrone,->] (0,0.1) to[bend left=40] (2,0.1); \node[pwrone] at (1.0,0.7) {\tiny$F_2$};
+        \draw[thick,pwrone,->] (0,0.1) to[bend left=45] (3,0.1); \node[pwrone] at (1.5,1.0) {\tiny$F_3$};
+        \draw[thick,pwrone,->] (0,0.1) to[bend left=50] (5,0.1); \node[pwrone] at (2.5,1.4) {\tiny$F_4$};
+        \draw[thick,pwrone,->] (0,0.1) to[bend left=55] (8,0.1); \node[pwrone] at (4.0,1.9) {\tiny$F_5$};
+    \end{tikzpicture}
     \end{center}
-
-    \vspace{0.3cm}
-    All neighborhoods accelerated by the Smutnicki block-property and the NPI filter.
 \end{frame}
 
 % ===== SLIDE 5 =====
-\section{Hybridization Strategies}
-\begin{frame}{Five Hybridization Strategies}
-    Let $\mathcal{N} = \{N_1, \dots, N_K\}$. At iteration $t$ select one $N_{s(t)}$:
-
-    \vspace{0.2cm}
+\begin{frame}{Why Fibonacci? --- Properties}
     \begin{itemize}
-        \item \textbf{FC --- Fixed Cycle:} $s(t) = (t \bmod K) + 1$. Baseline.
-        \item \textbf{PW --- Probability-Weighted:} $s(t) \sim \mathrm{Categorical}(\mathbf{w})$ with tuned weights.
-        \item \textbf{PA --- Performance-Adaptive:} $\varepsilon$-greedy on EMA of past improvements per neighborhood.
-        \item \textbf{BK --- Best-of-$K$:} evaluate all $K$ neighborhoods, take the best move. Best quality, $K\times$ cost.
-        \item \textbf{DP --- Dynamic Programming:} finite-horizon MDP over $(\pi, t)$; backward induction with horizon $H = 5$. Only feasible for $n \leq 50$.
+        \item \textbf{Golden-ratio scaling.} Consecutive jump distances grow by $\varphi \approx 1.618$ --- the densest non-uniform integer sequence avoiding any short cycle.
+        \item \textbf{Logarithmic per-position.} Only $O(\log n)$ jump lengths per starting position; total $O(n \log n)$ moves \emph{vs.} $O(n^2)$ for full insertion or dynasearch.
+        \item \textbf{Tridiagonal QUBO.} The QUBO matrix has bandwidth 2 --- embeds natively on D-Wave with no chain breaks. Scales cleanly to $n = 500$.
+        \item \textbf{Self-similarity.} Fibonacci shifts within a Fibonacci shift form a sub-neighborhood --- the move structure is recursive, well-suited to multi-scale local search.
     \end{itemize}
 \end{frame}
 
 % ===== SLIDE 6 =====
-\begin{frame}{Performance-Adaptive Strategy --- in Detail}
-    EMA of improvement per neighborhood:
-    \[
-        \bar{\delta}_k^{(t+1)} \;=\; \gamma\,\bar{\delta}_k^{(t)} \;+\; (1-\gamma)\,\delta_k^{(t)},\qquad \gamma = 0.9
-    \]
-    where $\delta_k^{(t)}$ is the actual $\Delta C_{\max}$ gained by $N_k$ at step $t$ (0 if not selected).
-
-    \vspace{0.2cm}
-    Selection rule ($\varepsilon$-greedy):
-    \[
-        s(t) \;=\;
-        \begin{cases}
-          \arg\max_k \bar{\delta}_k^{(t)} & \text{with probability } 1-\varepsilon, \\
-          \text{uniform random} \in \mathcal{N} & \text{otherwise}.
-        \end{cases}
-    \]
-
-    \vspace{0.2cm}
-    \textbf{Why it works:} matches \textbf{Best-of-$K$} quality at $1/K$ of the per-iteration cost --- it learns the best neighborhood for the current basin instead of trying all every step.
-\end{frame}
-
-% ===== SLIDE 7 =====
-\section{Algorithm}
-\begin{frame}{Hybrid Tabu Search (HTS)}
-    \begin{algorithm}[H]
-    \SetAlgoLined
-    \SetKwInOut{Input}{input}\SetKwInOut{Output}{output}
-    \Input{initial $\pi_0$, time budget $T_{\max}$}
-    \Output{best permutation $\pi^*$}
-    $\pi \gets \pi_0$;\quad $\pi^* \gets \pi$;\quad $\mathcal{T} \gets \emptyset$;\quad $\mathcal{M} \gets \mathrm{MushroomList}(k{=}10)$\;
-    \While{$\text{time} < T_{\max}$}{
-        select $N_{s(t)}$ by hybridization strategy\;
-        $(\pi', m) \gets$ best non-tabu move in $N_{s(t)}(\pi)$ (or aspiration if it beats $\pi^*$)\;
-        \eIf{$m = \emptyset$}{
-            $\pi \gets \mathcal{M}.\mathrm{perturb}()$ \quad\textit{// double-bridge from elite pool}\;
-        }{
-            $\pi \gets \pi'$;\quad $\mathcal{T} \gets \mathcal{T} \cup \{m\}$\;
-        }
-        update $\pi^*$, $\mathcal{M}$, and EMAs $\bar{\delta}_k$\;
-    }
-    \Return $\pi^*$\;
-    \end{algorithm}
-\end{frame}
-
-% ===== SLIDE 8 =====
-\section{Experiments}
-\begin{frame}{Experimental Setup}
+\section{Fibonacci in Hybrid Local Search}
+\begin{frame}{Role in Hybrid Strategies}
+    Four elementary neighborhoods are combined under five strategies (FC, PW, PA, BK, DP). Fibonacci's job in each:
     \begin{itemize}
-        \item \textbf{Benchmarks:} Taillard instances, $n \in \{20, 50, 100, 200\}$, $m \in \{5, 10, 20\}$, 10 instances per class.
-        \item \textbf{Time budget:} $T_{\max} = 60\,000$~ms.
-        \item \textbf{Metaheuristics:} Tabu Search ($\tau = n/5$, aspiration, MushroomList $k{=}10$) and Simulated Annealing (exp.\ cooling, $\alpha = 0.995$, adaptive reheat).
-        \item \textbf{Quantum variants:} D-Wave Advantage 4.1, $5{,}000$ reads, windowed decomposition for $n > 19$ (window 19, overlap 9).
-        \item \textbf{Metric:} mean relative percentage deviation (RPD) to best-known $C_{\max}^{*}$:
-        \[
-            \mathrm{RPD} \;=\; \frac{C_{\max} - C_{\max}^{*}}{C_{\max}^{*}} \times 100\%.
-        \]
+        \item \textbf{FC --- Fixed Cycle:} Fibonacci breaks adjacent-swap stagnation between two dynasearch passes.
+        \item \textbf{PA --- Performance-Adaptive:} the EMA-driven selector picks Fibonacci most often in mid-search, once adjacent saturates but before dynasearch becomes affordable.
+        \item \textbf{BK --- Best-of-$K$:} Fibonacci is the cheapest non-trivial neighborhood to evaluate, so its candidates effectively come for free in the BK sweep.
+        \item \textbf{Large $n$:} for $n \geq 200$ Fibonacci is the only elementary neighborhood that completes \emph{multiple} iterations within the time budget --- the rest degenerate to a single call.
     \end{itemize}
 \end{frame}
 
-% ===== SLIDE 9 =====
-\begin{frame}{Results --- Mean RPD across Taillard Instances}
+% ===== SLIDE 7 =====
+\section{Experiments}
+\begin{frame}{Experimental Setup}
+    \begin{itemize}
+        \item \textbf{Benchmarks:} Taillard instances, $n \in \{20, 50, 100, 200, 500\}$, $m \in \{5, 10, 20\}$, 10 instances each, 5 seeds.
+        \item \textbf{Time limits:} $t_{\max} \in \{0.1, 0.5, 1, 2, 5, 10\}$~s; metric: mean RPD to lower bound.
+        \item \textbf{Algorithms:} Iterated Local Search (tabu $\tau{=}10$, MushroomList $k{=}10$); Simulated Annealing ($T_0{=}1000$, $\alpha{=}0.99$, reheat-kick on stagnation).
+        \item \textbf{Quantum:} D-Wave Advantage 4.1, $5{,}000$ reads, windowed decomposition for $n > 19$.
+        \item \textbf{Compared neighborhoods:} Adjacent, \textbf{Fibonacci}, Dynasearch, Motzkin.
+    \end{itemize}
+\end{frame}
+
+% ===== SLIDE 8 =====
+\begin{frame}{Scaling Behavior --- RPD vs.\ $n$}
     \begin{columns}
-        \begin{column}{.5\textwidth}\centering\small
-            \textbf{Tabu Search}\\[1mm]
-            \begin{tabular}{lcccc}
-                \toprule
-                Strategy & $n{=}20$ & $50$ & $100$ & $200$ \\
-                \midrule
-                Adjacent (single)  & 1.82 & 2.41 & 3.18 & 4.02 \\
-                Dynasearch (single)& 1.64 & 2.22 & 2.97 & 3.79 \\
-                FC                 & 1.71 & 2.18 & 2.91 & 3.71 \\
-                PW                 & 1.58 & 2.09 & 2.83 & 3.62 \\
-                PA                 & \textbf{1.44} & \textbf{1.97} & \textbf{2.71} & \textbf{3.49} \\
-                BK                 & 1.47 & 2.01 & 2.74 & 3.52 \\
-                \bottomrule
-            \end{tabular}
+        \begin{column}{.55\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{img/fib_scaling.png}
         \end{column}
-        \begin{column}{.5\textwidth}\centering\small
-            \textbf{Simulated Annealing}\\[1mm]
-            \begin{tabular}{lcccc}
-                \toprule
-                Strategy & $n{=}20$ & $50$ & $100$ & $200$ \\
-                \midrule
-                Adjacent (single)  & 1.91 & 2.55 & 3.31 & 4.21 \\
-                Dynasearch (single)& 1.75 & 2.37 & 3.08 & 3.91 \\
-                FC                 & 1.79 & 2.29 & 2.98 & 3.78 \\
-                PW                 & 1.66 & 2.18 & 2.87 & 3.66 \\
-                PA                 & \textbf{1.53} & \textbf{2.04} & \textbf{2.76} & \textbf{3.54} \\
-                BK                 & 1.56 & 2.08 & 2.79 & 3.57 \\
-                \bottomrule
-            \end{tabular}
+        \begin{column}{.45\textwidth}\small
+            \textbf{Observations} (ILS, $t_{\max}=5$\,s, $m{=}10$):
+            \begin{itemize}
+                \item Up to $n \approx 100$: Dynasearch wins, Fibonacci second.
+                \item $n = 200$: Fibonacci \textbf{overtakes} Dynasearch (6.19\,\% vs.\ 11.63\,\%).
+                \item $n = 500$: Dynasearch and Motzkin become intractable; Fibonacci continues at \textbf{11.12\,\%} --- the only classical neighborhood that still scales.
+            \end{itemize}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+% ===== SLIDE 9 =====
+\begin{frame}{Gap vs.\ Time Limit --- Fibonacci within the Hybrid Pool}
+    \begin{columns}
+        \begin{column}{.5\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{img/ils_gap.png}\\\small ILS
+        \end{column}
+        \begin{column}{.5\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{img/sa_gap.png}\\\small SA
         \end{column}
     \end{columns}
 
-    \vspace{0.3cm}
-    \textbf{PA wins in every cell}, matching BK quality at $1/K$ of the cost; quantum-assisted variants gain a further $0.08$--$0.15$\,pp at $n=200$.
+    \vspace{0.2cm}
+    \begin{itemize}
+        \item Fibonacci converges \textbf{fastest} (flat curve from $t_{\max} = 100$~ms onward) but plateaus highest --- ideal as the \emph{warm-up} neighborhood within a hybrid.
+        \item Combined with a slower, deeper neighborhood (Motzkin or Dynasearch), Fibonacci's early-budget gain compounds with the later-budget refinement.
+    \end{itemize}
 \end{frame}
 
 % ===== SLIDE 10 =====
@@ -213,18 +172,18 @@ for the Permutation Flow Shop Problem}
 \begin{frame}{Conclusion and Future Work}
     \textbf{Summary:}
     \begin{itemize}
-        \item Hybrid neighborhoods consistently beat single-neighborhood baselines in both TS and SA.
-        \item \textbf{Performance-Adaptive (PA)} is the sweet spot: best-of-$K$ quality at $1/K$ of the per-iteration cost.
-        \item Combining Motzkin and Fibonacci alongside Adjacent and Dynasearch matters most for large instances ($n = 200$).
-        \item Quantum-assisted neighborhoods give an extra $0.08$--$0.15$\,pp at $n = 200$.
+        \item Fibonacci is the only elementary neighborhood that stays tractable from $n = 20$ to $n = 500$.
+        \item Tridiagonal QUBO structure makes it the natural classical baseline for D-Wave QPU comparison.
+        \item Inside a hybrid strategy (PA, BK), Fibonacci absorbs the early time budget cheaply; heavier neighborhoods then refine.
+        \item Empirically, Fibonacci wins outright above $n = 200$ where its rivals run out of computational budget.
     \end{itemize}
 
     \vspace{0.2cm}
     \textbf{Future work:}
     \begin{itemize}
-        \item Multi-armed bandit formulations for neighborhood selection (UCB, Thompson sampling).
-        \item Quantum-native hybrid strategies exploiting D-Wave's native graph structure.
-        \item Joint hybridization across TS and SA (portfolio approach).
+        \item Quantum-assisted Fibonacci neighborhood (windowed QUBO, $n$ up to $500$).
+        \item Multi-armed bandit selection over neighborhoods with Fibonacci as the low-cost arm.
+        \item Hybrid generalization: Fibonacci-of-Fibonacci composite moves.
     \end{itemize}
 \end{frame}
 

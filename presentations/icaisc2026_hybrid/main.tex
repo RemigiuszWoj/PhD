@@ -59,65 +59,69 @@ for the Permutation Flow Shop Problem}
         \item \textbf{Permutation Flow Shop Problem (PFSP):} NP-hard for $m \geq 3$. Neighborhood choice drives metaheuristic quality.
         \item Classical neighborhoods trade off coverage and cost:
             \begin{itemize}
-                \item \textbf{Adjacent swap:} $n{-}1$ moves, only short-range.
-                \item \textbf{Dynasearch:} $O(n^2)$ candidates, expensive per call --- intractable beyond $n \sim 200$.
+                \item \textbf{Adjacent swap:} $n{-}1$ moves, only one swap per iteration.
+                \item \textbf{Dynasearch:} $O(n^2)$ candidate pairs, expensive --- intractable beyond $n \sim 200$.
             \end{itemize}
-        \item \textbf{Fibonacci-distance insertion:} $O(n \log n)$ moves spanning short \emph{and} long range. Stays tractable up to $n = 500$ and beyond.
+        \item \textbf{Fibonacci neighborhood:} all sets of \emph{non-overlapping adjacent swaps} applied simultaneously --- $F_{n+1}$ valid subsets, but the optimal subset is selected by DP in $O(n)$.
         \item This talk: define the Fibonacci neighborhood, study its scaling behavior on Taillard benchmarks, and discuss its role within local search frameworks (ILS, SA).
     \end{itemize}
 \end{frame}
 
 % ===== SLIDE 4 =====
 \section{Fibonacci Neighborhood}
-\begin{frame}{The Fibonacci-distance Neighborhood}
-    \textbf{Definition.} Given $\pi = (\pi_0, \dots, \pi_{n-1})$, define moves
+\begin{frame}{The Fibonacci Neighborhood --- Definition}
+    \textbf{Definition.} Given $\pi = (\pi_0, \dots, \pi_{n-1})$, a Fibonacci move is a subset $S \subseteq \{1, \dots, n{-}1\}$ of adjacent-swap positions such that
     \[
-        N_{\mathrm{fib}}(\pi) \;=\; \bigl\{\, \mathrm{insert}(\pi_i \to i + F_k) \;:\; 0 \leq i < n,\ F_k \leq n - i \,\bigr\},
+        i \in S \;\Longrightarrow\; i+1 \notin S \qquad \text{(no two consecutive swaps)}.
     \]
-    where $F_k = 1, 2, 3, 5, 8, 13, 21, \dots$ are Fibonacci numbers.
-
-    \textbf{Size:} $|N_{\mathrm{fib}}(\pi)| = O(n \log n)$. Local + long-range coverage from a single rule.
+    All selected swaps $\pi_i \leftrightarrow \pi_{i+1}$ are applied \emph{simultaneously}.
 
     \vspace{0.2cm}
-    \textbf{Idea.} A geometric, golden-ratio-scaled set of move distances from position $i$:
+    \textbf{Example} (admissible: swap at 0, 2, 5; positions 1, 3, 4, 6 idle):
     \begin{center}
-    \begin{tikzpicture}[scale=0.75]
-        \foreach \x in {0,1,2,...,12} \fill (\x,0) circle (2pt);
-        \node[below=2pt] at (0,0) {\small$i$};
-        \draw[thick,pwrone,->] (0,0.1) to[bend left=35] (1,0.1); \node[pwrone] at (0.5,0.45) {\tiny$F_1$};
-        \draw[thick,pwrone,->] (0,0.1) to[bend left=40] (2,0.1); \node[pwrone] at (1.0,0.7) {\tiny$F_2$};
-        \draw[thick,pwrone,->] (0,0.1) to[bend left=45] (3,0.1); \node[pwrone] at (1.5,1.0) {\tiny$F_3$};
-        \draw[thick,pwrone,->] (0,0.1) to[bend left=50] (5,0.1); \node[pwrone] at (2.5,1.4) {\tiny$F_4$};
-        \draw[thick,pwrone,->] (0,0.1) to[bend left=55] (8,0.1); \node[pwrone] at (4.0,1.9) {\tiny$F_5$};
+    \begin{tikzpicture}[scale=0.95]
+        \foreach \x in {0,1,2,3,4,5,6,7} \fill (\x,0) circle (2pt) node[below=4pt] {\small\x};
+        \draw[thick,pwrone] (0,0) to[bend left=80] (1,0);
+        \draw[thick,pwrone] (2,0) to[bend left=80] (3,0);
+        \draw[thick,pwrone] (5,0) to[bend left=80] (6,0);
     \end{tikzpicture}
     \end{center}
+
+    \textbf{Counting.} The number of valid subsets in a permutation of length $n$ equals the Fibonacci number $F_{n+1}$ --- hence the name.
 \end{frame}
 
 % ===== SLIDE 5 =====
-\begin{frame}{Why Fibonacci? --- Properties}
+\begin{frame}{Properties and Computation}
     \begin{itemize}
-        \item \textbf{Golden-ratio scaling.} Consecutive jump distances grow by $\varphi \approx 1.618$ --- the densest non-uniform integer sequence avoiding any short cycle.
-        \item \textbf{Logarithmic per-position.} Only $O(\log n)$ jump lengths per starting position; total $O(n \log n)$ moves \emph{vs.} $O(n^2)$ for full insertion or dynasearch.
-        \item \textbf{Tridiagonal QUBO.} The QUBO matrix has bandwidth 2 --- embeds natively on D-Wave with no chain breaks. Scales cleanly to $n = 500$.
-        \item \textbf{Self-similarity.} Fibonacci shifts within a Fibonacci shift form a sub-neighborhood --- the move structure is recursive, well-suited to multi-scale local search.
+        \item \textbf{Exponential size, linear cost.} $|N_{\mathrm{fib}}(\pi)| = F_{n+1} \sim \varphi^n / \sqrt{5}$, yet the optimal subset is found in $O(n)$.
+        \item \textbf{Algorithm:} compute the $n{-}1$ adjacent-swap deltas using Head+Tail in $O(mn)$, then a one-pass DP over the deltas:
+        \[
+            \mathrm{dp}[i] \;=\; \min\!\bigl(\,\mathrm{dp}[i+1],\ \delta_i + \mathrm{dp}[i+2]\,\bigr)
+        \]
+        decides at each position whether to take the swap or skip it.
+        \item \textbf{Acceleration:} the Smutnicki block-property and the NPI filter prune dominated swaps before the DP --- typical reduction $30$--$60\%$.
+        \item \textbf{Compared with Dynasearch.} Same compound-move idea, but Fibonacci only considers adjacent pairs $(i,i{+}1)$ while Dynasearch considers arbitrary $(i,j)$ --- $n{-}1$ candidates vs.\ $O(n^2)$.
     \end{itemize}
 \end{frame}
 
 % ===== SLIDE 6 =====
 \section{Quantum Formulation}
 \begin{frame}{QUBO Formulation for D-Wave}
-    The Fibonacci neighborhood admits a \textbf{tridiagonal QUBO} of bandwidth 2:
-    \[
-        Q_{\mathrm{fib}}(\mathbf{x}) \;=\; \sum_{i=0}^{n-1} a_i\,x_i \;+\; \sum_{i=0}^{n-2} b_i\, x_i x_{i+1},
-    \]
-    where $x_i \in \{0,1\}$ selects the Fibonacci jump at position $i$ and the $b_i$ couplers encode swap conflicts between consecutive positions.
+    Binary variable $x_i \in \{0,1\}$ for each adjacent-swap position $i \in \{1,\ldots,n{-}1\}$: $x_i = 1$ iff swap $\pi_i \leftrightarrow \pi_{i+1}$ is applied.
 
-    \vspace{0.3cm}
-    \textbf{Why this matters on D-Wave Advantage:}
+    \vspace{0.2cm}
+    \textbf{QUBO form} --- tridiagonal coupling:
+    \[
+        Q_{\mathrm{fib}}(\mathbf{x}) \;=\; \sum_{i=1}^{n-1} \delta_i\, x_i
+        \;+\; P \sum_{i=1}^{n-2} x_i\, x_{i+1},
+    \]
+    where $\delta_i$ is the precomputed adjacent-swap cost and $P \gg \max |\delta_i|$ penalizes overlapping swaps (encoding the non-overlapping constraint).
+
+    \vspace{0.2cm}
+    \textbf{On D-Wave Advantage:}
     \begin{itemize}
-        \item Bandwidth 2 $\Rightarrow$ trivial linear-chain embedding on Pegasus/Zephyr, no chain breaks.
-        \item Number of logical qubits $= n$ (one per position), feasible up to $n \leq 500$.
-        \item Acceleration by the Smutnicki block-property and the NPI (no-positive-improvement) filter further prunes the candidate set before submission.
+        \item Bandwidth 2 $\Rightarrow$ linear-chain embedding on Pegasus/Zephyr, no chain breaks.
+        \item Logical qubits $=n{-}1$; feasible up to $n \leq 500$ on current hardware.
     \end{itemize}
 \end{frame}
 
@@ -175,17 +179,18 @@ for the Permutation Flow Shop Problem}
 \begin{frame}{Conclusion and Future Work}
     \textbf{Summary:}
     \begin{itemize}
-        \item Fibonacci is the only classical elementary neighborhood that stays tractable from $n = 20$ to $n = 500$.
-        \item Tridiagonal QUBO structure embeds cleanly on D-Wave Advantage --- no chain breaks, one qubit per position.
-        \item Empirically beats Dynasearch from $n \geq 200$, where Dynasearch can only complete a single DP call within the time budget.
+        \item Fibonacci selects an optimal set of non-overlapping adjacent swaps applied simultaneously --- a multi-swap move at distance 1.
+        \item Exponential neighborhood size ($F_{n+1}$) explored at linear $O(n)$ cost via dynamic programming.
+        \item Tridiagonal QUBO embeds cleanly on D-Wave Advantage; feasible up to $n = 500$.
+        \item Empirically beats Dynasearch from $n \geq 200$, where Dynasearch's $O(n^2)$ candidate enumeration runs out of budget.
     \end{itemize}
 
     \vspace{0.2cm}
     \textbf{Future work:}
     \begin{itemize}
         \item Full QPU evaluation of the Fibonacci QUBO at $n = 500$ on D-Wave Advantage.
-        \item Theoretical analysis of the golden-ratio jump distribution vs.\ uniform / geometric alternatives.
-        \item Fibonacci-of-Fibonacci composite moves --- recursive self-similar generalization.
+        \item Relaxing the non-overlapping constraint --- e.g.\ minimum-gap variants.
+        \item Combining Fibonacci selection with cyclic / random subset perturbation as a diversification operator.
     \end{itemize}
 \end{frame}
 

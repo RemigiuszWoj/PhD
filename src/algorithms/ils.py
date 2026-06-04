@@ -35,95 +35,40 @@ def generate_random_permutation(
     return None
 
 
-def handle_tabu_move_topk(
-    top_moves: List[dict],
-    tabu_list: dict[Any, int],
-    iteration: int,
-) -> Tuple[List[int] | None, int | None, Any]:
-    """Handle tabu - find first non-tabu move from top_moves.
-
-    Works for both adjacent and fibonacci neighborhoods.
-
-    Parameters:
-        top_moves: list of dicts [{"pi": [...], "cmax": int, "move": ...}, ...] sorted ascending
-        tabu_list: dictionary of tabu moves
-        iteration: current iteration
-
-    Returns:
-        (new_pi, new_cmax, move_id) or (None, None, None)
-    """
-    if not top_moves:
-        return None, None, None
-
-    for entry in top_moves:
-        move = entry["move"]
-        is_tabu = move in tabu_list and tabu_list[move] > iteration
-        if not is_tabu:
-            return entry["pi"], entry["cmax"], move
-
-    # All moves are tabu - take the last one (k-th, guaranteed non-tabu when k = tenure + 1)
-    last = top_moves[-1]
-    return last["pi"], last["cmax"], last["move"]
-
-
 def handle_tabu_move(
-    neigh_mode: str,
     state: SearchState,
     processing_times: List[List[int]],
-    tabu_list: dict[Any, int],
     n: int,
-    top_moves: List[dict] | None = None,
     mushroom_list: MushroomList | None = None,
 ) -> Tuple[List[int] | None, int | None, Any]:
-    """Handle situation when the best move is tabu (without aspiration).
+    """Diversify when the best move is tabu and aspiration is not met.
 
-    Behavior depends on neighborhood type:
-    - adjacent: use top_moves (from get_neighbor), find first non-tabu
-    - fibonacci: use top_moves (from get_neighbor), find first non-tabu
-    - dynasearch/motzkin/quantum*: perturb elite from mushroom_list (double-bridge),
-      fallback to random restart if pool is empty
+    Applied uniformly to every neighborhood: perturb an elite solution
+    from the MushroomList with a double-bridge kick, falling back to a
+    random restart when the elite pool is still empty. This is the
+    "Iterated" part of Iterated Local Search — without it the search
+    cannot escape a local optimum once every productive move is tabu.
 
     Parameters:
-        neigh_mode: neighborhood type
         state: current search state
         processing_times: processing times matrix
-        tabu_list: dictionary of tabu moves
         n: number of jobs
-        top_moves: list of top-k moves from get_neighbor (adjacent/fibonacci)
         mushroom_list: elite pool for diversification
 
     Returns:
-        (new_pi, new_cmax, move_id) or (None, None, None) if iteration should be skipped
+        (new_pi, new_cmax, move_id) or (None, None, None) if no
+        diversified solution could be produced.
     """
-    if neigh_mode in ("adjacent", "fibonacci"):
-        return handle_tabu_move_topk(top_moves, tabu_list, state.iteration)
-
-    elif neigh_mode in (
-        "dynasearch",
-        "motzkin",
-        "quantum_adjacent",
-        "quantum_fibonacci",
-        "quantum_dynasearch",
-        "quantum_motzkin",
-        "quantum_adjacent_enhanced",
-        "quantum_fibonacci_enhanced",
-        "quantum_dynasearch_enhanced",
-        "quantum_motzkin_enhanced",
-    ):
-        # Diversify: perturb elite solution, fallback to random restart
-        new_pi = None
-        if mushroom_list is not None and len(mushroom_list) > 0:
-            new_pi = mushroom_list.perturb()
-        if new_pi is None:
-            new_pi = generate_random_permutation(n, state.current_pi)
-        if new_pi is None:
-            return None, None, None
-        new_cmax = c_max(new_pi, processing_times)
-        move_id = tuple(new_pi)
-        return new_pi, new_cmax, move_id
-
-    else:
+    new_pi = None
+    if mushroom_list is not None and len(mushroom_list) > 0:
+        new_pi = mushroom_list.perturb()
+    if new_pi is None:
+        new_pi = generate_random_permutation(n, state.current_pi)
+    if new_pi is None:
         return None, None, None
+    new_cmax = c_max(new_pi, processing_times)
+    move_id = tuple(new_pi)
+    return new_pi, new_cmax, move_id
 
 
 def iterated_local_search(
@@ -172,18 +117,17 @@ def iterated_local_search(
 
     with open_log_file(iter_log_path, "iterated_local_search") as log_file:
         while time.time() - state.start_time < max_time_seconds:
-            # Find best neighbor (for adjacent/fibonacci: pass tenure to get top_moves)
-            tabu_len = tenure if neigh_mode in ("adjacent", "fibonacci") else None
-            new_pi, new_c, move_id, top_moves = get_neighbor(
-                neigh_mode, state.current_pi, processing_times, n, tabu_len, quantum_config
+            # Find the best neighbor of the current solution.
+            new_pi, new_c, move_id, _ = get_neighbor(
+                neigh_mode, state.current_pi, processing_times, n, None, quantum_config
             )
 
             # Check tabu with aspiration
             tabu_active = move_id in tabu_list and tabu_list[move_id] > state.iteration
             if tabu_active and new_c >= state.best_cmax:
-                # Move is tabu and doesn't meet aspiration - diversify via mushroom list
+                # Move is tabu and aspiration not met — diversify (ILS kick).
                 alt_pi, alt_c, alt_move = handle_tabu_move(
-                    neigh_mode, state, processing_times, tabu_list, n, top_moves, mushroom_list
+                    state, processing_times, n, mushroom_list
                 )
                 if alt_pi is None:
                     # No alternative - skip iteration

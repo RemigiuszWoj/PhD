@@ -210,17 +210,18 @@ def main() -> None:
         )
         # We no longer delete historical results – each run gets its own timestamped directory
         resume_dir = exp_cfg.get("resume_dir") or None
-        runner = ExperimentRunner(resume_dir=resume_dir)
+        viz_cfg = config.get("visualization", {})
+        generate_plots = bool(viz_cfg.get("generate_plots", False))
+        runner = ExperimentRunner(resume_dir=resume_dir, generate_plots=generate_plots)
         runner.run(plan)
         try:
             summary_path = write_summary_csv(runner.timestamp_dir)
             write_wide_gap_table(runner.timestamp_dir, summary_path)
             write_matrix_gap_table(runner.timestamp_dir, summary_path)
             write_matrix_per_seed_table(runner.timestamp_dir, summary_path)
-            # Batchowy generator multi-wykresów także respektuje flagę grayscale
-            viz_cfg = config.get("visualization", {})
-            multi_gray = bool(viz_cfg.get("multi_convergence_grayscale", False))
-            build_algorithm_multi_convergence_plots(runner.timestamp_dir, grayscale=multi_gray)
+            if generate_plots:
+                multi_gray = bool(viz_cfg.get("multi_convergence_grayscale", False))
+                build_algorithm_multi_convergence_plots(runner.timestamp_dir, grayscale=multi_gray)
         except Exception as e:
             print(f"[Main] Failed to write summary: {e}")
         print("[Main] Experiment batch completed.")

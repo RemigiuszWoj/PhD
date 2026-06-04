@@ -10,7 +10,6 @@ from typing import Iterable, List, Sequence
 
 import yaml
 
-from src import visualization as viz
 from src.algorithms import iterated_local_search, simulated_annealing
 from src.neighborhoods.common import get_qpu_stats, reset_qpu_stats
 from src.parser import parser
@@ -112,6 +111,7 @@ class ExperimentRunner:
         base_results_dir: str = "results/experiments",
         quantum_config: dict | None = None,
         resume_dir: str | None = None,
+        generate_plots: bool = False,
     ):
         self.base_dir = Path(base_results_dir)
         self.base_dir.mkdir(parents=True, exist_ok=True)
@@ -130,6 +130,16 @@ class ExperimentRunner:
             except Exception:
                 quantum_config = {}
         self.quantum_config = quantum_config
+        self.generate_plots = generate_plots
+        # Read SA + ILS params from config.yaml (fallback to defaults if missing)
+        try:
+            with open("config.yaml", "r") as f:
+                _cfg = yaml.safe_load(f) or {}
+            self.sa_params = _cfg.get("simulated_annealing", {}) or {}
+            self.ils_params = _cfg.get("iterated_local_search", {}) or {}
+        except Exception:
+            self.sa_params = {}
+            self.ils_params = {}
         self._dispatch = {
             "ils": self._run_ils,
             "sa": self._run_sa,
@@ -145,10 +155,12 @@ class ExperimentRunner:
             result = self._run_single(cfg)
             results.append(result)
             self._persist_result(result)
-        try:
-            viz.build_algorithm_multi_convergence_plots(self.timestamp_dir)
-        except Exception as e:
-            print(f"[Experiment] Failed to build multi-convergence plots: {e}")
+        if self.generate_plots:
+            try:
+                from src import visualization as viz
+                viz.build_algorithm_multi_convergence_plots(self.timestamp_dir)
+            except Exception as e:
+                print(f"[Experiment] Failed to build multi-convergence plots: {e}")
         return results
 
     def _already_done(self, cfg: RunConfig) -> bool:
@@ -232,48 +244,39 @@ class ExperimentRunner:
             json.dump(result.to_dict(), f, indent=2)
         print(f"[Experiment] Saved {path}")
 
-        flat_name = (
-            f"result__algo={cfg.algorithm}__neigh={cfg.neighborhood}"
-            f"__file={Path(cfg.instance_file).stem}__inst={cfg.instance_number}"
-            f"__tl={cfg.time_limit_ms}ms__seed={cfg.seed}.json"
-        )
-        flat_path = self.timestamp_dir / flat_name
-        try:
-            with open(flat_path, "w", encoding="utf-8") as f:
-                json.dump(result.to_dict(), f, indent=2)
-        except Exception:
-            pass
-
-        try:
-            times = result.time_history_ms or []
-            c_hist = result.cmax_history or []
-            if times and c_hist:
-                conv_path = run_dir / "convergence.png"
-                viz.save_convergence_plot_to(times, c_hist, str(conv_path))
-        except Exception as e:
-            print(f"[Experiment] Failed to create convergence plot: {e}")
+        if self.generate_plots:
+            try:
+                from src import visualization as viz
+                times = result.time_history_ms or []
+                c_hist = result.cmax_history or []
+                if times and c_hist:
+                    viz.save_convergence_plot_to(times, c_hist, str(run_dir / "convergence.png"))
+            except Exception as e:
+                print(f"[Experiment] Failed to create convergence plot: {e}")
 
     def _run_ils(self, processing_times, cfg: RunConfig):
         return iterated_local_search(
             processing_times,
             max_time_ms=cfg.time_limit_ms,
-            tabu_tenure=cfg.tabu_tenure or 10,
+            tabu_tenure=cfg.tabu_tenure or self.ils_params.get("tabu_tenure", 10),
             neigh_mode=cfg.neighborhood,
             iter_log_path=None,
             quantum_config=self.quantum_config,
+            mushroom_k=self.ils_params.get("mushroom_k", 10),
         )
 
     def _run_sa(self, processing_times, cfg: RunConfig):
+        sp = self.sa_params
         return simulated_annealing(
             processing_times,
             time_limit_ms=cfg.time_limit_ms,
-            initial_temp=1000.0,
-            final_temp=1.0,
-            alpha=0.95,
+            initial_temp=sp.get("initial_temp", 1000.0),
+            final_temp=sp.get("final_temp", 1.0),
+            alpha=sp.get("alpha", 0.95),
             neigh_mode=cfg.neighborhood,
-            reheat_factor=None,
-            stagnation_ms=None,
-            temp_floor_factor=None,
+            reheat_factor=sp.get("reheat_factor"),
+            stagnation_ms=sp.get("stagnation_ms"),
+            temp_floor_factor=sp.get("temp_floor_factor"),
             iter_log_path=None,
             quantum_config=self.quantum_config,
         )

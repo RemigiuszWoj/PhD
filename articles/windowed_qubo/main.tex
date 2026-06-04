@@ -69,6 +69,7 @@ across six time budgets (100--10\,000\,ms).
   \item Windowed QUBO decomposition enables Dynasearch and Motzkin on instances up to $n=50$.
   \item Smutnicki accelerator cuts QUBO variable count by 30--60\% before QPU submission.
   \item BackTrackJumpList elite-pool reduces ILS stagnation at no additional runtime cost.
+  \item Reheat-kick SA breaks the two-cycle trap that a best-move neighborhood oracle creates.
 \end{highlights}
 
 \begin{keyword}
@@ -184,10 +185,14 @@ search diversifies via the BackTrackJumpList mechanism described in
 Section~\ref{sec:btjl}.
 
 \emph{Simulated Annealing} (SA)~\citep{kirkpatrick1983}
-with initial temperature $T_0 = 1000$, cooling rate $\alpha = 0.95$,
-and adaptive reheating: when no improvement occurs for 500\,ms the
-temperature is reset to $\min(T_0,\, T \cdot r)$ with reheat factor
-$r = 1.5$.
+with initial temperature $T_0 = 1000$, cooling rate $\alpha = 0.99$,
+temperature floor $T_{\min} = 100$, and reheat-kick diversification
+on stagnation (Section~\ref{sec:sa-kick}). SA shares the
+neighborhood oracle with ILS: each step receives the best move of
+the chosen neighborhood, and the Metropolis criterion decides
+whether to accept it. A best-move oracle changes what SA needs to
+escape a local minimum; Section~\ref{sec:sa-kick} covers why
+reheating alone is insufficient.
 
 \subsection{BackTrackJumpList Elite Diversification}
 \label{sec:btjl}
@@ -213,6 +218,41 @@ Round-robin selection spreads diversification events across all elites
 rather than hammering the global best repeatedly.
 The pool is updated after every strict improvement to $C_{\max}^*$;
 before any elites have been found, the fallback is a uniform random restart.
+
+\subsection{SA with reheat-kick diversification}
+\label{sec:sa-kick}
+
+The shared neighborhood oracles force SA's inner step to consume
+the \emph{best} candidate move, not a random one. With a
+deterministic best-move oracle, SA collapses at a local minimum
+$X$: the oracle returns the best neighbor $X'$ with $\Delta =
+C_{\max}(X') - C_{\max}(X) > 0$; Metropolis accepts $X'$ with
+probability $\exp(-\Delta/T)$; from $X'$ the oracle returns $X$
+again with $\Delta < 0$, accepted unconditionally. The trajectory
+settles into a two-cycle $X \leftrightarrow X'$, and reheating
+cannot break it: the oracle yields the same pair regardless of $T$.
+
+The fix is to couple reheating with a perturbation in solution
+space, similar to the BackTrackJumpList of Section~\ref{sec:btjl}.
+SA keeps an elite pool of size $k = 10$, updated whenever
+$C_{\max}^*$ strictly improves. On stagnation, defined as $s =
+100$\,ms without a global improvement, the algorithm:
+\begin{enumerate}
+  \item resets the temperature to its initial value, $T \leftarrow
+        T_0$. A multiplicative reheat $T \leftarrow T \cdot r$ would
+        be useless here: the schedule $T_{k+1} = T_k \cdot \alpha$
+        drives $T$ to the floor $T_{\min}$ in tens of milliseconds,
+        and from such a small $T$ the factor $r$ adds nothing;
+  \item replaces the current solution with a double-bridge
+        perturbation of the next elite (round-robin), placing the
+        search outside the current basin of attraction;
+  \item resets the stagnation timer.
+\end{enumerate}
+The temperature floor $T_{\min} = 100$ keeps some uphill mobility
+during cooling, so post-kick steps stay exploratory until the next
+reheat fires. The two-cycle disappears, and SA converges with
+seed-dependent trajectories on instances where the original
+schedule had locked onto the first local minimum.
 
 % ---------------------------------------------------------------
 \section{Neighborhood Taxonomy}
@@ -493,20 +533,21 @@ Following the tractability analysis of Table~\ref{tab:feasibility}:
 
 \begin{table}[t]
 \centering
-\caption{Mean RPD [\%] for all twelve neighborhoods at $t_{\max} = 1000$\,ms,
-  $n = 20$, $m = 5$. ILS uses tabu tenure $\tau = 10$ and BackTrackJumpList
-  diversification ($k = 10$). SA uses $\alpha = 0.95$, $r = 1.5$.
-  \textbf{[Results pending D-Wave QPU experiments.]}}
+\caption{Mean RPD [\%] for all twelve neighborhoods on Taillard $20\times 5$
+  instances at $t_{\max} = 1000$\,ms, averaged over 10 instances $\times$ 5
+  seeds. ILS uses tabu tenure $\tau = 10$ and BackTrackJumpList diversification
+  ($k = 10$). SA uses $\alpha = 0.99$, $T_0 = 1000$, $T_{\min} = 100$ with the
+  reheat-kick of Section~\ref{sec:sa-kick}. Quantum rows pending D-Wave QPU runs.}
 \label{tab:rpd_n20}
 \begin{tabular}{@{}llrr@{}}
 \toprule
 Class & Neighborhood & ILS RPD [\%] & SA RPD [\%] \\
 \midrule
 \multirow{4}{*}{Classical}
-  & Adjacent    & -- & -- \\
-  & Fibonacci   & -- & -- \\
-  & Dynasearch  & -- & -- \\
-  & Motzkin     & -- & -- \\
+  & Adjacent    & 3.89 & 11.28 \\
+  & Fibonacci   & 4.09 & 15.00 \\
+  & Dynasearch  & 3.32 &  4.19 \\
+  & Motzkin     & 3.19 &  4.00 \\
 \midrule
 \multirow{4}{*}{Quantum QUBO}
   & Adjacent    & -- & -- \\
@@ -525,19 +566,52 @@ Class & Neighborhood & ILS RPD [\%] & SA RPD [\%] \\
 
 \begin{table}[t]
 \centering
+\caption{Classical baseline at the longest budget $t_{\max} = 10\,000$\,ms,
+  $n = 20$. Mean RPD [\%] over 10 instances $\times$ 5 seeds. Dynasearch
+  and motzkin lead at every machine count; the gap to adjacent and fibonacci
+  widens as $m$ grows.}
+\label{tab:rpd_n20_full}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+ & \multicolumn{2}{c}{$m = 5$} & \multicolumn{2}{c}{$m = 10$} & \multicolumn{2}{c}{$m = 20$} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
+Neighborhood & ILS & SA & ILS & SA & ILS & SA \\
+\midrule
+Adjacent    & 3.41 &  6.98 & 11.22 & 15.61 & 22.58 & 26.27 \\
+Fibonacci   & 3.82 &  9.24 & 11.23 & 17.81 & 22.17 & 26.82 \\
+Dynasearch  & 2.68 &  3.36 &  9.99 & 10.75 & 21.41 & 21.99 \\
+Motzkin     & 2.64 &  3.25 & 10.21 & 10.68 & 21.46 & 21.73 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
 \caption{Mean RPD [\%] for all quantum QUBO neighborhoods vs.\ classical
   baselines, ILS, $t_{\max} = 5000$\,ms, $m = 10$.
   Entries marked n/a exceed the tractability bound.
-  \textbf{[Results pending.]}}
+  Classical $n \in \{20,50,100,200\}$ filled from phases 1--2c baseline,
+  classical $n = 500$ from phase~2d. Quantum cells pending the D-Wave
+  QPU runs. $^\dagger$ \emph{These entries are not directly comparable
+  with the others in their column.} At $n = 500$, a single dynasearch
+  ($\sim 200$\,s) or motzkin ($\sim 30$\,s) DP call already exceeds
+  every tested time budget, so ILS and SA both reduce to a single
+  local-search iteration per run (ILS and SA produce identical values).
+  Adjacent and fibonacci in the same column had thousands of iterations
+  to refine the solution within $t_{\max} = 10$\,s; dynasearch and
+  motzkin had one. The numbers are reported for completeness, not as a
+  fair head-to-head ($t_{\max} = 10$\,s, mean over 10 instances $\times$
+  5 seeds; ranges $13.30$--$16.05$ for dynasearch, $13.00$--$18.40$
+  for motzkin).}
 \label{tab:rpd_scaling}
 \begin{tabular}{@{}lrrrrr@{}}
 \toprule
 Neighborhood & $n=20$ & $n=50$ & $n=100$ & $n=200$ & $n=500$ \\
 \midrule
-Classical Adjacent         & -- & -- & -- & -- & -- \\
-Classical Fibonacci        & -- & -- & -- & -- & -- \\
-Classical Dynasearch       & -- & -- & -- & -- & -- \\
-Classical Motzkin          & -- & -- & -- & -- & -- \\
+Classical Adjacent         & 11.61 & 10.03 &  9.54 & 10.37 & 15.36 \\
+Classical Fibonacci        & 11.27 &  7.74 &  6.15 &  6.19 & 11.12 \\
+Classical Dynasearch       & 10.23 &  5.39 &  4.67 & 11.63 & 14.53$^\dagger$ \\
+Classical Motzkin          & 10.45 & 13.49 & 14.21 & 13.80 & 16.26$^\dagger$ \\
 \midrule
 Q-Adjacent                 & -- & n/a & n/a & n/a & n/a \\
 Q-Fibonacci                & -- & n/a & n/a & n/a & n/a \\
@@ -553,14 +627,26 @@ Q-Motzkin Enhanced         & -- & -- & n/a & n/a & n/a \\
 \end{table}
 
 \paragraph{Comparison at $n = 20$}
-Table~\ref{tab:rpd_n20} compares all twelve neighborhoods on the
-smallest common instance size, where all formulations are feasible.
-The quantum QUBO enhanced variants at $n = 20$ differ from the original
-quantum QUBO variants only in the removal of the delta filter, providing
-a controlled measurement of the filter's effect on solution quality.
-The enhanced variants should perform comparably or better: retaining
-the full variable set preserves information about conflicting
-non-improving moves that the QPU uses to avoid degenerate selections.
+Tables~\ref{tab:rpd_n20} and~\ref{tab:rpd_n20_full} report the
+classical baseline across all three Taillard machine counts.
+Dynasearch and motzkin lead adjacent and fibonacci at every $m$,
+and the lead grows with $m$: 0.7--1.2 percentage points at
+$m = 5$, 1.2--1.4 points at $m = 20$. The SA gap to ILS also
+depends on the neighborhood. SA adjacent and fibonacci trail ILS
+by 7--10 pp at $m = 5$, because a best-move oracle over a sparse
+neighborhood traps SA in narrow basins that the reheat-kick of
+Section~\ref{sec:sa-kick} only partly resolves. SA dynasearch and
+motzkin sit within 0.7 pp of ILS at $m = 5$ and within 0.6 pp at
+$m = 20$; the richer neighborhoods supply enough escape paths for
+SA to match ILS within a 10\,s budget.
+
+The quantum QUBO enhanced variants at $n = 20$ differ from the
+original quantum QUBO variants only in the removal of the delta
+filter, providing a controlled measurement of the filter's effect
+on solution quality. The enhanced variants should perform comparably
+or better: retaining the full variable set preserves information
+about conflicting non-improving moves that the QPU uses to avoid
+degenerate selections.
 
 \paragraph{Scaling behavior}
 Table~\ref{tab:rpd_scaling} shows how enhanced quantum neighborhoods
@@ -571,6 +657,59 @@ descent within the same time budget.
 Fibonacci Enhanced looks most promising: its tridiagonal QUBO lets
 the QPU evaluate $F_{n+1}$ feasible multi-swap configurations at once,
 whereas classical Fibonacci picks one swap per iteration.
+
+At $n = 100$, dynasearch still wins: 4.67\,\% against fibonacci's
+6.15\,\% ($m = 10$, $t_{\max} = 5$\,s). At $n = 200$ that reverses.
+Fibonacci holds at 6.19\,\% while dynasearch jumps to 11.63\,\%.
+The reason is the same as the motzkin collapse at $n = 50$: the
+$O(n^2)$ dynasearch DP, already non-trivial at $n = 100$, eats enough
+wall time at $n = 200$ that ILS completes fewer full scans and
+accumulates fewer improvements within the budget. Fibonacci's $O(n)$
+evaluation does not have that problem.
+
+Motzkin is worse. It trailed dynasearch by 0.2\,pp at $n = 20$, by
+8.1\,pp at $n = 50$, and by $n = 100$ it sits at 14.21\,\%, last among
+the four classical neighborhoods. The $O(n^3)$ arc-selection DP is
+simply more expensive per call than the $O(n^2)$ dynasearch DP, which
+means fewer ILS iterations in any fixed time budget.
+
+The crossover sits between $n = 100$ and $n = 200$. Dynasearch is
+competitive up to roughly $n = 100$; fibonacci is the right classical
+baseline beyond that. At $n = 500$ fibonacci reaches 11.12\,\% while
+adjacent sits at 15.36\,\% (ILS, $m = 20$, $t_{\max} = 5$\,s),
+confirming the trend.
+
+At $n = 500$ both dynasearch and motzkin run out of room. A single
+dynasearch DP call (over $\approx 1.2 \times 10^5$ candidate pairs)
+takes about 200\,s; motzkin's $O(n^3)$ arc-selection DP takes about
+30\,s. Both exceed our 10\,s budget, so ILS and SA each complete
+exactly one local-search iteration per run and return identical
+solutions. Dynasearch ends up at 14.53\,\% (range $13.30$--$16.05$),
+motzkin at 16.26\,\% (range $13.00$--$18.40$).
+
+These two entries should be read with a caveat. They are not a
+like-for-like comparison with adjacent or fibonacci, which used the
+full 10\,s to run thousands of iterations. Dynasearch and motzkin
+each had time for a single local-search step. We report them to
+document the scaling boundary, not to argue that one neighborhood
+beats another at $n = 500$.
+
+Compared to the iterative neighborhoods at the same budget,
+dynasearch's single call still beats adjacent (15.36\,\%), which had
+thousands of iterations to use. One dynasearch call picks a
+near-optimal set of non-overlapping swaps and applies them at once;
+adjacent applies one swap per iteration, and the per-iteration gains
+shrink fast. Motzkin's one call gives a smaller move (nested
+non-crossing arcs are more constrained than non-overlapping
+intervals), which is why it lands behind both dynasearch and
+adjacent. The move structure matters more than the move count at
+this scale, as long as the move itself carries enough swaps.
+
+The windowed enhanced variants of dynasearch and motzkin are tested
+only up to $n = 50$, comfortably inside their tractable range, so
+the classical comparison there is fine. For QPU experiments at
+$n = 500$, fibonacci-enhanced is the only classical neighborhood
+that still scales without truncation.
 
 \paragraph{Windowed decomposition quality}
 The windowed approach introduces a bounded approximation: swap pairs

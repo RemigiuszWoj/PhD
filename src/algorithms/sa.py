@@ -11,6 +11,7 @@ from src.algorithms.base import (
     log_iteration,
     open_log_file,
 )
+from src.algorithms.mushroom_list import MushroomList, double_bridge
 from src.permutation_procesing import c_max
 
 
@@ -26,6 +27,7 @@ def simulated_annealing(
     temp_floor_factor: float | None = None,
     iter_log_path: str | None = None,
     quantum_config: dict | None = None,
+    mushroom_k: int = 10,
 ) -> Tuple[List[int], int, List[int], List[int]]:
     """Simulated Annealing for flow shop scheduling problem.
 
@@ -70,6 +72,10 @@ def simulated_annealing(
     floor_factor = temp_floor_factor if temp_floor_factor and temp_floor_factor >= 1.0 else 1.0
     temp_floor = final_temp * floor_factor
 
+    # Elite pool for double-bridge kick on stagnation (breaks best-neighbor 2-cycles)
+    mushroom_list = MushroomList(k=mushroom_k)
+    mushroom_list.offer(initial_pi, initial_cmax)
+
     with open_log_file(iter_log_path, "simulated_annealing") as log_file:
         while time.time() - state.start_time < time_limit:
             # Find best neighbor
@@ -85,6 +91,7 @@ def simulated_annealing(
 
             if state.update_best():
                 last_improve_time = time.time()
+                mushroom_list.offer(state.best_pi, state.best_cmax)
 
             log_iteration(log_file, state)
             state.iteration += 1
@@ -92,16 +99,22 @@ def simulated_annealing(
             # Cooling
             T = max(T * alpha, temp_floor)
 
-            # Reheating on stagnation
+            # Reheating + double-bridge kick on stagnation
+            # (best-neighbor SA strukturalnie oscyluje w 2-cyklu wokół lokalnego minimum;
+            #  reheat sam nie wystarcza — potrzebny kick w przestrzeni rozwiązań).
+            # Reheat = pełny restart T do initial_temp (mnożenie T*reheat z bardzo
+            # schłodzonego T nic nie zmienia — pozostaje pomijalnie małe).
             if stagnation_threshold is not None and reheat is not None:
                 since_improve_ms = (time.time() - last_improve_time) * 1000.0
-                if since_improve_ms >= stagnation_threshold and T < initial_temp:
-                    old_T = T
-                    T = min(initial_temp, T * reheat)
-                    print(
-                        f"[SA][reheat] stagnation {since_improve_ms:.0f}ms | "
-                        f"T: {old_T:.2f} -> {T:.2f}"
-                    )
+                if since_improve_ms >= stagnation_threshold:
+                    T = initial_temp
+                    kicked = mushroom_list.perturb()
+                    if kicked is not None:
+                        state.current_pi = kicked
+                        state.current_cmax = c_max(kicked, processing_times)
+                    else:
+                        state.current_pi = double_bridge(state.current_pi)
+                        state.current_cmax = c_max(state.current_pi, processing_times)
                     last_improve_time = time.time()
 
     return state.best_pi, state.best_cmax, state.iteration_history, state.cmax_history

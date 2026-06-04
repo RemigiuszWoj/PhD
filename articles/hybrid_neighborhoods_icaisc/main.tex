@@ -1,0 +1,377 @@
+% Main LNCS paper file
+\documentclass[runningheads]{llncs}
+
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage[utf8]{inputenc}
+\usepackage{todonotes}
+\usepackage{siunitx}
+\usepackage{subcaption}
+% Convenience macros
+\newcommand{\makespan}{C_{\max}}
+\newcommand{\perm}{\pi}
+\newcommand{\best}{\perm^{*}}
+\newcommand{\Swap}{\textsc{Swap}}
+\sisetup{output-decimal-marker = {.}}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  citecolor=blue!60!black,
+  urlcolor=blue!60!black
+}
+% reduce whitespace around floats
+\setlength{\textfloatsep}{112pt}
+\setlength{\floatsep}{1pt}
+\setlength{\intextsep}{1pt}
+
+\setlength{\abovecaptionskip}{3pt}
+\setlength{\belowcaptionskip}{3pt}
+\usepackage{enumitem}
+\setlist{nosep}
+
+\begin{document}
+
+\title{Hybrid Neighborhood Evaluation in Tabu Search and Simulated Annealing for the Permutation Flow Shop Problem}
+\titlerunning{Hybrid Neighborhoods for Flow Shop Optimization}
+
+\author{Remigiusz Wojewódzki\inst{1} \and Wojciech Bożejko\inst{2}}
+\authorrunning{R. Wojewódzki, W. Bożejko}
+
+\institute{
+Wrocław University of Science and Technology, Poland\\
+\email{remigiusz.wojewodzki@gmail.com}
+\and
+Wrocław University of Science and Technology, Poland\\
+\email{wojciech.bozejko@pwr.edu.pl}
+}
+% \author{Anonymous ICAISC 2025 submission}
+% \authorrunning{Anonymous ICAISC 2025 submission}
+
+\maketitle
+
+\begin{abstract}
+We investigate the impact of three neighborhood definitions on the performance of two classical metaheuristics (Tabu Search and Simulated Annealing) for the permutation Flow Shop Scheduling Problem (FSP) under the makespan minimization objective. Besides the standard adjacent swap neighborhood, we study (i) a composite disjoint-adjacent swap construction obtained via a dynamic programming (DP) selection of a set of non-overlapping swaps minimizing the cumulative makespan delta, and (ii) a recursive dynasearch-inspired neighborhood enabling deeper local restructuring. We additionally introduce iteration-wise logging and optional temperature reheating (time-based stagnation triggers) to analyze convergence dynamics. Experiments on Taillard benchmark instances show that the composite (`Fibonacci-inspired') neighborhood accelerates early descent but tends to plateau once all single adjacent improvements vanish, while dynasearch continues to find greater improvements at a higher computational cost per iteration. We detail the trade-offs among exploration breadth, per-iteration computational overhead, and convergence stability.
+
+\keywords{Flow shop scheduling \and Metaheuristics \and Tabu search \and Simulated annealing \and Composite neighborhood \and Dynasearch}
+\end{abstract}
+
+\section{Introduction}
+The permutation Flow Shop Scheduling Problem (FSP) seeks an ordering (permutation) of $n$ jobs processed on $m$ machines in identical order, minimizing the makespan $C_{\max}$. The problem is NP-hard for $m \ge 3$ and has motivated extensive research into neighborhood-based heuristic and metaheuristic methods \cite{ref_metaheuristics_survey,ref_classic_fsp,vanlaarhoven1992}. 
+Tabu Search, originally proposed by Glover~\cite{glover1986,glover1997}, and Simulated Annealing, introduced by Kirkpatrick et al.~\cite{kirkpatrick1983}, remain among the most widely used metaheuristic frameworks for combinatorial optimization.
+
+This paper revisits two standard metaheuristics---Tabu Search (TS) and Simulated Annealing (SA)---through the lens of \emph{hybrid neighborhood design}. Beyond the ubiquitous adjacent swap neighborhood, we implement and compare:
+\begin{itemize}
+  \item A composite disjoint-adjacent swap neighborhood (internally nicknamed \emph{Fibonacci}) built via dynamic programming to select a set of non-overlapping improving (or minimally degrading) adjacent swaps.
+  \item A dynasearch-inspired recursive neighborhood allowing deeper structured permutations.
+\end{itemize}
+We empirically examine how these neighborhoods alter convergence speed, stagnation behavior, and final solution quality under identical time budgets.
+We deliberately employ these two classical frameworks as standardized testbeds, so that observed performance differences can be attributed to the neighborhood design rather than to algorithmic sophistication.
+
+\paragraph{Contributions.}
+\begin{enumerate}
+  \item A unified experimental framework (with per-iteration logging) comparing three neighborhoods inside TS and SA under common timing constraints.
+  \item A DP-based composite adjacent neighborhood balancing local intensification and mild diversification.
+  \item A time-based reheating mechanism for SA (temperature floor plus stagnation-triggered multiplicative reheats).
+  \item An empirical analysis on Taillard instances highlighting (i) rapid early exploitation by the composite neighborhood, (ii) its susceptibility to plateau once all single-swap improvements disappear, and (iii) the complementary depth of the dynasearch neighborhood.
+\end{enumerate}
+The ultimate objective of this research is to formulate a comprehensive conclusion on the relative efficiency and robustness of the analyzed neighborhood structures with respect to the imposed computational time limits and the scale of problem instances, thereby providing deeper insights into their algorithmic behavior and practical applicability.
+
+\section{Problem Definition}
+Given processing time matrix $P = [p_{k,j}]_{m \times n}$ for machine $k=1,\dots,m$ and job $j=1,\dots,n$, a permutation $\pi$ defines the job order. Permutations and their interactions can also be analyzed using positive definite functions on permutation groups, providing a theoretical foundation for studying correlations between job sequences \cite{Bozejko2015}. Let $C_{k,j}$ be the completion time of job $j$ (in $\pi$-order) on machine $k$ fulfilling equalities:
+\[
+C_{1,j} = C_{1,j-1} + p_{1,\pi(j)},\quad
+C_{k,1} = C_{k-1,1} + p_{k,\pi(1)},
+\]
+\begin{equation}\label{eq_c_kj}
+C_{k,j} = \max\{C_{k,j-1},\, C_{k-1,j}\} + p_{k,\pi(j)}, \quad {\rm for}\;k=1,\dots,m,\; j=1,\dots,n.
+\end{equation}
+Makespan $C_{\max} = C_{m,n}$ should be minimized. The objective of the permutation Flow Shop Scheduling Problem is to find a permutation $\pi$ that \emph{minimizes the makespan} $C_{\max}$, i.e., the completion time of the last job on the last machine
+when the jobs are processed in the order given by $\pi$.
+
+\section{Neighborhood Structures}
+Following \cite{vanlaarhoven1992}, a \emph{neighborhood} of a solution $x$ is defined as the set of all solutions obtainable by applying a specific, allowed modification to $x$. It determines how the solution space is explored and exploited during the search process.
+
+Building on the work of Ahuja et al.\cite{ahuja2002,glover1997}, general methods for constructing Very Large-Scale Neighborhoods (VLSN) can be identified. These techniques include generating new solutions by combining elements from multiple reference solutions, which enables exploration of larger areas of the solution space. Another approach employs dynamic programming to accelerate computations and efficiently generate neighborhoods for large datasets. A key component is the creation of improvement graphs, which allow rapid assessment of promising moves. Finally, VLSN methods are often integrated with other metaheuristic techniques, such as Tabu Search or Simulated Annealing, resulting in iterative algorithms capable of effectively searching for high-quality or optimal solutions.
+
+
+\paragraph{Adjacent Swap (Baseline)}
+Each neighbor swaps positions $(i,i{+}1)$ for $i=1,\dots,n-1$. Its per-iteration evaluation cost is low, enabling many iterations but shallow local moves \cite{nowicki1996fast,vanlaarhoven1992}. 
+
+
+\paragraph{Composite Disjoint-Adjacent (in the rest of the paper, we will refer to this neighborhood as the \emph{Fibonacci}) neighborhood due to the size of its structure.}
+Starting from $\pi$, we enumerate all single adjacent swaps, computing $\Delta_i = C_{\max}(\pi^{(i)}) - C_{\max}(\pi)$. 
+A dynamic program selects a subset of non-overlapping indices minimizing the total $\sum \Delta_i$. 
+If no negative $\Delta_i$ exists, the current implementation either (i) chooses the least positive swap or (ii) halts (variant under discussion). 
+The resulting composite move may apply multiple disjoint swaps simultaneously, approximating a bounded multi-step local descent in one iteration.
+The theoretical background and properties of such swap-based multimove strategies were discussed by Bożejko and Wodecki~\cite{Bozejko2007}.
+
+
+\paragraph{Complexity.} Enumerating $(n{-}1)$ swaps requires $(n{-}1)$ recomputations of $C_{\max}$ (each $O(mn)$), plus $O(n)$ DP. Overall, per iteration $O(m n^2)$ versus $O(m n)$ for a single adjacent swap evaluation.
+
+\paragraph{Dynasearch-Inspired Recursive Neighborhood}
+Dynasearch explores structured sequences of non-conflicting moves \cite{congram2002dynasearch} (e.g., path decompositions) at increased computational effort, often reaching permutations unreachable by a limited number of adjacent steps. The method considers all segments $[i,j]$ of the permutation 
+and swaps their endpoints $\pi(i) \leftrightarrow \pi(j)$, leaving the interior 
+unchanged. A dynamic programming procedure selects a set of non-overlapping 
+improving segments, minimizing the total makespan delta. The number of candidate 
+segments is $O(n^2)$, yielding per-iteration complexity $O(mn^3)$.
+
+
+\paragraph{Six-Operator Neighborhood}
+Deroussi et al. \cite{deroussi2006} define the neighborhood of a solution as the set of solutions obtained by applying six operators that transform the current solution. These operators were designed specifically for the permutation Flow Shop Problem within a Tabu Search framework. They include, among others, single-job moves, block moves, multi-element shifts, and combinations of these operations. Compared to classical approaches (e.g., adjacent job swaps), this strategy enables faster and more comprehensive exploration of the solution space, increasing the likelihood of finding improved permutations.
+
+\paragraph{Global-Local Neighborhood}
+Serna and Gambardella \cite{serna2000} describe a global-local neighborhood for the permutation Flow Shop Problem. This neighborhood is composed of two types of moves. The first type, Nopt1, involves swapping two jobs or relocating a single job within the permutation. According to Mastrolilli \& Gambardella, for a given job $j$, Nopt1 generates neighboring permutations by moving $j$ to each possible position in the sequence, enabling quick local improvements. The second type consists of larger, structured perturbations that move entire blocks of jobs, resulting in more significant, global changes in the permutation. Combining these two types allows the search to escape shallow local optima: small Nopt1 moves provide fast local refinement, while larger perturbations enable the exploration of regions in the solution space that are inaccessible through minor changes.
+
+
+\section{Metaheuristics}
+Based on Glover and Laguna \cite{glover1997} and Blum and Roli \cite{ref_metaheuristics_survey}, metaheuristics are high-level algorithmic frameworks guiding the search for an optimal solution. They are not defined for a specific problem but rather provide a general description and a set of strategies for exploring and exploiting the solution space effectively.
+
+
+\paragraph{Tabu Search (TS).} First formalized by 
+Glover~\cite{glover1986} maintains a tabu list, following the guidelines presented by Smutnicki \cite{smutnicki2012} for the flow shop problem, keyed either by primitive moves (adjacent swap indices) or composite signatures (for \emph{Fibonacci} / Dynasearch). A tenure $T_{\text{Tabu}}$ forbids revisits unless an aspiration criterion ($C_{\max}$ improvement) holds. At each iteration, the best admissible neighbor is selected.
+
+\paragraph{Simulated Annealing (SA)} Following the framework of Kirkpatrick et al.~\cite{kirkpatrick1983}, We follow Smutnicki's \cite{smutnicki2012} recommendations for iterative improvement strategies while using multiplicative cooling $T \leftarrow \alpha T$ with floor $T_{\text{floor}} = f_{\text{floor}} \cdot T_{\text{final}}$ and optional time-based reheating: if no improvement for $\tau_{\text{stagn}}$ milliseconds and $T < T_{\text{init}}$, then $T \leftarrow \min(T_{\text{init}}, r \cdot T)$. Acceptance probability standard:
+\begin{equation}\label{Pr_accept}
+    \Pr(\textit{accept}) =
+    \begin{cases}
+        1 & {\rm for~}\Delta < 0,\\
+        \exp(-\Delta/T) & \text{otherwise}.
+    \end{cases}
+\end{equation}
+
+
+\section{Experimental Setup}
+All experiments were conducted on a MacBook Pro with an M4 Pro processor, 24~GB of RAM, running macOS 26.0.1 (25A362) and Python~3.11.
+
+\paragraph{Benchmarks}
+Taillard instances \cite{ref_taillard} of varying $(n,m)$ (e.g., $n\in\{50,100,200,500\}$ and $m\in\{10,20\}$) were used. Each run was constrained by a wall-clock time budget (e.g., 100 s). Seeds are fixed for reproducibility.
+
+\paragraph{Parameters}
+The algorithms were configured with the following parameters: tabu tenure equal to 10; simulated annealing with $T_{\text{init}}=1000$, $T_{\text{final}}=1$, cooling rate $\alpha=0.95$, reheating factor $r=1.5$, and a stagnation threshold of 500~ms.
+
+\paragraph{Metrics}
+The evaluation considered the best $C_{\max}$ obtained over time, convergence curves for different neighborhood strategies, the number of effective moves per second (normalized), and the plateau detection latency. The choice of experimental parameters and metrics was primarily aimed at assessing the impact of different neighborhood structures on the final solution quality rather than evaluating the absolute performance of the algorithms.
+
+
+\section{Large-Scale Experimentation}
+For each tested instance, we observe that under the assumed time limits, the Dynasearch neighborhood is often unable to complete even a single iteration. Therefore, its results should be excluded from the final comparative conclusions. For small-scale datasets, however, Dynasearch is capable of finding the best solution within the upper time limits, even when the other two neighborhoods become trapped in local optima. Nevertheless, for larger instances, Dynasearch frequently fails to execute a single iteration within the predefined time budget, which significantly limits its practical applicability in short-run scenarios.
+
+
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.7\textwidth]{figures/tabu_100_10.png}
+  \caption{Small dataset, extended time limit.}
+  \label{fig:tabu_100_10}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.7\textwidth]{figures/tabu_500_20.png}
+  \caption{Large dataset, extended time limit.}
+  \label{fig:tabu_500_20}
+\end{figure}
+
+\section{Results and Discussion}
+
+The comparison between the \emph{Fibonacci}, Adjacent, and Dynasearch approaches reveals distinct behavioral and performance characteristics. The composite neighborhood outperforms the adjacent neighborhood in the early search phase (showing a steeper initial drop in $C_{\max}$) due to its ability to combine non-overlapping improvements. However, once all single adjacent deltas become non-negative, the composite move degenerates to size 1 and may stagnate in local minima.  
+\begin{figure}
+  \centering
+  \includegraphics[width=0.8\textwidth]{figures/algo=tabu_file=tai200_20_inst=2_tl=1000ms_n200_m20_multi.png}
+  \caption{200 jobs, 20 machines, 1000~ms limit.}
+  \label{fig:tabu_200_20}
+\end{figure}
+
+For larger datasets (above 200$\times$10), the \emph{Fibonacci} method finds better solutions within the same time limits compared to Adjacent. In contrast, Dynasearch achieves further and often the best improvements, but at a much higher computational cost. Depending on the dataset size, a single iteration of Dynasearch may require up to 200 times more time than the predefined limit. This indicates that Dynasearch can deliver the best solutions only when provided with sufficiently large time budgets, which grow rapidly with input size.  
+ 
+\begin{figure}
+  \centering
+  \includegraphics[width=0.8\textwidth]{figures/algo=tabu_file=tai500_20_inst=4_tl=1000ms_n500_m20_multi.png}
+  \caption{500 jobs, 20 machines, 1000~ms limit.}
+  \label{fig:tabu_500_20_long}
+\end{figure}
+
+
+During such extended computations, the remaining two approaches (\emph{Fibonacci} and Adjacent) tend to get trapped in local optima, losing their improvement potential. In these cases, time-triggered reheating in Simulated Annealing (SA) occasionally enables the algorithm to escape from shallow plateaus, restoring diversification and allowing further exploration of the search space.
+
+The average results presented in Tables~\ref{tab:results_tl100}--\ref{tab:results_tl10000} include the relative percentage deviation (PRD) of the makespan, defined as:
+
+\begin{equation}
+\mathrm{PRD} = \frac{C_{\max}^{\text{obtained}} - C_{\max}^{\text{optimal}}}{C_{\max}^{\text{optimal}}} \cdot 100\%,
+\end{equation}
+%
+where $C_{\max}^{\text{obtained}}$ is the makespan obtained by the heuristic method and $C_{\max}^{\text{optimal}}$ is the best known or optimal makespan. These PRD values summarize the average performance of each method over all instances for a given time limit, highlighting which approaches are closer to the optimal solution. Note that Dynasearch has been omitted from the tables due to its tendency to exceed the time limit in a single iteration, especially for larger instances, making its inclusion impractical for the standardized time-limited comparison.
+
+\section{Conclusions and Future Work}
+Hybrid composite neighborhoods accelerate early exploitation in Tabu Search (TS) and Simulated Annealing (SA) but risk stagnation without diversification. Dynasearch remains effective but is significantly more computationally expensive. Future work should focus on incremental evaluation, adaptive switching between neighborhood structures, probabilistic variant sampling, and exploring alternative neighborhood definitions with comparative analysis of their performance and computational cost. Future work will also integrate the proposed neighborhoods into more advanced solvers (e.g., iterated local search, variable neighborhood descent) and include comparisons with state-of-the-art methods.
+
+\begin{table}[H]
+\centering
+
+\begin{minipage}{0.85\linewidth}
+\centering
+\resizebox{\linewidth}{!}{\input{tables/all_results_avg_pivot_tl100}}
+\caption{Average results for $T_{\text{limit}} = 100$ ms.}
+\label{tab:results_tl100}
+\end{minipage}
+
+\vspace{1em}
+
+\begin{minipage}{0.85\linewidth}
+\centering
+\resizebox{\linewidth}{!}{\input{tables/all_results_avg_pivot_tl500}}
+\caption{Average results for $T_{\text{limit}} = 500$ ms.}
+\label{tab:results_tl500}
+\end{minipage}
+
+\vspace{1em}
+
+\begin{minipage}{0.85\linewidth}
+\centering
+\resizebox{\linewidth}{!}{\input{tables/all_results_avg_pivot_tl1000}}
+\caption{Average results for $T_{\text{limit}} = 1000$ ms.}
+\label{tab:results_tl1000}
+\end{minipage}
+
+\end{table}
+
+\begin{table}[H]
+\centering
+
+\begin{minipage}{0.85\linewidth}
+\centering
+\resizebox{\linewidth}{!}{\input{tables/all_results_avg_pivot_tl2000}}
+\caption{Average results for $T_{\text{limit}} = 2000$ ms.}
+\label{tab:results_tl2000}
+\end{minipage}
+
+\vspace{1em}
+
+\begin{minipage}{0.85\linewidth}
+\centering
+\resizebox{\linewidth}{!}{\input{tables/all_results_avg_pivot_tl5000}}
+\caption{Average results for $T_{\text{limit}} = 5000$ ms.}
+\label{tab:results_tl5000}
+\end{minipage}
+
+\vspace{1em}
+
+\begin{minipage}{0.85\linewidth}
+\centering
+\resizebox{\linewidth}{!}{\input{tables/all_results_avg_pivot_tl10000}}
+\caption{Average results for $T_{\text{limit}} = 10000$ ms.}
+\label{tab:results_tl10000}
+\end{minipage}
+
+\end{table}
+\section*{Acknowledgements}
+The authors acknowledge the use of Large Language Models (OpenAI GPT-5) for auxiliary tasks, including linguistic polishing of the manuscript, preliminary literature retrieval, automation of selected experimental processes (e.g., data preprocessing and log analysis), discussion of research ideas, and support in generating experimental code. The models were not involved in the creation of core research concepts or the interpretation of the obtained results.
+
+
+\appendix
+
+\section{Pseudocode Appendix: Metaheuristics and Neighborhoods for the Permutation Flow Shop}
+Let $m$ be the number of machines, $n$ the number of jobs, and $P = (p_{k,j})$ processing times. A permutation (sequence) is $\perm$. The objective is to minimize the makespan $\makespan(\perm)$. A function \textsc{Makespan}$(\perm)$ returns $\makespan(\perm)$. Time budget in milliseconds: $T_{\text{limit}}$. Wall-clock time since start: $t$. For Simulated Annealing, the temperature is $T$. For Tabu Search, the Tabu tenure is $\tau_{\text{Tabu}}$. We use $\Delta = \makespan(\perm')-\makespan(\perm)$ for a candidate move.
+{\scriptsize
+\setlength{\abovedisplayskip}{2pt}
+\setlength{\belowdisplayskip}{2pt}
+
+\begin{algorithm}[H]
+  \caption{GenerateAdjacent($\perm$)}
+  \begin{algorithmic}[1]
+    \State $N \gets \emptyset$
+    \For{$i = 1$ to $n-1$}
+      \State $\perm' \gets \perm$ with positions $i,i+1$ swapped
+      \State $N \gets N \cup \{(\perm', (i,i+1))\}$
+    \EndFor
+    \State \Return $N$
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{Composite Disjoint-Adjacent (\emph{Fibonacci}) Neighborhood}
+  \begin{algorithmic}[1]
+    \State $base \gets \textsc{Makespan}(\perm)$; $cand \gets []$
+    \For{$i=1$ to $n-1$}
+      \State $\perm' \gets$ swap $(i,i{+}1)$ in $\perm$
+      \State $\Delta_i \gets \textsc{Makespan}(\perm') - base$
+      \State append $(i,\Delta_i)$ to $cand$
+    \EndFor
+    \If{$cand$ empty} \Return $(\perm, base, \emptyset)$ \EndIf
+    \State Sort $cand$ by index
+    \For{$k = |cand|$ down to $1$}
+      \State Compute $DP[k] =$ best tuple $(value, chosenSet)$
+      \State Choose minimal value (ties: prefer more negative)
+    \EndFor
+    \State $(bestVal, chosen) \gets DP[1]$
+    \If{$chosen = \emptyset$}
+      \State Pick $i^* = \arg\min_i \Delta_i$; $chosen \gets \{i^*\}$
+    \EndIf
+    \State $\perm^{new} \gets \perm$
+    \For{each $i \in chosen$} apply swap $(i,i{+}1)$ \EndFor
+    \State \Return $(\perm^{new}, \textsc{Makespan}(\perm^{new}), chosen)$
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{DynasearchRecursive$(\perm, depth)$ (Sketch)}
+  \begin{algorithmic}[1]
+    \If{$depth = 0$} \Return $(\perm, \textsc{Makespan}(\perm))$ \EndIf
+    \State Decompose permutation into independent segments
+    \State $best \gets (\perm, \textsc{Makespan}(\perm))$
+    \For{each segment pattern and transformation $\theta$}
+      \State $(\perm'', c'') \gets$ DynasearchRecursive$(\theta(\perm), depth-1)$
+      \If{$c'' < best.c$} $best \gets (\perm'', c'')$ \EndIf
+    \EndFor
+    \Return $best$
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{TabuSearch$(processing\;times, T_{limit}, \tau_{tabu}, neigMode)$}
+  \begin{algorithmic}[1]
+    \State Initialize $\perm$, $best$, $bestC$, $Tabu$, $iter$, time
+    \While{$t < T_{limit}$}
+      \If{$neigMode =$ Adjacent}
+        \State $Candidates \gets$ GenerateAdjacent($\perm$)
+      \ElsIf{$neigMode =$ Composite}
+        \State $(\perm', c', chosen) \gets$ CompositeDisjointAdjacent($\perm$)
+      \ElsIf{$neigMode =$ Dynasearch}
+        \State $(\perm', c', \_) \gets$ DynasearchRecursive($\perm, depth$)
+      \EndIf
+      \State Update Tabu list, record best
+    \EndWhile
+    \State \Return $(best, bestC)$
+  \end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}[H]
+  \caption{SimulatedAnnealing$(P, T_{limit}, T_{init}, T_{final}, \alpha, r, \tau_{stagn}, neigMode)$}
+  \begin{algorithmic}[1]
+    \State Initialize $\perm$, $c$, $best$, $bestC$, $T$, timers
+    \While{$t < T_{limit}$}
+      \If{$neigMode =$ Adjacent}
+        \State Pick random $i$; $\perm' =$ swap $(i,i{+}1)$
+      \ElsIf{$neigMode =$ Composite}
+        \State $(\perm', c', chosen) \gets$ CompositeDisjointAdjacent($\perm$)
+      \ElsIf{$neigMode =$ Dynasearch}
+        \State $(\perm', c', \_) \gets$ DynasearchRecursive($\perm, depth$)
+      \EndIf
+      \State Apply acceptance rule, cooling, reheating
+    \EndWhile
+    \State \Return $(best, bestC)$
+  \end{algorithmic}
+\end{algorithm}
+}
+
+
+\bibliographystyle{splncs04}
+\bibliography{references}
+
+\end{document}

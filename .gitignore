@@ -54,6 +54,11 @@ charts_test/
 # but keep image assets bundled with presentations and articles
 !presentations/**/*.png
 !articles/**/*.png
+# and the figures/tables subdirectories under articles/
+!articles/**/figures/
+!articles/**/figures/**
+!articles/**/tables/
+!articles/**/tables/**
 
 ############################################
 # Research benchmark outputs (large / volatile)
@@ -93,3 +98,12 @@ figures/
 paper/
 tables/
 figures/
+
+# Final exceptions: keep image/data assets bundled with articles and presentations
+# (must come AFTER the global figures/ and tables/ ignores above)
+!presentations/**/*.png
+!articles/**/*.png
+!articles/**/figures/
+!articles/**/figures/**
+!articles/**/tables/
+!articles/**/tables/**

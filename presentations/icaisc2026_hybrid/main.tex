@@ -32,8 +32,7 @@
 \newcolumntype{C}{>{\centering\arraybackslash}X}
 
 \title[Fibonacci Neighborhood for PFSP]
-{Hybrid Neighborhood Evaluation\\
-with focus on the Fibonacci-distance Neighborhood\\
+{The Fibonacci-distance Neighborhood\\
 for the Permutation Flow Shop Problem}
 \author[R.~Wojew\'odzki, W.~Bo\.zejko]
 {Remigiusz Wojew\'odzki \and Wojciech Bo\.zejko}
@@ -61,11 +60,10 @@ for the Permutation Flow Shop Problem}
         \item Classical neighborhoods trade off coverage and cost:
             \begin{itemize}
                 \item \textbf{Adjacent swap:} $n{-}1$ moves, only short-range.
-                \item \textbf{Dynasearch:} $O(n^2)$ candidates, expensive per call.
-                \item \textbf{Motzkin arcs:} structured but $O(n^3)$ DP --- breaks beyond $n \sim 100$.
+                \item \textbf{Dynasearch:} $O(n^2)$ candidates, expensive per call --- intractable beyond $n \sim 200$.
             \end{itemize}
         \item \textbf{Fibonacci-distance insertion:} $O(n \log n)$ moves spanning short \emph{and} long range. Stays tractable up to $n = 500$ and beyond.
-        \item This talk: define the Fibonacci neighborhood, position it among the other elementary moves, and show its role within hybrid local search (TS, SA).
+        \item This talk: define the Fibonacci neighborhood, study its scaling behavior on Taillard benchmarks, and discuss its role within local search frameworks (ILS, SA).
     \end{itemize}
 \end{frame}
 
@@ -106,14 +104,20 @@ for the Permutation Flow Shop Problem}
 \end{frame}
 
 % ===== SLIDE 6 =====
-\section{Fibonacci in Hybrid Local Search}
-\begin{frame}{Role in Hybrid Strategies}
-    Four elementary neighborhoods are combined under five strategies (FC, PW, PA, BK, DP). Fibonacci's job in each:
+\section{Quantum Formulation}
+\begin{frame}{QUBO Formulation for D-Wave}
+    The Fibonacci neighborhood admits a \textbf{tridiagonal QUBO} of bandwidth 2:
+    \[
+        Q_{\mathrm{fib}}(\mathbf{x}) \;=\; \sum_{i=0}^{n-1} a_i\,x_i \;+\; \sum_{i=0}^{n-2} b_i\, x_i x_{i+1},
+    \]
+    where $x_i \in \{0,1\}$ selects the Fibonacci jump at position $i$ and the $b_i$ couplers encode swap conflicts between consecutive positions.
+
+    \vspace{0.3cm}
+    \textbf{Why this matters on D-Wave Advantage:}
     \begin{itemize}
-        \item \textbf{FC --- Fixed Cycle:} Fibonacci breaks adjacent-swap stagnation between two dynasearch passes.
-        \item \textbf{PA --- Performance-Adaptive:} the EMA-driven selector picks Fibonacci most often in mid-search, once adjacent saturates but before dynasearch becomes affordable.
-        \item \textbf{BK --- Best-of-$K$:} Fibonacci is the cheapest non-trivial neighborhood to evaluate, so its candidates effectively come for free in the BK sweep.
-        \item \textbf{Large $n$:} for $n \geq 200$ Fibonacci is the only elementary neighborhood that completes \emph{multiple} iterations within the time budget --- the rest degenerate to a single call.
+        \item Bandwidth 2 $\Rightarrow$ trivial linear-chain embedding on Pegasus/Zephyr, no chain breaks.
+        \item Number of logical qubits $= n$ (one per position), feasible up to $n \leq 500$.
+        \item Acceleration by the Smutnicki block-property and the NPI (no-positive-improvement) filter further prunes the candidate set before submission.
     \end{itemize}
 \end{frame}
 
@@ -125,7 +129,7 @@ for the Permutation Flow Shop Problem}
         \item \textbf{Time limits:} $t_{\max} \in \{0.1, 0.5, 1, 2, 5, 10\}$~s; metric: mean RPD to lower bound.
         \item \textbf{Algorithms:} Iterated Local Search (tabu $\tau{=}10$, MushroomList $k{=}10$); Simulated Annealing ($T_0{=}1000$, $\alpha{=}0.99$, reheat-kick on stagnation).
         \item \textbf{Quantum:} D-Wave Advantage 4.1, $5{,}000$ reads, windowed decomposition for $n > 19$.
-        \item \textbf{Compared neighborhoods:} Adjacent, \textbf{Fibonacci}, Dynasearch, Motzkin.
+        \item \textbf{Compared neighborhoods:} Adjacent, \textbf{Fibonacci}, Dynasearch.
     \end{itemize}
 \end{frame}
 
@@ -141,29 +145,28 @@ for the Permutation Flow Shop Problem}
             \begin{itemize}
                 \item Up to $n \approx 100$: Dynasearch wins, Fibonacci second.
                 \item $n = 200$: Fibonacci \textbf{overtakes} Dynasearch (6.19\,\% vs.\ 11.63\,\%).
-                \item $n = 500$: Dynasearch and Motzkin become intractable; Fibonacci continues at \textbf{11.12\,\%} --- the only classical neighborhood that still scales.
+                \item $n = 500$: Dynasearch becomes intractable; Fibonacci continues at \textbf{11.12\,\%} --- the only classical neighborhood that still scales.
             \end{itemize}
         \end{column}
     \end{columns}
 \end{frame}
 
 % ===== SLIDE 9 =====
-\begin{frame}{Gap vs.\ Time Limit --- Fibonacci within the Hybrid Pool}
+\begin{frame}{Gap vs.\ Time Limit}
     \begin{columns}
         \begin{column}{.5\textwidth}
             \centering
-            \includegraphics[width=\linewidth]{img/ils_gap.png}\\\small ILS
+            \includegraphics[width=\linewidth]{img/ils_gap.png}
         \end{column}
         \begin{column}{.5\textwidth}
             \centering
-            \includegraphics[width=\linewidth]{img/sa_gap.png}\\\small SA
+            \includegraphics[width=\linewidth]{img/sa_gap.png}
         \end{column}
     \end{columns}
 
-    \vspace{0.2cm}
     \begin{itemize}
-        \item Fibonacci converges \textbf{fastest} (flat curve from $t_{\max} = 100$~ms onward) but plateaus highest --- ideal as the \emph{warm-up} neighborhood within a hybrid.
-        \item Combined with a slower, deeper neighborhood (Motzkin or Dynasearch), Fibonacci's early-budget gain compounds with the later-budget refinement.
+        \item Fibonacci has the flattest curve --- already near its plateau at $t_{\max} = 100$~ms.
+        \item Dynasearch reaches lower RPD at small $n$ but needs the full $10$~s budget to get there.
     \end{itemize}
 \end{frame}
 
@@ -172,18 +175,17 @@ for the Permutation Flow Shop Problem}
 \begin{frame}{Conclusion and Future Work}
     \textbf{Summary:}
     \begin{itemize}
-        \item Fibonacci is the only elementary neighborhood that stays tractable from $n = 20$ to $n = 500$.
-        \item Tridiagonal QUBO structure makes it the natural classical baseline for D-Wave QPU comparison.
-        \item Inside a hybrid strategy (PA, BK), Fibonacci absorbs the early time budget cheaply; heavier neighborhoods then refine.
-        \item Empirically, Fibonacci wins outright above $n = 200$ where its rivals run out of computational budget.
+        \item Fibonacci is the only classical elementary neighborhood that stays tractable from $n = 20$ to $n = 500$.
+        \item Tridiagonal QUBO structure embeds cleanly on D-Wave Advantage --- no chain breaks, one qubit per position.
+        \item Empirically beats Dynasearch from $n \geq 200$, where Dynasearch can only complete a single DP call within the time budget.
     \end{itemize}
 
     \vspace{0.2cm}
     \textbf{Future work:}
     \begin{itemize}
-        \item Quantum-assisted Fibonacci neighborhood (windowed QUBO, $n$ up to $500$).
-        \item Multi-armed bandit selection over neighborhoods with Fibonacci as the low-cost arm.
-        \item Hybrid generalization: Fibonacci-of-Fibonacci composite moves.
+        \item Full QPU evaluation of the Fibonacci QUBO at $n = 500$ on D-Wave Advantage.
+        \item Theoretical analysis of the golden-ratio jump distribution vs.\ uniform / geometric alternatives.
+        \item Fibonacci-of-Fibonacci composite moves --- recursive self-similar generalization.
     \end{itemize}
 \end{frame}
 

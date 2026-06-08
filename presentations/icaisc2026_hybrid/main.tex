@@ -6,6 +6,7 @@
 \usepackage{graphicx}
 \usepackage{amsmath,amssymb}
 \usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
 \usepackage{tabularx}
 \usepackage{booktabs}
 
@@ -56,65 +57,67 @@ for the Permutation Flow Shop Problem}
 % ===== SLIDE 3 =====
 \section{Introduction}
 \begin{frame}{Introduction}
-    \begin{itemize}
-        \item \textbf{Permutation Flow Shop Problem (PFSP):} $n$ jobs in the same order on $m$ machines; minimize the makespan $C_{\max}$. NP-hard for $m \geq 3$.
-        \item Neighborhood design is as important as the metaheuristic --- it controls which moves are reachable per iteration.
-        \item This paper compares three neighborhoods inside two classical frameworks (Tabu Search and Simulated Annealing):
-            \begin{itemize}
-                \item \textbf{Adjacent swap} --- baseline, single swap per iteration.
-                \item \textbf{Composite Disjoint-Adjacent} (nicknamed \textbf{Fibonacci}) --- DP-selected set of non-overlapping adjacent swaps applied at once.
-                \item \textbf{Dynasearch} (recursive) --- structured sequence of non-conflicting moves.
-            \end{itemize}
-        \item Goal: understand the trade-off between exploration breadth, per-iteration cost, and convergence stability.
-    \end{itemize}
+    \textbf{Permutation Flow Shop Problem (PFSP)} --- $n$ jobs, $m$ machines, same order, minimize $C_{\max}$. NP-hard for $m \geq 3$.
+
+    \vspace{0.4cm}
+    We compare three neighborhoods inside Tabu Search and Simulated Annealing:
+
+    \vspace{0.2cm}
+    \begin{center}
+    \begin{tikzpicture}[scale=1]
+        % Adjacent
+        \node[draw,fill=pwrtwo,rounded corners,minimum width=3.6cm,minimum height=1.2cm,align=center] (a) at (0,0) {\textbf{Adjacent}\\\small single swap};
+        % Fibonacci
+        \node[draw,fill=pwrone!30,rounded corners,minimum width=3.6cm,minimum height=1.2cm,align=center] (f) at (4.5,0) {\textbf{\emph{Fibonacci}}\\\small disjoint set of swaps};
+        % Dynasearch
+        \node[draw,fill=pwrtwo,rounded corners,minimum width=3.6cm,minimum height=1.2cm,align=center] (d) at (9,0) {\textbf{Dynasearch}\\\small recursive sequence};
+        \draw[->,thick] (a) -- (f);
+        \draw[->,thick] (f) -- (d);
+        \node[below=2pt of a,align=center,font=\scriptsize] {cheap, shallow};
+        \node[below=2pt of f,align=center,font=\scriptsize] {balanced};
+        \node[below=2pt of d,align=center,font=\scriptsize] {deep, expensive};
+    \end{tikzpicture}
+    \end{center}
 \end{frame}
 
 % ===== SLIDE 4 =====
 \section{Neighborhood Structures}
-\begin{frame}{Composite Disjoint-Adjacent (a.k.a.\ \emph{Fibonacci})}
-    \textbf{Definition.} Enumerate all single adjacent swaps $\pi^{(i)} = \mathrm{swap}(i, i{+}1)$ in $\pi$, with deltas
-    \[
-        \Delta_i \;=\; C_{\max}\!\bigl(\pi^{(i)}\bigr) \;-\; C_{\max}(\pi),\qquad i = 1,\dots,n{-}1.
-    \]
-    A dynamic program selects a subset $S \subseteq \{1,\dots,n{-}1\}$ of \textbf{non-overlapping} indices ($i \in S \Rightarrow i{+}1 \notin S$) minimizing $\sum_{i \in S}\Delta_i$. All selected swaps are then applied simultaneously.
+\begin{frame}{Composite Disjoint-Adjacent (\emph{Fibonacci})}
+    Subset $S \subseteq \{1,\dots,n{-}1\}$ of \textbf{non-overlapping} adjacent-swap positions; all selected swaps applied simultaneously. Number of valid subsets $= F_{n+1}$ --- hence the nickname.
 
-    \vspace{0.2cm}
-    \textbf{Example} --- admissible composite move (swaps at 0, 2, 5):
+    \vspace{0.3cm}
     \begin{center}
-    \begin{tikzpicture}[scale=0.95]
-        \foreach \x in {0,1,2,3,4,5,6,7} \fill (\x,0) circle (2pt) node[below=4pt] {\small\x};
+    \begin{tikzpicture}[scale=1.1]
+        \foreach \x in {0,1,2,3,4,5,6,7} \fill (\x,0) circle (2.5pt) node[below=4pt] {\small\x};
         \draw[thick,pwrone] (0,0) to[bend left=80] (1,0);
         \draw[thick,pwrone] (2,0) to[bend left=80] (3,0);
         \draw[thick,pwrone] (5,0) to[bend left=80] (6,0);
+        \node[above=3pt,pwrone] at (0.5,0.55) {\scriptsize swap};
+        \node[above=3pt,pwrone] at (2.5,0.55) {\scriptsize swap};
+        \node[above=3pt,pwrone] at (5.5,0.55) {\scriptsize swap};
     \end{tikzpicture}
     \end{center}
 
-    \textbf{Name origin.} The number of valid subsets equals the Fibonacci number $F_{n+1}$ --- hence the nickname.
+    \vspace{0.2cm}
+    Optimal subset (minimal $\sum_i \Delta_i$) chosen by DP in $O(n)$ given the precomputed $n{-}1$ swap deltas.
 \end{frame}
 
 % ===== SLIDE 5 =====
-\begin{frame}{Algorithm \& Complexity}
-    \textbf{Per iteration:}
-    \begin{enumerate}
-        \item Recompute $C_{\max}(\pi^{(i)})$ for each $i = 1,\dots,n{-}1$ --- each $O(mn)$.
-        \item One-pass DP picks the optimal non-overlapping subset:\\[1mm]
-              $\mathrm{dp}[i] = \min(\mathrm{dp}[i+1],\ \Delta_i + \mathrm{dp}[i+2])$.
-        \item Apply selected swaps; if DP picks nothing, fall back to the least positive $\Delta_i$.
-    \end{enumerate}
-
-    \vspace{0.2cm}
-    \textbf{Cost comparison} (per iteration) --- \emph{Fibonacci} explores an exponentially-sized neighborhood ($F_{n+1}$ valid subsets) at only quadratic cost:
-    \begin{center}\small
+\begin{frame}{Cost Comparison}
+    \begin{center}
     \begin{tabular}{lll}
         \toprule
-        Neighborhood       & Candidates  & Total per iter \\
+        Neighborhood & Candidates & Total per iteration \\
         \midrule
-        Adjacent           & $n-1$       & $O(mn)$ \\
-        \emph{Fibonacci}   & $n-1$ swaps + DP & $O(mn^2)$ \\
-        Dynasearch (rec.)  & $O(n^2)$ segments & $O(mn^3)$ \\
+        Adjacent             & $n-1$ swaps        & $O(mn)$ \\
+        \textbf{\emph{Fibonacci}} & $n-1$ swaps + DP   & $O(mn^2)$ \\
+        Dynasearch (rec.)    & $O(n^2)$ segments  & $O(mn^3)$ \\
         \bottomrule
     \end{tabular}
     \end{center}
+
+    \vspace{0.5cm}
+    \emph{Fibonacci} explores an \textbf{exponentially-sized} neighborhood ($F_{n+1}$ valid subsets) at \textbf{quadratic} cost --- the sweet spot between cheap Adjacent and expensive Dynasearch.
 \end{frame}
 
 % ===== SLIDE 6 =====
@@ -122,41 +125,36 @@ for the Permutation Flow Shop Problem}
 \begin{frame}{Tabu Search \& Simulated Annealing}
     \begin{columns}
         \begin{column}{.5\textwidth}
-            \textbf{Tabu Search (TS)}
+            \textbf{Tabu Search}
             \begin{itemize}
-                \item Tabu list keyed by primitive moves (adjacent indices) or composite signatures (Fibonacci, Dynasearch).
-                \item Tabu tenure $\tau_{\text{tabu}} = 10$.
-                \item Aspiration: accept a tabu move if it improves the global best.
-                \item At each step: pick the best admissible neighbor.
+                \item Tabu list keyed by move or composite signature.
+                \item Tenure $\tau_{\text{tabu}} = 10$.
+                \item Aspiration on global best improvement.
             \end{itemize}
         \end{column}
         \begin{column}{.5\textwidth}
-            \textbf{Simulated Annealing (SA)}
+            \textbf{Simulated Annealing}
             \begin{itemize}
-                \item Multiplicative cooling $T \leftarrow \alpha T$ with floor $T_{\mathrm{floor}}$.
-                \item \textbf{Time-based reheating}: if no improvement for $\tau_{\mathrm{stagn}} = 500$~ms and $T < T_0$, set $T \leftarrow \min(T_0, r \cdot T)$ ($r = 1.5$).
+                \item Multiplicative cooling $T \leftarrow \alpha T$.
+                \item \textbf{Time-based reheating} on stagnation ($\tau_{\mathrm{stagn}}=500$~ms).
                 \item Standard Metropolis acceptance.
             \end{itemize}
         \end{column}
     \end{columns}
 
-    \vspace{0.3cm}
-    Same neighborhoods plugged into both --- so any performance gap is attributable to the neighborhood, not the framework.
+    \vspace{0.5cm}
+    \centering Same neighborhoods $\Rightarrow$ performance differences attributable to neighborhood design, not framework.
 \end{frame}
 
 % ===== SLIDE 7 =====
 \section{Experiments}
 \begin{frame}{Experimental Setup}
     \begin{itemize}
-        \item \textbf{Platform:} MacBook Pro M4 Pro, 24~GB RAM, macOS 26.0.1, Python 3.11.
-        \item \textbf{Benchmarks:} Taillard instances, $n \in \{20, 50, 100, 200, 500\}$, $m \in \{5, 10, 20\}$ --- 12 instance classes.
-        \item \textbf{Time limits:} $tl \in \{100, 500, 1000, 2000, 5000, 10000\}$~ms.
-        \item \textbf{SA parameters:} $T_0 = 1000$, $T_{\mathrm{final}} = 1$, $\alpha = 0.95$, reheat factor $r = 1.5$, stagnation 500~ms.
-        \item \textbf{TS parameter:} $\tau_{\text{tabu}} = 10$.
-        \item \textbf{Metric:} PRD --- mean relative percentage deviation to best known $C_{\max}^{*}$:
-        \[
-            \mathrm{PRD} \;=\; \frac{C_{\max}^{\text{obtained}} - C_{\max}^{*}}{C_{\max}^{*}} \times 100\%.
-        \]
+        \item Taillard instances, $n \in \{20, 50, 100, 200, 500\}$, $m \in \{5, 10, 20\}$ --- 12 instance classes.
+        \item Time limits: $tl \in \{100, 500, 1000, 2000, 5000, 10000\}$~ms.
+        \item SA: $T_0 = 1000$, $T_{\mathrm{final}} = 1$, $\alpha = 0.95$, $r = 1.5$, stagnation 500~ms.
+        \item Metric: PRD to best known $C_{\max}^{*}$ in \%.
+        \item MacBook Pro M4 Pro, 24~GB RAM, Python 3.11.
     \end{itemize}
 \end{frame}
 
@@ -176,22 +174,27 @@ for the Permutation Flow Shop Problem}
         \bottomrule
     \end{tabular}
 
-    \vspace{0.3cm}
-    \begin{itemize}
-        \item Small $n$ ($n\leq 100$): Dynasearch wins.
-        \item Crossover at $n = 200$: \emph{Fibonacci} \textbf{overtakes both} Adjacent and Dynasearch.
-        \item At $n = 500$: Dynasearch and Adjacent fall behind; \emph{Fibonacci} stays competitive.
-    \end{itemize}
+    \vspace{0.4cm}
+    Crossover at $n = 200$: \emph{Fibonacci} \textbf{overtakes} both Adjacent and Dynasearch.
 \end{frame}
 
 % ===== SLIDE 9 =====
-\begin{frame}{Discussion}
-    \begin{itemize}
-        \item \textbf{Early-budget gain.} The composite move bundles several non-overlapping improving swaps into one iteration --- a steeper initial drop in $C_{\max}$ than Adjacent.
-        \item \textbf{Plateau risk.} Once all single $\Delta_i \geq 0$, the composite degenerates to a single swap and stagnates. \textbf{SA reheating} partially mitigates this by re-injecting diversification.
-        \item \textbf{Dynasearch cost.} A single Dynasearch iteration at $n = 500$ can exceed $tl$ by $\sim 200\times$ --- so it never completes one iteration within short budgets.
-        \item \textbf{Practical implication.} \emph{Fibonacci} is the right default for medium-to-large $n$ under tight time limits; Adjacent for very small $n$; Dynasearch only when ample budget is available.
-    \end{itemize}
+\begin{frame}{Convergence --- $tl = 1{,}000$~ms}
+    \begin{columns}
+        \begin{column}{.5\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{img/conv_n200.png}\\
+            \small tai200\_20, $n=200$, $m=20$
+        \end{column}
+        \begin{column}{.5\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{img/conv_n500.png}\\
+            \small tai500\_20, $n=500$, $m=20$
+        \end{column}
+    \end{columns}
+
+    \vspace{0.2cm}
+    \centering\small \emph{Fibonacci} (magenta) drops $C_{\max}$ fastest in the first $\sim 100$~ms; Dynasearch (orange) barely finishes one iteration within $tl$.
 \end{frame}
 
 % ===== SLIDE 10 =====
@@ -199,18 +202,18 @@ for the Permutation Flow Shop Problem}
 \begin{frame}{Conclusion and Future Work}
     \textbf{Summary:}
     \begin{itemize}
-        \item Three neighborhood structures (Adjacent, \emph{Fibonacci}, Dynasearch) compared inside TS and SA under identical time budgets on Taillard.
-        \item Composite (\emph{Fibonacci}) neighborhood accelerates early descent and dominates from $n = 200$ onward.
-        \item Dynasearch reaches deeper optima but is impractical for $n \geq 200$ within short time budgets.
-        \item SA's time-based reheating helps escape plateaus that the composite move induces.
+        \item Three neighborhoods compared inside TS and SA on Taillard.
+        \item \emph{Fibonacci} (Composite Disjoint-Adjacent) dominates from $n = 200$ onward.
+        \item Dynasearch reaches deeper optima but is impractical for $n \geq 200$.
+        \item SA's time-based reheating helps escape composite-move plateaus.
     \end{itemize}
 
-    \vspace{0.2cm}
+    \vspace{0.3cm}
     \textbf{Future work:}
     \begin{itemize}
-        \item Incremental delta evaluation to cut per-iteration cost of composite moves.
-        \item Adaptive switching between neighborhood structures during the run.
-        \item Probabilistic variant sampling and comparison with state-of-the-art FSP solvers (e.g.\ iterated local search, VND).
+        \item Incremental delta evaluation for the composite move.
+        \item Adaptive switching between neighborhoods at runtime.
+        \item Comparison with state-of-the-art FSP solvers (iterated LS, VND).
     \end{itemize}
 \end{frame}
 

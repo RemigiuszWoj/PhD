@@ -1,291 +1,332 @@
-\documentclass[final,t]{beamer}
-\usepackage[size=a0,orientation=portrait,scale=1.15]{beamerposter}
+% ICAISC 2026 poster — adapted from W. Bożejko's PWr poster template
+% (ICCS 2023, "Determination of the lower bounds...", same layout +
+% Warsaw beamer theme, structure colour, Times font).
 
+\documentclass[final]{beamer}
+  \mode<presentation>
+  {
+      \usetheme{Warsaw}
+  }
+\usecolortheme[RGB={10,142,5}]{structure}
+
+\usepackage{times}
+\usepackage{amsmath,amssymb}
+\usepackage[english]{babel}
+\usepackage[orientation=portrait,size=a0,scale=1.0]{beamerposter}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
-\usepackage[english]{babel}
 \usepackage{graphicx}
-\usepackage{amsmath,amssymb}
-\usepackage{tikz}
-\usetikzlibrary{positioning,arrows.meta,shapes.geometric,backgrounds,calc,shadows}
 \usepackage{booktabs}
-\usepackage{tabularx}
-\usepackage{colortbl}
-\usepackage[sfdefault]{roboto}                 % display sans — pdflatex compatible
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
 
-% --- PWr colour scheme + accents ---
-\definecolor{pwrred}{HTML}{9A342D}
-\definecolor{pwrbeige}{HTML}{F0D0A1}
-\definecolor{pwrdark}{HTML}{5C1C18}
-\definecolor{cardgrey}{HTML}{F4F2EE}
-\definecolor{accentblue}{HTML}{2B6E8C}
-\definecolor{neutralgrey}{HTML}{6B6B6B}
-\definecolor{lightgrey}{HTML}{B5B5B5}
+\title{Hybrid Neighborhood Evaluation in Tabu Search and Simulated Annealing for the Permutation Flow Shop Problem}
 
-\setbeamercolor{background canvas}{bg=white}
-\setbeamercolor{normal text}{fg=black,bg=white}
-\setbeamertemplate{navigation symbols}{}
-\setbeamertemplate{headline}{}
-\setbeamertemplate{footline}{}
+\author[Wojew\'odzki \& Bo\.{z}ejko]
+  {Remigiusz Wojew\'odzki$^1$ \and Wojciech Bo\.{z}ejko$^1$}
 
-\title{}
+\institute[Wroc\l aw University of Science and Technology]
+  {$^1$\,Faculty of Information and Communication Technology,
+    Wroc\l aw University of Science and Technology, Poland\\[1ex]
+    \texttt{remigiusz.wojewodzki@gmail.com} \quad
+    \texttt{wojciech.bozejko@pwr.edu.pl}}
+
+\date{ICAISC 2026, Zakopane, Poland}
+
 \begin{document}
-\begin{frame}[t,fragile]
-\vspace*{-2cm}
-\begin{tikzpicture}[remember picture, overlay]
+\begin{frame}
+\frametitle{
+  \begin{columns}[T]
+    \begin{column}{.002\paperwidth}\end{column}
+    \begin{column}{.07\paperwidth}
+      \begin{center}
+        \includegraphics[height=11cm]{logo_PWR_square.png}
+      \end{center}
+    \end{column}
+    \begin{column}{.8\paperwidth}
+      \begin{center}
+        \usebeamercolor{title in headline}{\color{fg}\textbf{\veryHuge{\inserttitle}}\\[1ex]}
+        \usebeamercolor{author in headline}{\color{fg}\LARGE{\insertauthor}\\[1ex]}
+        \usebeamercolor{institute in headline}{\color{fg}\large{\insertinstitute}\\[1ex]}
+      \end{center}
+    \end{column}
+    \begin{column}{.07\paperwidth}
+      \begin{center}
+        \includegraphics[height=7cm]{logowcss.png}
+      \end{center}
+    \end{column}
+    \begin{column}{.02\paperwidth}\end{column}
+  \end{columns}
+}
 
-%==========================================================
-% HEADER — top white strip with logo + ICAISC, then red title bar
-%==========================================================
+{\large
+\begin{columns}
+\setlength{\columnsep}{50mm}
 
-% White strip: 0-6 cm from top, with logo on left and ICAISC banner on right
-\fill[white] (current page.north west) rectangle ([yshift=-6cm]current page.north east);
+% =====================================================================
+% LEFT COLUMN
+% =====================================================================
+\column{0.3\textwidth}
 
-\node[anchor=north west, inner sep=0pt]
-  at ([xshift=2.5cm,yshift=-1.3cm]current page.north west)
-  {\includegraphics[height=3.4cm]{logo_PWR.png}};
+\begin{block}{Introduction}
+\vspace*{3mm}
+\begin{itemize}
+  \item The \textbf{Permutation Flow Shop Problem (PFSP)} schedules $n$
+    jobs on $m$ machines in the same order; the goal is to minimise the
+    makespan $C_{\max}$. It is NP-hard for $m\geq 3$.
+  \item Performance of metaheuristics for the PFSP depends not only on
+    the framework but, equally importantly, on the choice of the
+    \textbf{neighborhood structure} used at each iteration.
+  \item We compare three classical neighborhoods of different
+    granularity --- Adjacent swap, the composite disjoint-adjacent
+    neighborhood we call \emph{Fibonacci}, and the recursive
+    Dynasearch --- inside Tabu Search (TS) and Simulated Annealing (SA).
+  \item Experiments are conducted on the full Taillard benchmark with
+    six time budgets between $100$\,ms and $10$\,s and the relative
+    percentage deviation (PRD) of the obtained $C_{\max}$ to the
+    best-known one as the performance metric.
+\end{itemize}
+\vspace*{3mm}
+\end{block}
 
-\node[anchor=north east, inner sep=0pt, align=right, text=pwrdark]
-  at ([xshift=-2.5cm,yshift=-1.5cm]current page.north east)
-  {%
-  \fontsize{34}{38}\selectfont\bfseries
-  ICAISC 2026
-  \\[0.2em]
-  \fontsize{22}{26}\selectfont\mdseries
-  Zakopane, Poland
-  };
+\vspace*{10mm}
 
-% Red title bar: 6-19 cm from top
-\fill[pwrred] ([yshift=-6cm]current page.north west)
-              rectangle ([yshift=-19cm]current page.north east);
-
-\node[anchor=north, text=pwrbeige, align=center, inner sep=0pt,
-      yshift=-7cm, text width=0.92\paperwidth]
-  at (current page.north)
-  {%
-  \fontsize{90}{104}\selectfont\bfseries
-  The Fibonacci Neighborhood\\[0.1em]
-  \fontsize{52}{62}\selectfont\mdseries
-  beats Adjacent and Dynasearch from \textit{n}\,=\,200
-  };
-
-\node[anchor=north, text=pwrbeige, align=center, yshift=-16.5cm]
-  at (current page.north)
-  {%
-  \fontsize{30}{36}\selectfont
-  Remigiusz Wojew\'odzki~~\textbullet~~Wojciech Bo\.zejko
-  \hspace{1.5em}|\hspace{1.5em}
-  Wroc\l{}aw University of Science and Technology
-  };
-
-%==========================================================
-% HERO BAND — KEY RESULT IN BIG NUMBERS
-%==========================================================
-\fill[pwrbeige] ([yshift=-19cm]current page.north west)
-                rectangle ([yshift=-32cm]current page.north east);
-
-\node[anchor=north, yshift=-19.8cm] at (current page.north)
-  {\fontsize{30}{34}\selectfont\bfseries\color{pwrdark}
-   At $n=200$, $m=20$, $tl=5\,\text{s}$, Tabu Search:};
-
-\node[anchor=center, yshift=-26.4cm] at (current page.north)
-  {\begin{tikzpicture}
-    % three big numbers in cards
-    \node[draw=pwrred, fill=white, line width=2pt, rounded corners=8pt,
-          minimum width=14cm, minimum height=8cm, align=center, drop shadow] (fib) at (0,0)
-       {\fontsize{96}{110}\selectfont\bfseries\color{pwrred} 12.71\%\\[0.3em]
-        \fontsize{30}{34}\selectfont\bfseries Fibonacci\\
-        \fontsize{22}{26}\selectfont\mdseries\color{neutralgrey}\itshape this work};
-    \node[draw=lightgrey, fill=cardgrey, line width=1.5pt, rounded corners=8pt,
-          minimum width=12cm, minimum height=7cm, align=center, right=2cm of fib]
-       {\fontsize{72}{84}\selectfont\bfseries\color{neutralgrey} 13.20\%\\[0.2em]
-        \fontsize{26}{30}\selectfont\bfseries Dynasearch\\
-        \fontsize{20}{24}\selectfont\mdseries\color{neutralgrey} segment swaps, $O(mn^3)$};
-    \node[draw=lightgrey, fill=cardgrey, line width=1.5pt, rounded corners=8pt,
-          minimum width=12cm, minimum height=7cm, align=center, left=2cm of fib]
-       {\fontsize{72}{84}\selectfont\bfseries\color{neutralgrey} 13.19\%\\[0.2em]
-        \fontsize{26}{30}\selectfont\bfseries Adjacent\\
-        \fontsize{20}{24}\selectfont\mdseries\color{neutralgrey} single swap, $O(mn)$};
-   \end{tikzpicture}};
-
-\node[anchor=north, yshift=-30.5cm, text=pwrdark, align=center] at (current page.north)
-  {\fontsize{26}{30}\selectfont
-   \textbf{0.48\,pp better than Adjacent, 0.49\,pp better than Dynasearch}
-   ~~ at quadratic per-iteration cost};
-
-\end{tikzpicture}
-
-%==========================================================
-% MAIN CONTENT (below the hero band)
-%==========================================================
-\vspace{34cm}
-
-\begin{columns}[T,totalwidth=\textwidth]
-
-%--------------------------------------------------
-% LEFT COLUMN — METHOD
-%--------------------------------------------------
-\begin{column}{0.48\textwidth}
-
-{\fontsize{42}{50}\selectfont\bfseries\color{pwrred} The Fibonacci move}\\[0.6em]
-{\color{pwrred}\rule{\textwidth}{3pt}}\\[0.8em]
-
-{\fontsize{28}{34}\selectfont
-A composite move is a subset $S \subseteq \{1,\dots,n{-}1\}$ of
-adjacent-swap positions with \textbf{no two consecutive selected}:
+\begin{block}{The Fibonacci neighborhood}
+\vspace*{3mm}
+A move is a subset $S \subseteq \{1,\dots,n{-}1\}$ of adjacent-swap
+positions satisfying the \textbf{non-overlap} constraint
 \[
-\fontsize{34}{40}\selectfont
-i \in S \;\Longrightarrow\; i+1 \notin S.
+  i \in S \;\Longrightarrow\; i+1 \notin S,
 \]
-All selected swaps $\pi_i \leftrightarrow \pi_{i+1}$ are applied
-\textbf{simultaneously}.
-\par}
+and \emph{all} selected swaps $\pi_i \leftrightarrow \pi_{i+1}$ are
+applied \textbf{simultaneously}.
 
-\vspace{1em}
+\vspace{4mm}
 \begin{center}
 \begin{tikzpicture}[scale=1.6]
-  \foreach \x in {0,1,2,3,4,5,6,7} \fill[pwrdark] (\x,0) circle (8pt) node[below=14pt, font=\Large] {\x};
-  \draw[ultra thick, pwrred] (0,0) to[bend left=80] (1,0);
-  \draw[ultra thick, pwrred] (2,0) to[bend left=80] (3,0);
-  \draw[ultra thick, pwrred] (5,0) to[bend left=80] (6,0);
-  \node[above=10pt, pwrred, font=\Large\bfseries] at (0.5,0.55) {swap};
-  \node[above=10pt, pwrred, font=\Large\bfseries] at (2.5,0.55) {swap};
-  \node[above=10pt, pwrred, font=\Large\bfseries] at (5.5,0.55) {swap};
+  \foreach \x in {0,1,2,3,4,5,6,7} \fill (\x,0) circle (6pt)
+      node[below=12pt,font=\Large] {\x};
+  \draw[ultra thick,structure] (0,0) to[bend left=80] (1,0);
+  \draw[ultra thick,structure] (2,0) to[bend left=80] (3,0);
+  \draw[ultra thick,structure] (5,0) to[bend left=80] (6,0);
 \end{tikzpicture}
 \end{center}
 
-\vspace{0.5em}
-{\fontsize{28}{34}\selectfont
-\textbf{Why "Fibonacci"?}\ The number of valid subsets in a permutation
-of length $n$ equals the Fibonacci number $F_{n+1}$.
-\par}
+\vspace{2mm}
+The number of valid subsets in a permutation of length $n$ equals the
+Fibonacci number $F_{n+1}$ --- hence the nickname. The \textbf{optimal}
+subset (minimal $\sum_{i \in S}\Delta_i$) is found by a single linear-time
+dynamic-programming pass given the precomputed $n{-}1$ adjacent-swap
+deltas.
 
-\vspace{1.6em}
-{\fontsize{42}{50}\selectfont\bfseries\color{pwrred} Algorithm — one DP pass}\\[0.6em]
-{\color{pwrred}\rule{\textwidth}{3pt}}\\[0.8em]
+\vspace{3mm}
+\end{block}
 
+\vspace*{10mm}
+
+\begin{block}{Per-iteration cost}
+\vspace*{3mm}
 \begin{center}
-\begin{tikzpicture}[node distance=1.2cm, font=\Large]
-  \node[draw, fill=cardgrey, rounded corners, minimum width=10cm, minimum height=2cm, align=center]
-       (s1) {\textbf{1.} Recompute $C_{\max}(\pi^{(i)})$ for all $i$ \\[-2pt] \footnotesize\color{neutralgrey}$O(mn)$ each};
-  \node[draw, fill=pwrbeige, rounded corners, minimum width=10cm, minimum height=2cm, align=center, below=of s1]
-       (s2) {\textbf{2.} DP picks optimal non-overlapping subset \\[-2pt] \footnotesize\color{neutralgrey}$\mathrm{dp}[i] = \min(\mathrm{dp}[i+1],\, \Delta_i + \mathrm{dp}[i+2])$};
-  \node[draw, fill=cardgrey, rounded corners, minimum width=10cm, minimum height=2cm, align=center, below=of s2]
-       (s3) {\textbf{3.} Apply all selected swaps at once};
-  \draw[->, ultra thick, pwrred] (s1) -- (s2);
-  \draw[->, ultra thick, pwrred] (s2) -- (s3);
-\end{tikzpicture}
-\end{center}
-
-\vspace{1.2em}
-\begin{center}
-{\fontsize{26}{30}\selectfont
-\begin{tabular}{lcc}
+\begin{tabular}{lll}
 \toprule
-\textbf{Neighborhood} & \textbf{Candidates} & \textbf{Per-iter cost} \\
+\textbf{Neighborhood} & \textbf{Candidates} & \textbf{Total per iter.} \\
 \midrule
-Adjacent              & $n-1$                & $O(mn)$        \\
-\rowcolor{pwrbeige!50}
-\textbf{Fibonacci}    & $n-1\ \text{ + DP}$  & \boldmath$O(mn^2)$ \\
-Dynasearch (rec.)     & $O(n^2)$ segments    & $O(mn^3)$      \\
+Adjacent                & $n-1$ swaps          & $O(mn)$   \\
+\textbf{\emph{Fibonacci}}    & $n-1$ swaps $+$ DP   & $O(mn^2)$ \\
+Dynasearch (rec.)       & $O(n^2)$ segments    & $O(mn^3)$ \\
 \bottomrule
 \end{tabular}
-}
 \end{center}
 
-\vspace{0.4em}
-\begin{center}
-\colorbox{pwrred!10}{\parbox{0.92\textwidth}{\centering
-\fontsize{28}{34}\selectfont\color{pwrdark}
-$F_{n+1}$ valid moves explored at \textbf{quadratic} cost — \\
-the sweet spot between cheap (Adjacent) and deep (Dynasearch).
-}}
-\end{center}
+\vspace{3mm}
+The \emph{Fibonacci} neighborhood explores an \textbf{exponentially-sized}
+set of moves ($F_{n+1}$ valid subsets) at \textbf{quadratic} per-iteration
+cost --- the sweet spot between cheap Adjacent and expensive Dynasearch.
+\vspace{3mm}
+\end{block}
 
-\end{column}
+\vspace*{10mm}
 
-%--------------------------------------------------
-% RIGHT COLUMN — RESULTS
-%--------------------------------------------------
-\begin{column}{0.48\textwidth}
+\begin{block}{Metaheuristic frameworks}
+\vspace*{3mm}
+\textbf{Tabu Search (TS).} Tabu list keyed by primitive moves or composite
+signatures; tenure $\tau_{\text{tabu}}=10$; aspiration on global-best
+improvement.
 
-{\fontsize{42}{50}\selectfont\bfseries\color{pwrred} Where Fibonacci wins}\\[0.6em]
-{\color{pwrred}\rule{\textwidth}{3pt}}\\[0.6em]
+\vspace{3mm}
+\textbf{Simulated Annealing (SA).} Multiplicative cooling
+$T \leftarrow \alpha T$ with floor; \textbf{time-based reheating} kicks
+in after $\tau_{\mathrm{stagn}}=500$\,ms of stagnation:
+$T \leftarrow \min(T_0, r\cdot T)$ with $r=1.5$.
 
-\begin{center}
-\includegraphics[width=\textwidth]{img/hero_crossover.png}
-\end{center}
+\vspace{3mm}
+Both frameworks plug in the same set of neighborhoods, so any
+performance gap is attributable to the neighborhood, not the
+metaheuristic.
+\vspace{3mm}
+\end{block}
 
-\vspace{0.5em}
-{\fontsize{26}{32}\selectfont
-\textbf{Crossover at $n=200$.}\ Below $n=100$ Dynasearch's deep
-moves dominate. From $n=200$ Dynasearch's $O(mn^3)$ cost makes it
-unable to finish a single iteration within the budget — Fibonacci's
-cheaper compound move pulls ahead and stays competitive at $n=500$.
-\par}
+% =====================================================================
+% MIDDLE COLUMN
+% =====================================================================
+\column{0.33\textwidth}
 
-\vspace{1.5em}
-{\fontsize{42}{50}\selectfont\bfseries\color{pwrred} Convergence \,—\, $tl = 1\,$s}\\[0.6em]
-{\color{pwrred}\rule{\textwidth}{3pt}}\\[0.8em]
-
+\begin{alertblock}{Key result --- $n=200$, $m=20$, $tl=5\,\mathrm{s}$, Tabu Search}
+\vspace*{3mm}
 \begin{center}
 \begin{tikzpicture}
-  \node[anchor=south] (a) at (0,0) {\includegraphics[width=0.49\textwidth]{img/conv_n200.png}};
-  \node[anchor=south] (b) at ($(a.south east) + (1cm,0)$) {\includegraphics[width=0.49\textwidth]{img/conv_n500.png}};
-  \node[below=4pt of a, font=\Large\bfseries\color{pwrdark}] {tai200\_20};
-  \node[below=4pt of b, font=\Large\bfseries\color{pwrdark}] {tai500\_20};
+  \node[draw,line width=1.5pt,rounded corners,minimum width=11cm,minimum height=7cm,
+        align=center,fill=structure!10]
+        {\fontsize{60}{72}\selectfont\bfseries 12.71\,\%\\[2mm]
+         \large \textbf{Fibonacci}};
+  \node[draw,line width=0.8pt,rounded corners,minimum width=8cm,minimum height=5cm,
+        align=center,fill=black!5,right=4mm of {(7.5,0)}] (d)
+        {\fontsize{40}{48}\selectfont\bfseries 13.20\,\%\\[2mm]
+         Dynasearch};
 \end{tikzpicture}
 \end{center}
 
-\vspace{0.8em}
-{\fontsize{26}{32}\selectfont
-Fibonacci (\textcolor{pwrred}{\textbf{magenta}}) drops $C_{\max}$ in the
-first $\sim 100$\,ms. Dynasearch (orange) barely finishes \emph{one}
-iteration within the budget.\par}
-
-\vspace{1.6em}
-{\fontsize{42}{50}\selectfont\bfseries\color{pwrred} Take-aways}\\[0.6em]
-{\color{pwrred}\rule{\textwidth}{3pt}}\\[0.8em]
-
+\vspace{2mm}
 \begin{center}
-\begin{tikzpicture}[node distance=0.6cm, font=\Large]
-  \node[draw=pwrred, line width=2pt, fill=white, rounded corners,
-        minimum width=0.92\textwidth, minimum height=2.4cm, align=left,
-        text width=0.86\textwidth] (t1)
-        {\textbf{\large\color{pwrred} Default for $n \geq 200$:}\ Fibonacci, period.};
-  \node[draw=pwrred, line width=2pt, fill=white, rounded corners,
-        minimum width=0.92\textwidth, minimum height=2.4cm, align=left,
-        text width=0.86\textwidth, below=of t1] (t2)
-        {\textbf{\large\color{pwrred} SA reheating} rescues the composite move from plateaus once all $\Delta_i \geq 0$.};
-  \node[draw=pwrred, line width=2pt, fill=white, rounded corners,
-        minimum width=0.92\textwidth, minimum height=2.4cm, align=left,
-        text width=0.86\textwidth, below=of t2] (t3)
-        {\textbf{\large\color{pwrred} Dynasearch at $n=500$} can need $200\times$ the budget for a single iteration — skip it under tight $tl$.};
-\end{tikzpicture}
+\begin{tabular}{rcrcr}
+\textbf{Adjacent} & = & 13.19\,\%
+& \hspace{4mm} & \\
+\textbf{Fibonacci} & = & \textbf{12.71\,\%}
+& \hspace{4mm} & ($-0.48$\,pp vs.\ Adj, $-0.49$\,pp vs.\ Dyn) \\
+\textbf{Dynasearch} & = & 13.20\,\% \\
+\end{tabular}
 \end{center}
 
-\end{column}
+\vspace{2mm}
+Fibonacci's compound move pays for itself once Dynasearch's $O(mn^3)$
+cost no longer fits the time budget --- the crossover happens at
+$n=200$.
+\vspace*{3mm}
+\end{alertblock}
+
+\vspace*{10mm}
+
+\begin{block}{Where Fibonacci wins --- PRD vs.\ $n$ (TS, $tl=5\,$s)}
+\vspace*{3mm}
+\begin{center}
+\includegraphics[width=\columnwidth]{img/hero_crossover.png}
+\end{center}
+\vspace*{1mm}
+\textbf{Below $n=100$:} Dynasearch's deep moves dominate.\quad
+\textbf{From $n=200$:} Dynasearch cannot finish a single iteration
+within the budget, and Fibonacci's cheaper compound move pulls ahead
+and stays competitive at $n=500$.
+\vspace*{3mm}
+\end{block}
+
+\vspace*{10mm}
+
+\begin{block}{Per-instance numbers ($tl=5\,$s)}
+\vspace*{3mm}
+\begin{center}
+\small
+\begin{tabular}{lcc rrrr rr}
+\toprule
+instance & $n$ & $m$
+  & fib$_{\mathrm{TS}}$ & fib$_{\mathrm{SA}}$
+  & dyn$_{\mathrm{TS}}$ & dyn$_{\mathrm{SA}}$
+  & adj$_{\mathrm{TS}}$ & adj$_{\mathrm{SA}}$ \\
+\midrule
+tai20\_5    & 20  & 5  & 17.39 & 17.39 & 6.18  & 6.18  & \textbf{4.17}  & 6.24  \\
+tai50\_10   & 50  & 10 & 20.23 & 20.23 & \textbf{6.95}  & 6.95  & 17.10 & 9.72  \\
+tai100\_10  & 100 & 10 & 17.19 & 17.19 & \textbf{6.57}  & 6.48  & 16.52 & 8.27  \\
+tai200\_10  & 200 & 10 & \textbf{12.71} & 12.71 & 13.20 & 13.20 & 13.19 & 8.53  \\
+tai200\_20  & 200 & 20 & \textbf{18.60} & 18.60 & 20.71 & 20.71 & 19.83 & 20.20 \\
+tai500\_20  & 500 & 20 & 13.91 & 13.90 & 14.51 & 14.51 & \textbf{15.34} & 15.82 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vspace*{3mm}
+\end{block}
+
+% =====================================================================
+% RIGHT COLUMN
+% =====================================================================
+\column{0.3\textwidth}
+
+\begin{block}{Convergence example --- $tl=1\,\mathrm{s}$}
+\vspace*{3mm}
+\begin{center}
+\includegraphics[width=\columnwidth]{img/conv_n200.png}\\[1ex]
+{\large tai200\_20, $n=200$, $m=20$}
+\end{center}
+
+\vspace{5mm}
+\begin{center}
+\includegraphics[width=\columnwidth]{img/conv_n500.png}\\[1ex]
+{\large tai500\_20, $n=500$, $m=20$}
+\end{center}
+
+\vspace{4mm}
+Fibonacci (\textcolor{structure}{\textbf{magenta}}) drops $C_{\max}$ in
+the first $\sim 100$\,ms; Dynasearch (orange) barely finishes one
+iteration within the time budget.
+\vspace{3mm}
+\end{block}
+
+\vspace*{10mm}
+
+\begin{block}{Experimental setup}
+\vspace*{3mm}
+\begin{itemize}
+  \item Taillard instances, $n\in\{20,50,100,200,500\}$,
+        $m\in\{5,10,20\}$ --- 12 instance classes.
+  \item Time budgets:
+        $tl\in\{100,500,1000,2000,5000,10000\}$\,ms.
+  \item SA: $T_0=1000$, $T_{\mathrm{final}}=1$, $\alpha=0.95$,
+        reheat $r=1.5$, stagnation 500\,ms.
+  \item TS: tabu tenure $\tau_{\text{tabu}}=10$, aspiration on
+        global-best improvement.
+  \item Platform: MacBook Pro M4 Pro, 24\,GB RAM, Python 3.11.
+  \item Metric: PRD to best-known $C_{\max}^{*}$,
+        $\mathrm{PRD}=\tfrac{C_{\max}-C_{\max}^{*}}{C_{\max}^{*}}\cdot 100\%$.
+\end{itemize}
+\vspace*{3mm}
+\end{block}
+
+\vspace*{10mm}
+
+\begin{block}{Conclusions}
+\vspace*{3mm}
+\begin{itemize}
+  \item Three neighborhood structures (Adjacent, \emph{Fibonacci},
+        Dynasearch) compared inside TS and SA on the full Taillard
+        benchmark.
+  \item The composite \emph{Fibonacci} neighborhood
+        \textbf{dominates from $n=200$ onward}: at $n=200$ it improves
+        over Adjacent by $0.48$\,pp and over Dynasearch by $0.49$\,pp at
+        $tl=5\,$s; at $n=500$ it remains competitive while Dynasearch
+        cannot complete a single iteration.
+  \item Dynasearch reaches deeper optima at small $n$ but is impractical
+        for $n\geq 200$ under short time budgets.
+  \item SA's \textbf{time-based reheating} reliably escapes the plateau
+        that the composite move induces once all $\Delta_i \geq 0$.
+\end{itemize}
+\vspace*{3mm}
+\end{block}
+
+\vspace*{10mm}
+
+\begin{block}{Future work}
+\vspace*{3mm}
+\begin{itemize}
+  \item Incremental delta evaluation for the composite move
+        ($O(mn^2) \to O(mn)$).
+  \item Adaptive switching between neighborhoods at runtime.
+  \item Comparison against state-of-the-art FSP solvers
+        (iterated local search, variable neighborhood descent).
+  \item Quantum-assisted Fibonacci selection on D-Wave Advantage
+        (windowed QUBO, $n$ up to 500) --- companion paper at SOCO 2026.
+\end{itemize}
+\vspace*{3mm}
+\end{block}
+
 \end{columns}
-
-%==========================================================
-% FOOTER BAND
-%==========================================================
-\vspace{1.5em}
-{\color{pwrred}\rule{\textwidth}{3pt}}\\[0.5em]
-\begin{minipage}{0.66\textwidth}
-{\fontsize{22}{26}\selectfont
-\textbf{Setup.}\ Taillard, $n \in \{20,50,100,200,500\}$, $m \in \{5,10,20\}$.\ \
-TS $\tau_{\text{tabu}}{=}10$; SA $T_0{=}1000$, $\alpha{=}0.95$, reheat $r{=}1.5$, stagnation 500\,ms.\ \
-Platform: MacBook Pro M4 Pro, Python 3.11.
-\par}
-\end{minipage}\hfill
-\begin{minipage}{0.30\textwidth}
-\raggedleft
-{\fontsize{22}{26}\selectfont
-\textbf{Full paper:}\ ICAISC 2026, Springer LNCS.\\
-\textbf{Code:}\ \texttt{github.com/RemigiuszWoj/PhD}
-\par}
-\end{minipage}
-
+}
 \end{frame}
 \end{document}

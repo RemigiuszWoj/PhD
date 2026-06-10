@@ -7,7 +7,24 @@
   {
       \usetheme{Warsaw}
   }
-\usecolortheme[RGB={10,142,5}]{structure}
+
+% --- Cyberpunk neon palette ----------------------------------------
+\definecolor{cyberviolet}{HTML}{6A1B9A}   % deep violet  (block headers)
+\definecolor{cybermagenta}{HTML}{F72585}  % neon magenta (Fibonacci / alert)
+\definecolor{cybercyan}{HTML}{4CC9F0}     % neon cyan    (accents)
+\usecolortheme[named=cyberviolet]{structure}
+
+% block headers: violet bar, white text, faint violet body tint
+\setbeamercolor{block title}{fg=white,bg=cyberviolet}
+\setbeamercolor{block body}{fg=black,bg=cyberviolet!6}
+% alert (key-result) block: neon magenta
+\setbeamercolor{block title alerted}{fg=white,bg=cybermagenta}
+\setbeamercolor{block body alerted}{fg=black,bg=cybermagenta!10}
+% header band + title text
+\setbeamercolor{headline}{fg=white,bg=cyberviolet}
+\setbeamercolor{title in headline}{fg=white}
+\setbeamercolor{author in headline}{fg=cybercyan}
+\setbeamercolor{institute in headline}{fg=white}
 
 \usepackage{times}
 \usepackage{amsmath,amssymb}
@@ -26,7 +43,8 @@
   {Remigiusz Wojew\'odzki$^1$ \and Wojciech Bo\.{z}ejko$^1$}
 
 \institute[Wroc\l aw University of Science and Technology]
-  {$^1$\,Faculty of Information and Communication Technology,
+  {$^1$\,Department of Control and Quantum Computing,
+    Faculty of Information and Communication Technology,
     Wroc\l aw University of Science and Technology, Poland\\[1ex]
     \texttt{remigiusz.wojewodzki@gmail.com} \quad
     \texttt{wojciech.bozejko@pwr.edu.pl}}
@@ -37,25 +55,20 @@
 \begin{frame}
 \frametitle{
   \begin{columns}[T]
-    \begin{column}{.002\paperwidth}\end{column}
-    \begin{column}{.07\paperwidth}
+    \begin{column}{.01\paperwidth}\end{column}
+    \begin{column}{.10\paperwidth}
       \begin{center}
-        \includegraphics[height=11cm]{logo_PWR_square.png}
+        \includegraphics[height=12cm]{logo_PWR_square.png}
       \end{center}
     \end{column}
-    \begin{column}{.8\paperwidth}
+    \begin{column}{.86\paperwidth}
       \begin{center}
         \usebeamercolor{title in headline}{\color{fg}\textbf{\veryHuge{\inserttitle}}\\[1ex]}
         \usebeamercolor{author in headline}{\color{fg}\LARGE{\insertauthor}\\[1ex]}
         \usebeamercolor{institute in headline}{\color{fg}\large{\insertinstitute}\\[1ex]}
       \end{center}
     \end{column}
-    \begin{column}{.07\paperwidth}
-      \begin{center}
-        \includegraphics[height=7cm]{logowcss.png}
-      \end{center}
-    \end{column}
-    \begin{column}{.02\paperwidth}\end{column}
+    \begin{column}{.01\paperwidth}\end{column}
   \end{columns}
 }
 
@@ -172,12 +185,12 @@ and all selected swaps $\pi_i \leftrightarrow \pi_{i+1}$ are applied
 \begin{tikzpicture}[scale=1.7]
   \foreach \x in {0,1,2,3,4,5,6,7} \fill (\x,0) circle (6pt)
       node[below=12pt,font=\Large] {\x};
-  \draw[ultra thick,structure] (0,0) to[bend left=80] (1,0);
-  \draw[ultra thick,structure] (2,0) to[bend left=80] (3,0);
-  \draw[ultra thick,structure] (5,0) to[bend left=80] (6,0);
-  \node[above=8pt,structure,font=\large] at (0.5,0.5) {swap};
-  \node[above=8pt,structure,font=\large] at (2.5,0.5) {swap};
-  \node[above=8pt,structure,font=\large] at (5.5,0.5) {swap};
+  \draw[ultra thick,cybermagenta] (0,0) to[bend left=80] (1,0);
+  \draw[ultra thick,cybermagenta] (2,0) to[bend left=80] (3,0);
+  \draw[ultra thick,cybermagenta] (5,0) to[bend left=80] (6,0);
+  \node[above=8pt,cybermagenta,font=\large] at (0.5,0.5) {swap};
+  \node[above=8pt,cybermagenta,font=\large] at (2.5,0.5) {swap};
+  \node[above=8pt,cybermagenta,font=\large] at (5.5,0.5) {swap};
 \end{tikzpicture}
 \end{center}
 

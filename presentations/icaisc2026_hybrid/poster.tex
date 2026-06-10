@@ -101,11 +101,43 @@
 \vspace*{2mm}
 \end{block}
 
-\vspace*{7mm}
+\vfill
 
-\begin{block}{Problem definition}
+\begin{block}{Problem description}
 \vspace*{2mm}
-Given a processing-time matrix $P=[p_{k,j}]_{m\times n}$, a permutation
+The PFSP models a \textbf{production line}: $n$ jobs pass through $m$
+machines in the \emph{same fixed order}.
+
+\vspace{3mm}
+\begin{center}
+\resizebox{0.96\columnwidth}{!}{%
+\begin{tikzpicture}[font=\large, node distance=7mm]
+  % conveyor belt
+  \fill[black!10] (-0.4,-0.55) rectangle (15.6,-0.15);
+  \foreach \x in {-0.2,0.4,...,15.4} \draw[black!25] (\x,-0.55)--(\x,-0.15);
+  % jobs entering
+  \node[draw,fill=cybermagenta!25,minimum size=12mm] (j) at (0.7,1.1) {jobs};
+  % machines
+  \node[draw,fill=cyberviolet,text=white,minimum width=20mm,minimum height=15mm,rounded corners] (m1) at (4,1.1) {$M_1$};
+  \node[draw,fill=cyberviolet,text=white,minimum width=20mm,minimum height=15mm,rounded corners] (m2) at (7,1.1) {$M_2$};
+  \node (dots) at (9.6,1.1) {\Huge$\cdots$};
+  \node[draw,fill=cyberviolet,text=white,minimum width=20mm,minimum height=15mm,rounded corners] (mm) at (12.2,1.1) {$M_m$};
+  \node[draw,fill=cybercyan!30,minimum size=12mm] (out) at (15,1.1) {done};
+  % flow arrows
+  \draw[ultra thick,->] (j)--(m1);
+  \draw[ultra thick,->] (m1)--(m2);
+  \draw[ultra thick,->] (m2)--(dots);
+  \draw[ultra thick,->] (dots)--(mm);
+  \draw[ultra thick,->] (mm)--(out);
+  % direction of the line
+  \draw[ultra thick,cybermagenta,->] (-0.3,-0.85)--(15.4,-0.85)
+        node[midway,below,font=\large,black] {same job order on every machine};
+\end{tikzpicture}}
+\end{center}
+
+\vspace{2mm}
+Given a processing-time matrix $P=[p_{k,j}]_{m\times n}$ with
+\textbf{integer} entries $p_{k,j}\in\mathbb{Z}_{\geq 0}$, a permutation
 $\pi$ fixes the job order. The completion times obey
 \[
   C_{k,j} = \max\{C_{k,j-1},\,C_{k-1,j}\} + p_{k,\pi(j)},
@@ -114,13 +146,10 @@ for $k=1,\dots,m$, $j=1,\dots,n$, with the objective
 \[
   \min_{\pi}\; C_{\max}(\pi) = C_{m,n}(\pi).
 \]
-A \emph{neighborhood} of $\pi$ is the set of permutations reachable by a
-specific admissible modification --- it governs how the search explores
-and exploits the solution space.
-\vspace*{2mm}
+\vspace*{1mm}
 \end{block}
 
-\vspace*{7mm}
+\vfill
 
 \begin{block}{Three neighborhood structures}
 \vspace*{2mm}
@@ -143,7 +172,7 @@ trade breadth for per-iteration cost in the same spirit.
 \vspace*{2mm}
 \end{block}
 
-\vspace*{7mm}
+\vfill
 
 \begin{block}{Per-iteration cost}
 \vspace*{2mm}
@@ -261,6 +290,31 @@ cost no longer fits the budget.
 \textbf{From $n=200$:} the compound \emph{Fibonacci} move pulls ahead and
 stays best at $n=500$.
 \vspace*{2mm}
+\end{block}
+
+\vspace*{6mm}
+
+\begin{block}{Selected references}
+\vspace*{1mm}
+{\small
+[1] Taillard, E. \emph{Benchmarks for basic scheduling problems.}
+    Eur.\ J.\ Oper.\ Res.\ (1993).\\[0.4ex]
+[2] Johnson, S.\,M. \emph{Optimal two- and three-stage production
+    schedules.} Nav.\ Res.\ Logist.\ Q.\ (1954).\\[0.4ex]
+[3] Nowicki, E., Smutnicki, C. \emph{A fast tabu search algorithm for
+    the permutation flow-shop problem.} Eur.\ J.\ Oper.\ Res.\ (1996).\\[0.4ex]
+[4] Glover, F. \emph{Future paths for integer programming and links to
+    artificial intelligence.} Comput.\ Oper.\ Res.\ (1986).\\[0.4ex]
+[5] Kirkpatrick, S., Gelatt, C.\,D., Vecchi, M.\,P.
+    \emph{Optimization by simulated annealing.} Science (1983).\\[0.4ex]
+[6] Congram, R., Potts, C., Van de Velde, S.
+    \emph{An iterated dynasearch algorithm\ldots} (2002).\\[0.4ex]
+[7] Bo\.zejko, W., Wodecki, M. \emph{On the theoretical properties of
+    swap multimoves.} Oper.\ Res.\ Lett.\ (2007).\\[0.4ex]
+[8] Ahuja, R., Orlin, J., Tiwari, A. \emph{Very large-scale neighborhood
+    search.} Oper.\ Res.\ (2002).
+}
+\vspace*{1mm}
 \end{block}
 
 % =====================================================================

@@ -1,0 +1,419 @@
+% ICAISC 2026 poster — adapted from W. Bożejko's PWr poster template
+% (ICCS 2023, "Determination of the lower bounds...", Warsaw beamer
+% theme, green structure colour, Times font, 3-column block layout).
+
+\documentclass[final]{beamer}
+  \mode<presentation>
+  {
+      \usetheme{Warsaw}
+  }
+
+% --- Cyberpunk neon palette ----------------------------------------
+\definecolor{cyberviolet}{HTML}{6A1B9A}   % deep violet  (block headers)
+\definecolor{cybermagenta}{HTML}{F72585}  % neon magenta (Fibonacci / alert)
+\definecolor{cybercyan}{HTML}{4CC9F0}     % neon cyan    (accents)
+\usecolortheme[named=cyberviolet]{structure}
+
+% block headers: violet bar, white text, faint violet body tint
+\setbeamercolor{block title}{fg=white,bg=cyberviolet}
+\setbeamercolor{block body}{fg=black,bg=cyberviolet!6}
+% alert (key-result) block: neon magenta
+\setbeamercolor{block title alerted}{fg=white,bg=cybermagenta}
+\setbeamercolor{block body alerted}{fg=black,bg=cybermagenta!10}
+% header band + title text
+\setbeamercolor{headline}{fg=white,bg=cyberviolet}
+\setbeamercolor{title in headline}{fg=white}
+\setbeamercolor{author in headline}{fg=cybercyan}
+\setbeamercolor{institute in headline}{fg=white}
+
+\usepackage{times}
+\usepackage{amsmath,amssymb}
+\usepackage[english]{babel}
+\usepackage[orientation=portrait,size=a0,scale=1.0]{beamerposter}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
+
+\title{Hybrid Neighborhood Evaluation in Tabu Search and Simulated Annealing for the Permutation Flow Shop Problem}
+
+\author[Wojew\'odzki \& Bo\.{z}ejko]
+  {Remigiusz Wojew\'odzki$^1$ \and Wojciech Bo\.{z}ejko$^1$}
+
+\institute[Wroc\l aw University of Science and Technology]
+  {$^1$\,Department of Control and Quantum Computing,
+    Faculty of Information and Communication Technology,
+    Wroc\l aw University of Science and Technology, Poland\\[1ex]
+    \texttt{remigiusz.wojewodzki@gmail.com} \quad
+    \texttt{wojciech.bozejko@pwr.edu.pl}}
+
+\date{ICAISC 2026, Zakopane, Poland}
+
+\begin{document}
+\begin{frame}
+\frametitle{
+  \begin{columns}[T]
+    \begin{column}{.01\paperwidth}\end{column}
+    \begin{column}{.10\paperwidth}
+      \begin{center}
+        \includegraphics[height=12cm]{logo_PWR_square.png}
+      \end{center}
+    \end{column}
+    \begin{column}{.86\paperwidth}
+      \begin{center}
+        \usebeamercolor{title in headline}{\color{fg}\textbf{\veryHuge{\inserttitle}}\\[1ex]}
+        \usebeamercolor{author in headline}{\color{fg}\LARGE{\insertauthor}\\[1ex]}
+        \usebeamercolor{institute in headline}{\color{fg}\large{\insertinstitute}\\[1ex]}
+      \end{center}
+    \end{column}
+    \begin{column}{.01\paperwidth}\end{column}
+  \end{columns}
+}
+
+{\large
+\begin{columns}
+\setlength{\columnsep}{45mm}
+
+% =====================================================================
+% LEFT COLUMN
+% =====================================================================
+\column{0.3\textwidth}
+
+\begin{block}{Introduction}
+\vspace*{2mm}
+\begin{itemize}
+  \item The \textbf{Permutation Flow Shop Problem (PFSP)} schedules $n$
+    jobs on $m$ machines in the same order; the goal is to minimise the
+    makespan $C_{\max}$. It is NP-hard for $m\geq 3$.
+  \item For metaheuristics, the choice of the \textbf{neighborhood
+    structure} --- the set of moves explored each iteration --- matters
+    as much as the framework itself.
+  \item We compare three neighborhoods of increasing granularity inside
+    \textbf{Tabu Search (TS)} and \textbf{Simulated Annealing (SA)}:
+    the Adjacent swap, the composite \emph{Fibonacci} neighborhood, and
+    the recursive Dynasearch.
+  \item All under identical wall-clock budgets on the Taillard benchmark,
+    measuring the relative percentage deviation (PRD) of $C_{\max}$ to
+    the best-known value.
+\end{itemize}
+\vspace*{2mm}
+\end{block}
+
+\vfill
+
+\begin{block}{Problem description}
+\vspace*{2mm}
+The PFSP models a \textbf{production line}: $n$ jobs pass through $m$
+machines in the \emph{same fixed order}.
+
+\vspace{3mm}
+\begin{center}
+\resizebox{0.96\columnwidth}{!}{%
+\begin{tikzpicture}[font=\large, node distance=7mm]
+  % conveyor belt
+  \fill[black!10] (-0.4,-0.55) rectangle (15.6,-0.15);
+  \foreach \x in {-0.2,0.4,...,15.4} \draw[black!25] (\x,-0.55)--(\x,-0.15);
+  % jobs entering
+  \node[draw,fill=cybermagenta!25,minimum size=12mm] (j) at (0.7,1.1) {jobs};
+  % machines
+  \node[draw,fill=cyberviolet,text=white,minimum width=20mm,minimum height=15mm,rounded corners] (m1) at (4,1.1) {$M_1$};
+  \node[draw,fill=cyberviolet,text=white,minimum width=20mm,minimum height=15mm,rounded corners] (m2) at (7,1.1) {$M_2$};
+  \node (dots) at (9.6,1.1) {\Huge$\cdots$};
+  \node[draw,fill=cyberviolet,text=white,minimum width=20mm,minimum height=15mm,rounded corners] (mm) at (12.2,1.1) {$M_m$};
+  \node[draw,fill=cybercyan!30,minimum size=12mm] (out) at (15,1.1) {done};
+  % flow arrows
+  \draw[ultra thick,->] (j)--(m1);
+  \draw[ultra thick,->] (m1)--(m2);
+  \draw[ultra thick,->] (m2)--(dots);
+  \draw[ultra thick,->] (dots)--(mm);
+  \draw[ultra thick,->] (mm)--(out);
+  % direction of the line
+  \draw[ultra thick,cybermagenta,->] (-0.3,-0.85)--(15.4,-0.85)
+        node[midway,below,font=\large,black] {same job order on every machine};
+\end{tikzpicture}}
+\end{center}
+
+\vspace{2mm}
+Given a processing-time matrix $P=[p_{k,j}]_{m\times n}$ with
+\textbf{integer} entries $p_{k,j}\in\mathbb{Z}_{\geq 0}$, a permutation
+$\pi$ fixes the job order. The completion times obey
+\[
+  C_{k,j} = \max\{C_{k,j-1},\,C_{k-1,j}\} + p_{k,\pi(j)},
+\]
+for $k=1,\dots,m$, $j=1,\dots,n$, with the objective
+\[
+  \min_{\pi}\; C_{\max}(\pi) = C_{m,n}(\pi).
+\]
+\vspace*{1mm}
+\end{block}
+
+\vfill
+
+\begin{block}{Three neighborhood structures}
+\vspace*{2mm}
+\begin{itemize}
+  \item \textbf{Adjacent swap (baseline).} Swap positions $(i,i{+}1)$,
+    $i=1,\dots,n{-}1$. Cheap to evaluate --- many iterations, but only
+    shallow local moves.
+  \item \textbf{Composite Disjoint-Adjacent (\emph{Fibonacci}).}
+    A dynamic program selects a set of \emph{non-overlapping} adjacent
+    swaps minimising the joint $\sum_i\Delta_i$ and applies them at once
+    --- a bounded multi-step descent in a single iteration.
+  \item \textbf{Dynasearch (recursive).} Considers all segments $[i,j]$,
+    swapping their endpoints $\pi(i)\leftrightarrow\pi(j)$; a DP picks
+    non-overlapping improving segments. $O(n^2)$ candidates --- deep but
+    costly.
+\end{itemize}
+\vspace*{1mm}
+Related very-large-scale neighborhoods (six-operator~/ global-local)
+trade breadth for per-iteration cost in the same spirit.
+\vspace*{2mm}
+\end{block}
+
+\vfill
+
+\begin{block}{Per-iteration cost}
+\vspace*{2mm}
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\textbf{Neighborhood} & \textbf{Candidates} & \textbf{Total per iter.} \\
+\midrule
+Adjacent                  & $n-1$ swaps        & $O(mn)$   \\
+\textbf{\emph{Fibonacci}} & $n-1$ swaps $+$ DP & $O(mn^2)$ \\
+Dynasearch (rec.)         & $O(n^2)$ segments  & $O(mn^3)$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vspace*{2mm}
+\emph{Fibonacci} explores an \textbf{exponentially-sized} move set
+($F_{n+1}$ valid subsets) at \textbf{quadratic} cost --- the sweet spot
+between cheap Adjacent and expensive Dynasearch.
+\vspace*{2mm}
+\end{block}
+
+% =====================================================================
+% MIDDLE COLUMN
+% =====================================================================
+\column{0.33\textwidth}
+
+\begin{block}{The Fibonacci move}
+\vspace*{2mm}
+A move is a subset $S \subseteq \{1,\dots,n{-}1\}$ of adjacent-swap
+positions with the \textbf{non-overlap} constraint
+\[
+  i \in S \;\Longrightarrow\; i+1 \notin S,
+\]
+and all selected swaps $\pi_i \leftrightarrow \pi_{i+1}$ are applied
+\textbf{simultaneously}.
+
+\vspace{3mm}
+\begin{center}
+\begin{tikzpicture}[scale=1.7]
+  \foreach \x in {0,1,2,3,4,5,6,7} \fill (\x,0) circle (6pt)
+      node[below=12pt,font=\Large] {\x};
+  \draw[ultra thick,cybermagenta] (0,0) to[bend left=80] (1,0);
+  \draw[ultra thick,cybermagenta] (2,0) to[bend left=80] (3,0);
+  \draw[ultra thick,cybermagenta] (5,0) to[bend left=80] (6,0);
+  \node[above=8pt,cybermagenta,font=\large] at (0.5,0.5) {swap};
+  \node[above=8pt,cybermagenta,font=\large] at (2.5,0.5) {swap};
+  \node[above=8pt,cybermagenta,font=\large] at (5.5,0.5) {swap};
+\end{tikzpicture}
+\end{center}
+
+\vspace{2mm}
+The number of valid subsets in a permutation of length $n$ equals the
+Fibonacci number $F_{n+1}$ --- hence the nickname. The optimal subset is
+found by a single linear-time DP pass over the precomputed swap deltas:
+\[
+  \mathrm{dp}[i] = \min\!\bigl(\mathrm{dp}[i+1],\ \Delta_i + \mathrm{dp}[i+2]\bigr).
+\]
+\vspace*{1mm}
+\end{block}
+
+\vspace*{6mm}
+
+\begin{block}{Metaheuristic frameworks}
+\vspace*{2mm}
+\textbf{Tabu Search (TS).} Tabu list keyed by primitive moves or
+composite signatures; tenure $T_{\text{Tabu}}=10$; an aspiration
+criterion accepts a tabu move when it improves the global best.
+
+\vspace{2mm}
+\textbf{Simulated Annealing (SA).} Multiplicative cooling
+$T\leftarrow\alpha T$ with floor and \textbf{time-based reheating}: after
+$\tau_{\text{stagn}}$ ms of no improvement, $T\leftarrow\min(T_0,r\,T)$.
+Standard acceptance:
+\[
+  \Pr(\textit{accept}) =
+  \begin{cases}
+    1 & \text{if } \Delta < 0,\\[1mm]
+    \exp(-\Delta/T) & \text{otherwise}.
+  \end{cases}
+\]
+Both frameworks plug in the same neighborhoods, so any performance gap
+is attributable to the neighborhood, not the metaheuristic.
+\vspace*{2mm}
+\end{block}
+
+\vspace*{6mm}
+
+\begin{alertblock}{Key result --- $n=200$, $m=20$, $tl=5\,$s, Tabu Search}
+\vspace*{2mm}
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lcl}
+\textbf{Adjacent}             & 13.19\,\% & \\
+\textbf{\emph{Fibonacci}}     & \textbf{12.71\,\%} & $\leftarrow$ best \\
+\textbf{Dynasearch}           & 13.20\,\% & \\
+\end{tabular}
+\end{center}
+\vspace{1mm}
+Fibonacci improves over Adjacent by $\mathbf{0.48}$\,pp and over
+Dynasearch by $\mathbf{0.49}$\,pp --- at merely quadratic per-iteration
+cost. The crossover happens at $n=200$, where Dynasearch's $O(mn^3)$
+cost no longer fits the budget.
+\vspace*{2mm}
+\end{alertblock}
+
+\vspace*{6mm}
+
+\begin{block}{Where Fibonacci wins --- PRD vs.\ $n$}
+\vspace*{2mm}
+\begin{center}
+\includegraphics[width=0.97\columnwidth]{img/hero_crossover.png}
+\end{center}
+\vspace*{1mm}
+\textbf{Small $n$:} Adjacent / Dynasearch dominate.\quad
+\textbf{From $n=200$:} the compound \emph{Fibonacci} move pulls ahead and
+stays best at $n=500$.
+\vspace*{2mm}
+\end{block}
+
+\vspace*{6mm}
+
+\begin{block}{Selected references}
+\vspace*{1mm}
+{\small
+[1] Taillard, E. \emph{Benchmarks for basic scheduling problems.}
+    Eur.\ J.\ Oper.\ Res.\ (1993).\\[0.4ex]
+[2] Johnson, S.\,M. \emph{Optimal two- and three-stage production
+    schedules.} Nav.\ Res.\ Logist.\ Q.\ (1954).\\[0.4ex]
+[3] Nowicki, E., Smutnicki, C. \emph{A fast tabu search algorithm for
+    the permutation flow-shop problem.} Eur.\ J.\ Oper.\ Res.\ (1996).\\[0.4ex]
+[4] Glover, F. \emph{Future paths for integer programming and links to
+    artificial intelligence.} Comput.\ Oper.\ Res.\ (1986).\\[0.4ex]
+[5] Kirkpatrick, S., Gelatt, C.\,D., Vecchi, M.\,P.
+    \emph{Optimization by simulated annealing.} Science (1983).\\[0.4ex]
+[6] Congram, R., Potts, C., Van de Velde, S.
+    \emph{An iterated dynasearch algorithm\ldots} (2002).\\[0.4ex]
+[7] Bo\.zejko, W., Wodecki, M. \emph{On the theoretical properties of
+    swap multimoves.} Oper.\ Res.\ Lett.\ (2007).\\[0.4ex]
+[8] Ahuja, R., Orlin, J., Tiwari, A. \emph{Very large-scale neighborhood
+    search.} Oper.\ Res.\ (2002).
+}
+\vspace*{1mm}
+\end{block}
+
+% =====================================================================
+% RIGHT COLUMN
+% =====================================================================
+\column{0.3\textwidth}
+
+\begin{block}{Per-instance PRD ($tl=5\,$s)}
+\vspace*{2mm}
+\begin{center}
+\small
+\begin{tabular}{lcc rr rr}
+\toprule
+instance & $n$ & $m$
+  & fib$_{\mathrm{TS}}$ & fib$_{\mathrm{SA}}$
+  & dyn$_{\mathrm{TS}}$ & adj$_{\mathrm{TS}}$ \\
+\midrule
+tai20\_20  & 20  & 20 & 36.37 & 36.37 & 24.83 & \textbf{22.59} \\
+tai50\_20  & 50  & 20 & 32.19 & 32.19 & \textbf{14.80} & 27.56 \\
+tai100\_20 & 100 & 20 & 23.02 & 23.02 & \textbf{17.79} & 23.20 \\
+tai200\_10 & 200 & 10 & \textbf{12.71} & 12.71 & 13.20 & 13.19 \\
+tai200\_20 & 200 & 20 & \textbf{18.60} & 18.60 & 20.71 & 19.83 \\
+tai500\_20 & 500 & 20 & \textbf{13.91} & 13.90 & 14.51 & 15.34 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\vspace*{1mm}
+Best per row in bold. Fibonacci takes the lead from $n=200$ onward.
+\vspace*{2mm}
+\end{block}
+
+\vspace*{6mm}
+
+\begin{block}{Convergence --- short budget ($tl=1\,$s)}
+\vspace*{2mm}
+\begin{center}
+\includegraphics[width=0.95\columnwidth]{img/conv_n200.png}
+\end{center}
+\vspace*{1mm}
+\textbf{tai200\_20.} Fibonacci (magenta) drops $C_{\max}$ in the first
+$\sim 100$\,ms; Dynasearch (green) barely completes a single iteration
+within the budget.
+\vspace*{2mm}
+\end{block}
+
+\vspace*{6mm}
+
+\begin{block}{Convergence --- long budget ($tl=100\,$s)}
+\vspace*{2mm}
+\begin{center}
+\includegraphics[width=0.95\columnwidth]{img/conv_long_n200.png}
+\end{center}
+\vspace*{1mm}
+\textbf{tai200\_10.} Given two orders of magnitude more time, Dynasearch
+(green) keeps improving and eventually overtakes both --- while
+Fibonacci and Adjacent plateau early.
+\vspace*{2mm}
+\end{block}
+
+\vspace*{6mm}
+
+\begin{block}{Conclusions}
+\vspace*{2mm}
+\begin{itemize}
+  \item Composite \emph{Fibonacci} accelerates \textbf{early}
+    exploitation: a steeper initial $C_{\max}$ drop than Adjacent, by
+    bundling non-overlapping improving swaps.
+  \item It \textbf{dominates from $n=200$} under short-to-medium budgets,
+    where Dynasearch cannot finish even one iteration ($\sim200\times$
+    the budget at $n=500$).
+  \item Once all $\Delta_i\geq 0$ the composite degenerates to a single
+    swap and may plateau; \textbf{SA reheating} reliably restores
+    diversification.
+  \item Dynasearch remains best at small $n$ or with large budgets.
+\end{itemize}
+\vspace*{2mm}
+\end{block}
+
+\vspace*{6mm}
+
+\begin{block}{Future work}
+\vspace*{2mm}
+\begin{itemize}
+  \item \textbf{Incremental delta evaluation} of the composite move,
+    cutting the per-iteration cost from $O(mn^2)$ toward $O(mn)$.
+  \item \textbf{Adaptive switching} between neighborhoods at runtime
+    (e.g.\ Fibonacci early, Dynasearch once the budget allows).
+  \item \textbf{Probabilistic variant sampling} of the swap subset for
+    additional diversification.
+  \item Integration into stronger solvers (iterated local search,
+    variable neighborhood descent) and comparison with
+    state-of-the-art FSP methods.
+  \item \textbf{Quantum-assisted} Fibonacci selection on D-Wave Advantage
+    (windowed QUBO, $n$ up to 500) --- companion paper at SOCO 2026.
+\end{itemize}
+\vspace*{2mm}
+\end{block}
+
+\end{columns}
+}
+\end{frame}
+\end{document}

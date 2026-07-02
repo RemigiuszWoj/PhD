@@ -6,6 +6,21 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 
+# Legacy neighborhood-name drift ("fibonahi" typo in pre-May-2026 batches).
+# Normalized on load so CSV joins and pivot tables use one canonical name.
+_NEIGH_RENAMES = {
+    "fibonahi": "fibonacci",
+    "quantum_fibonahi": "quantum_fibonacci",
+}
+
+
+def _normalize_result(data: Dict[str, Any]) -> Dict[str, Any]:
+    neigh = (data.get("config") or {}).get("neighborhood")
+    if neigh in _NEIGH_RENAMES:
+        data["config"]["neighborhood"] = _NEIGH_RENAMES[neigh]
+    return data
+
+
 def load_results_dir(timestamp_dir: Path) -> List[Dict[str, Any]]:
     """Recursively load all JSON result files under a timestamp directory.
 
@@ -18,7 +33,7 @@ def load_results_dir(timestamp_dir: Path) -> List[Dict[str, Any]]:
         try:
             with open(file, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                results.append(data)
+                results.append(_normalize_result(data))
         except Exception as e:
             print(f"[Aggregate] Failed to load {file}: {e}")
     # Recursive search for per-run result.json
@@ -29,7 +44,7 @@ def load_results_dir(timestamp_dir: Path) -> List[Dict[str, Any]]:
         try:
             with open(file, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                results.append(data)
+                results.append(_normalize_result(data))
         except Exception as e:
             print(f"[Aggregate] Failed to load {file}: {e}")
     return results
@@ -56,6 +71,15 @@ def write_summary_csv(timestamp_dir: Path) -> Path:
         "gap_percent",
         "time_to_best_ms",
         "total_time_ms",
+        # measurement instrumentation (empty for pre-2026-07 results)
+        "iterations",
+        "tl_exceeded",
+        "overrun_ms",
+        "avg_iter_ms",
+        "neigh_time_ms",
+        # QPU provenance (empty for classical / pre-instrumentation runs)
+        "qpu_calls",
+        "qpu_success",
     ]
     with open(out_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
@@ -77,7 +101,13 @@ def write_summary_csv(timestamp_dir: Path) -> Path:
                     r.get("gap_percent"),
                     r.get("time_to_best_ms"),
                     r.get("total_time_ms"),
-                    # ensure alignment (time_limit_ms already earlier)
+                    r.get("iterations"),
+                    r.get("tl_exceeded"),
+                    r.get("overrun_ms"),
+                    r.get("avg_iter_ms"),
+                    r.get("neigh_time_ms"),
+                    (r.get("qpu_stats") or {}).get("calls"),
+                    (r.get("qpu_stats") or {}).get("qpu_success"),
                 ]
             )
     print(f"[Aggregate] Summary written: {out_path}")
@@ -88,10 +118,10 @@ def write_wide_gap_table(timestamp_dir: Path, summary_path: Path | None = None) 
     """Create a wide table with one row per (instance_file, instance_number, time_limit_ms)
     and columns:
         instance_file, instance_number, time_limit_ms,
-        tabu_adjacent, tabu_quantum_adjacent, tabu_quantum_fibonahi, tabu_quantum_dynasearch,
-        tabu_quantum_motzkin, tabu_fibonahi, tabu_dynasearch, tabu_motzkin,
-        sa_adjacent, sa_quantum_adjacent, sa_quantum_fibonahi, sa_quantum_dynasearch,
-        sa_quantum_motzkin, sa_fibonahi, sa_dynasearch, sa_motzkin
+        tabu_adjacent, tabu_quantum_adjacent, tabu_quantum_fibonacci, tabu_quantum_dynasearch,
+        tabu_quantum_motzkin, tabu_fibonacci, tabu_dynasearch, tabu_motzkin,
+        sa_adjacent, sa_quantum_adjacent, sa_quantum_fibonacci, sa_quantum_dynasearch,
+        sa_quantum_motzkin, sa_fibonacci, sa_dynasearch, sa_motzkin
 
     Values = best (minimal) gap_percent over seeds for that
     (algorithm, neighborhood, instance, tl_ms).
@@ -116,10 +146,10 @@ def write_wide_gap_table(timestamp_dir: Path, summary_path: Path | None = None) 
         out = timestamp_dir / "wide_summary.csv"
         with open(out, "w", encoding="utf-8", newline="") as fw:
             fw.write(
-                "instance_number,tabu_adjacent,tabu_quantum_adjacent,tabu_quantum_fibonahi,"
-                "tabu_quantum_dynasearch,tabu_quantum_motzkin,tabu_fibonahi,tabu_dynasearch,"
-                "tabu_motzkin,sa_adjacent,sa_quantum_adjacent,sa_quantum_fibonahi,"
-                "sa_quantum_dynasearch,sa_quantum_motzkin,sa_fibonahi,sa_dynasearch,sa_motzkin\n"
+                "instance_number,tabu_adjacent,tabu_quantum_adjacent,tabu_quantum_fibonacci,"
+                "tabu_quantum_dynasearch,tabu_quantum_motzkin,tabu_fibonacci,tabu_dynasearch,"
+                "tabu_motzkin,sa_adjacent,sa_quantum_adjacent,sa_quantum_fibonacci,"
+                "sa_quantum_dynasearch,sa_quantum_motzkin,sa_fibonacci,sa_dynasearch,sa_motzkin\n"
             )
         return out
 
@@ -166,18 +196,18 @@ def write_wide_gap_table(timestamp_dir: Path, summary_path: Path | None = None) 
         "time_limit_ms",
         "tabu_adjacent",
         "tabu_quantum_adjacent",
-        "tabu_quantum_fibonahi",
+        "tabu_quantum_fibonacci",
         "tabu_quantum_dynasearch",
         "tabu_quantum_motzkin",
-        "tabu_fibonahi",
+        "tabu_fibonacci",
         "tabu_dynasearch",
         "tabu_motzkin",
         "sa_adjacent",
         "sa_quantum_adjacent",
-        "sa_quantum_fibonahi",
+        "sa_quantum_fibonacci",
         "sa_quantum_dynasearch",
         "sa_quantum_motzkin",
-        "sa_fibonahi",
+        "sa_fibonacci",
         "sa_dynasearch",
         "sa_motzkin",
     ]
@@ -199,18 +229,18 @@ def write_wide_gap_table(timestamp_dir: Path, summary_path: Path | None = None) 
                 tl,
                 fmt("ils", "adjacent"),
                 fmt("ils", "quantum_adjacent"),
-                fmt("ils", "quantum_fibonahi"),
+                fmt("ils", "quantum_fibonacci"),
                 fmt("ils", "quantum_dynasearch"),
                 fmt("ils", "quantum_motzkin"),
-                fmt("ils", "fibonahi"),
+                fmt("ils", "fibonacci"),
                 fmt("ils", "dynasearch"),
                 fmt("ils", "motzkin"),
                 fmt("sa", "adjacent"),
                 fmt("sa", "quantum_adjacent"),
-                fmt("sa", "quantum_fibonahi"),
+                fmt("sa", "quantum_fibonacci"),
                 fmt("sa", "quantum_dynasearch"),
                 fmt("sa", "quantum_motzkin"),
-                fmt("sa", "fibonahi"),
+                fmt("sa", "fibonacci"),
                 fmt("sa", "dynasearch"),
                 fmt("sa", "motzkin"),
             ]
@@ -254,8 +284,8 @@ def write_matrix_gap_table(timestamp_dir: Path, summary_path: Path | None = None
                 + "best_cmax,lower_bound,best_gap_percent\n"
             )
             fw.write(
-                ",adjacent,fibonahi_neighborhood,dynasearch_neighborhood,"
-                + "motzkin_neighborhood,adjacent,fibonahi_neighborhood,"
+                ",adjacent,fibonacci_neighborhood,dynasearch_neighborhood,"
+                + "motzkin_neighborhood,adjacent,fibonacci_neighborhood,"
                 + "dynasearch_neighborhood,motzkin_neighborhood,,,,\n"
             )
         return out
@@ -323,11 +353,11 @@ def write_matrix_gap_table(timestamp_dir: Path, summary_path: Path | None = None
                 "time_limit_ms",
                 "seed",
                 "tabu_adjacent",
-                "tabu_fibonahi_neighborhood",
+                "tabu_fibonacci_neighborhood",
                 "tabu_dynasearch_neighborhood",
                 "tabu_motzkin_neighborhood",
                 "sa_adjacent",
-                "sa_fibonahi_neighborhood",
+                "sa_fibonacci_neighborhood",
                 "sa_dynasearch_neighborhood",
                 "sa_motzkin_neighborhood",
             ]
@@ -348,11 +378,11 @@ def write_matrix_gap_table(timestamp_dir: Path, summary_path: Path | None = None
                     tl,
                     seed,
                     get_gap(per, "ils", "adjacent"),
-                    get_gap(per, "ils", "fibonahi_neighborhood"),
+                    get_gap(per, "ils", "fibonacci_neighborhood"),
                     get_gap(per, "ils", "dynasearch_neighborhood"),
                     get_gap(per, "ils", "motzkin_neighborhood"),
                     get_gap(per, "sa", "adjacent"),
-                    get_gap(per, "sa", "fibonahi_neighborhood"),
+                    get_gap(per, "sa", "fibonacci_neighborhood"),
                     get_gap(per, "sa", "dynasearch_neighborhood"),
                     get_gap(per, "sa", "motzkin_neighborhood"),
                 ]
@@ -366,8 +396,8 @@ def write_matrix_per_seed_table(timestamp_dir: Path, summary_path: Path | None =
     algorithm / neighborhood / seed.
 
     Format columns:
-        instance_number, seed, tabu_adjacent, tabu_fibonahi, tabu_dynasearch,
-        sa_adjacent, sa_fibonahi, sa_dynasearch, best_cmax_seed,
+        instance_number, seed, tabu_adjacent, tabu_fibonacci, tabu_dynasearch,
+        sa_adjacent, sa_fibonacci, sa_dynasearch, best_cmax_seed,
         lower_bound_seed, gap_best_seed
 
     Where:
@@ -395,8 +425,8 @@ def write_matrix_per_seed_table(timestamp_dir: Path, summary_path: Path | None =
         out = timestamp_dir / "matrix_per_seed.csv"
         with open(out, "w", encoding="utf-8", newline="") as fw:
             fw.write(
-                "instance_number,seed,tabu_adjacent,tabu_fibonahi,tabu_dynasearch,"
-                "sa_adjacent,sa_fibonahi,sa_dynasearch,best_cmax_seed,lower_bound_seed,"
+                "instance_number,seed,tabu_adjacent,tabu_fibonacci,tabu_dynasearch,"
+                "sa_adjacent,sa_fibonacci,sa_dynasearch,best_cmax_seed,lower_bound_seed,"
                 "gap_best_seed\n"
             )
         return out
@@ -459,11 +489,11 @@ def write_matrix_per_seed_table(timestamp_dir: Path, summary_path: Path | None =
                 "time_limit_ms",
                 "seed",
                 "tabu_adjacent",
-                "tabu_fibonahi",
+                "tabu_fibonacci",
                 "tabu_dynasearch",
                 "tabu_motzkin",
                 "sa_adjacent",
-                "sa_fibonahi",
+                "sa_fibonacci",
                 "sa_dynasearch",
                 "sa_motzkin",
                 "best_cmax_seed",
@@ -484,7 +514,7 @@ def write_matrix_per_seed_table(timestamp_dir: Path, summary_path: Path | None =
             for alg in ("ils", "sa"):
                 for neigh in (
                     "adjacent",
-                    "fibonahi_neighborhood",
+                    "fibonacci_neighborhood",
                     "dynasearch_neighborhood",
                     "motzkin_neighborhood",
                 ):
@@ -504,11 +534,11 @@ def write_matrix_per_seed_table(timestamp_dir: Path, summary_path: Path | None =
                     tl,
                     seed,
                     gap_fmt(inst_file, inst, seed, tl, "ils", "adjacent"),
-                    gap_fmt(inst_file, inst, seed, tl, "ils", "fibonahi_neighborhood"),
+                    gap_fmt(inst_file, inst, seed, tl, "ils", "fibonacci_neighborhood"),
                     gap_fmt(inst_file, inst, seed, tl, "ils", "dynasearch_neighborhood"),
                     gap_fmt(inst_file, inst, seed, tl, "ils", "motzkin_neighborhood"),
                     gap_fmt(inst_file, inst, seed, tl, "sa", "adjacent"),
-                    gap_fmt(inst_file, inst, seed, tl, "sa", "fibonahi_neighborhood"),
+                    gap_fmt(inst_file, inst, seed, tl, "sa", "fibonacci_neighborhood"),
                     gap_fmt(inst_file, inst, seed, tl, "sa", "dynasearch_neighborhood"),
                     gap_fmt(inst_file, inst, seed, tl, "sa", "motzkin_neighborhood"),
                     best_c if best_c is not None else "",

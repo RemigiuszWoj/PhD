@@ -79,7 +79,7 @@ def iterated_local_search(
     iter_log_path: str | None = None,
     quantum_config: dict | None = None,
     mushroom_k: int = 10,
-) -> Tuple[List[int], int, List[int], List[int]]:
+) -> Tuple[List[int], int, List[int], List[int], dict]:
     """Iterated Local Search for flow shop scheduling problem.
 
     Parameters:
@@ -92,7 +92,9 @@ def iterated_local_search(
         mushroom_k: elite pool size for diversification (MushroomList)
 
     Returns:
-        (best_pi, best_cmax, iteration_history, cmax_history)
+        (best_pi, best_cmax, iteration_history, cmax_history, stats)
+        where stats = {"iterations": int, "neigh_time_ms": int} —
+        loop passes and cumulative wall time inside get_neighbor().
     """
     n = len(processing_times[0])
     initial_pi = list(range(n))
@@ -115,12 +117,16 @@ def iterated_local_search(
     mushroom_list = MushroomList(k=mushroom_k)
     mushroom_list.offer(initial_pi, initial_cmax)
 
+    neigh_time_s = 0.0  # cumulative wall time inside get_neighbor()
+
     with open_log_file(iter_log_path, "iterated_local_search") as log_file:
         while time.time() - state.start_time < max_time_seconds:
             # Find the best neighbor of the current solution.
+            _t0 = time.time()
             new_pi, new_c, move_id, _ = get_neighbor(
                 neigh_mode, state.current_pi, processing_times, n, None, quantum_config
             )
+            neigh_time_s += time.time() - _t0
 
             # Check tabu with aspiration
             tabu_active = move_id in tabu_list and tabu_list[move_id] > state.iteration
@@ -149,4 +155,8 @@ def iterated_local_search(
             log_iteration(log_file, state)
             state.iteration += 1
 
-    return state.best_pi, state.best_cmax, state.iteration_history, state.cmax_history
+    stats = {
+        "iterations": state.iteration,
+        "neigh_time_ms": int(neigh_time_s * 1000),
+    }
+    return state.best_pi, state.best_cmax, state.iteration_history, state.cmax_history, stats

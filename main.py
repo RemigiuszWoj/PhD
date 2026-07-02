@@ -101,7 +101,7 @@ def run_compare_mode(
     neighborhoods_list = list(neighborhoods) if neighborhoods else list(NEIGHBORHOODS_ALL)
     for neigh_mode in neighborhoods_list:
         if algorithm == "ils_compare":
-            best_pi, best_cmax, iteration_history, cmax_history = iterated_local_search(
+            best_pi, best_cmax, iteration_history, cmax_history, _stats = iterated_local_search(
                 processing_times,
                 max_time_ms=algorithm_common.get("time_limit_ms", 100000),
                 tabu_tenure=ils_config.get("tabu_tenure"),
@@ -112,7 +112,7 @@ def run_compare_mode(
                 quantum_config=config.get("quantum"),
             )
         else:
-            best_pi, best_cmax, iteration_history, cmax_history = simulated_annealing(
+            best_pi, best_cmax, iteration_history, cmax_history, _stats = simulated_annealing(
                 processing_times,
                 time_limit_ms=algorithm_common.get("time_limit_ms", 100000),
                 initial_temp=sa_config.get("initial_temp"),

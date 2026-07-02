@@ -39,7 +39,10 @@ algorithm_common:
 
 quantum:
   # Backend: "simulator" (dimod SimulatedAnnealingSampler) or "dwave" (real D-Wave QPU via Leap)
-  backend: "dwave"
+  # DEFAULT = simulator. QPU campaigns must OPT IN by setting "dwave" explicitly —
+  # this prevents accidental quota burn. With "dwave" there is NO silent fallback:
+  # a failed QPU call marks the run as FAILED (failed.json) and the batch continues.
+  backend: "simulator"
   # D-Wave API token (required only when backend: "dwave").
   # Leave null — the token is read from the DWAVE_API_TOKEN environment
   # variable, loaded from the gitignored .env file (see .env.example).

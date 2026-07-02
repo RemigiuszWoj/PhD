@@ -28,7 +28,7 @@ def simulated_annealing(
     iter_log_path: str | None = None,
     quantum_config: dict | None = None,
     mushroom_k: int = 10,
-) -> Tuple[List[int], int, List[int], List[int]]:
+) -> Tuple[List[int], int, List[int], List[int], dict]:
     """Simulated Annealing for flow shop scheduling problem.
 
     Parameters:
@@ -45,7 +45,9 @@ def simulated_annealing(
         quantum_config: optional dict with quantum params (num_reads, L_max_dynasearch, etc.)
 
     Returns:
-        (best_pi, best_cmax, iteration_history, cmax_history)
+        (best_pi, best_cmax, iteration_history, cmax_history, stats)
+        where stats = {"iterations": int, "neigh_time_ms": int} —
+        loop passes and cumulative wall time inside get_neighbor().
     """
     n = len(processing_times[0])
     initial_pi = list(range(n))
@@ -76,12 +78,16 @@ def simulated_annealing(
     mushroom_list = MushroomList(k=mushroom_k)
     mushroom_list.offer(initial_pi, initial_cmax)
 
+    neigh_time_s = 0.0  # cumulative wall time inside get_neighbor()
+
     with open_log_file(iter_log_path, "simulated_annealing") as log_file:
         while time.time() - state.start_time < time_limit:
             # Find best neighbor
+            _t0 = time.time()
             neighbor, neighbor_cmax, _, _ = get_neighbor(
                 neigh_mode, state.current_pi, processing_times, n, quantum_config=quantum_config
             )
+            neigh_time_s += time.time() - _t0
             delta = neighbor_cmax - state.current_cmax
 
             # Boltzmann acceptance
@@ -117,4 +123,8 @@ def simulated_annealing(
                         state.current_cmax = c_max(state.current_pi, processing_times)
                     last_improve_time = time.time()
 
-    return state.best_pi, state.best_cmax, state.iteration_history, state.cmax_history
+    stats = {
+        "iterations": state.iteration,
+        "neigh_time_ms": int(neigh_time_s * 1000),
+    }
+    return state.best_pi, state.best_cmax, state.iteration_history, state.cmax_history, stats

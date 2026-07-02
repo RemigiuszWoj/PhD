@@ -11,7 +11,7 @@ from typing import Iterable, List, Sequence
 import yaml
 
 from src.algorithms import iterated_local_search, simulated_annealing
-from src.neighborhoods.common import get_qpu_stats, reset_qpu_stats
+from src.neighborhoods.common import QPUError, get_qpu_stats, reset_qpu_stats
 from src.parser import parser
 
 ALGORITHMS_ALL = ("ils", "sa")
@@ -79,6 +79,12 @@ class RunResult:
     upper_bound: int | None
     lower_bound: int | None
     qpu_stats: dict | None = None
+    # --- measurement instrumentation (added 2026-07) ---
+    iterations: int | None = None       # metaheuristic loop passes
+    tl_exceeded: bool = False           # total_time_ms > time_limit_ms
+    overrun_ms: int = 0                 # max(0, total_time_ms - time_limit_ms)
+    avg_iter_ms: float | None = None    # total_time_ms / iterations
+    neigh_time_ms: int | None = None    # cumulative wall time inside get_neighbor()
 
     def gap_percent(self) -> float | None:
         if self.lower_bound is None:
@@ -147,14 +153,28 @@ class ExperimentRunner:
 
     def run(self, configs: Sequence[RunConfig]) -> List[RunResult]:
         results: List[RunResult] = []
+        failed = 0
         for idx, cfg in enumerate(configs, start=1):
             if self._already_done(cfg):
                 print(f"[Experiment] ({idx}/{len(configs)}) Skipping (done): {cfg}")
                 continue
             print(f"[Experiment] ({idx}/{len(configs)}) Running: {cfg}")
-            result = self._run_single(cfg)
+            try:
+                result = self._run_single(cfg)
+            except QPUError as e:
+                # No silent fallback: record the failure and move on with the
+                # batch. Failed runs are retried on resume (_already_done only
+                # honours result.json, not failed.json).
+                failed += 1
+                self._persist_failure(cfg, e)
+                print(
+                    f"[Experiment] ({idx}/{len(configs)}) FAILED (QPU {e.category}): {cfg} — {e}"
+                )
+                continue
             results.append(result)
             self._persist_result(result)
+        if failed:
+            print(f"[Experiment] WARNING: {failed} run(s) FAILED on QPU — see failed.json files.")
         if self.generate_plots:
             try:
                 from src import visualization as viz
@@ -191,9 +211,14 @@ class ExperimentRunner:
         run_fn = self._dispatch.get(cfg.algorithm)
         if run_fn is None:
             raise ValueError(f"Unknown algorithm {cfg.algorithm}")
-        best_pi, best_cmax, t_hist, c_hist = run_fn(processing_times, cfg)
+        best_pi, best_cmax, t_hist, c_hist, algo_stats = run_fn(processing_times, cfg)
         total_time_ms = int((time.time() - start) * 1000)
         time_to_best_ms = t_hist[-1] if t_hist else total_time_ms
+
+        iterations = algo_stats.get("iterations")
+        neigh_time_ms = algo_stats.get("neigh_time_ms")
+        overrun_ms = max(0, total_time_ms - cfg.time_limit_ms)
+        avg_iter_ms = (total_time_ms / iterations) if iterations else None
 
         qpu_stats = get_qpu_stats()
 
@@ -226,7 +251,37 @@ class ExperimentRunner:
             upper_bound=upper,
             lower_bound=lower,
             qpu_stats=qpu_stats,
+            iterations=iterations,
+            tl_exceeded=total_time_ms > cfg.time_limit_ms,
+            overrun_ms=overrun_ms,
+            avg_iter_ms=avg_iter_ms,
+            neigh_time_ms=neigh_time_ms,
         )
+
+    def _run_dir_name(self, cfg: RunConfig, jobs: int | None = None, machines: int | None = None) -> str:
+        base = (
+            f"algo={cfg.algorithm}__neigh={cfg.neighborhood}"
+            f"__file={Path(cfg.instance_file).stem}"
+            f"__inst={cfg.instance_number}"
+        )
+        if jobs is not None and machines is not None:
+            base += f"__n{jobs}__m{machines}"
+        return base + f"__tl={cfg.time_limit_ms}ms__seed={cfg.seed}"
+
+    def _persist_failure(self, cfg: RunConfig, exc: QPUError) -> None:
+        """Record a QPU-failed run as failed.json (retryable on resume)."""
+        run_dir = self.timestamp_dir / self._run_dir_name(cfg)
+        run_dir.mkdir(parents=True, exist_ok=True)
+        payload = {
+            "config": asdict(cfg),
+            "failed_at": datetime.utcnow().isoformat() + "Z",
+            "category": exc.category,
+            "error": str(exc),
+            "qpu_stats": get_qpu_stats(),
+        }
+        with open(run_dir / "failed.json", "w", encoding="utf-8") as f:
+            json.dump(payload, f, indent=2)
+        print(f"[Experiment] Saved {run_dir / 'failed.json'}")
 
     def _persist_result(self, result: RunResult) -> None:
         cfg = result.config

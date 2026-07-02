@@ -37,6 +37,22 @@ _qpu_stats: Dict[str, int] = {
 }
 
 
+class QPUError(RuntimeError):
+    """Raised when backend='dwave' and the QPU call fails.
+
+    No silent fallback: a run that cannot be answered by the real QPU
+    must FAIL LOUDLY, otherwise 'quantum' results silently become
+    simulator results and the experiment is scientifically worthless.
+
+    Attributes:
+        category: 'quota' | 'embedding' | 'other'
+    """
+
+    def __init__(self, category: str, message: str):
+        super().__init__(message)
+        self.category = category
+
+
 def reset_qpu_stats() -> None:
     """Zero the per-run QPU counters. Call before each experiment run."""
     for k in _qpu_stats:
@@ -232,9 +248,11 @@ def solve_qubo(
 ) -> Dict[str, int]:
     """Solve QUBO via SimulatedAnnealingSampler or real D-Wave QPU.
 
-    Falls back to SimulatedAnnealingSampler if no QPU embedding is found,
-    QPU quota is exhausted, or any other error occurs. Per-call disposition
-    is recorded in module-level _qpu_stats (see reset_qpu_stats / get_qpu_stats).
+    backend='simulator': explicit classical mode (SimulatedAnnealingSampler).
+    backend='dwave': real QPU only — any failure (quota exhausted, no
+    embedding, network error) raises QPUError. There is NO silent fallback
+    to the simulator: mixed-provenance results are scientifically worthless.
+    Per-call disposition is recorded in module-level _qpu_stats.
     """
     if not Q:
         return {}
@@ -273,33 +291,26 @@ def solve_qubo(
     if num_spin_reversal_transforms is not None:
         sample_kwargs["num_spin_reversal_transforms"] = num_spin_reversal_transforms
 
-    def _classify_and_fallback(exc: Exception) -> Dict[str, int]:
-        """Bump the right counter and return an SA sample."""
+    def _classify_and_raise(exc: Exception) -> None:
+        """Classify the QPU failure, bump the right counter, raise QPUError.
+
+        NO fallback to the simulator — a failed QPU call must kill this run
+        (the runner records it as FAILED and continues with the batch).
+        """
         msg = str(exc).lower()
-        if "insufficient remaining solver access time" in msg or "insufficient" in msg and "access time" in msg:
+        if "insufficient remaining solver access time" in msg or ("insufficient" in msg and "access time" in msg):
             _qpu_stats["fallback_quota"] += 1
-            logging.warning(
-                "[solve_qubo] QPU quota exhausted (%d vars): %s. "
-                "Falling back to SimulatedAnnealingSampler.",
-                bqm.num_variables, exc,
-            )
+            category = "quota"
+            logging.error("[solve_qubo] QPU quota exhausted (%d vars): %s", bqm.num_variables, exc)
         elif "no embedding found" in msg:
             _qpu_stats["fallback_embedding"] += 1
-            logging.warning(
-                "[solve_qubo] No QPU embedding found (%d vars). "
-                "Falling back to SimulatedAnnealingSampler.",
-                bqm.num_variables,
-            )
+            category = "embedding"
+            logging.error("[solve_qubo] No QPU embedding found (%d vars).", bqm.num_variables)
         else:
             _qpu_stats["fallback_other"] += 1
-            logging.warning(
-                "[solve_qubo] QPU request failed: %s. "
-                "Falling back to SimulatedAnnealingSampler.",
-                exc,
-            )
-        from dimod import SimulatedAnnealingSampler
-        fb = SimulatedAnnealingSampler().sample(bqm, num_reads=num_reads)
-        return dict(fb.first.sample)
+            category = "other"
+            logging.error("[solve_qubo] QPU request failed: %s", exc)
+        raise QPUError(category, f"QPU call failed ({category}, {bqm.num_variables} vars): {exc}") from exc
 
     # Submit to QPU (lazy SampleSet — failures may surface here OR during resolution).
     result = None
@@ -314,13 +325,13 @@ def solve_qubo(
         submission_error = e
 
     if submission_error is not None:
-        return _classify_and_fallback(submission_error)
+        _classify_and_raise(submission_error)
 
     # Resolve the SampleSet — this is where "insufficient solver access time" typically surfaces.
     try:
         sample = dict(result.first.sample)
     except Exception as e:
-        return _classify_and_fallback(e)
+        _classify_and_raise(e)
 
     # Real QPU success: timing dict present iff response came from QPU.
     timing = (result.info or {}).get("timing")
@@ -328,6 +339,11 @@ def solve_qubo(
         _qpu_stats["qpu_success"] += 1
         _log_qpu_timing(result, bqm.num_variables)
     else:
-        # No timing → result wasn't from a real QPU annealer (defensive).
+        # No timing → response did not come from a real QPU annealer.
         _qpu_stats["fallback_other"] += 1
+        raise QPUError(
+            "other",
+            f"QPU response missing timing info ({bqm.num_variables} vars) — "
+            "not answered by a real QPU annealer.",
+        )
     return sample

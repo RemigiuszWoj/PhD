@@ -109,13 +109,14 @@ def quantum_dynasearch_neighborhood(
     m = len(processing_times)
     base_c = Head[m - 1][n - 1]
 
-    # Enumerate candidates and compute deltas
-    # NOTE(classical-only): L_max limits segment length to reduce variable count.
-    # TODO: Remove L_max when running on a real quantum computer — QPU can handle
-    #       the full O(n²) variable space natively.
+    # Enumerate candidates and compute deltas.
+    # L_max caps segment length to keep the simulator tractable; on the real
+    # QPU (backend='dwave') the full O(n²) variable space is used natively,
+    # so the cap is ignored there.
+    effective_L_max = L_max if backend != "dwave" else None
     all_candidates: List[Tuple[int, int, float]] = []  # (i, j, delta)
     for i in range(n - 1):
-        j_max = n - 1 if L_max is None else min(n - 1, i + L_max - 1)
+        j_max = n - 1 if effective_L_max is None else min(n - 1, i + effective_L_max - 1)
         for j in range(i + 1, j_max + 1):
             delta = compute_endpoint_swap_delta(pi, i, j, Head, Tail, processing_times, base_c)
             all_candidates.append((i, j, delta))
@@ -127,13 +128,14 @@ def quantum_dynasearch_neighborhood(
     boundaries = compute_block_boundaries(Head, processing_times, pi)
     all_candidates = filter_blocked_pairs_npi(all_candidates, boundaries)
 
-    # NOTE(classical-only): Filter out non-improving candidates (δ ≥ 0) to reduce
-    # QUBO size for SimulatedAnnealingSampler. This is mathematically equivalent
-    # within the additive-delta QUBO model — the solver would set these x_k = 0
-    # anyway, since δ_k ≥ 0 never decreases H.
-    # TODO: Remove this filter when running on a real quantum computer — QPU
-    #       handles larger variable counts and the filter is unnecessary.
-    candidates = [(i, j, d) for i, j, d in all_candidates if d < 0]
+    # Delta filter (δ ≥ 0 removed) is a simulator-only size reduction: the
+    # solver would set those x_k = 0 anyway. On the real QPU (backend='dwave')
+    # the FULL candidate set is submitted — the filter discards joint-penalty
+    # structure that helps the annealer avoid degenerate solutions.
+    if backend != "dwave":
+        candidates = [(i, j, d) for i, j, d in all_candidates if d < 0]
+    else:
+        candidates = list(all_candidates)
 
     # If no improving candidate, fallback to single best (even if δ ≥ 0)
     if not candidates:

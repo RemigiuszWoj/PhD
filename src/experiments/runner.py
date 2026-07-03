@@ -272,8 +272,19 @@ class ExperimentRunner:
         return base + f"__tl={cfg.time_limit_ms}ms__seed={cfg.seed}"
 
     def _persist_failure(self, cfg: RunConfig, exc: QPUError) -> None:
-        """Record a QPU-failed run as failed.json (retryable on resume)."""
-        run_dir = self.timestamp_dir / self._run_dir_name(cfg)
+        """Record a QPU-failed run as failed.json (retryable on resume).
+
+        Uses the SAME directory name as a successful run (n/m parsed from the
+        instance), so a later successful retry lands in this directory and
+        removes the failed.json marker — no orphaned failure dirs.
+        """
+        try:
+            data = parser(cfg.instance_file, cfg.instance_number)
+            jobs = data["info"]["jobs"]
+            machines = data["info"]["machines"]
+        except Exception:
+            jobs = machines = None
+        run_dir = self.timestamp_dir / self._run_dir_name(cfg, jobs, machines)
         run_dir.mkdir(parents=True, exist_ok=True)
         payload = {
             "config": asdict(cfg),
@@ -288,18 +299,15 @@ class ExperimentRunner:
 
     def _persist_result(self, result: RunResult) -> None:
         cfg = result.config
-        run_dir_name = (
-            f"algo={cfg.algorithm}__neigh={cfg.neighborhood}"
-            f"__file={Path(cfg.instance_file).stem}"
-            f"__inst={cfg.instance_number}"
-            f"__n{result.instance_jobs}__m{result.instance_machines}"
-            f"__tl={cfg.time_limit_ms}ms__seed={cfg.seed}"
+        run_dir = self.timestamp_dir / self._run_dir_name(
+            cfg, result.instance_jobs, result.instance_machines
         )
-        run_dir = self.timestamp_dir / run_dir_name
         run_dir.mkdir(parents=True, exist_ok=True)
         path = run_dir / "result.json"
         with open(path, "w", encoding="utf-8") as f:
             json.dump(result.to_dict(), f, indent=2)
+        # Successful (re)run supersedes an earlier QPU failure of the same config.
+        (run_dir / "failed.json").unlink(missing_ok=True)
         print(f"[Experiment] Saved {path}")
 
         if self.generate_plots:

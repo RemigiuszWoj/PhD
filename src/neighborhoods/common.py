@@ -45,12 +45,28 @@ class QPUError(RuntimeError):
     simulator results and the experiment is scientifically worthless.
 
     Attributes:
-        category: 'quota' | 'embedding' | 'other'
+        category: 'quota' | 'embedding' | 'budget' | 'other'
     """
 
     def __init__(self, category: str, message: str):
         super().__init__(message)
         self.category = category
+
+
+# Campaign-level QPU budget (self-metering — we have no dashboard access,
+# only a SAPI token, so we enforce our own hard cap on qpu_access_time).
+# NOT reset by reset_qpu_stats(): survives across runs within one campaign.
+_campaign_budget: Dict[str, float] = {"cap_ms": 0.0, "used_ms": 0.0}
+
+
+def set_qpu_budget(cap_ms: float | None) -> None:
+    """Set the campaign-wide QPU access-time budget (None/0 = unlimited)."""
+    _campaign_budget["cap_ms"] = float(cap_ms or 0.0)
+    _campaign_budget["used_ms"] = 0.0
+
+
+def get_qpu_budget() -> Dict[str, float]:
+    return dict(_campaign_budget)
 
 
 def reset_qpu_stats() -> None:
@@ -270,6 +286,17 @@ def solve_qubo(
         return dict(result.first.sample)
 
     # backend == "dwave"
+    # Self-metered budget guard: refuse NEW submissions once the campaign
+    # cap on cumulative qpu_access_time is reached (no dashboard access —
+    # this is our only protection against burning the shared allocation).
+    cap = _campaign_budget["cap_ms"]
+    if cap and _campaign_budget["used_ms"] >= cap:
+        raise QPUError(
+            "budget",
+            f"Campaign QPU budget exhausted: used "
+            f"{_campaign_budget['used_ms']:.0f} ms of {cap:.0f} ms cap. "
+            "Raise quantum.qpu_budget_s in config.yaml to continue.",
+        )
     if not dwave_token:
         # Fall back to the DWAVE_API_TOKEN environment variable
         # (loaded from the gitignored .env file; see .env.example).
@@ -337,6 +364,8 @@ def solve_qubo(
     timing = (result.info or {}).get("timing")
     if timing:
         _qpu_stats["qpu_success"] += 1
+        access_us = timing.get("qpu_access_time") or 0
+        _campaign_budget["used_ms"] += access_us / 1000.0
         _log_qpu_timing(result, bqm.num_variables)
     else:
         # No timing → response did not come from a real QPU annealer.

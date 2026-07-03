@@ -43,6 +43,13 @@ quantum:
   # this prevents accidental quota burn. With "dwave" there is NO silent fallback:
   # a failed QPU call marks the run as FAILED (failed.json) and the batch continues.
   backend: "simulator"
+  # Campaign-wide QPU access-time budget in seconds (self-metered hard cap;
+  # we have no Leap dashboard access, only a SAPI token). When cumulative
+  # qpu_access_time reaches the cap, further submissions fail with
+  # QPUError('budget') and the batch stops cleanly (failed.json, retryable).
+  # Empirical reference: the May 2026 campaign burned ~403 s before the
+  # allocation died, so assume ~400 s/month total. Default tranche: 40 s.
+  qpu_budget_s: 40
   # D-Wave API token (required only when backend: "dwave").
   # Leave null — the token is read from the DWAVE_API_TOKEN environment
   # variable, loaded from the gitignored .env file (see .env.example).

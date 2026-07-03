@@ -11,7 +11,7 @@ from typing import Iterable, List, Sequence
 import yaml
 
 from src.algorithms import iterated_local_search, simulated_annealing
-from src.neighborhoods.common import QPUError, get_qpu_stats, reset_qpu_stats
+from src.neighborhoods.common import QPUError, get_qpu_stats, reset_qpu_stats, set_qpu_budget
 from src.parser import parser
 
 ALGORITHMS_ALL = ("ils", "sa")
@@ -136,6 +136,9 @@ class ExperimentRunner:
             except Exception:
                 quantum_config = {}
         self.quantum_config = quantum_config
+        # Campaign-wide QPU budget (self-metering; see common.set_qpu_budget).
+        budget_s = (quantum_config or {}).get("qpu_budget_s")
+        set_qpu_budget(budget_s * 1000.0 if budget_s else None)
         self.generate_plots = generate_plots
         # Read SA + ILS params from config.yaml (fallback to defaults if missing)
         try:

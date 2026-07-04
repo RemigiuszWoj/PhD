@@ -537,7 +537,14 @@ Following the tractability analysis of Table~\ref{tab:feasibility}:
   instances at $t_{\max} = 1000$\,ms, averaged over 10 instances $\times$ 5
   seeds. ILS uses tabu tenure $\tau = 10$ and BackTrackJumpList diversification
   ($k = 10$). SA uses $\alpha = 0.99$, $T_0 = 1000$, $T_{\min} = 100$ with the
-  reheat-kick of Section~\ref{sec:sa-kick}. Quantum rows pending D-Wave QPU runs.}
+  reheat-kick of Section~\ref{sec:sa-kick}. Quantum QUBO rows come from real
+  \texttt{Advantage\_system4.1} runs (July 2026). Per-call network and queue
+  latency exceeds $t_{\max}$, so each quantum run completed exactly one
+  metaheuristic iteration (median 1, recorded per run): the values measure a
+  single composite QPU move from the initial solution, not an iterated search,
+  and are not directly comparable with the classical rows. Dynasearch: 48 of
+  50 runs per algorithm; two exceeded the QPU embedding capacity ($\sim$190
+  dense variables). Enhanced rows pending.}
 \label{tab:rpd_n20}
 \begin{tabular}{@{}llrr@{}}
 \toprule
@@ -550,10 +557,10 @@ Class & Neighborhood & ILS RPD [\%] & SA RPD [\%] \\
   & Motzkin     & 3.19 &  4.00 \\
 \midrule
 \multirow{4}{*}{Quantum QUBO}
-  & Adjacent    & -- & -- \\
-  & Fibonacci   & -- & -- \\
-  & Dynasearch  & -- & -- \\
-  & Motzkin     & -- & -- \\
+  & Adjacent    & 25.07 & 25.04 \\
+  & Fibonacci   & 23.79 & 23.46 \\
+  & Dynasearch  & 26.93 & 26.35 \\
+  & Motzkin     & 21.66 & 21.50 \\
 \midrule
 \multirow{4}{*}{Quantum QUBO Enhanced}
   & Adjacent    & -- & -- \\

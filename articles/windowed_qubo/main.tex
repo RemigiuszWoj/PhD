@@ -647,6 +647,84 @@ motzkin sit within 0.7 pp of ILS at $m = 5$ and within 0.6 pp at
 $m = 20$; the richer neighborhoods supply enough escape paths for
 SA to match ILS within a 10\,s budget.
 
+\paragraph{Quantum QUBO on the QPU at $n = 20$}
+The quantum QUBO rows of Table~\ref{tab:rpd_n20} are the first QPU
+measurements taken under the instrumented protocol: every run records
+its own iteration count, so the comparison regime is explicit rather
+than inferred. At $t_{\max} = 1000$\,ms each quantum run completes
+exactly one metaheuristic iteration --- one QPU-selected composite
+move applied to the initial solution --- because a single call costs
+about 2.1\,s of wall time for adjacent and fibonacci, more for the
+others.
+
+Two observations survive this regime. First, the ranking inverts
+relative to the classical rows: motzkin leads at 21.7\,\%, then
+fibonacci (23.8\,\%), adjacent (25.1\,\%), and dynasearch (26.9\,\%).
+When one move is all the budget allows, the richest admissible move
+set wins, and motzkin's non-crossing arc configurations are the
+richest of the four. Second, quality tracks the iteration count.
+Figure~\ref{fig:qpu_conv_n20} shows the effect: at
+$t_{\max} = 5000$\,ms adjacent and fibonacci fit three iterations per
+run and improve by 2.8 and 3.7\,pp, landing fibonacci at 19.9\,\% and
+motzkin at 19.5\,\%. Dynasearch stays at one iteration and moves by
+half a point.
+
+Dynasearch also exposes the embedding capacity bound. Without the
+delta filter its QUBO carries roughly 190 densely coupled variables,
+and 4 of 200 runs found no embedding on the Pegasus topology. Motzkin,
+with a similar variable count but a sparser conflict graph --- nesting
+is allowed, so fewer penalty edges --- embedded every time. QPU
+feasibility is governed by conflict-graph density, not by variable
+count alone.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.72\linewidth]{figures/qpu_convergence_n20}
+\caption{Real-QPU quantum neighborhoods at $n = 20$: mean RPD versus
+  time budget, ILS and SA pooled (50--100 runs per point). Labels give
+  the median iteration count per run. The budget buys iterations
+  (network latency permitting), and iterations buy quality; dynasearch
+  never gets past one iteration because embedding search dominates its
+  wall time.}
+\label{fig:qpu_conv_n20}
+\end{figure}
+
+\paragraph{Anatomy of a QPU call}
+Table~\ref{tab:qpu_anatomy} splits the wall-clock cost of one QPU call
+in this campaign (1332 calls, $\mathrm{num\_reads} = 100$). The billed
+QPU access averages 30\,ms: 16\,ms of programming and 14\,ms of
+sampling, i.e.\ 20\,\textmu s of anneal and 102\,\textmu s of readout
+per sample. Everything else is infrastructure. Adjacent and fibonacci
+spend 2.1\,s per call on network transfer and Leap queueing, so the
+QPU performs useful work for 1.4\,\% of the time the metaheuristic
+waits. Motzkin adds client-side QUBO construction ($O(mn^3)$ delta
+evaluations) and averages 18.5\,s per call; dynasearch adds
+minor-embedding search over a dense conflict graph and averages
+140\,s, pushing the QPU share to 0.02\,\%. These proportions are the
+quantitative core of the benchmarking protocol this paper argues for:
+a wall-clock comparison that ignores them measures the cloud, not the
+processor.
+
+\begin{table}[t]
+\centering
+\caption{Mean cost of a single QPU call at $n = 20$ (1332 calls,
+  $\mathrm{num\_reads} = 100$). Billed QPU access is constant across
+  neighborhoods; the wall-clock difference is client-side QUBO
+  construction, minor-embedding search, network transfer, and queue
+  wait.}
+\label{tab:qpu_anatomy}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+Neighborhood & Wall clock / call & QPU access & QPU share \\
+\midrule
+Q-Adjacent   & 2.12\,s & 30\,ms & 1.4\,\% \\
+Q-Fibonacci  & 2.06\,s & 30\,ms & 1.5\,\% \\
+Q-Motzkin    & 18.5\,s & 30\,ms & 0.16\,\% \\
+Q-Dynasearch & 140\,s  & 30\,ms & 0.02\,\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 The quantum QUBO enhanced variants at $n = 20$ differ from the
 original quantum QUBO variants only in the removal of the delta
 filter, providing a controlled measurement of the filter's effect

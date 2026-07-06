@@ -118,8 +118,14 @@ results/
 figures/
 paper/
 tables/
-figures/
 .claude/
 CLAUDE.md
+
+# Exceptions (must come AFTER the global figures/ and tables/ ignores):
+# keep figure/table assets bundled with articles
+!articles/**/figures/
+!articles/**/figures/**
+!articles/**/tables/
+!articles/**/tables/**
 szkola_doktorska_2026/
 *.spl

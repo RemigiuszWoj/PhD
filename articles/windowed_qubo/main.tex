@@ -544,7 +544,9 @@ Following the tractability analysis of Table~\ref{tab:feasibility}:
   single composite QPU move from the initial solution, not an iterated search,
   and are not directly comparable with the classical rows. Dynasearch: 48 of
   50 runs per algorithm; two exceeded the QPU embedding capacity ($\sim$190
-  dense variables). Enhanced rows pending.}
+  dense variables). Enhanced rows: same QPU and protocol (July 2026);
+  windowed dynasearch/motzkin submit three window QUBOs per call and
+  recorded zero embedding failures across all 400 runs.}
 \label{tab:rpd_n20}
 \begin{tabular}{@{}llrr@{}}
 \toprule
@@ -563,10 +565,10 @@ Class & Neighborhood & ILS RPD [\%] & SA RPD [\%] \\
   & Motzkin     & 21.66 & 21.50 \\
 \midrule
 \multirow{4}{*}{Quantum QUBO Enhanced}
-  & Adjacent    & -- & -- \\
-  & Fibonacci   & -- & -- \\
-  & Dynasearch  & -- & -- \\
-  & Motzkin     & -- & -- \\
+  & Adjacent    & 25.04 & 25.04 \\
+  & Fibonacci   & 23.60 & 23.66 \\
+  & Dynasearch  & 25.56 & 25.71 \\
+  & Motzkin     & 25.98 & 25.45 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -725,13 +727,23 @@ Q-Dynasearch & 140\,s  & 30\,ms & 0.02\,\% \\
 \end{tabular}
 \end{table}
 
-The quantum QUBO enhanced variants at $n = 20$ differ from the
-original quantum QUBO variants only in the removal of the delta
-filter, providing a controlled measurement of the filter's effect
-on solution quality. The enhanced variants should perform comparably
-or better: retaining the full variable set preserves information
-about conflicting non-improving moves that the QPU uses to avoid
-degenerate selections.
+The enhanced rows of Table~\ref{tab:rpd_n20} give the controlled
+measurement this design promised, and the outcome splits by
+neighborhood structure. For the linear neighborhoods the enhanced
+variants reproduce the originals almost exactly (adjacent 25.04 vs.\
+25.05, fibonacci 23.60/23.66 vs.\ 23.79/23.46): their QUBOs were never
+delta-filtered to begin with, so the agreement doubles as a
+between-campaign replication check. Windowed dynasearch \emph{gains}
+1.3\,pp over the full formulation (25.63 vs.\ 26.93 pooled) while
+eliminating embedding failures entirely --- zero across 400 enhanced
+runs, against a 4\% failure rate for the full $\sim$190-variable QUBO.
+Windowed motzkin \emph{loses} 4.1\,pp (25.72 vs.\ 21.58). The asymmetry
+has a structural reading: dynasearch conflicts are local (overlapping
+segments), so a window boundary discards little, whereas motzkin's
+strength lies in nested arc systems that span the permutation, and
+windows cut exactly those. Windowed decomposition is close to free
+where move interactions are local and costs real solution quality
+where they are global.
 
 \paragraph{Scaling behavior}
 Table~\ref{tab:rpd_scaling} shows how enhanced quantum neighborhoods

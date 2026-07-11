@@ -683,11 +683,15 @@ count alone.
 \centering
 \includegraphics[width=0.72\linewidth]{figures/qpu_convergence_n20}
 \caption{Real-QPU quantum neighborhoods at $n = 20$: mean RPD versus
-  time budget, ILS and SA pooled (50--100 runs per point). Labels give
-  the median iteration count per run. The budget buys iterations
-  (network latency permitting), and iterations buy quality; dynasearch
-  never gets past one iteration because embedding search dominates its
-  wall time.}
+  time budget, ILS and SA pooled (100 runs per point). Solid lines:
+  original formulations; dashed: enhanced variants (windowed for
+  dynasearch and motzkin). Labels give the median iteration count per
+  run. The budget buys iterations (network latency permitting), and
+  iterations buy quality; dynasearch never gets past one iteration
+  because embedding search dominates its wall time. The dashed/solid
+  split shows the windowing asymmetry directly: windowed dynasearch
+  runs below its original at every budget, windowed motzkin above ---
+  and increasingly so as the budget grows.}
 \label{fig:qpu_conv_n20}
 \end{figure}
 
@@ -741,9 +745,15 @@ Windowed motzkin \emph{loses} 4.1\,pp (25.72 vs.\ 21.58). The asymmetry
 has a structural reading: dynasearch conflicts are local (overlapping
 segments), so a window boundary discards little, whereas motzkin's
 strength lies in nested arc systems that span the permutation, and
-windows cut exactly those. Windowed decomposition is close to free
-where move interactions are local and costs real solution quality
-where they are global.
+windows cut exactly those. The budget dimension sharpens the picture.
+At $t_{\max} = 5000$\,ms windowed dynasearch keeps its edge (25.07 vs.\
+26.15), but the motzkin gap widens from 4.1 to 5.6\,pp (25.06 vs.\
+19.45): the full formulation converts every additional iteration into
+nesting gains that no within-window move can express, so the windowing
+loss compounds rather than amortizes. Windowed decomposition is close
+to free where move interactions are local and costs real solution
+quality --- increasingly with the time budget --- where they are
+global.
 
 \paragraph{Scaling behavior}
 Table~\ref{tab:rpd_scaling} shows how enhanced quantum neighborhoods

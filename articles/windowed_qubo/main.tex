@@ -61,6 +61,14 @@ that prunes dominated swap candidates before each QUBO submission,
 reducing the effective variable count by 30--60\% on Taillard instances.
 All twelve neighborhoods are evaluated on standard Taillard benchmarks
 across six time budgets (100--10\,000\,ms).
+QPU measurements on \texttt{Advantage\_system4.1} confirm the scaling:
+mean RPD of the fibonacci-enhanced neighborhood falls monotonically
+from 31.7\% at $n = 20$ to 15.0\% at $n = 200$, and its gap to the
+classical fibonacci baseline narrows from 20.4 percentage points at
+$n = 20$ to 4.6 at $n = 500$, where the quantum neighborhood matches
+classical adjacent. Windowing proves close to free where swap
+interactions are local (dynasearch) and costs about 4 percentage
+points, growing with the time budget, where they are global (motzkin).
 \end{abstract}
 
 \begin{highlights}
@@ -68,8 +76,8 @@ across six time budgets (100--10\,000\,ms).
   \item Delta filter removal extends Adjacent/Fibonacci QUBO to $n\leq 200$ and $n\leq 500$.
   \item Windowed QUBO decomposition enables Dynasearch and Motzkin on instances up to $n=50$.
   \item Smutnicki accelerator cuts QUBO variable count by 30--60\% before QPU submission.
-  \item BackTrackJumpList elite-pool reduces ILS stagnation at no additional runtime cost.
-  \item Reheat-kick SA breaks the two-cycle trap that a best-move neighborhood oracle creates.
+  \item Quantum-to-classical RPD gap narrows from 20.4\,pp at $n=20$ to 4.6\,pp at $n=500$ on QPU.
+  \item Windowing is near-free for local move structures; its loss compounds for global ones.
 \end{highlights}
 
 \begin{keyword}
@@ -496,12 +504,14 @@ physical qubits out of 5{,}760 fabricated, 40{,}279 couplers), accessed
 via the Leap cloud platform with \texttt{EmbeddingComposite} and
 \texttt{num\_reads\,=\,100} (per window for Enhanced neighborhoods).
 The number of \emph{logical} qubits available for a given QUBO depends on
-the graph structure after minor-embedding: for dense graphs
-(Dynasearch, Motzkin) the effective capacity is approximately 170--180
-logical variables (each logical qubit maps to a chain of $\sim$30
-physical qubits), while sparse graphs (Adjacent, Fibonacci) support
-$n \leq 200$ and $n \leq 500$ respectively, as their near-linear
-variable count requires short embedding chains.
+the graph structure after minor-embedding: for dense conflict graphs
+the practical capacity is roughly 190--200 logical variables (each
+logical qubit maps to a chain of $\sim$30 physical qubits). The bound
+is soft --- the dense $K_{199}$ QUBO of adjacent enhanced at $n = 200$
+embedded in all 50 runs, while dynasearch's $\sim$190-variable QUBO
+failed occasionally, and those failures succeeded on retry --- whereas
+chain-structured graphs (Fibonacci) embed trivially up to $n \leq 500$,
+as their near-linear variable count requires short embedding chains.
 The exact solver identity (\texttt{Advantage\_system4.1}) was confirmed
 programmatically via \texttt{DWaveSampler().solver.id} at experiment time.
 Classical experiments use \texttt{SimulatedAnnealingSampler} from
@@ -615,11 +625,11 @@ Motzkin     & 2.64 &  3.25 & 10.21 & 10.68 & 21.46 & 21.73 \\
   every tested time budget, so ILS and SA both reduce to a single
   local-search iteration per run (ILS and SA produce identical values).
   Adjacent and fibonacci in the same column had thousands of iterations
-  to refine the solution within $t_{\max} = 10$\,s; dynasearch and
-  motzkin had one. The numbers are reported for completeness, not as a
-  fair head-to-head ($t_{\max} = 10$\,s, mean over 10 instances $\times$
-  5 seeds; ranges $13.30$--$16.05$ for dynasearch, $13.00$--$18.40$
-  for motzkin).}
+  to refine the solution within the 5\,s budget; dynasearch and
+  motzkin had one, so their values are budget-independent. The numbers
+  are reported for completeness, not as a fair head-to-head (mean over
+  10 instances $\times$ 5 seeds; ranges $13.30$--$16.05$ for
+  dynasearch, $13.00$--$18.40$ for motzkin).}
 \label{tab:rpd_scaling}
 \begin{tabular}{@{}lrrrrr@{}}
 \toprule
@@ -861,12 +871,13 @@ neighborhood that still scales without truncation.
 
 \paragraph{Windowed decomposition quality}
 The windowed approach introduces a bounded approximation: swap pairs
-crossing window boundaries are never evaluated. The quality loss
-relative to the full QUBO is measurable at $n = 20$, where both the
-full QUBO and the windowed formulation are feasible. This comparison
-also quantifies the sensitivity to overlap ratio $\rho$: larger
-overlap reduces boundary artifacts at the cost of more QPU submissions
-per iteration.
+crossing window boundaries are never evaluated. The loss is measured
+at $n = 20$, the largest size where the full QUBO still embeds
+(Table~\ref{tab:rpd_n20}, Fig.~\ref{fig:qpu_conv_n20}): near zero for
+dynasearch, about 4\,pp and compounding with the budget for motzkin.
+All windowed runs use overlap ratio $\rho = 0.5$; larger overlap would
+reduce boundary artifacts at the cost of more QPU submissions per
+iteration, and sensitivity to $\rho$ remains untested.
 
 \paragraph{BackTrackJumpList contribution}
 ILS with BackTrackJumpList diversification is compared against ILS with
@@ -883,7 +894,10 @@ The enhanced formulations submit multiple QUBO calls per iteration
 (one per window for Dynasearch/Motzkin Enhanced), whereas the
 original formulations submit a single call. The tradeoff between
 increased neighborhood coverage and higher per-iteration QPU latency
-will be quantified as evaluations-per-millisecond across instance sizes.
+is visible directly in Table~\ref{tab:qpu_anatomy} and the iteration
+counts of Fig.~\ref{fig:qpu_conv_n20}: a windowed call multiplies the
+30\,ms billed access by the window count, while its wall-clock cost
+stays dominated by embedding search and queueing.
 
 % ---------------------------------------------------------------
 \section{Conclusions}
@@ -901,14 +915,27 @@ double-bridge perturbations of the $k = 10$ best solutions seen,
 a small change that costs nothing at runtime and consistently reduces
 the time to return to a promising region after diversification.
 
-The D-Wave QPU experiments are pending. Two hypotheses will be tested:
-(i) Fibonacci Enhanced maintains competitive RPD relative to classical
-Fibonacci across the full $n \leq 500$ range, because its tridiagonal
-QUBO lets the QPU explore $F_{n+1}$ multi-swap configurations that
-greedy descent cannot; (ii) the windowed decomposition incurs a
-measurable quality loss at $n = 20$ (where the full QUBO is also
-feasible) but produces net improvement at $n = 50$ within equal
-time budgets.
+The July 2026 QPU campaigns filled every tractable cell of
+Tables~\ref{tab:rpd_n20} and~\ref{tab:rpd_scaling} with real
+\texttt{Advantage\_system4.1} measurements and answered the two
+hypotheses this design posed. (i) Fibonacci Enhanced holds its ground
+across the full range: mean RPD falls monotonically from 31.7\,\% at
+$n = 20$ to 15.0\,\% at $n = 200$, and the gap to classical fibonacci
+narrows from 20.4 to 4.6 percentage points at $n = 500$, where the
+quantum neighborhood matches the classical adjacent baseline (15.75
+vs.\ 15.36\,\%). (ii) The windowed decomposition's cost turned out to
+be structural rather than uniform: windowed dynasearch replicates or
+slightly beats its full QUBO at $n = 20$ while eliminating embedding
+failures, whereas windowed motzkin pays about 4\,pp --- a loss that
+grows with the time budget, because cross-window nesting is exactly
+what the full formulation converts additional iterations into. At
+$n = 50$, where no full $O(n^2)$ QUBO embeds at all, both windowed
+variants deliver working QPU moves within 3\,pp of fibonacci
+enhanced. The single-iteration regime, the anatomy of QPU call cost
+(Table~\ref{tab:qpu_anatomy}), and the stochasticity of embedding
+near the dense capacity bound are reported alongside the quality
+numbers because they define what a fair wall-clock comparison of
+quantum and classical neighborhood search can claim.
 
 \paragraph{Future work}
 Adaptive window sizing from per-window convergence feedback;

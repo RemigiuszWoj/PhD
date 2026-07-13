@@ -494,7 +494,10 @@ Each algorithm runs with 5 independent seeds per instance; the seed
 determines only the initial random permutation and the SA temperature
 schedule.
 We test six time budgets: $t_{\max} \in \{100, 500, 1000, 2000,
-5000, 10\,000\}$\,ms.
+5000, 10\,000\}$\,ms. Classical neighborhoods run at all six; the
+QPU campaigns report $t_{\max} = 1000$ and $5000$\,ms in the tables,
+and the convergence analysis of Fig.~\ref{fig:qpu_conv_n20} covers
+100--5000\,ms for the enhanced class.
 
 \paragraph{Hardware}
 Classical neighborhoods run on an Apple M4 Pro (12 cores, 24\,GB RAM).
@@ -884,12 +887,11 @@ reduce boundary artifacts at the cost of more QPU submissions per
 iteration, and sensitivity to $\rho$ remains untested.
 
 \paragraph{BackTrackJumpList contribution}
-ILS with BackTrackJumpList diversification is compared against ILS with
-uniform random restart under identical parameters, isolating the
-effect of elite perturbation. The double-bridge move guarantees
-displacement from the current basin; round-robin selection prevents
-the pool from degenerating into repeated perturbations of the single
-global best.
+ILS diversification uses the BackTrackJumpList throughout: the
+double-bridge move guarantees displacement from the current basin,
+and round-robin selection prevents the pool from degenerating into
+repeated perturbations of the single global best. A controlled
+ablation against uniform random restart is left for future work.
 
 \paragraph{Throughput analysis}
 Quantum neighborhood performance within a fixed time budget depends
@@ -916,8 +918,7 @@ submission, which directly lowers embedding chain length and
 chain-break probability.
 The BackTrackJumpList replaces uniform random restarts in ILS with
 double-bridge perturbations of the $k = 10$ best solutions seen,
-a small change that costs nothing at runtime and consistently reduces
-the time to return to a promising region after diversification.
+a design change that costs nothing at runtime.
 
 The July 2026 QPU campaigns filled every tractable cell of
 Tables~\ref{tab:rpd_n20} and~\ref{tab:rpd_scaling} with real

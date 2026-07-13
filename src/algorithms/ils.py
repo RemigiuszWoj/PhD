@@ -79,6 +79,7 @@ def iterated_local_search(
     iter_log_path: str | None = None,
     quantum_config: dict | None = None,
     mushroom_k: int = 10,
+    diversification: str = "mushroom",
 ) -> Tuple[List[int], int, List[int], List[int], dict]:
     """Iterated Local Search for flow shop scheduling problem.
 
@@ -90,6 +91,8 @@ def iterated_local_search(
         iter_log_path: path to CSV log file
         quantum_config: optional dict with quantum params (num_reads, L_max_dynasearch, etc.)
         mushroom_k: elite pool size for diversification (MushroomList)
+        diversification: "mushroom" (elite-pool double-bridge kick) or
+            "random_restart" (uniform restart; ablation baseline)
 
     Returns:
         (best_pi, best_cmax, iteration_history, cmax_history, stats)
@@ -133,7 +136,10 @@ def iterated_local_search(
             if tabu_active and new_c >= state.best_cmax:
                 # Move is tabu and aspiration not met — diversify (ILS kick).
                 alt_pi, alt_c, alt_move = handle_tabu_move(
-                    state, processing_times, n, mushroom_list
+                    state,
+                    processing_times,
+                    n,
+                    mushroom_list if diversification == "mushroom" else None,
                 )
                 if alt_pi is None:
                     # No alternative - skip iteration

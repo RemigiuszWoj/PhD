@@ -63,6 +63,7 @@ class RunConfig:
     seed: int
     time_limit_ms: int
     tabu_tenure: int | None = None
+    diversification: str = "mushroom"  # ILS only: "mushroom" | "random_restart"
 
 
 @dataclass
@@ -196,7 +197,13 @@ class ExperimentRunner:
             f"__file={stem}__inst={cfg.instance_number}"
             f"__*__tl={cfg.time_limit_ms}ms__seed={cfg.seed}"
         )
-        return any(self._resume_from.glob(f"{pattern}/result.json"))
+        # The wildcard also absorbs an optional __div=... segment, so filter
+        # matches to the arm this config belongs to.
+        want_div = cfg.diversification != "mushroom"
+        return any(
+            ("__div=" in p.parent.name) == want_div
+            for p in self._resume_from.glob(f"{pattern}/result.json")
+        )
 
     def _run_single(self, cfg: RunConfig) -> RunResult:
         random.seed(cfg.seed)
@@ -269,6 +276,8 @@ class ExperimentRunner:
         )
         if jobs is not None and machines is not None:
             base += f"__n{jobs}__m{machines}"
+        if cfg.diversification != "mushroom":
+            base += f"__div={cfg.diversification}"
         return base + f"__tl={cfg.time_limit_ms}ms__seed={cfg.seed}"
 
     def _persist_failure(self, cfg: RunConfig, exc: QPUError) -> None:
@@ -329,6 +338,7 @@ class ExperimentRunner:
             iter_log_path=None,
             quantum_config=self.quantum_config,
             mushroom_k=self.ils_params.get("mushroom_k", 10),
+            diversification=cfg.diversification,
         )
 
     def _run_sa(self, processing_times, cfg: RunConfig):

@@ -753,20 +753,23 @@ The enhanced rows of Table~\ref{tab:rpd_n20} give the controlled
 measurement this design promised, and the outcome splits by
 neighborhood structure. For the linear neighborhoods the enhanced
 variants reproduce the originals almost exactly (adjacent 25.04 vs.\
-25.05, fibonacci 23.60/23.66 vs.\ 23.79/23.46): their QUBOs were never
+25.05, fibonacci 23.60/23.66 vs.\ 23.79/23.46; Wilcoxon signed-rank
+over instance$\times$seed pairs, $p \geq 0.25$): their QUBOs were never
 delta-filtered to begin with, so the agreement doubles as a
 between-campaign replication check. Windowed dynasearch \emph{gains}
-1.3\,pp over the full formulation (25.63 vs.\ 26.93 pooled) while
-eliminating embedding failures entirely --- zero across 400 enhanced
-runs, against a 4\% failure rate for the full $\sim$190-variable QUBO.
-Windowed motzkin \emph{loses} 4.1\,pp (25.72 vs.\ 21.58). The asymmetry
+0.9\,pp over the full formulation (25.78 vs.\ 26.64 paired,
+$p = 0.012$) while eliminating embedding failures entirely --- zero
+across 400 enhanced runs, against a 4\% failure rate for the full
+$\sim$190-variable QUBO. Windowed motzkin \emph{loses} 4.1\,pp
+(25.72 vs.\ 21.58, $p < 10^{-4}$). The asymmetry
 has a structural reading: dynasearch conflicts are local (overlapping
 segments), so a window boundary discards little, whereas motzkin's
 strength lies in nested arc systems that span the permutation, and
 windows cut exactly those. The budget dimension sharpens the picture.
 At $t_{\max} = 5000$\,ms windowed dynasearch keeps its edge (25.07 vs.\
-26.15), but the motzkin gap widens from 4.1 to 5.6\,pp (25.06 vs.\
-19.45): the full formulation converts every additional iteration into
+26.15, $p = 0.005$), but the motzkin gap widens from 4.1 to 5.6\,pp
+(25.06 vs.\ 19.45, $p < 10^{-4}$): the full formulation converts every
+additional iteration into
 nesting gains that no within-window move can express, so the windowing
 loss compounds rather than amortizes. Windowed decomposition is close
 to free where move interactions are local and costs real solution
@@ -794,8 +797,9 @@ to eat the budget.
 
 The $n = 20$ column replicates the windowing asymmetry of
 Table~\ref{tab:rpd_n20} at $m = 10$: windowed dynasearch again edges
-out its full formulation (38.6 vs.\ 39.3\,\%), and windowed motzkin
-again pays about 4\,pp (38.4 vs.\ 34.4\,\%).
+out its full formulation (38.6 vs.\ 39.3\,\%, though at 50 pairs the
+difference does not reach significance, $p = 0.18$), and windowed
+motzkin again pays about 4\,pp (38.4 vs.\ 34.4\,\%, $p < 10^{-4}$).
 
 The dense one-hot QUBO also scales further than the $n = 20$ campaign
 suggested. Adjacent enhanced at $n = 200$ carries $K_{199}$ --- just

@@ -696,7 +696,10 @@ Figure~\ref{fig:qpu_conv_n20} shows the effect: at
 $t_{\max} = 5000$\,ms adjacent and fibonacci fit three iterations per
 run and improve by 2.8 and 3.7\,pp, landing fibonacci at 19.9\,\% and
 motzkin at 19.5\,\%. Dynasearch stays at one iteration and moves by
-half a point.
+half a point. Table~\ref{tab:rpd_n20_tl} tabulates the same
+comparison for every tested budget without ILS/SA pooling; the flat
+enhanced rows between 100 and 1000\,ms are the single-iteration
+regime made visible in a table rather than a curve.
 
 Dynasearch also exposes the embedding capacity bound. Without the
 delta filter its QUBO carries roughly 190 densely coupled variables,
@@ -754,6 +757,54 @@ Q-Adjacent   & 2.12\,s & 30\,ms & 1.4\,\% \\
 Q-Fibonacci  & 2.06\,s & 30\,ms & 1.5\,\% \\
 Q-Motzkin    & 18.5\,s & 30\,ms & 0.16\,\% \\
 Q-Dynasearch & 140\,s  & 30\,ms & 0.02\,\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[!tp]
+\centering
+\caption{Mean RPD [\%] at $n = 20$, $m = 5$ for every tested time
+  budget (columns, ms), without pooling. Classical rows cover the full
+  six-budget grid; quantum rows show the budget layers measured so far
+  under the QPU tranche protocol (\mbox{--} = layer not yet measured).
+  The enhanced rows are flat from 100 to 1000\,ms: every run in this
+  range completes exactly one iteration, so budget below the
+  $\sim$2\,s cost of a second QPU call buys nothing. The drop appears
+  at 5000\,ms, where two to three iterations fit. Q-Dynasearch at
+  1000\,ms: 48 of 50 runs per algorithm (two embedding failures).}
+\label{tab:rpd_n20_tl}
+\small
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+ILS & 100 & 500 & 1000 & 2000 & 5000 & 10000 \\
+\midrule
+Classical Adjacent   &  6.60 &  4.59 &  3.89 &  3.68 &  3.52 &  3.41 \\
+Classical Fibonacci  &  5.96 &  4.25 &  4.09 &  3.99 &  3.87 &  3.82 \\
+Classical Dynasearch &  3.92 &  3.47 &  3.32 &  3.08 &  2.83 &  2.68 \\
+Classical Motzkin    &  4.33 &  3.42 &  3.19 &  2.92 &  2.75 &  2.64 \\
+Q-Adjacent           &    -- & 25.04 & 25.07 &    -- & 22.25 &    -- \\
+Q-Fibonacci          &    -- &    -- & 23.79 &    -- & 19.97 &    -- \\
+Q-Dynasearch         &    -- &    -- & 26.93 &    -- & 26.11 &    -- \\
+Q-Motzkin            &    -- &    -- & 21.66 &    -- & 19.05 &    -- \\
+Q-Adjacent Enh.      & 25.04 & 25.04 & 25.04 &    -- & 22.27 &    -- \\
+Q-Fibonacci Enh.     & 23.57 & 23.51 & 23.60 &    -- & 19.62 &    -- \\
+Q-Dynasearch Enh.    & 25.76 & 25.68 & 25.56 &    -- & 24.57 &    -- \\
+Q-Motzkin Enh.       &    -- & 25.33 & 25.98 &    -- & 24.68 &    -- \\
+\midrule
+SA & 100 & 500 & 1000 & 2000 & 5000 & 10000 \\
+\midrule
+Classical Adjacent   & 17.24 & 13.84 & 11.28 &  9.51 &  7.98 &  6.98 \\
+Classical Fibonacci  & 19.31 & 16.81 & 15.00 & 13.69 & 10.39 &  9.24 \\
+Classical Dynasearch &  7.34 &  4.87 &  4.19 &  3.74 &  3.58 &  3.36 \\
+Classical Motzkin    &  9.88 &  5.16 &  4.00 &  3.71 &  3.47 &  3.25 \\
+Q-Adjacent           &    -- &    -- & 25.04 &    -- & 22.28 &    -- \\
+Q-Fibonacci          &    -- &    -- & 23.46 &    -- & 19.94 &    -- \\
+Q-Dynasearch         &    -- &    -- & 26.35 &    -- & 26.19 &    -- \\
+Q-Motzkin            &    -- &    -- & 21.50 &    -- & 19.84 &    -- \\
+Q-Adjacent Enh.      & 25.04 & 25.04 & 25.04 &    -- & 22.31 &    -- \\
+Q-Fibonacci Enh.     & 23.53 & 23.62 & 23.66 &    -- & 19.90 &    -- \\
+Q-Dynasearch Enh.    &    -- & 25.75 & 25.71 &    -- & 25.57 &    -- \\
+Q-Motzkin Enh.       &    -- & 25.57 & 25.45 &    -- & 25.45 &    -- \\
 \bottomrule
 \end{tabular}
 \end{table}

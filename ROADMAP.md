@@ -35,19 +35,28 @@ jako obwody QAOA.
   ansatz p=1..3, symulator; (2) QAOA vs annealer vs SA-sampler na tych
   samych QUBO (cel 2 wprost); (3) mały bieg sprzętowy.
 
-### C. Nowe otoczenia: Tribonacci, k-bonacci, Hamming (Gantt 4 — do przodu planu)
-Najtańszy nowy wynik, pełny reuse pipeline'u; można robić równolegle z A,
-bo nie dotyka QPU (symulator + klasyka), a wyprzedza harmonogram (S3–S4).
-- Tribonacci: obok swapów sąsiednich 3-cykle na pozycjach (i,i+1,i+2);
-  niekolidujące podzbiory → T(n)=T(n−1)+T(n−2)+T(n−3); DP liniowe; QUBO
-  wstęgowe (szer. 2) — embeduje jak fibonacci, skaluje do n=500.
-- k-bonacci: ruchy do długości k (k=2 ⇒ Fibonacci, k=3 ⇒ Tribonacci);
-  jedno DP, jeden dowód, strojony parametr bogactwa ruchu. Oś artykułu:
-  "sequence-counted neighborhood family".
-- Hamming: ruchy o ograniczonym dystansie Hamminga d (wybór d pozycji do
-  optymalnej repermutacji); QUBO przypisaniowe (gęstsze — sprawdzić granicę
-  embeddingu). Semantykę doprecyzować z promotorem.
-- Publikacja: ICAISC/SOCO 2027 albo sekcja w artykule D.
+### C. Nowe otoczenia — CZTERY osobne implementacje (Gantt 4 — do przodu planu)
+Pełny reuse pipeline'u; równolegle z A, bo nie dotyka QPU (symulator +
+klasyka). W projekcie doktorskim wymienione: Hamming i de Montmort;
+użytkownik dokłada rodzinę k-bonacci z tribonaccim na czele.
+1. **Tribonacci** (trudność NISKA, kilka dni): obok swapów sąsiednich
+   3-cykle na pozycjach (i,i+1,i+2); niekolidujące podzbiory →
+   T(n)=T(n−1)+T(n−2)+T(n−3); DP liniowe; QUBO wstęgowe (szer. 2) —
+   embeduje jak fibonacci, skaluje do n=500. Pierwsza konkretna instancja
+   rodziny k-bonacci.
+2. **k-bonacci** (NISKA/ŚREDNIA): uogólnienie — ruchy/cykle do długości k
+   (k=2 ⇒ Fibonacci, k=3 ⇒ Tribonacci); jedno DP, jeden dowód zliczania,
+   strojony parametr bogactwa ruchu vs koszt. Osobny moduł parametryzowany
+   k, nie kopia per k. Oś artykułu: "sequence-counted neighborhood family".
+3. **Hamming** (ŚREDNIA): ruchy o ograniczonym dystansie Hamminga d
+   (wybór d pozycji do optymalnej repermutacji); QUBO przypisaniowe
+   ~d² zmiennych (gęstsze — sprawdzić granicę embeddingu).
+4. **de Montmort / deranżacje** (PROJEKTOWA — najpierw sesja koncepcyjna
+   z promotorem): ruchy deranżacyjne na wybranym podzbiorze pozycji
+   (żadna pozycja nie zostaje na miejscu); zliczanie = podsilnia !d;
+   struktura QUBO nieoczywista (przypisanie z zakazem diagonali) —
+   zaprojektować przed wyceną.
+- Publikacja: ICAISC/SOCO 2027 albo sekcje w artykule D.
 
 ### D. Głęboki artykuł o Fibonaccim = wehikuł celu 2
 Jedno otoczenie, wszystkie realizacje: klasyczne DP (+top-k), QUBO na
@@ -61,6 +70,31 @@ Analogicznie: kombinatoryka (M_n, Catalan), DP O(n^3) + akceleracja,
 gęstość grafu konfliktów vs embedding, strata okienkowania (zmierzona!),
 QAOA dla gęstszych Hamiltonianów (koszt SWAP-ów — ciekawy kontrast z D).
 
+### F. Środowisko Odra 5 / IQM Spark (Gantt 3, S2–S3)
+Lokalna 5-kubitowa maszyna IQM Spark na PWr — bez latencji sieciowej.
+- Implementacja ŁATWA: adapter qiskit-iqm, te same obwody co w A,
+  transpilacja do bramek natywnych; okna w=6 (K=5) przez istniejący
+  parametr window_size.
+- Wartość naukowa: znika 2.1 s latencji Leap → pierwszy pomiar
+  QPU-in-the-loop z realną liczbą iteracji (bezpośredni test modelu
+  "budżet kupuje iteracje" z windowed_qubo). 5 kubitów ogranicza do
+  mikro-okien — to feature dla metodyki, nie bug.
+- Blokada: dostęp/formalności, nie kod. Czekać na udostępnienie.
+
+### G. Metodyka złożoności i benchmarkowania QPU (Gantt 5+7, rezultat 2)
+Trudność NISKA — embrion już istnieje: instrumentacja iteracji per-run,
+14k+ rekordów qpu_timing.jsonl, tabela anatomii kosztu (30 ms billed vs
+2.1–140 s wall), protokół transz, reżim 1-iteracji, stochastyczność
+embeddingu.
+- Do sformalizowania: model kosztu oraculum QPU
+  (t_build + t_embed + t_queue + t_anneal, amortyzacja embeddingu);
+  trzy reżimy uczciwego porównania (równy wall / równy billed /
+  równe iteracje); notacja złożoności pętli hybrydowych; uczciwe
+  ujęcie BQP (oraculum heurystyczne ≠ teza o klasie złożoności).
+- Kandydat na samodzielny artykuł metodyczny prawie bez nowych
+  eksperymentów — najtańsza wysokowartościowa pozycja; dostarcza
+  wprost oczekiwany rezultat 2 projektu.
+
 ### B. Job Shop (POZA projektem doktorskim — opcjonalne rozszerzenie)
 Duży lift: graf dysjunktywny, Cmax = najdłuższa ścieżka w DAG, ruchy na
 blokach ścieżki krytycznej, nowy parser (ta01–80, ft/la/orb). Uogólnienie
@@ -70,12 +104,17 @@ A/C/D domknięte, albo przeformułować z promotorem (najbliższy planowi
 byłby hybrid flow shop, wymieniony w future work windowed_qubo).
 
 ## Rekomendowana kolejność (po uzgodnieniu z celami projektu)
-1. **A (QAOA, symulator)** — zgodne z Gantt S1–S2 i celem 2; zero quoty.
-2. **C (tribonacci/k-bonacci)** równolegle jako szybki wynik publikacyjny —
-   wyprzedza Gantt poz. 4.
-3. **D (Fibonacci deep)** — konsumuje A + istniejące dane; dostarcza cel 2.
-4. **E (Motzkin deep)**.
-5. **B (Job Shop / hybrid flow shop)** — po domknięciu powyższych i po
+1. **A (QAOA, symulator)** — zgodne z Gantt S1–S2 i celem 2; zero quoty;
+   trudność ŚREDNIA (~1–2 tyg. na szkielet + walidację).
+2. **C1/C2 (tribonacci → k-bonacci)** równolegle jako szybki wynik —
+   wyprzedza Gantt poz. 4; trudność NISKA.
+3. **G (metodyka benchmarkowania)** — pisanie/formalizacja z istniejących
+   danych; można wpleść między eksperymenty; dostarcza rezultat 2.
+4. **D (Fibonacci deep)** — konsumuje A + istniejące dane; dostarcza cel 2.
+5. **C3/C4 (Hamming, de Montmort)** — Hamming po C2; de Montmort po sesji
+   projektowej z promotorem.
+6. **E (Motzkin deep)**; **F (Odra 5)** gdy pojawi się dostęp.
+7. **B (Job Shop / hybrid flow shop)** — po domknięciu powyższych i po
    rozmowie z promotorem o zakresie.
 
 Zasoby: quota D-Wave ~205 s do końca lipca, reset ~1 sierpnia (~400 s/mies).

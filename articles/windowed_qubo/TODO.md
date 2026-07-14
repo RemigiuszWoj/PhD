@@ -22,6 +22,18 @@ i wpisany. Wnioski/abstract/highlights zaktualizowane o wyniki.
       ~170 s quoty = 4–5 transz, ~30–40 h wall) TYLKO jeśli recenzent
       poprosi o pełne krzywe konwergencji dla klasy oryginalnej.
 
+## PUNKT POWROTU (stan na 2026-07-14, pauza — priorytet przeszedł na nowe tematy)
+- Artykuł KOMPLETNY do wysłania promotorowi: wszystkie tabele z realnymi
+  danymi QPU, Wilcoxony, ablacja BTJL, humanizer+formatowanie zrobione
+  (commit 8720e63, 23 strony, floaty na miejscu).
+- **Otwarta decyzja: dziury "--" w Table 6 (per-limit)** — brakujące
+  warstwy QPU: orig tl=100/500/2000/10000 (1525 runów), enh tl=2000/10000
+  + resztki tl=100 (914 runów). Koszt: ~170 s quoty (≈ reszta lipca albo
+  sierpień) + ~30–40 h wall. Skrypt gotowy do napisania na wzór
+  run_qpu_p4.py; kolejność tanie-najpierw, dyn orig na końcu.
+  Alternatywa: zostawić kreski (caption już to uczciwie opisuje).
+- Budżet lipca po wszystkim: 194.5/~400 s zużyte, ~205 s wolne.
+
 ## Badania na przyszłość (sierpniowa quota lub później)
 - [ ] Czułość na overlap ρ: dyn/motz enhanced, ρ ∈ {0.25, 0.75}
       (ρ=0.5 zmierzone), n=20 i n=50, ILS tl=5000 → ~400 runów,

@@ -10,10 +10,11 @@ i wpisany. Wnioski/abstract/highlights zaktualizowane o wyniki.
       podpisy figur) — formatowanie robimy NA KOŃCU
 
 ## Przed submisją (decyzje podjęte, pilnować spójności)
-- [ ] BTJL: ablacja vs random restart POMINIĘTA (decyzja 13.07 — lista jest
-      zaimplementowana i używana, nie robimy osobnego pomiaru).
-      Tekst już złagodzony: "ablation ... left for future work".
-      NIE wpisywać z powrotem twierdzeń o porównaniu bez danych.
+- [x] BTJL: ablacja ZMIERZONA 14.07 (zmiana decyzji z 13.07): 3600 runów
+      klasycznych, dir results/experiments/20260713_225226. BTJL bije
+      restart w każdej komórce m×tl o 1.1–2.6 pp (p<1e-17); per sąsiedztwo:
+      adjacent +4.07, fibonacci +3.51, dynasearch +0.43, motzkin +0.25 pp.
+      Wpisane do akapitu "BackTrackJumpList contribution" i wniosków.
 - [ ] Siatka 6 budżetów dla quantum: tabele jej NIE wymagają; Setup
       doprecyzowany (klasyczne 6 budżetów, QPU: tabele tl=1000/5000,
       konwergencja 100–5000 enh). Opcjonalne doliczenie warstw
@@ -28,9 +29,6 @@ i wpisany. Wnioski/abstract/highlights zaktualizowane o wyniki.
       overlap_ratio przez config/runner (parametr już istnieje
       w funkcjach okienkowania). Po pomiarze wymienić zdanie
       "sensitivity to ρ remains untested".
-- [ ] Ewentualna ablacja BTJL, jeśli wróci w recenzji: flaga
-      diversification=mushroom|random_restart w ils.py (~20 linii),
-      600 runów klasycznych (~3 h CPU, zero quoty), Wilcoxon par.
 - [ ] Future work z artykułu: adaptive window sizing, QAOA/Willow,
       cross-window interactions, hybrid flow shop.
 

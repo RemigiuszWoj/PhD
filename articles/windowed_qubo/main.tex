@@ -18,6 +18,12 @@
 \hypersetup{colorlinks=true, linkcolor=blue!60!black,
             citecolor=blue!60!black, urlcolor=blue!60!black}
 
+% Let tall floats (long-caption tables) sit on text/float pages instead
+% of drifting past the bibliography.
+\renewcommand{\topfraction}{0.95}
+\renewcommand{\textfraction}{0.05}
+\renewcommand{\floatpagefraction}{0.75}
+
 \journal{Computers \& Operations Research}
 
 \begin{document}
@@ -221,7 +227,7 @@ $a < b < c$ into segments
 $A = \pi_{[1,a)}$, $B = \pi_{[a,b)}$, $C = \pi_{[b,c)}$, $D = \pi_{[c,n]}$
 and reconnects them as $A \mid C \mid B \mid D$.
 No single adjacent swap can reverse this; it lies outside the 2-opt
-neighbourhood, so the search genuinely escapes the current basin.
+neighborhood, so the search genuinely escapes the current basin.
 Round-robin selection spreads diversification events across all elites
 rather than hammering the global best repeatedly.
 The pool is updated after every strict improvement to $C_{\max}^*$;
@@ -289,7 +295,7 @@ for every pair $(i,j)$ with $i < j \leq n-1$ the move exchanges
 $\pi(i)$ and $\pi(j)$, leaving the interior $\pi(i+1),\ldots,\pi(j-1)$
 unchanged. Dynamic programming~\citep{congram02} selects the subset
 of pairs that are pairwise non-overlapping as intervals
-($j_1 < i_2$ or $j_2 < i_1$) and jointly minimise the resulting
+($j_1 < i_2$ or $j_2 < i_1$) and jointly minimize the resulting
 $C_{\max}$. The candidate set has cardinality $K = O(n^2)$ and the DP
 runs in $O(n^3)$ in the worst case, accelerated by the NPI block-property
 filter described in Section~\ref{sec:accelerators}.
@@ -607,7 +613,7 @@ Motzkin     & 2.64 &  3.25 & 10.21 & 10.68 & 21.46 & 21.73 \\
 \end{tabular}
 \end{table}
 
-\begin{table}[t]
+\begin{table}[!tp]
 \centering
 \caption{Mean RPD [\%] for all quantum QUBO neighborhoods vs.\ classical
   baselines, ILS, $t_{\max} = 5000$\,ms; $m = 10$ for $n \le 200$,
@@ -732,7 +738,7 @@ quantitative core of the benchmarking protocol this paper argues for:
 a wall-clock comparison that ignores them measures the cloud, not the
 processor.
 
-\begin{table}[t]
+\begin{table}[!tp]
 \centering
 \caption{Mean cost of a single QPU call at $n = 20$ (1332 calls,
   $\mathrm{num\_reads} = 100$). Billed QPU access is constant across
@@ -782,10 +788,10 @@ global.
 \paragraph{Scaling behavior}
 Table~\ref{tab:rpd_scaling} shows how enhanced quantum neighborhoods
 compare to classical counterparts across sizes. The enhanced variants
-were built to answer one question: does QPU evaluation of larger
-QUBOs, windowed where necessary, hold its ground as $n$ grows? The
-measured answer is stronger than that. Quantum RPD falls monotonically
-with instance size: fibonacci enhanced runs 31.7--23.6--19.6--15.0\,\%
+were built so that QPU evaluation of larger QUBOs, windowed where
+necessary, would at least hold its ground as $n$ grows. The
+measurements show more: quantum RPD falls monotonically with
+instance size. Fibonacci enhanced runs 31.7--23.6--19.6--15.0\,\%
 from $n = 20$ to $n = 200$, and adjacent enhanced tracks the same
 slope about 1.5\,pp behind (34.9 down to 16.4\,\%). The gap to the
 classical fibonacci baseline narrows from 20.4\,pp at $n = 20$ to
@@ -813,7 +819,7 @@ out to be stochastic rather than structural: the three dynasearch
 runs that found no embedding on the first pass in this campaign all
 succeeded on a retry. The hard wall sits at $K_{499}$ (adjacent,
 $n = 500$), which exceeds the Pegasus clique capacity outright;
-around 200 variables, embedding is a lottery with favourable odds,
+around 200 variables, embedding is a lottery with favorable odds,
 not a cliff.
 
 At $n = 100$, dynasearch still wins: 4.67\,\% against fibonacci's
@@ -840,14 +846,14 @@ confirming the trend.
 At $n = 500$ both dynasearch and motzkin run out of room. A single
 dynasearch DP call (over $\approx 1.2 \times 10^5$ candidate pairs)
 takes about 200\,s; motzkin's $O(n^3)$ arc-selection DP takes about
-30\,s. Both exceed our 10\,s budget, so ILS and SA each complete
+30\,s. Both exceed every tested budget, so ILS and SA each complete
 exactly one local-search iteration per run and return identical
 solutions. Dynasearch ends up at 14.53\,\% (range $13.30$--$16.05$),
 motzkin at 16.26\,\% (range $13.00$--$18.40$).
 
 These two entries should be read with a caveat. They are not a
 like-for-like comparison with adjacent or fibonacci, which used the
-full 10\,s to run thousands of iterations. Dynasearch and motzkin
+full budget to run thousands of iterations. Dynasearch and motzkin
 each had time for a single local-search step. We report them to
 document the scaling boundary, not to argue that one neighborhood
 beats another at $n = 500$.

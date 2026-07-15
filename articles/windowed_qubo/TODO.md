@@ -44,6 +44,18 @@ i wpisany. Wnioski/abstract/highlights zaktualizowane o wyniki.
 - [ ] Future work z artykułu: adaptive window sizing, QAOA/Willow,
       cross-window interactions, hybrid flow shop.
 
+## Spójność z artykułem BPASTS (WAŻNE przy rewizji BPASTS)
+- 15.07: w windowed_qubo przemianowano "SA" na **TLS (Thermodynamic Local
+  Search)** — bo nasza implementacja skanuje CAŁE otoczenie i aplikuje
+  Metropolisa do NAJLEPSZEGO sąsiada (nie losowego jak w kanonicznym SA).
+  Definicja+uzasadnienie w akapicie Metaheuristics (kotwice: Hansen–Jaumard
+  1990 SAMD; dystynkcja od "thermodynamic simulated annealing" de Vicente 2003).
+- **UWAGA: artykuł BPASTS (w recenzji) opisuje SA jako "generates a
+  neighboring solution" (losowy sąsiad), a kod używał tego samego
+  best-move oracle** — przy rewizji BPASTS poprawić opis albo przyjąć
+  nazwę TLS tam też. Kod (src/algorithms/sa.py) zostaje pod starą nazwą
+  funkcji; ewentualny rename modułu przy okazji większych zmian.
+
 ## Administracyjne przy submisji
 - [ ] Data availability: upublicznić repo kodu i wyników (obiecane
       "upon acceptance")

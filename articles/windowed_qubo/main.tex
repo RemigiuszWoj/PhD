@@ -158,24 +158,48 @@ frameworks and time budgets.
 \label{sec:problem}
 
 \paragraph{Permutation Flow Shop Problem}
-Let $P = [p_{k,j}]_{m \times n}$ denote processing times, where machine
-index $k \in \{1,\ldots,m\}$ and job index $j \in \{1,\ldots,n\}$.
-A permutation $\pi \in S_n$ specifies the processing order on all machines.
-Completion time $C_{k,j}(\pi)$ satisfies
-\begin{align}
-  C_{1,1} &= p_{1,\pi(1)}, \quad
-  C_{k,1} = C_{k-1,1} + p_{k,\pi(1)}, \quad
-  C_{1,j} = C_{1,j-1} + p_{1,\pi(j)}, \\
-  C_{k,j} &= \max\!\bigl\{C_{k,j-1},\, C_{k-1,j}\bigr\} + p_{k,\pi(j)}.
-\end{align}
-The objective is $\pi^* = \arg\min_\pi C_{m,n}(\pi) =: C_{\max}(\pi)$.
+We follow the notation of the classical tabu search paper of Nowicki
+and Smutnicki~\citep{nowicki96}. The flow shop consists of a set of
+jobs $J = \{1,\ldots,n\}$ and a set of machines
+$M = \{1,\ldots,m\}$. Job $j \in J$ is a sequence of $m$ operations
+$O_{1j}, O_{2j}, \ldots, O_{mj}$; operation $O_{ij}$ has to be
+processed on machine $i$ for an uninterrupted time $p_{ij} > 0$. Each
+machine can process at most one job at a time, each job can be
+processed on at most one machine at a time, and every machine
+processes the jobs in the same order, so a processing order is a
+permutation $\pi = (\pi(1), \ldots, \pi(n))$ of the set $J$; $\Pi$
+denotes the set of all such permutations. Completion times satisfy
+the recursion
+\begin{equation}
+  C_{i,\pi(j)} = \max\!\bigl\{C_{i-1,\pi(j)},\, C_{i,\pi(j-1)}\bigr\}
+  + p_{i,\pi(j)}, \qquad i \in M,\; j \in J,
+\end{equation}
+with $C_{0,\pi(j)} = C_{i,\pi(0)} = 0$. The makespan of $\pi$ is
+$C_{\max}(\pi) = C_{m,\pi(n)}$, and the problem is to find
+$\pi^* \in \Pi$ such that
+$C_{\max}(\pi^*) = \min_{\pi \in \Pi} C_{\max}(\pi)$.
+
+Equivalently, the makespan is the length of a longest (critical) path
+in the grid graph of the schedule,
+\begin{equation}
+  C_{\max}(\pi) = \max_{1 = j_0 \leq j_1 \leq \cdots \leq j_m = n}\;
+  \sum_{i=1}^{m} \sum_{j=j_{i-1}}^{j_i} p_{i,\pi(j)},
+  \label{eq:critpath}
+\end{equation}
+and the maximal subsequences of a critical path processed on a single
+machine form its \emph{blocks} --- the structure behind the block
+properties that Section~\ref{sec:accelerators} turns into a candidate
+filter. The complete treatment of the model, its critical-path and
+block structure, and the tabu search built on them is given
+in~\citep{nowicki96}; here we recall only what the neighborhood and
+QUBO constructions require.
 
 \paragraph{Head--Tail decomposition}
-Following~\citep{wodecki04}, the makespan delta for inserting job
-$\pi(i)$ at position $j$ is computed in $O(1)$ using precomputed
-head matrices $H[k][j]$ (earliest completion time of job at position
-$j$ on machine $k$ from left) and tail matrices $T[k][j]$ (latest
-completion time contribution from right). Both matrices are built in
+Following~\citep{wodecki04}, the makespan delta of a candidate move is
+computed in $O(1)$ using precomputed head matrices $H[i][j]$ (earliest
+completion time of the job at position $j$ on machine $i$, scanning
+from the left) and tail matrices $T[i][j]$ (latest completion-time
+contribution, scanning from the right). Both matrices are built in
 $O(mn)$ before each local search iteration and reused for all
 candidate evaluations within that iteration.
 
@@ -1091,6 +1115,12 @@ Taillard, E., 1993.
 Benchmarks for basic scheduling problems.
 \textit{Eur. J. Oper. Res.} 64 (2), 278--285.
 \doi{10.1016/0377-2217(93)90182-M}
+
+\bibitem[Nowicki and Smutnicki(1996)]{nowicki96}
+Nowicki, E., Smutnicki, C., 1996.
+A fast tabu search algorithm for the permutation flow shop problem.
+\textit{Eur. J. Oper. Res.} 91 (1), 160--175.
+\doi{10.1016/0377-2217(95)00037-2}
 
 \bibitem[Wodecki and Bo\.{z}ejko(2004)]{wodecki04}
 Wodecki, M., Bo\.{z}ejko, W., 2004.

@@ -50,10 +50,10 @@
 We extend the quantum neighborhood framework for the Permutation Flow
 Shop Scheduling Problem (PFSP) by introducing a third neighborhood
 class, \emph{quantum QUBO enhanced}, which operates on significantly
-larger benchmark instances than the original D-Wave formulations
-allowed. The prior framework comprised eight neighborhoods: four
+larger benchmark instances than the original formulations allowed on
+the D-Wave QPU. The prior framework comprised eight neighborhoods: four
 classical (Adjacent, Fibonacci, Dynasearch, Motzkin) and four quantum
-QUBO variants limited to $n = 20$ jobs on D-Wave hardware.
+QUBO variants limited to $n = 20$ jobs on the D-Wave QPU.
 The enhanced class addresses two limitations: an unnecessary
 delta-filtering heuristic in linearly-scaling QUBO structures
 (Adjacent and Fibonacci) is removed, extending QPU applicability to
@@ -78,7 +78,7 @@ points, growing with the time budget, where they are global (motzkin).
 \end{abstract}
 
 \begin{highlights}
-  \item Quantum QUBO enhanced class breaks the $n=20$ D-Wave barrier for PFSP search.
+  \item Quantum QUBO enhanced class breaks the $n=20$ D-Wave QPU barrier for PFSP search.
   \item Delta filter removal extends Adjacent/Fibonacci QUBO to $n\leq 200$ and $n\leq 500$.
   \item Windowed QUBO decomposition enables Dynasearch and Motzkin on instances up to $n=50$.
   \item Smutnicki accelerator cuts QUBO variable count by 30--60\% before QPU submission.
@@ -152,7 +152,7 @@ neighborhood, not the schedule, becomes the QUBO.
 
 In~\citep{WojewodzkiBozejkoBPASTS2026} we formulated four classical PFSP
 neighborhoods as Quadratic Unconstrained Binary Optimization (QUBO)
-problems and executed them on D-Wave quantum annealing hardware, providing
+problems and executed them on the D-Wave quantum annealing QPU, providing
 the first systematic comparison of classical and quantum neighborhood
 search under identical wall-clock time budgets and metaheuristic frameworks;
 hybrid metaheuristic strategies combining several neighborhoods were
@@ -189,7 +189,7 @@ Dynasearch and Motzkin neighborhoods, which makes QPU execution
 feasible up to $n = 50$ with the window size derived automatically
 from hardware capacity, and, second, delta-filter-free formulations
 that carry Adjacent to $n \leq 200$ and Fibonacci to $n \leq 500$ on
-D-Wave Advantage. All twelve neighborhoods share the block-property
+the D-Wave Advantage QPU. All twelve neighborhoods share the block-property
 accelerator of Smutnicki~\citep{ref_smutnicki}, which cuts the QUBO
 variable count by 30--60\% before submission. On the metaheuristic
 side, ILS replaces uniform random restarts with the BackTrackJumpList:
@@ -444,7 +444,7 @@ constructions within that iteration.
 \subsection{Quantum QUBO Neighborhoods}
 
 The quantum QUBO neighborhoods reformulate the four classical
-neighborhood searches as QUBO problems solved on D-Wave Advantage
+neighborhood searches as QUBO problems solved on the D-Wave Advantage QPU
 hardware via the \texttt{EmbeddingComposite} sampler. The general
 form follows~\citep{WojewodzkiBozejkoBPASTS2026}: binary variable $x_k = 1$
 indicates that swap candidate $k$ is selected; the QUBO encodes both
@@ -480,7 +480,7 @@ $\binom{w}{2}$ candidate pairs $(i,j)$ with $s_\ell \leq i < j < s_\ell + w$
 (further filtered by the block-property accelerator).
 The window size is chosen automatically to satisfy
 $K(w) = w(w-1)/2 \leq C_{\mathrm{eff}}$, where $C_{\mathrm{eff}} = 180$
-is a conservative estimate of D-Wave Advantage effective capacity for
+is a conservative estimate of the D-Wave Advantage QPU effective capacity for
 dense QUBOs:
 \begin{equation}
   w_{\max} = \left\lfloor
@@ -499,7 +499,7 @@ in Table~\ref{tab:feasibility}.
 
 \begin{table}[t]
 \centering
-\caption{Tractability of neighborhood classes on D-Wave Advantage.
+\caption{Tractability of neighborhood classes on the D-Wave Advantage QPU.
   $K$ = QUBO variable count after block-property filtering;
   $n_{\max}$ = largest feasible instance.}
 \label{tab:feasibility}

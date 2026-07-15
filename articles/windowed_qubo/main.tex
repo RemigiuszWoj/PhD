@@ -121,9 +121,23 @@ field: the review of Ruiz and Maroto~\citep{ruizmaroto05} evaluates
 dozens of heuristics head-to-head, and the iterated greedy of Ruiz and
 St\"{u}tzle~\citep{ruizstutzle07} demonstrated that a simple
 destruction--construction loop matches far more elaborate machinery.
+
 Two ingredients recur in every strong PFSP algorithm: a carefully
-chosen move structure, and the critical-path block properties that
-prune it.
+chosen move structure, and the critical-path properties that prune it.
+Both have become objects of study in their own right. Dynasearch,
+introduced by Congram, Potts and van de Velde for single-machine
+scheduling~\citep{congram02}, showed that an exponentially large set
+of pairwise independent moves can be searched exactly by dynamic
+programming in polynomial time --- a compound move, rather than a
+single swap, becomes the unit of search. The block properties of the
+critical path~\citep{nowicki96,ref_smutnicki,grabowski04} attack the
+same bottleneck from the other side, telling the search which
+candidates cannot improve the makespan and can be skipped wholesale.
+The Fibonacci and Motzkin neighborhoods we introduced in earlier
+work~\citep{WojewodzkiBozejkoBPASTS2026,Motzkin_PWR_EXIT} continue the
+compound-move line: their move sets are counted by classical integer
+sequences, searched by dynamic programming --- and, as this paper
+exploits, expressible as QUBOs.
 
 Quantum optimization entered scheduling from the job shop side.
 Venturelli et al.\ encoded whole job shop instances as QUBOs for
@@ -189,9 +203,14 @@ frameworks and time budgets.
 \section{Problem Definition}
 \label{sec:problem}
 
+This section fixes the model, the notation, and the two computational
+tools used throughout the paper. All of it is standard and well known;
+we recall it briefly, in the notation of the classical tabu search
+paper of Nowicki and Smutnicki~\citep{nowicki96}, to keep the paper
+self-contained.
+
 \paragraph{Permutation Flow Shop Problem}
-We follow the notation of the classical tabu search paper of Nowicki
-and Smutnicki~\citep{nowicki96}. The flow shop consists of a set of
+The flow shop consists of a set of
 jobs $J = \{1,\ldots,n\}$ and a set of machines
 $M = \{1,\ldots,m\}$. Job $j \in J$ is a sequence of $m$ operations
 $O_{1j}, O_{2j}, \ldots, O_{mj}$; operation $O_{ij}$ has to be
@@ -325,6 +344,14 @@ schedule had locked onto the first local minimum.
 % ---------------------------------------------------------------
 \section{Neighborhood Taxonomy}
 \label{sec:neighborhoods}
+
+This section walks through the twelve neighborhoods in their three
+classes: the four classical neighborhoods, the shared block-property
+accelerator, their quantum QUBO formulations, and the enhanced
+variants this paper introduces. The classical definitions are well
+known from the literature and our earlier work; we recall them because
+the QUBO constructions of Section~\ref{sec:qubo} are built directly on
+their move sets.
 
 \subsection{Classical Neighborhoods}
 
@@ -544,6 +571,11 @@ The feasible solution count equals $M_n$~\citep{Motzkin_PWR}.
 \section{Experimental Setup}
 \label{sec:setup}
 
+The design holds every component fixed except the neighborhood:
+benchmark instances, seeds, time budgets, hardware, and metrics are
+shared by all twelve variants, so differences in the tables that
+follow are attributable to the move structure alone.
+
 \paragraph{Benchmarks}
 We use the standard Taillard benchmark
 instances~\citep{ref_taillard}: $n \in \{20, 50, 100, 200, 500\}$
@@ -603,6 +635,12 @@ Following the tractability analysis of Table~\ref{tab:feasibility}:
 % ---------------------------------------------------------------
 \section{Results and Discussion}
 \label{sec:results}
+
+We report the classical baseline first, then the QPU campaigns at
+$n = 20$, and finally the scaling study up to $n = 500$. Every quantum
+number in this section comes from real \texttt{Advantage\_system4.1}
+runs under the instrumented protocol of Section~\ref{sec:setup};
+nothing is simulated.
 
 \begin{table}[t]
 \centering

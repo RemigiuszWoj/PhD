@@ -503,7 +503,8 @@ in Table~\ref{tab:feasibility}.
   $K$ = QUBO variable count after block-property filtering;
   $n_{\max}$ = largest feasible instance.}
 \label{tab:feasibility}
-\begin{tabular}{@{}lllll@{}}
+\small
+\begin{tabular}{@{}lllrl@{}}
 \toprule
 Class & Neighborhood & $K$ (filtered) & $n_{\max}$ & Hardware \\
 \midrule
@@ -519,10 +520,10 @@ Class & Neighborhood & $K$ (filtered) & $n_{\max}$ & Hardware \\
   & Dynasearch  & $O(n^2)$ & 20 & QPU \\
   & Motzkin     & $O(n^2)$ & 20 & QPU \\
 \midrule
-\multirow{4}{*}{Quantum QUBO Enhanced}
+\multirow{4}{*}{\shortstack[l]{Quantum QUBO\\Enhanced}}
   & Adjacent    & $n-1$    & 200 & QPU \\
   & Fibonacci   & $n-1$    & 500 & QPU \\
-  & Dynasearch  & $\leq \binom{19}{2} = 171$ \textup{(windowed)} & 50 & QPU \\
+  & Dynasearch  & $\leq 171$ \textup{(windowed)} & 50 & QPU \\
   & Motzkin     & $\leq 171$ \textup{(windowed)} & 50 & QPU \\
 \bottomrule
 \end{tabular}
@@ -585,8 +586,8 @@ per size class, 150 instances total).
 Each algorithm runs with 5 independent seeds per instance; the seed
 determines only the initial random permutation and the SA temperature
 schedule.
-We test six time budgets: $t_{\max} \in \{100, 500, 1000, 2000,
-5000, 10\,000\}$\,ms. Classical neighborhoods run at all six; the
+We test six time budgets, $t_{\max}$ from 100\,ms to 10\,000\,ms
+(100, 500, 1000, 2000, 5000, and 10\,000). Classical neighborhoods run at all six; the
 QPU campaigns report $t_{\max} = 1000$ and $5000$\,ms in the tables,
 and the convergence analysis of Fig.~\ref{fig:qpu_conv_n20} covers
 100--5000\,ms for the enhanced class.

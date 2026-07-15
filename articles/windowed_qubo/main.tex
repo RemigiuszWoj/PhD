@@ -204,7 +204,12 @@ $O(mn)$ before each local search iteration and reused for all
 candidate evaluations within that iteration.
 
 \paragraph{Metaheuristics}
-We evaluate all neighborhoods under two frameworks.
+A neighborhood by itself is not yet a search algorithm: it needs a
+control layer that accepts or rejects the proposed moves and pulls the
+trajectory out of local optima. To keep that layer from confounding
+the comparison, every neighborhood in this study runs inside the same
+two frameworks with identical parameters and time budgets, so the
+neighborhood is the only component that varies.
 
 \emph{Iterated Local Search} (ILS)~\citep{lourenco2003iterated}
 with a tabu list of tenure $\tau = 10$ and aspiration criterion

@@ -61,10 +61,8 @@ $n \leq 200$ and $n \leq 500$; and a windowed QUBO decomposition is
 introduced for quadratically-scaling structures (Dynasearch and
 Motzkin), pushing feasibility to $n \leq 50$.
 Both metaheuristic frameworks (Iterated Local Search with tabu
-diversification via a BackTrackJumpList elite pool, and Thermodynamic
-Local Search --- a simulated-annealing-style rule that applies
-Metropolis acceptance to the best neighbor of a full neighborhood
-scan --- with adaptive reheating) employ a block-property accelerator
+diversification via a BackTrackJumpList elite pool, and Simulated
+Annealing with adaptive reheating) employ a block-property accelerator
 that prunes dominated swap candidates before each QUBO submission,
 reducing the effective variable count by 30--60\% on Taillard instances.
 All twelve neighborhoods are evaluated on standard Taillard benchmarks
@@ -282,30 +280,15 @@ When no non-tabu move is available and aspiration is not met, the
 search diversifies via the BackTrackJumpList mechanism described in
 Section~\ref{sec:btjl}.
 
-\emph{Thermodynamic Local Search} (TLS), our second framework, keeps
-the machinery of simulated annealing~\citep{kirkpatrick1983} ---
-initial temperature $T_0 = 1000$, cooling rate $\alpha = 0.99$,
-temperature floor $T_{\min} = 100$, Metropolis acceptance, and
-reheat-kick diversification on stagnation
-(Section~\ref{sec:sa-kick}) --- but departs from canonical SA in one
-deliberate way: instead of sampling a \emph{random} neighbor, each
-step receives the \emph{best} move of the chosen neighborhood from
-the shared oracle, and the Metropolis criterion decides whether to
-accept it. We do not call this simulated annealing, because
-random-neighbor sampling is constitutive of SA and its convergence
-theory. The design is forced by the comparison itself: a QPU call
-returns the best composite move, not a random one, so the classical
-control layer must consume the same best-move oracle for the twelve
-neighborhoods to remain interchangeable. The closest classical
-relative is the steepest-descent--mildest-ascent rule of Hansen and
-Jaumard~\citep{hansen90}, which also scans the full neighborhood but
-accepts the least-worsening move deterministically; TLS replaces that
-determinism with Boltzmann acceptance. The name should not be
-confused with \emph{thermodynamic simulated annealing}, which adapts
-the temperature schedule from thermodynamic principles while keeping
-random sampling~\citep{devicente03}. A best-move oracle changes what
-TLS needs to escape a local minimum; Section~\ref{sec:sa-kick} covers
-why reheating alone is insufficient.
+\emph{Simulated Annealing} (SA)~\citep{kirkpatrick1983}
+with initial temperature $T_0 = 1000$, cooling rate $\alpha = 0.99$,
+temperature floor $T_{\min} = 100$, and reheat-kick diversification
+on stagnation (Section~\ref{sec:sa-kick}). SA shares the
+neighborhood oracle with ILS: each step receives the best move of
+the chosen neighborhood, and the Metropolis criterion decides
+whether to accept it. A best-move oracle changes what SA needs to
+escape a local minimum; Section~\ref{sec:sa-kick} covers why
+reheating alone is insufficient.
 
 \subsection{BackTrackJumpList Elite Diversification}
 \label{sec:btjl}
@@ -332,12 +315,12 @@ rather than hammering the global best repeatedly.
 The pool is updated after every strict improvement to $C_{\max}^*$;
 before any elites have been found, the fallback is a uniform random restart.
 
-\subsection{TLS with reheat-kick diversification}
+\subsection{SA with reheat-kick diversification}
 \label{sec:sa-kick}
 
-The shared neighborhood oracles force TLS's inner step to consume
+The shared neighborhood oracles force SA's inner step to consume
 the \emph{best} candidate move, not a random one. With a
-deterministic best-move oracle, the search collapses at a local minimum
+deterministic best-move oracle, SA collapses at a local minimum
 $X$: the oracle returns the best neighbor $X'$ with $\Delta =
 C_{\max}(X') - C_{\max}(X) > 0$; Metropolis accepts $X'$ with
 probability $\exp(-\Delta/T)$; from $X'$ the oracle returns $X$
@@ -347,7 +330,7 @@ cannot break it: the oracle yields the same pair regardless of $T$.
 
 The fix is to couple reheating with a perturbation in solution
 space, similar to the BackTrackJumpList of Section~\ref{sec:btjl}.
-TLS keeps an elite pool of size $k = 10$, updated whenever
+SA keeps an elite pool of size $k = 10$, updated whenever
 $C_{\max}^*$ strictly improves. On stagnation, defined as $s =
 100$\,ms without a global improvement, the algorithm:
 \begin{enumerate}
@@ -363,7 +346,7 @@ $C_{\max}^*$ strictly improves. On stagnation, defined as $s =
 \end{enumerate}
 The temperature floor $T_{\min} = 100$ keeps some uphill mobility
 during cooling, so post-kick steps stay exploratory until the next
-reheat fires. The two-cycle disappears, and TLS converges with
+reheat fires. The two-cycle disappears, and SA converges with
 seed-dependent trajectories on instances where the original
 schedule had locked onto the first local minimum.
 
@@ -616,7 +599,7 @@ jobs and $m \in \{5, 10, 20\}$ machines.
 For each $(n, m)$ configuration, 10 instances are used (3 configurations
 per size class, 150 instances total).
 Each algorithm runs with 5 independent seeds per instance; the seed
-determines only the initial random permutation and the TLS temperature
+determines only the initial random permutation and the SA temperature
 schedule.
 We test six time budgets, $t_{\max}$ from 100\,ms to 10\,000\,ms
 (100, 500, 1000, 2000, 5000, and 10\,000). Classical neighborhoods run at all six; the
@@ -680,7 +663,7 @@ nothing is simulated.
 \caption{Mean RPD [\%] for all twelve neighborhoods on Taillard $20\times 5$
   instances at $t_{\max} = 1000$\,ms, averaged over 10 instances $\times$ 5
   seeds. ILS uses tabu tenure $\tau = 10$ and BackTrackJumpList diversification
-  ($k = 10$). TLS uses $\alpha = 0.99$, $T_0 = 1000$, $T_{\min} = 100$ with the
+  ($k = 10$). SA uses $\alpha = 0.99$, $T_0 = 1000$, $T_{\min} = 100$ with the
   reheat-kick of Section~\ref{sec:sa-kick}. Quantum QUBO rows come from real
   \texttt{Advantage\_system4.1} runs (July 2026). Per-call network and queue
   latency exceeds $t_{\max}$, so each quantum run completed exactly one
@@ -694,7 +677,7 @@ nothing is simulated.
 \label{tab:rpd_n20}
 \begin{tabular}{@{}llrr@{}}
 \toprule
-Class & Neighborhood & ILS RPD [\%] & TLS RPD [\%] \\
+Class & Neighborhood & ILS RPD [\%] & SA RPD [\%] \\
 \midrule
 \multirow{4}{*}{Classical}
   & Adjacent    & 3.89 & 11.28 \\
@@ -728,7 +711,7 @@ Class & Neighborhood & ILS RPD [\%] & TLS RPD [\%] \\
 \toprule
  & \multicolumn{2}{c}{$m = 5$} & \multicolumn{2}{c}{$m = 10$} & \multicolumn{2}{c}{$m = 20$} \\
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
-Neighborhood & ILS & TLS & ILS & TLS & ILS & TLS \\
+Neighborhood & ILS & SA & ILS & SA & ILS & SA \\
 \midrule
 Adjacent    & 3.41 &  6.98 & 11.22 & 15.61 & 22.58 & 26.27 \\
 Fibonacci   & 3.82 &  9.24 & 11.23 & 17.81 & 22.17 & 26.82 \\
@@ -756,8 +739,8 @@ Motzkin     & 2.64 &  3.25 & 10.21 & 10.68 & 21.46 & 21.73 \\
   $^\dagger$ \emph{These entries are not directly comparable
   with the others in their column.} At $n = 500$, a single dynasearch
   ($\sim 200$\,s) or motzkin ($\sim 30$\,s) DP call already exceeds
-  every tested time budget, so ILS and TLS both reduce to a single
-  local-search iteration per run (ILS and TLS produce identical values).
+  every tested time budget, so ILS and SA both reduce to a single
+  local-search iteration per run (ILS and SA produce identical values).
   Adjacent and fibonacci in the same column had thousands of iterations
   to refine the solution within the 5\,s budget; dynasearch and
   motzkin had one, so their values are budget-independent. The numbers
@@ -792,14 +775,14 @@ Tables~\ref{tab:rpd_n20} and~\ref{tab:rpd_n20_full} report the
 classical baseline across all three Taillard machine counts.
 Dynasearch and motzkin lead adjacent and fibonacci at every $m$,
 and the lead grows with $m$: 0.7--1.2 percentage points at
-$m = 5$, 1.2--1.4 points at $m = 20$. The TLS gap to ILS also
-depends on the neighborhood. TLS adjacent and fibonacci trail ILS
+$m = 5$, 1.2--1.4 points at $m = 20$. The SA gap to ILS also
+depends on the neighborhood. SA adjacent and fibonacci trail ILS
 by 7--10 pp at $m = 5$, because a best-move oracle over a sparse
-neighborhood traps the search in narrow basins that the reheat-kick of
-Section~\ref{sec:sa-kick} only partly resolves. TLS dynasearch and
+neighborhood traps SA in narrow basins that the reheat-kick of
+Section~\ref{sec:sa-kick} only partly resolves. SA dynasearch and
 motzkin sit within 0.7 pp of ILS at $m = 5$ and within 0.6 pp at
 $m = 20$; the richer neighborhoods supply enough escape paths for
-TLS to match ILS within a 10\,s budget.
+SA to match ILS within a 10\,s budget.
 
 \paragraph{Quantum QUBO on the QPU at $n = 20$}
 The quantum QUBO rows of Table~\ref{tab:rpd_n20} are the first QPU
@@ -822,7 +805,7 @@ $t_{\max} = 5000$\,ms adjacent and fibonacci fit three iterations per
 run and improve by 2.8 and 3.7\,pp, landing fibonacci at 19.9\,\% and
 motzkin at 19.5\,\%. Dynasearch stays at one iteration and moves by
 half a point. Table~\ref{tab:rpd_n20_tl} tabulates the same
-comparison for every tested budget without ILS/TLS pooling; the flat
+comparison for every tested budget without ILS/SA pooling; the flat
 enhanced rows between 100 and 1000\,ms are the single-iteration
 regime made visible in a table rather than a curve.
 
@@ -838,7 +821,7 @@ count alone.
 \centering
 \includegraphics[width=0.72\linewidth]{figures/qpu_convergence_n20}
 \caption{Real-QPU quantum neighborhoods at $n = 20$: mean RPD versus
-  time budget, ILS and TLS pooled (100 runs per point). Solid lines:
+  time budget, ILS and SA pooled (100 runs per point). Solid lines:
   original formulations; dashed: enhanced variants (windowed for
   dynasearch and motzkin). Labels give the median iteration count per
   run. The budget buys iterations (network latency permitting), and
@@ -916,7 +899,7 @@ Q-Fibonacci Enh.     & 23.57 & 23.51 & 23.60 &    -- & 19.62 &    -- \\
 Q-Dynasearch Enh.    & 25.76 & 25.68 & 25.56 &    -- & 24.57 &    -- \\
 Q-Motzkin Enh.       &    -- & 25.33 & 25.98 &    -- & 24.68 &    -- \\
 \midrule
-TLS & 100 & 500 & 1000 & 2000 & 5000 & 10000 \\
+SA & 100 & 500 & 1000 & 2000 & 5000 & 10000 \\
 \midrule
 Classical Adjacent   & 17.24 & 13.84 & 11.28 &  9.51 &  7.98 &  6.98 \\
 Classical Fibonacci  & 19.31 & 16.81 & 15.00 & 13.69 & 10.39 &  9.24 \\
@@ -1022,7 +1005,7 @@ confirming the trend.
 At $n = 500$ both dynasearch and motzkin run out of room. A single
 dynasearch DP call (over $\approx 1.2 \times 10^5$ candidate pairs)
 takes about 200\,s; motzkin's $O(n^3)$ arc-selection DP takes about
-30\,s. Both exceed every tested budget, so ILS and TLS each complete
+30\,s. Both exceed every tested budget, so ILS and SA each complete
 exactly one local-search iteration per run and return identical
 solutions. Dynasearch ends up at 14.53\,\% (range $13.30$--$16.05$),
 motzkin at 16.26\,\% (range $13.00$--$18.40$).
@@ -1246,18 +1229,6 @@ Reeves, C.R., 1995.
 A genetic algorithm for flowshop sequencing.
 \textit{Comput. Oper. Res.} 22 (1), 5--13.
 \doi{10.1016/0305-0548(93)E0014-K}
-
-\bibitem[Hansen and Jaumard(1990)]{hansen90}
-Hansen, P., Jaumard, B., 1990.
-Algorithms for the maximum satisfiability problem.
-\textit{Computing} 44, 279--303.
-\doi{10.1007/BF02241270}
-
-\bibitem[de Vicente et al.(2003)]{devicente03}
-de Vicente, J., Lanchares, J., Hermida, R., 2003.
-Placement by thermodynamic simulated annealing.
-\textit{Phys. Lett. A} 317 (5--6), 415--423.
-\doi{10.1016/j.physleta.2003.08.070}
 
 \bibitem[Della Croce(1995)]{dellacroce95}
 Della Croce, F., 1995.

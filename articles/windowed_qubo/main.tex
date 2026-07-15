@@ -208,7 +208,9 @@ We evaluate all neighborhoods under two frameworks.
 
 \emph{Iterated Local Search} (ILS)~\citep{lourenco2003iterated}
 with a tabu list of tenure $\tau = 10$ and aspiration criterion
-(accept a tabu move if it strictly improves the global best $C_{\max}^*$).
+(accept a tabu move if it strictly improves the global best
+$C_{\max}^*$), in the spirit of the fast taboo search that Nowicki and
+Smutnicki developed for the job shop~\citep{nowicki96ms}.
 When no non-tabu move is available and aspiration is not met, the
 search diversifies via the BackTrackJumpList mechanism described in
 Section~\ref{sec:btjl}.
@@ -1116,11 +1118,17 @@ Benchmarks for basic scheduling problems.
 \textit{Eur. J. Oper. Res.} 64 (2), 278--285.
 \doi{10.1016/0377-2217(93)90182-M}
 
-\bibitem[Nowicki and Smutnicki(1996)]{nowicki96}
-Nowicki, E., Smutnicki, C., 1996.
+\bibitem[Nowicki and Smutnicki(1996a)]{nowicki96}
+Nowicki, E., Smutnicki, C., 1996a.
 A fast tabu search algorithm for the permutation flow shop problem.
 \textit{Eur. J. Oper. Res.} 91 (1), 160--175.
 \doi{10.1016/0377-2217(95)00037-2}
+
+\bibitem[Nowicki and Smutnicki(1996b)]{nowicki96ms}
+Nowicki, E., Smutnicki, C., 1996b.
+A fast taboo search algorithm for the job shop problem.
+\textit{Manage. Sci.} 42 (6), 797--813.
+\doi{10.1287/mnsc.42.6.797}
 
 \bibitem[Wodecki and Bo\.{z}ejko(2004)]{wodecki04}
 Wodecki, M., Bo\.{z}ejko, W., 2004.

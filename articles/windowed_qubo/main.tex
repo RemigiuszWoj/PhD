@@ -101,8 +101,10 @@ permutation of $n$ jobs on $m$ machines in series that minimizes
 makespan $C_{\max}$. The problem is NP-hard for
 $m \geq 3$~\citep{garey76}, and for large benchmark instances the best
 known solutions are produced by neighborhood-based metaheuristics
-rather than exact methods. The choice of neighborhood structure (which
-candidate permutations to examine at each step) is therefore a primary
+rather than exact methods~\citep{bozejko2010}. The choice of
+neighborhood structure --- the set of solutions reachable from the
+current one by a single admissible
+modification~\citep{vanlaarhoven1992} --- is therefore a primary
 driver of solution quality.
 
 The classical PFSP literature is long and well charted. Johnson's
@@ -129,7 +131,10 @@ introduced by Congram, Potts and van de Velde for single-machine
 scheduling~\citep{congram02}, showed that an exponentially large set
 of pairwise independent moves can be searched exactly by dynamic
 programming in polynomial time --- a compound move, rather than a
-single swap, becomes the unit of search. The block properties of the
+single swap, becomes the unit of search. Compound moves grew a theory
+of their own: Bo\.{z}ejko and Wodecki analyzed the properties of swap
+multimoves~\citep{bozejko2007}, and the paradigm broadened into very
+large-scale neighborhood search~\citep{ahuja2002}. The block properties of the
 critical path~\citep{nowicki96,ref_smutnicki,grabowski04} attack the
 same bottleneck from the other side, telling the search which
 candidates cannot improve the makespan and can be skipped wholesale.
@@ -242,8 +247,12 @@ machine form its \emph{blocks} --- the structure behind the block
 properties that Section~\ref{sec:accelerators} turns into a candidate
 filter. The complete treatment of the model, its critical-path and
 block structure, and the tabu search built on them is given
-in~\citep{nowicki96}; here we recall only what the neighborhood and
-QUBO constructions require.
+in~\citep{nowicki96} and the scheduling
+monograph~\citep{smutnicki2012}; relations between permutations also
+admit an algebraic treatment via positive definite functions on
+permutation groups~\citep{bozejko2015}, though we do not need that
+machinery here. We recall only what the neighborhood and QUBO
+constructions require.
 
 \paragraph{Head--Tail decomposition}
 Following~\citep{wodecki04}, the makespan delta of a candidate move is
@@ -263,7 +272,7 @@ two frameworks with identical parameters and time budgets, so the
 neighborhood is the only component that varies.
 
 \emph{Iterated Local Search} (ILS)~\citep{lourenco2003iterated}
-with a tabu list of tenure $\tau = 10$ and aspiration criterion
+with a tabu list~\citep{glover1989} of tenure $\tau = 10$ and aspiration criterion
 (accept a tabu move if it strictly improves the global best
 $C_{\max}^*$), in the spirit of the fast taboo search that Nowicki and
 Smutnicki developed for the job shop~\citep{nowicki96ms}.
@@ -384,8 +393,8 @@ filter described in Section~\ref{sec:accelerators}.
 \paragraph{Motzkin \textup{($N_{\mathrm{motz}}$)}}
 Identical endpoint-swap moves as Dynasearch (pairs $(i,j)$ with
 $i < j \leq n-1$, exchanging only $\pi(i)$ and $\pi(j)$), but the
-admissible subsets follow Motzkin path combinatorics
-~\citep{Motzkin_PWR,Motzkin_PWR_EXIT}: pairs may not cross
+admissible subsets follow Motzkin path
+combinatorics~\citep{motzkin1948,Motzkin_PWR,Motzkin_PWR_EXIT}: pairs may not cross
 ($i_1 < i_2 < j_1 < j_2$ is forbidden) nor share an endpoint, while
 strict nesting $i_1 < i_2 < j_2 < j_1$ is allowed. The number of
 admissible pair subsets equals the Motzkin number
@@ -1267,6 +1276,51 @@ Taillard, E., 1993.
 Benchmarks for basic scheduling problems.
 \textit{Eur. J. Oper. Res.} 64 (2), 278--285.
 \doi{10.1016/0377-2217(93)90182-M}
+
+\bibitem[Motzkin(1948)]{motzkin1948}
+Motzkin, T., 1948.
+Relations between hypersurface cross ratios, and a combinatorial
+formula for partitions of a polygon, for permanent preponderance, and
+for non-associative products.
+\textit{Bull. Amer. Math. Soc.} 54, 352--360.
+
+\bibitem[van Laarhoven et al.(1992)]{vanlaarhoven1992}
+van Laarhoven, P.J.M., Aarts, E.H.L., Lenstra, J.K., 1992.
+Job shop scheduling by simulated annealing.
+\textit{Oper. Res.} 40 (1), 113--125.
+
+\bibitem[Glover(1989)]{glover1989}
+Glover, F., 1989.
+Tabu search --- Part I.
+\textit{ORSA J. Comput.} 1 (3), 190--206.
+
+\bibitem[Ahuja et al.(2002)]{ahuja2002}
+Ahuja, R.K., Ergun, \"{O}., Orlin, J.B., Punnen, A.P., 2002.
+A survey of very large-scale neighborhood search techniques.
+\textit{Discrete Appl. Math.} 123 (1--3), 75--102.
+
+\bibitem[Bo\.{z}ejko and Wodecki(2007)]{bozejko2007}
+Bo\.{z}ejko, W., Wodecki, M., 2007.
+On the theoretical properties of swap multimoves.
+\textit{Oper. Res. Lett.} 35 (2), 227--231.
+
+\bibitem[Bo\.{z}ejko(2010)]{bozejko2010}
+Bo\.{z}ejko, W., 2010.
+A New Class of Parallel Scheduling Algorithms.
+Oficyna Wydawnicza Politechniki Wroc\l{}awskiej, Wroc\l{}aw.
+
+\bibitem[Smutnicki(2012)]{smutnicki2012}
+Smutnicki, C., 2012.
+Job Scheduling Algorithms.
+Publishing House of Wroc\l{}aw University of Science and Technology,
+Wroc\l{}aw (in Polish).
+
+\bibitem[Bo\.{z}ejko and Bo\.{z}ejko(2015)]{bozejko2015}
+Bo\.{z}ejko, M., Bo\.{z}ejko, W., 2015.
+Generalized Gaussian processes and relations with random matrices and
+positive definite functions on permutation groups.
+\textit{Infin. Dimens. Anal. Quantum Probab. Relat. Top.} 18 (3),
+1550020.
 
 \bibitem[Nowicki and Smutnicki(1996a)]{nowicki96}
 Nowicki, E., Smutnicki, C., 1996a.

@@ -98,11 +98,43 @@ D-Wave \sep neighborhood search \sep windowed decomposition
 
 The Permutation Flow Shop Scheduling Problem (PFSP) asks for a
 permutation of $n$ jobs on $m$ machines in series that minimizes
-makespan $C_{\max}$. The problem is NP-hard for $m \geq 3$~\citep{ref_garey},
-and for large benchmark instances the best known solutions are
-produced by neighborhood-based metaheuristics rather than exact methods.
-The choice of neighborhood structure (which candidate permutations to
-examine at each step) is therefore a primary driver of solution quality.
+makespan $C_{\max}$. The problem is NP-hard for
+$m \geq 3$~\citep{garey76}, and for large benchmark instances the best
+known solutions are produced by neighborhood-based metaheuristics
+rather than exact methods. The choice of neighborhood structure (which
+candidate permutations to examine at each step) is therefore a primary
+driver of solution quality.
+
+The classical PFSP literature is long and well charted. Johnson's
+algorithm solves the two-machine case in polynomial
+time~\citep{johnson54}; on the constructive side, the NEH
+heuristic~\citep{neh83} remains the standard starting point four
+decades after its publication. The metaheuristic line moved through
+simulated annealing~\citep{osman89} and genetic
+algorithms~\citep{reeves95}, but its backbone is tabu search:
+Taillard's implementation~\citep{taillard90}, the block-based fast
+tabu search of Nowicki and Smutnicki~\citep{nowicki96}, and its
+accelerated successor by Grabowski and Wodecki~\citep{grabowski04}
+successively cut both the runtime and the distance to optimum on the
+benchmark set of~\citep{ref_taillard}. Later work consolidated the
+field: the review of Ruiz and Maroto~\citep{ruizmaroto05} evaluates
+dozens of heuristics head-to-head, and the iterated greedy of Ruiz and
+St\"{u}tzle~\citep{ruizstutzle07} demonstrated that a simple
+destruction--construction loop matches far more elaborate machinery.
+Two ingredients recur in every strong PFSP algorithm: a carefully
+chosen move structure, and the critical-path block properties that
+prune it.
+
+Quantum optimization entered scheduling from the job shop side.
+Venturelli et al.\ encoded whole job shop instances as QUBOs for
+quantum annealing~\citep{venturelli16}, Kurowski et al.\ hybridized
+the annealer with classical heuristics~\citep{kurowski20}, and Amaro
+et al.\ studied variational gate-based circuits on small
+instances~\citep{amaro22}. These formulations encode the entire
+schedule as one QUBO, which caps them at toy sizes on current
+hardware. The alternative explored in our line of work is to put the
+QPU \emph{inside} the metaheuristic rather than in place of it: the
+neighborhood, not the schedule, becomes the QUBO.
 
 In~\citep{WojewodzkiBozejkoBPASTS2026} we formulated four classical PFSP
 neighborhoods as Quadratic Unconstrained Binary Optimization (QUBO)
@@ -1106,10 +1138,84 @@ in Science and Technology: Current Research Developments}.
 Akademicka Oficyna Wydawnicza EXIT, Warszawa, pp.~29--42.
 ISBN 978-83-7837-162-5.
 
-\bibitem[Garey and Johnson(1979)]{ref_garey}
-Garey, M.R., Johnson, D.S., 1979.
-Computers and Intractability: A Guide to the Theory of NP-Completeness.
-Freeman, San Francisco.
+\bibitem[Garey et al.(1976)]{garey76}
+Garey, M.R., Johnson, D.S., Sethi, R., 1976.
+The complexity of flowshop and jobshop scheduling.
+\textit{Math. Oper. Res.} 1 (2), 117--129.
+\doi{10.1287/moor.1.2.117}
+
+\bibitem[Johnson(1954)]{johnson54}
+Johnson, S.M., 1954.
+Optimal two- and three-stage production schedules with setup times
+included.
+\textit{Nav. Res. Logist. Q.} 1 (1), 61--68.
+\doi{10.1002/nav.3800010110}
+
+\bibitem[Nawaz et al.(1983)]{neh83}
+Nawaz, M., Enscore Jr., E.E., Ham, I., 1983.
+A heuristic algorithm for the $m$-machine, $n$-job flow-shop
+sequencing problem.
+\textit{Omega} 11 (1), 91--95.
+\doi{10.1016/0305-0483(83)90088-9}
+
+\bibitem[Osman and Potts(1989)]{osman89}
+Osman, I.H., Potts, C.N., 1989.
+Simulated annealing for permutation flow-shop scheduling.
+\textit{Omega} 17 (6), 551--557.
+\doi{10.1016/0305-0483(89)90059-5}
+
+\bibitem[Taillard(1990)]{taillard90}
+Taillard, E., 1990.
+Some efficient heuristic methods for the flow shop sequencing problem.
+\textit{Eur. J. Oper. Res.} 47 (1), 65--74.
+\doi{10.1016/0377-2217(90)90090-X}
+
+\bibitem[Reeves(1995)]{reeves95}
+Reeves, C.R., 1995.
+A genetic algorithm for flowshop sequencing.
+\textit{Comput. Oper. Res.} 22 (1), 5--13.
+
+\bibitem[Grabowski and Wodecki(2004)]{grabowski04}
+Grabowski, J., Wodecki, M., 2004.
+A very fast tabu search algorithm for the permutation flow shop
+problem with makespan criterion.
+\textit{Comput. Oper. Res.} 31 (11), 1891--1909.
+\doi{10.1016/S0305-0548(03)00145-X}
+
+\bibitem[Ruiz and Maroto(2005)]{ruizmaroto05}
+Ruiz, R., Maroto, C., 2005.
+A comprehensive review and evaluation of permutation flowshop
+heuristics.
+\textit{Eur. J. Oper. Res.} 165 (2), 479--494.
+\doi{10.1016/j.ejor.2004.04.017}
+
+\bibitem[Ruiz and St\"{u}tzle(2007)]{ruizstutzle07}
+Ruiz, R., St\"{u}tzle, T., 2007.
+A simple and effective iterated greedy algorithm for the permutation
+flowshop scheduling problem.
+\textit{Eur. J. Oper. Res.} 177 (3), 2033--2049.
+\doi{10.1016/j.ejor.2005.12.009}
+
+\bibitem[Venturelli et al.(2016)]{venturelli16}
+Venturelli, D., Marchand, D.J.J., Rojo, G., 2016.
+Job shop scheduling solver based on quantum annealing.
+arXiv:1506.08479.
+
+\bibitem[Kurowski et al.(2020)]{kurowski20}
+Kurowski, K., W\k{e}glarz, J., Subocz, M., R\'{o}\.{z}ycki, R.,
+Walig\'{o}ra, G., 2020.
+Hybrid quantum annealing heuristic method for solving job shop
+scheduling problem.
+In: \textit{Computational Science -- ICCS 2020}, LNCS 12142.
+Springer, Cham.
+
+\bibitem[Amaro et al.(2022)]{amaro22}
+Amaro, D., Rosenkranz, M., Fitzpatrick, N., Hirano, K.,
+Fiorentini, M., 2022.
+A case study of variational quantum algorithms for a job scheduling
+problem.
+\textit{EPJ Quantum Technol.} 9, 5.
+\doi{10.1140/epjqt/s40507-022-00123-4}
 
 \bibitem[Smutnicki(1998)]{ref_smutnicki}
 Smutnicki, C., 1998.

@@ -117,50 +117,41 @@ formulations and the effective embedding capacity of the D-Wave
 \texttt{Advantage\_system4.1} QPU (approximately 170--180 logical variables
 for dense QUBO graphs on the Pegasus P16 topology with 5{,}627 active qubits).
 
-This paper addresses both restrictions directly. Two properties in the
-original formulations block scalability:
-
-\begin{enumerate}
-  \item \textbf{Unnecessary delta filtering.}
-        The original implementation discarded swap candidates with
-        non-negative makespan delta ($\delta_k \geq 0$) before QUBO
-        assembly. This was a workaround for the classical simulator and
-        is counterproductive on real QPU hardware.
-        The QPU assigns $x_k = 0$ to non-improving candidates on its own,
-        but the filter discards information about joint penalty structure
-        that helps the QPU avoid degenerate solutions.
-        For Adjacent and Fibonacci, where $K = n - 1$ regardless of
-        filtering, removing it costs nothing in embedding overhead.
-
-  \item \textbf{Variable-count ceiling for $O(n^2)$ neighborhoods.}
-        Dynasearch and Motzkin have $K = O(n^2)$ QUBO variables,
-        exceeding QPU capacity for $n > 20$.
-        A windowed decomposition partitions the permutation into
-        overlapping windows of size $w \leq 19$, solves a QUBO per
-        window, and merges results via greedy conflict resolution.
-\end{enumerate}
-
-Together these give twelve neighborhoods in three classes: classical,
-quantum QUBO, and quantum QUBO enhanced, covering the full Taillard
-benchmark range for the first time.
+This paper addresses both restrictions directly. Two properties of the
+original formulations block scalability. The first is an unnecessary
+delta filter: the original implementation discarded swap candidates
+with non-negative makespan delta ($\delta_k \geq 0$) before QUBO
+assembly. That filter was a workaround for the classical simulator and
+is counterproductive on real QPU hardware --- the QPU assigns
+$x_k = 0$ to non-improving candidates on its own, while the filter
+discards information about the joint penalty structure that helps the
+annealer avoid degenerate solutions. For Adjacent and Fibonacci, whose
+variable count is $K = n - 1$ regardless of filtering, removing it
+costs nothing in embedding overhead. The second blocker is the
+variable-count ceiling of the $O(n^2)$ neighborhoods: Dynasearch and
+Motzkin exceed QPU capacity for $n > 20$. Here we introduce a windowed
+decomposition that partitions the permutation into overlapping windows
+of size $w \leq 19$, solves a QUBO per window, and merges the results
+by greedy conflict resolution. Together these changes give twelve
+neighborhoods in three classes --- classical, quantum QUBO, and
+quantum QUBO enhanced --- covering the full Taillard benchmark range
+for the first time.
 
 \paragraph{Contributions}
-\begin{enumerate}
-  \item A windowed QUBO decomposition for Dynasearch and Motzkin
-        neighborhoods that makes QPU execution feasible for $n \leq 50$,
-        with automatic window sizing from hardware capacity.
-  \item Delta-filter-free QUBO formulations for Adjacent ($n \leq 200$)
-        and Fibonacci ($n \leq 500$) on D-Wave Advantage.
-  \item A block-property accelerator (Smutnicki~\citep{ref_smutnicki})
-        applied to all twelve neighborhoods, cutting the QUBO variable
-        count by 30--60\% before QPU submission.
-  \item A BackTrackJumpList elite-pool for ILS that replaces random restarts
-        with double-bridge perturbations of the $k = 10$ best solutions
-        seen during search.
-  \item The first empirical comparison of all three neighborhood classes
-        across $n \in \{20, 50, 100, 200, 500\}$ under identical
-        metaheuristic frameworks and time budgets.
-\end{enumerate}
+The paper contributes, first, the windowed QUBO decomposition for the
+Dynasearch and Motzkin neighborhoods, which makes QPU execution
+feasible up to $n = 50$ with the window size derived automatically
+from hardware capacity, and, second, delta-filter-free formulations
+that carry Adjacent to $n \leq 200$ and Fibonacci to $n \leq 500$ on
+D-Wave Advantage. All twelve neighborhoods share the block-property
+accelerator of Smutnicki~\citep{ref_smutnicki}, which cuts the QUBO
+variable count by 30--60\% before submission. On the metaheuristic
+side, ILS replaces uniform random restarts with the BackTrackJumpList:
+double-bridge perturbations of the $k = 10$ best solutions seen during
+the search. The experimental study is, to our knowledge, the first
+comparison of all three neighborhood classes across
+$n \in \{20, 50, 100, 200, 500\}$ under identical metaheuristic
+frameworks and time budgets.
 
 % ---------------------------------------------------------------
 \section{Problem Definition}

@@ -369,6 +369,10 @@ moves and evaluate each via the Head--Tail decomposition.
 
 \paragraph{Adjacent \textup{($N_{\mathrm{adj}}$)}}
 Swap jobs at positions $i$ and $i+1$ for all $i \in \{1,\ldots,n-1\}$.
+In the scheduling literature this move is known as the adjacent
+pairwise interchange (API); Della Croce's generalized pairwise
+interchanges~\citep{dellacroce95} place it at the bottom of a whole
+hierarchy of interchange moves.
 Cardinality $|N_{\mathrm{adj}}| = n-1$.
 
 \paragraph{Fibonacci \textup{($N_{\mathrm{fib}}$)}}
@@ -437,6 +441,8 @@ $4$--$8$ on average. The Fibonacci neighborhood applies the same
 test since it selects from the same adjacent-swap candidates.
 
 \paragraph{NPI accelerator for endpoint-swap neighborhoods}
+NPI stands for non-adjacent pairwise interchange, the general
+interchange move of~\citep{dellacroce95}.
 For Dynasearch and Motzkin, where candidate pairs $(i, j)$ span
 arbitrary distances, the span filter $\mathcal{U}(\pi) \cap [i,j] \neq \emptyset$
 reduces the $O(n^2)$ candidate set to at most $O(n \cdot |\mathcal{U}|)$
@@ -1223,6 +1229,12 @@ Reeves, C.R., 1995.
 A genetic algorithm for flowshop sequencing.
 \textit{Comput. Oper. Res.} 22 (1), 5--13.
 \doi{10.1016/0305-0548(93)E0014-K}
+
+\bibitem[Della Croce(1995)]{dellacroce95}
+Della Croce, F., 1995.
+Generalized pairwise interchanges and machine scheduling.
+\textit{Eur. J. Oper. Res.} 83 (2), 310--319.
+\doi{10.1016/0377-2217(95)00009-F}
 
 \bibitem[Grabowski and Wodecki(2004)]{grabowski04}
 Grabowski, J., Wodecki, M., 2004.

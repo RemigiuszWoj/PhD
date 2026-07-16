@@ -26,7 +26,7 @@ Stan na: 2026-07-16. Wszystkie prace współautorskie z Wojciechem Bożejką
   vol. 3046, Springer, Cham
 - **Strony:** 144–155
 - **DOI:** [10.1007/978-3-032-29254-4_12](https://doi.org/10.1007/978-3-032-29254-4_12)
-- Offprint: ~/Desktop/SOCO2026_Motzkin_Wojewodzki_offprint.pdf
+- Oficjalny offprint w repo: articles/motzkin_soco/SOCO2026_Motzkin_Wojewodzki_offprint.pdf
 
 ## W druku
 

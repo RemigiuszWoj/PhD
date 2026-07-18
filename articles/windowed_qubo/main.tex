@@ -280,15 +280,37 @@ When no non-tabu move is available and aspiration is not met, the
 search diversifies via the BackTrackJumpList mechanism described in
 Section~\ref{sec:btjl}.
 
-\emph{Simulated Annealing} (SA)~\citep{kirkpatrick1983}
-with initial temperature $T_0 = 1000$, cooling rate $\alpha = 0.99$,
-temperature floor $T_{\min} = 100$, and reheat-kick diversification
-on stagnation (Section~\ref{sec:sa-kick}). SA shares the
-neighborhood oracle with ILS: each step receives the best move of
-the chosen neighborhood, and the Metropolis criterion decides
-whether to accept it. A best-move oracle changes what SA needs to
-escape a local minimum; Section~\ref{sec:sa-kick} covers why
-reheating alone is insufficient.
+\emph{Simulated Annealing} (SA)~\citep{kirkpatrick1983} with initial
+temperature $T_0 = 1000$, cooling rate $\alpha = 0.99$, temperature
+floor $T_{\min} = 100$, and reheat-kick diversification on stagnation
+(Section~\ref{sec:sa-kick}). Our variant differs from canonical SA in
+its \emph{exploration criterion}, the component that decides which
+neighbor faces the Metropolis test~\citep{franzin19}. Canonical SA
+samples a random neighbor; Ishibuchi et al.\ proposed, for the flow
+shop specifically, submitting the best of a random \emph{sample} of
+neighbors, and showed that this makes SA robust to the choice of the
+cooling schedule~\citep{ishibuchi95}. We take that mechanism to its
+exhaustive limit: each step receives the best move of the
+\emph{entire} neighborhood from the shared oracle --- the same oracle
+ILS uses --- and the Metropolis criterion decides whether to accept
+it. The limit is not innocent: with a random sample, a rejection is
+followed by a fresh sample, whereas a deterministic full scan
+re-proposes the same move at an ever lower temperature, which is
+exactly the freezing pathology that Section~\ref{sec:sa-kick}
+diagnoses and the reheat-kick resolves. The design is forced by the
+comparison itself: a QPU call returns the best composite move, not a
+random one, so the classical control layer must consume a best-move
+oracle for the twelve neighborhoods to remain interchangeable.
+Full-neighborhood evaluation under Metropolis-type acceptance is
+itself an established regime in QUBO hardware --- Fujitsu's Digital
+Annealer tests every single-flip neighbor in parallel at each
+sweep~\citep{aramon19} --- and in the rejection-free Monte Carlo
+family, which scans all neighbors but samples the successor from the
+acceptance weights instead of taking the argmax~\citep{rosenthal21}.
+To our knowledge, the specific chain used here --- exhaustive argmax
+proposal under Metropolis acceptance --- has not been named or
+analyzed in the literature; Table~\ref{tab:rpd_n20} and
+Section~\ref{sec:sa-kick} document its behavior empirically.
 
 \subsection{BackTrackJumpList Elite Diversification}
 \label{sec:btjl}
@@ -1368,6 +1390,34 @@ In: Glover, F., Kochenberger, G.A. (Eds.),
 Operations Research \& Management Science, vol.~57. Kluwer Academic
 Publishers, Boston, MA, pp.~321--353.
 \doi{10.1007/0-306-48056-5\_11}
+
+\bibitem[Ishibuchi et al.(1995)]{ishibuchi95}
+Ishibuchi, H., Misaki, S., Tanaka, H., 1995.
+Modified simulated annealing algorithms for the flow shop sequencing
+problem.
+\textit{Eur. J. Oper. Res.} 81 (2), 388--398.
+\doi{10.1016/0377-2217(93)E0235-P}
+
+\bibitem[Franzin and St\"{u}tzle(2019)]{franzin19}
+Franzin, A., St\"{u}tzle, T., 2019.
+Revisiting simulated annealing: A component-based analysis.
+\textit{Comput. Oper. Res.} 104, 191--206.
+\doi{10.1016/j.cor.2018.12.015}
+
+\bibitem[Aramon et al.(2019)]{aramon19}
+Aramon, M., Rosenberg, G., Valiante, E., Miyazawa, T., Tamura, H.,
+Katzgraber, H.G., 2019.
+Physics-inspired optimization for quadratic unconstrained problems
+using a digital annealer.
+\textit{Front. Phys.} 7, 48.
+\doi{10.3389/fphy.2019.00048}
+
+\bibitem[Rosenthal et al.(2021)]{rosenthal21}
+Rosenthal, J.S., Dote, A., Dabiri, K., Tamura, H., Chen, S.,
+Sheikholeslami, A., 2021.
+Jump Markov chains and rejection-free Metropolis algorithms.
+\textit{Comput. Stat.} 36, 2789--2811.
+\doi{10.1007/s00180-021-01095-2}
 
 \bibitem[Kirkpatrick et al.(1983)]{kirkpatrick1983}
 Kirkpatrick, S., Gelatt, C.D., Vecchi, M.P., 1983.

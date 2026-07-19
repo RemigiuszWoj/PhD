@@ -1,0 +1,430 @@
+% Polska wersja robocza artykułu windowed_qubo — do szybkiego czytania.
+% Wiążąca jest wersja angielska (main.tex). Kompilacja: xelatex wersja_pl.tex
+\documentclass[11pt,a4paper]{article}
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setdefaultlanguage{polish}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{parskip}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=blue!55!black, urlcolor=blue!55!black}
+
+\title{Skalowalne kwantowe przeszukiwanie sąsiedztwa dla permutacyjnego
+  problemu przepływowego przez okienkową dekompozycję QUBO\\
+  \large Wersja polska do szybkiego czytania (wiążąca: main.tex, EN)}
+\author{Remigiusz Wojewódzki \and Wojciech Bożejko\\
+  \small Katedra Sterowania i Obliczeń Kwantowych, WIT, Politechnika Wrocławska}
+\date{Stan tłumaczenia: 17.07.2026 --- cel: Computers \& Operations Research}
+
+\begin{document}
+\maketitle
+
+\section*{Abstrakt}
+Rozszerzamy framework kwantowych sąsiedztw dla permutacyjnego problemu
+przepływowego (PFSP) o trzecią klasę --- \emph{quantum QUBO enhanced} ---
+działającą na znacznie większych instancjach, niż pozwalały pierwotne
+formulacje na QPU D-Wave. Dotychczasowy framework obejmował cztery
+sąsiedztwa klasyczne (Adjacent, Fibonacci, Dynasearch, Motzkin) i cztery
+kwantowe QUBO ograniczone do $n=20$. Klasa enhanced usuwa dwa ograniczenia:
+zbędny filtr delty w strukturach liniowych (Adjacent/Fibonacci), co
+rozszerza stosowalność QPU do $n\le200$ i $n\le500$, oraz wprowadza
+okienkową dekompozycję QUBO dla struktur kwadratowych (Dynasearch/Motzkin),
+przesuwając wykonalność do $n\le50$. Oba frameworki metaheurystyczne (ILS
+z dywersyfikacją tabu przez elitarną pulę BackTrackJumpList oraz SA
+aplikujące akceptację Metropolisa do najlepszego sąsiada z pełnego skanu,
+z adaptacyjnym podgrzewaniem) używają akceleratora własności blokowych,
+tnącego liczbę zmiennych QUBO o 30--60\%. Dwanaście sąsiedztw oceniamy na
+benchmarkach Taillarda przy sześciu budżetach (100--10\,000 ms). Pomiary
+QPU na Advantage\_system4.1 potwierdzają skalowanie: średni RPD
+fibonacciego enhanced spada monotonicznie z 31{,}7\% ($n=20$) do 15{,}0\%
+($n=200$), a luka do klasycznego fibonacciego zwęża się z 20{,}4~pp
+($n=20$) do 4{,}6~pp ($n=500$), gdzie wariant kwantowy dorównuje
+klasycznemu adjacent. Okienkowanie jest niemal darmowe tam, gdzie
+interakcje swapów są lokalne (dynasearch), a kosztuje ok.~4~pp ---
+rosnąco z budżetem --- tam, gdzie są globalne (motzkin).
+
+\paragraph{Highlights.} Klasa enhanced łamie barierę $n=20$ na QPU D-Wave;
+usunięcie filtra delty rozszerza Adjacent/Fibonacci do $n\le200$/$n\le500$;
+okienkowa dekompozycja umożliwia Dynasearch i Motzkin do $n=50$;
+akcelerator Smutnickiego tnie zmienne QUBO o 30--60\%; luka
+kwantowo-klasyczna zwęża się z 20{,}4~pp do 4{,}6~pp; okienkowanie prawie
+darmowe dla struktur lokalnych, strata narasta dla globalnych.
+
+\section{Wstęp}
+PFSP szuka permutacji $n$ zadań na $m$ maszynach szeregowo minimalizującej
+makespan $C_{\max}$. Problem jest NP-trudny dla $m\ge3$
+(Garey--Johnson--Sethi 1976), a dla dużych instancji najlepsze rozwiązania
+dają metaheurystyki oparte na sąsiedztwach (monografia Bożejko 2010).
+Wybór struktury sąsiedztwa --- zbioru rozwiązań osiągalnych jednym
+dopuszczalnym ruchem (van Laarhoven i in.\ 1992) --- jest głównym motorem
+jakości rozwiązań.
+
+\paragraph{Klasyczna linia flow shopu.} Johnson (1954) rozwiązuje
+przypadek dwóch maszyn wielomianowo; heurystyka NEH (1983) pozostaje
+standardowym punktem startu. Linia metaheurystyczna przeszła przez SA
+(Osman--Potts 1989) i algorytmy genetyczne (Reeves 1995), ale jej
+kręgosłupem jest tabu search: implementacja Taillarda (1990), blokowy
+fast tabu Nowickiego--Smutnickiego (1996a) i przyspieszony następca
+Grabowskiego--Wodeckiego (2004) kolejno cięły czas i dystans do optimum
+na benchmarku Taillarda (1993). Pole skonsolidowały przegląd
+Ruiza--Maroto (2005) i iterated greedy Ruiza--Stützlego (2007), który
+pokazał, że prosta pętla destrukcja--rekonstrukcja dorównuje bardziej
+wyszukanym maszynom.
+
+\paragraph{Linia otoczeń.} W każdym mocnym algorytmie PFSP powtarzają się
+dwa składniki: struktura ruchu i własności ścieżki krytycznej, które ją
+przycinają. Dynasearch (Congram--Potts--van de Velde 2002) pokazał, że
+wykładniczo duży zbiór parami niezależnych ruchów da się przeszukać
+dokładnie programowaniem dynamicznym w czasie wielomianowym ---
+jednostką przeszukiwania staje się ruch złożony. Teorię multimoves
+rozwinęli Bożejko--Wodecki (2007), a paradygmat rozrósł się w very
+large-scale neighborhood search (Ahuja i in.\ 2002). Własności blokowe
+(Nowicki--Smutnicki, Smutnicki 1998, Grabowski--Wodecki) atakują to samo
+wąskie gardło z drugiej strony: mówią, których kandydatów można pominąć
+hurtem. Nasze sąsiedztwa Fibonacci i Motzkin (ICAISC 2026; EXIT 2025)
+kontynuują linię ruchów złożonych: zbiory ruchów zliczane klasycznymi
+ciągami, przeszukiwane przez DP i --- co ten artykuł wykorzystuje ---
+wyrażalne jako QUBO.
+
+\paragraph{Kwanty w harmonogramowaniu.} Weszły od strony job shopu:
+Venturelli i in.\ (całe instancje jako QUBO na annealerze), Kurowski
+i in.\ (hybrydy annealera z heurystykami), Amaro i in.\ (obwody
+wariacyjne). Wszystkie kodują cały harmonogram naraz, co ogranicza je do
+rozmiarów zabawkowych. Nasza alternatywa: QPU \emph{wewnątrz}
+metaheurystyki zamiast w jej miejsce --- QUBO staje się sąsiedztwo, nie
+harmonogram.
+
+W pracy BPASTS sformułowaliśmy cztery klasyczne sąsiedztwa jako QUBO
+i wykonaliśmy je na QPU D-Wave; zakres ograniczał się do $n=20$
+(pojemność embeddingu ok.\ 170--180 zmiennych logicznych dla gęstych
+grafów na topologii Pegasus P16 z 5627 aktywnymi kubitami). Ten artykuł
+usuwa oba blokery. Pierwszym jest zbędny filtr delty: obejście pod
+klasyczny symulator, szkodliwe na QPU, bo odrzuca informację o strukturze
+kar, podczas gdy QPU sam przypisuje $x_k=0$ ruchom niepoprawiającym;
+dla Adjacent i Fibonacciego ($K=n-1$ niezależnie od filtra) usunięcie nic
+nie kosztuje. Drugim jest sufit zmiennych $O(n^2)$ dla Dynasearcha
+i Motzkina: wprowadzamy dekompozycję okienkową --- nakładające się okna
+rozmiaru $w\le19$, QUBO na okno, scalanie zachłanne. Razem daje to
+dwanaście sąsiedztw w trzech klasach, po raz pierwszy pokrywających
+pełen zakres benchmarku Taillarda.
+
+\paragraph{Kontrybucje.} Praca wnosi okienkową dekompozycję QUBO
+(QPU do $n=50$, automatyczny dobór okna z pojemności sprzętu), formulacje
+bez filtra delty (Adjacent $n\le200$, Fibonacci $n\le500$), akcelerator
+blokowy Smutnickiego we wszystkich dwunastu sąsiedztwach (30--60\% mniej
+zmiennych), BackTrackJumpList zamiast restartów losowych w ILS oraz
+pierwsze porównanie trzech klas na $n\in\{20,50,100,200,500\}$ przy
+identycznych frameworkach i budżetach.
+
+\section{Definicja problemu}
+Materiał standardowy, przytaczany dla samodzielności tekstu, w notacji
+klasycznej pracy Nowickiego--Smutnickiego (1996a).
+
+\paragraph{PFSP.} Zbiór zadań $J=\{1..n\}$ i maszyn $M=\{1..m\}$;
+zadanie $j$ to ciąg operacji $O_{1j}..O_{mj}$, operacja $O_{ij}$ na
+maszynie $i$ trwa $p_{ij}>0$ bez przerwań; każda maszyna przetwarza
+w tej samej kolejności, więc porządek to permutacja $\pi\in\Pi$.
+Czasy zakończenia spełniają
+$C_{i,\pi(j)} = \max\{C_{i-1,\pi(j)},\,C_{i,\pi(j-1)}\} + p_{i,\pi(j)}$
+z zerowymi warunkami brzegowymi; $C_{\max}(\pi)=C_{m,\pi(n)}$, szukamy
+$\pi^*$ minimalizującej $C_{\max}$. Równoważnie makespan to długość
+najdłuższej (krytycznej) ścieżki w grafie siatkowym:
+\[ C_{\max}(\pi) = \max_{1=j_0\le j_1\le\cdots\le j_m=n}\;
+   \sum_{i=1}^{m}\sum_{j=j_{i-1}}^{j_i} p_{i,\pi(j)}, \]
+a maksymalne podciągi ścieżki krytycznej na jednej maszynie tworzą
+\emph{bloki} --- strukturę, którą akcelerator zamienia w filtr kandydatów.
+Pełny opis: Nowicki--Smutnicki 1996a i monografia Smutnickiego 2012;
+relacje między permutacjami mają też ujęcie algebraiczne przez funkcje
+dodatnio określone na grupach permutacji (Bożejko--Bożejko 2015).
+
+\paragraph{Dekompozycja Head--Tail} (Wodecki--Bożejko 2004). Delta ruchu
+w $O(1)$ z macierzy $H[i][j]$ (najwcześniejsze zakończenia od lewej)
+i $T[i][j]$ (wkłady od prawej), budowanych w $O(mn)$ raz na iterację.
+
+\paragraph{Metaheurystyki.} Samo sąsiedztwo to jeszcze nie algorytm ---
+potrzebna jest warstwa sterująca akceptująca ruchy i wyciągająca
+trajektorię z optimów lokalnych. Żeby nie zaburzała porównania, każde
+sąsiedztwo działa w tych samych dwóch frameworkach z identycznymi
+parametrami --- jedyną zmienną jest sąsiedztwo.
+
+\emph{ILS} (Lourenço i in.\ 2003) działa z listą tabu (Glover 1989)
+o tenurze $\tau=10$ i kryterium aspiracji przyjmującym ruch tabu, jeśli
+ściśle poprawia globalne minimum --- w duchu fast taboo search
+Nowickiego--Smutnickiego (1996b).
+
+\emph{SA} (Kirkpatrick 1983) działa z $T_0=1000$, $\alpha=0.99$, podłogą
+$T_{\min}=100$ i dywersyfikacją reheat-kick. \textbf{Nasz wariant różni
+się od kanonicznego SA kryterium eksploracji} (komponent frameworku
+Franzina--Stützle 2019): kanoniczne SA losuje sąsiada; Ishibuchi i in.\
+(1995) --- właśnie dla flow shopu --- poddawali Metropolisowi najlepszego
+z losowej próbki sąsiadów, co uodparnia SA na wybór harmonogramu
+chłodzenia. My doprowadzamy ten mechanizm do granicy wyczerpującej:
+test dostaje najlepszy ruch \emph{całego} otoczenia ze wspólnego
+oraculum. Granica nie jest niewinna: po odrzuceniu losowej próbki losuje
+się świeżą, a deterministyczny pełny skan re-proponuje ten sam ruch przy
+coraz niższym $T$ --- to patologia zamarzania, którą diagnozuje
+sekcja~2.2. Konstrukcję wymusza porównanie: wywołanie QPU zwraca
+najlepszy ruch złożony, nie losowy. Ewaluacja pełnego otoczenia pod
+akceptacją Metropolisa to ugruntowany reżim w sprzęcie QUBO
+(parallel-trial Digital Annealera --- Aramon i in.\ 2019) i w rodzinie
+rejection-free (Rosenthal i in.\ 2021; następca losowany z wag zamiast
+argmax). Według naszej wiedzy łańcuch ,,wyczerpujący argmax +
+Metropolis'' nie został w literaturze nazwany ani przeanalizowany ---
+dokumentujemy go empirycznie.
+
+\subsection{BackTrackJumpList}
+Restart losowy wyrzuca wszystko, czego szukanie się nauczyło; BTJL to
+zachowuje. Pula $k=10$ najlepszych różnych permutacji; przy konflikcie
+tabu bez aspiracji algorytm aplikuje perturbację double-bridge (4-opt)
+do kolejnej elity (round-robin). Double-bridge tnie $\pi$ w trzech
+losowych punktach i skleja $A|C|B|D$ --- ruch spoza otoczenia 2-opt,
+więc szukanie naprawdę opuszcza basen; round-robin nie tłucze wciąż
+globalnego najlepszego. Pula aktualizowana przy każdej ścisłej poprawie;
+przed pierwszą elitą fallbackiem jest restart losowy.
+
+\subsection{SA z reheat-kick}
+Wspólne oracula zmuszają krok SA do konsumpcji \emph{najlepszego} ruchu.
+Z deterministycznym oraculum szukanie zapada się w minimum lokalnym $X$:
+oraculum daje najlepszego sąsiada $X'$ ($\Delta>0$), Metropolis czasem
+przyjmie, z $X'$ oraculum wraca do $X$ ($\Delta<0$, zawsze). Trajektoria
+wpada w dwucykl $X\leftrightarrow X'$, a podgrzewanie samo go nie łamie.
+Rozwiązanie sprzęga reheat z perturbacją w przestrzeni rozwiązań: przy
+stagnacji $s=100$ ms bez poprawy (1) $T\leftarrow T_0$, (2) bieżące
+rozwiązanie zastępuje double-bridge kolejnej elity, (3) reset licznika.
+Podłoga $T_{\min}=100$ utrzymuje ruchliwość pod górę. Dwucykl znika,
+a SA zbiega z trajektoriami zależnymi od seeda.
+
+\section{Taksonomia sąsiedztw}
+Definicje klasyczne są znane; przypominamy je, bo konstrukcje QUBO
+budują wprost na ich zbiorach ruchów.
+
+\subsection{Klasyczne}
+\textbf{Adjacent} ($N_{\mathrm{adj}}$): ruch zamienia zadania na
+pozycjach $i$ oraz $i{+}1$, więc $|N_{\mathrm{adj}}|=n-1$; w literaturze
+API --- adjacent pairwise interchange (hierarchia uogólnionych wymian:
+Della Croce 1995).
+\textbf{Fibonacci} ($N_{\mathrm{fib}}$): ruch aplikuje jednocześnie
+zbiór niekolidujących swapów sąsiednich ($S$ poprawny, gdy $i\in S
+\Rightarrow i{+}1\notin S$); liczba podzbiorów $=F_{n+1}$, stąd nazwa
+(wprowadzone w ICAISC 2026); optymalny podzbiór wybiera DP w $O(n)$.
+\textbf{Dynasearch} ($N_{\mathrm{dyn}}$): swapy końców odcinków dowolnej
+długości; DP (Congram 2002) wybiera podzbiór par przedziałowo
+nienakładających się, łącznie minimalizując $C_{\max}$; $K=O(n^2)$,
+DP w $O(n^3)$, akceleracja filtrem NPI.
+\textbf{Motzkin} ($N_{\mathrm{motz}}$): te same swapy końców, ale
+dopuszczalne podzbiory wg kombinatoryki ścieżek Motzkina (Motzkin 1948;
+SOCO 2026; EXIT 2025): bez krzyżowań i wspólnych końców, ścisłe
+zagnieżdżenie dozwolone; liczba podzbiorów $=M_n$ ($M_5=21$,
+$M_{10}=4862$, $M_{20}\approx1{,}7\cdot10^{10}$); DP w $O(n^3)$.
+
+\subsection{Akceleratory blokowe}
+Pozycja $u$ jest granicą bloku, gdy $H[m][u]=H[m-1][u]+p_{m,\pi(u+1)}$;
+zbiór granic $\mathcal U(\pi)$ liczony w $O(mn)$. Twierdzenie
+(Smutnicki 1998): swap $(i,j)$ może ściśle poprawić $C_{\max}$ tylko gdy
+$\mathcal U(\pi)\cap[i,j]\neq\emptyset$. Adjacent/Fibonacci: z $n-1$
+kandydatów zostaje $|\mathcal U(\pi)|$ (na tai $m=5$, $n=100$ średnio
+4--8 z 99). Dynasearch/Motzkin (NPI): $O(n^2)\to O(n\cdot|\mathcal U|)$;
+w QUBO tylko przefiltrowane pary stają się zmiennymi. Na Taillardzie
+filtr usuwa 35--65\% par.
+
+\subsection{Kwantowe QUBO --- oryginalne i enhanced}
+Oryginalne (za BPASTS): $x_k=1 \Leftrightarrow$ swap $k$ wybrany; QUBO
+koduje cel i wykonalność; $n\le20$.
+Enhanced: (a) \emph{pełny QUBO bez filtra delty} --- adjacent (gęsty $Q$)
+do $n\le200$, fibonacci (tridiagonalny $Q$) do $n\le500$;
+(b) \emph{dekompozycja okienkowa} dla $K=O(n^2)$: okno $\ell$ pokrywa
+$[s_\ell, s_\ell{+}w)$, $s_\ell=\ell\lfloor w(1{-}\rho)\rfloor$,
+$\rho=0.5$; rozmiar okna z $K(w)=w(w{-}1)/2\le C_{\mathrm{eff}}=180$
+daje $w_{\max}=19$; okna sekwencyjnie, scalanie zachłanne po
+$|\delta_k|$; umożliwia $n\le50$.
+
+\begin{table}[h]\centering\small
+\caption{Traktowalność (skrót): $K$ po filtrze blokowym, największa
+wykonalna instancja.}
+\begin{tabular}{@{}llll@{}}\toprule
+Klasa & $K$ & $n_{\max}$ & Sprzęt\\\midrule
+Klasyczne & $O(m)$--$O(nm)$ & $\infty$ & CPU\\
+Kwantowe oryg. & $n{-}1$ (adj/fib), $O(n^2)$ (dyn/motz) & 20 & QPU\\
+Enhanced & $n{-}1$; $\le171$ okienkowane & 200/500; 50 & QPU\\
+\bottomrule\end{tabular}\end{table}
+
+\section{Formulacje QUBO}
+Forma ogólna $\min x^\top Qx$, $x\in\{0,1\}^K$, z przejściem do Isinga
+$H_C=\sum h_iZ_i+\sum J_{ij}Z_iZ_j$ (Lucas 2014). Diagonala
+$Q_{kk}=\delta_k$; kary $Q_{kl}=\lambda=(\sum_k|\delta_k|)+1$.
+Adjacent enh.: one-hot ($Q_{ii}=\delta_i$, $Q_{ij}=2\lambda$) ---
+dokładnie jeden swap. Fibonacci enh.: QUBO tridiagonalny
+($Q_{i,i+1}=\lambda$); rozwiązań $F_{n+1}$. Dynasearch enh.:
+$Q_{kl}=\lambda$ dla par nachodzących; nienachodzące niezależne ---
+multi-swapy. Motzkin enh.: $Q_{kl}=\lambda$ dla konfliktów wg reguł
+Motzkina; rozwiązań $M_n$.
+
+\section{Setup eksperymentalny}
+Wszystko stałe poza sąsiedztwem. Benchmarki: Taillard,
+$n\in\{20,50,100,200,500\}$, $m\in\{5,10,20\}$, 10 instancji, 5 seedów,
+budżety 100--10\,000 ms (klasyka wszystkie sześć; QPU: tl=1000 i 5000
+w tabelach, konwergencja 100--5000 dla enhanced). Sprzęt: Apple M4 Pro
+(klasyka); D-Wave Advantage\_system4.1 (Pegasus P16, 5627 kubitów,
+40\,279 sprzęgieł), EmbeddingComposite, num\_reads=100 na okno.
+Praktyczna pojemność gęstych grafów ok.\ 190--200 zmiennych logicznych
+(łańcuchy $\sim$30 kubitów fizycznych); granica miękka: $K_{199}$
+adjacenta enhanced weszła w 50/50 runów, $\sim$190-zmiennowy dynasearch
+padał sporadycznie, a porażki przechodziły przy retry; łańcuchowy
+fibonacci embeduje się trywialnie do $n\le500$. Metryka:
+$\mathrm{RPD}=(C_{\max}-C^*)/C^*\times100\%$; istotność: Wilcoxon
+($\alpha=0.05$) dla par wariantów.
+
+\section{Wyniki i dyskusja}
+Każda liczba kwantowa pochodzi z realnych runów Advantage\_system4.1 ---
+niczego nie symulujemy.
+
+\begin{table}[h]\centering\small
+\caption{Wszystkie 12 sąsiedztw, tai20$\times$5, $t_{\max}=1000$ ms
+(średni RPD \%). Kwanty: reżim 1 iteracji (latencja $>$ budżet);
+dynasearch 48/50 runów (2 porażki embeddingu); enhanced: 3 okna na
+wywołanie, 0 porażek w 400 runach.}
+\begin{tabular}{@{}llrr@{}}\toprule
+Klasa & Sąsiedztwo & ILS & SA\\\midrule
+\multirow{4}{*}{Klasyczne} & Adjacent & 3.89 & 11.28\\
+& Fibonacci & 4.09 & 15.00\\ & Dynasearch & 3.32 & 4.19\\
+& Motzkin & 3.19 & 4.00\\\midrule
+\multirow{4}{*}{Quantum QUBO} & Adjacent & 25.07 & 25.04\\
+& Fibonacci & 23.79 & 23.46\\ & Dynasearch & 26.93 & 26.35\\
+& Motzkin & 21.66 & 21.50\\\midrule
+\multirow{4}{*}{Enhanced} & Adjacent & 25.04 & 25.04\\
+& Fibonacci & 23.60 & 23.66\\ & Dynasearch & 25.56 & 25.71\\
+& Motzkin & 25.98 & 25.45\\\bottomrule\end{tabular}\end{table}
+
+\paragraph{Baseline klasyczny ($t_{\max}=10$ s, $n=20$).}
+Dynasearch i motzkin prowadzą przy każdym $m$, przewaga rośnie z $m$
+(0.7--1.2 pp przy $m=5$; 1.2--1.4 przy $m=20$): ILS/SA ---
+adj 3.41/6.98 ($m{=}5$), 11.22/15.61 ($m{=}10$), 22.58/26.27 ($m{=}20$);
+fib 3.82/9.24, 11.23/17.81, 22.17/26.82; dyn 2.68/3.36, 9.99/10.75,
+21.41/21.99; motz 2.64/3.25, 10.21/10.68, 21.46/21.73. SA adj/fib tracą
+7--10 pp do ILS przy $m=5$ (oraculum best-move nad rzadkim sąsiedztwem
+więzi SA w wąskich basenach); SA dyn/motz w granicach 0.6--0.7 pp.
+
+\paragraph{Kwanty na QPU przy $n=20$.} Każdy run rejestruje liczbę
+iteracji --- reżim porównania jest jawny. Przy tl=1000 dokładnie
+1 iteracja (wywołanie $\sim$2.1 s ściennie dla adj/fib). Ranking odwraca
+się względem klasyki: motzkin 21.7\% $<$ fibonacci 23.8 $<$ adjacent
+25.1 $<$ dynasearch 26.9 --- gdy budżet starcza na jeden ruch, wygrywa
+najbogatszy zbiór ruchów. Jakość podąża za iteracjami: przy tl=5000
+adj/fib robią 3 iteracje, fibonacci 19.9\%, motzkin 19.5\%. Dynasearch
+obnaża granicę embeddingu (4/200 runów bez embeddingu przy $\sim$190
+gęstych zmiennych; motzkin przy podobnej liczbie, ale rzadszym grafie,
+embedował się zawsze) --- wykonalność rządzi się gęstością grafu
+konfliktów, nie liczbą zmiennych.
+
+\paragraph{Anatomia wywołania QPU} (1332 wywołania): rozliczany dostęp
+$\sim$30 ms (16 programowanie + 14 próbkowanie); ściennie: adj 2.12 s
+(udział QPU 1.4\%), fib 2.06 s (1.5\%), motz 18.5 s (0.16\%; budowa QUBO
+$O(mn^3)$), dyn 140 s (0.02\%; minorminer). Porównanie ścienne ignorujące
+te proporcje mierzy chmurę, nie procesor.
+
+\paragraph{Wiersze enhanced (efekt filtra delty).} Liniowe sąsiedztwa:
+enhanced $=$ oryginał (adj 25.04 vs 25.05, fib 23.60/23.66 vs
+23.79/23.46; Wilcoxon $p\ge0.25$) --- replikacja między kampaniami.
+Okienkowany dynasearch \emph{zyskuje} 0.9 pp (25.78 vs 26.64, $p=0.012$)
+i eliminuje porażki embeddingu (0/400 vs 4\%). Okienkowany motzkin
+\emph{traci} 4.1 pp (25.72 vs 21.58, $p<10^{-4}$). Odczyt strukturalny:
+konflikty dynasearcha są lokalne, granica okna mało odcina; siła
+motzkina to zagnieżdżone systemy łuków rozpinające permutację --- okna
+tną właśnie je. Przy tl=5000 dynasearch trzyma przewagę (25.07 vs 26.15,
+$p=0.005$), luka motzkina rośnie do 5.6 pp (25.06 vs 19.45,
+$p<10^{-4}$): strata okienkowania kumuluje się, zamiast amortyzować.
+
+\begin{table}[h]\centering\small
+\caption{Skalowanie: średni RPD \%, ILS, $t_{\max}=5000$ ms; $m=10$ dla
+$n\le200$, $m=20$ przy $n=500$. $\dagger$ = 1 iteracja (nieporównywalne);
+n/a = poza traktowalnością.}
+\begin{tabular}{@{}lrrrrr@{}}\toprule
+Sąsiedztwo & $n{=}20$ & $n{=}50$ & $n{=}100$ & $n{=}200$ & $n{=}500$\\\midrule
+Kl. Adjacent & 11.61 & 10.03 & 9.54 & 10.37 & 15.36\\
+Kl. Fibonacci & 11.27 & 7.74 & 6.15 & 6.19 & 11.12\\
+Kl. Dynasearch & 10.23 & 5.39 & 4.67 & 11.63 & 14.53$^\dagger$\\
+Kl. Motzkin & 10.45 & 13.49 & 14.21 & 13.80 & 16.26$^\dagger$\\\midrule
+Q-Adjacent & 34.91 & n/a & n/a & n/a & n/a\\
+Q-Fibonacci & 31.60 & n/a & n/a & n/a & n/a\\
+Q-Dynasearch & 39.30 & n/a & n/a & n/a & n/a\\
+Q-Motzkin & 34.41 & n/a & n/a & n/a & n/a\\\midrule
+Q-Adjacent Enh. & 34.86 & 26.70 & 21.73 & 16.40 & n/a\\
+Q-Fibonacci Enh. & 31.68 & 23.56 & 19.62 & 14.99 & 15.75\\
+Q-Dynasearch Enh. & 38.55 & 26.37 & n/a & n/a & n/a\\
+Q-Motzkin Enh. & 38.44 & 26.03 & n/a & n/a & n/a\\
+\bottomrule\end{tabular}\end{table}
+
+\paragraph{Skalowanie.} Warianty enhanced budowano, by choć utrzymały
+poziom przy rosnącym $n$; pomiary pokazują więcej --- RPD kwantowy spada
+monotonicznie. Fibonacci enhanced: $31.7\to23.6\to19.6\to15.0\%$
+($n=20\to200$); adjacent enhanced $\sim$1.5 pp za nim ($34.9\to16.4$).
+Luka do klasycznego fibonacciego zwęża się: 20.4 pp ($n{=}20$) $\to$
+13.5 ($n{=}100$) $\to$ 8.8 ($n{=}200$) $\to$ 4.6 ($n{=}500$), gdzie
+wariant kwantowy (15.75\%) osiąga parytet z klasycznym adjacent
+(15.36\%). Prawy koniec krzywej umożliwia tridiagonalność: embedding
+w milisekundach nawet przy $K_{499}$, trzy iteracje w 5 s przy każdym
+rozmiarze; adjacent od $n=100$ spada do 1 iteracji. Kolumna $n=20$
+replikuje asymetrię okien przy $m=10$ (dyn: 38.6 vs 39.3, $p=0.18$;
+motz: 38.4 vs 34.4, $p<10^{-4}$). Gęsty one-hot skaluje się dalej, niż
+sugerowała kampania $n=20$: $K_{199}$ embedował się w 50/50 runów
+($\sim$8 s minorminera); porażki $n=20$ były stochastyczne (retry
+przechodził). Twarda ściana: $K_{499}$; okolice 200 zmiennych to
+loteria o korzystnych szansach, nie klif.
+
+\paragraph{Klasyczny crossover.} Przy $n=100$ wygrywa dynasearch
+(4.67 vs 6.15); przy $n=200$ odwrócenie (6.19 vs 11.63) --- DP $O(n^2)$
+zjada budżet; motzkin ($O(n^3)$) odpada wcześniej. Przy $n=500$
+pojedyncze wywołanie DP (dyn $\sim$200 s, motz $\sim$30 s) przekracza
+każdy budżet --- 1 iteracja, wartości dla kompletności. Mimo to jedno
+wywołanie dynasearcha bije adjacenta z tysiącami iteracji (14.53 vs
+15.36): struktura ruchu znaczy więcej niż liczba iteracji, o ile ruch
+niesie dość swapów. Okienkowane dyn/motz kończą na $n=50$ (26.37/26.03,
+$\sim$3 pp za fibonaccim): bariera ścienna, nie embedding. Poza $n=200$
+fibonacci enhanced jest jedynym kwantowym sąsiedztwem bez obcięć.
+
+\paragraph{Per budżet ($n=20$, $m=5$, bez poolingu).} Klasyka ILS:
+6.60/5.96/3.92/4.33 (100 ms) $\to$ 3.41/3.82/2.68/2.64 (10 s). Wiersze
+enhanced płaskie 100$\to$1000 ms (1 iteracja; budżet poniżej $\sim$2 s
+kosztu drugiego wywołania nic nie kupuje), spadek przy 5000 ms
+(2--3 iteracje). Kreski = warstwy jeszcze niezmierzone w protokole transz.
+
+\paragraph{Jakość okienkowania.} Pary przecinające granice okien nigdy
+nie są ewaluowane; strata zmierzona przy $n=20$: $\approx$0 dla
+dynasearcha, $\sim$4 pp narastająco dla motzkina. Wszystkie runy
+z $\rho=0.5$; czułość na $\rho$ niezbadana.
+
+\paragraph{Wkład BTJL.} Ablacja 3600 parowanych runów (oba ramiona,
+$n=20$, $m\in\{5,10,20\}$, $t\in\{1,5,10\}$ s): ILS z BTJL bije restart
+losowy w każdej komórce o 1.1--2.6 pp ($p<10^{-17}$); rzadkie sąsiedztwa
+zyskują 4.1 pp (adjacent) i 3.5 pp (fibonacci), dyn/motz istotne
+0.4/0.3 pp ($p<10^{-19}$).
+
+\paragraph{Przepustowość.} Wywołanie okienkowane mnoży 30 ms dostępu
+przez liczbę okien; koszt ścienny pozostaje zdominowany przez embedding
+i kolejkę.
+
+\section{Wnioski}
+Klasa enhanced łamie barierę $n=20$ dwiema zmianami: usunięciem filtra
+delty i dekompozycją okienkową. Akcelerator Smutnickiego tnie zmienne
+o 30--60\%. BTJL bije restart losowy w każdej komórce ablacji
+(1.1--2.6 pp, $p<10^{-17}$). Kampanie QPU z lipca 2026 wypełniły każdą
+traktowalną komórkę tabel realnymi pomiarami i odpowiedziały na obie
+hipotezy: (i) fibonacci enhanced trzyma poziom w całym zakresie ---
+RPD spada monotonicznie $31.7\to15.0\%$, luka do klasyki zwęża się
+$20.4\to4.6$ pp przy $n=500$ (parytet z klasycznym adjacent);
+(ii) koszt okienkowania jest strukturalny: dynasearch replikuje lub
+lekko bije pełny QUBO eliminując porażki embeddingu, motzkin płaci
+$\sim$4 pp rosnąco z budżetem (zagnieżdżenia międzyokienne). Przy
+$n=50$, gdzie żaden pełny QUBO $O(n^2)$ się nie embeduje, oba
+okienkowane warianty dostarczają działające ruchy QPU w granicach 3 pp
+od fibonacciego. Reżim jednej iteracji, anatomia kosztu QPU
+i stochastyczność embeddingu raportowane są obok jakości, bo definiują,
+co uczciwe porównanie ścienne może twierdzić.
+\textbf{Future work:} adaptacyjny dobór okien, obwody QAOA na
+procesorach bramkowych, dekompozycje zachowujące interakcje
+międzyokienne, hybrydowy flow shop.
+
+\end{document}

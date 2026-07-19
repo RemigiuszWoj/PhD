@@ -271,19 +271,20 @@ the comparison, every neighborhood in this study runs inside the same
 two frameworks with identical parameters and time budgets, so the
 neighborhood is the only component that varies.
 
-\emph{Iterated Local Search} (ILS)~\citep{lourenco2003iterated}
-with a tabu list~\citep{glover1989} of tenure $\tau = 10$ and aspiration criterion
-(accept a tabu move if it strictly improves the global best
-$C_{\max}^*$), in the spirit of the fast taboo search that Nowicki and
-Smutnicki developed for the job shop~\citep{nowicki96ms}.
+\emph{Iterated Local Search} (ILS)~\citep{lourenco2003iterated} runs
+with a tabu list~\citep{glover1989} of tenure $\tau = 10$ and an
+aspiration criterion that accepts a tabu move if it strictly improves
+the global best $C_{\max}^*$, in the spirit of the fast taboo search
+that Nowicki and Smutnicki developed for the job
+shop~\citep{nowicki96ms}.
 When no non-tabu move is available and aspiration is not met, the
 search diversifies via the BackTrackJumpList mechanism described in
 Section~\ref{sec:btjl}.
 
-\emph{Simulated Annealing} (SA)~\citep{kirkpatrick1983} with initial
-temperature $T_0 = 1000$, cooling rate $\alpha = 0.99$, temperature
-floor $T_{\min} = 100$, and reheat-kick diversification on stagnation
-(Section~\ref{sec:sa-kick}). Our variant differs from canonical SA in
+\emph{Simulated Annealing} (SA)~\citep{kirkpatrick1983} runs with
+initial temperature $T_0 = 1000$, cooling rate $\alpha = 0.99$,
+temperature floor $T_{\min} = 100$, and reheat-kick diversification on
+stagnation (Section~\ref{sec:sa-kick}). Our variant differs from canonical SA in
 its \emph{exploration criterion}, the component that decides which
 neighbor faces the Metropolis test~\citep{franzin19}. Canonical SA
 samples a random neighbor; Ishibuchi et al.\ proposed, for the flow
@@ -390,16 +391,18 @@ The four classical neighborhoods enumerate candidate job-insertion
 moves and evaluate each via the Head--Tail decomposition.
 
 \paragraph{Adjacent \textup{($N_{\mathrm{adj}}$)}}
-Swap jobs at positions $i$ and $i+1$ for all $i \in \{1,\ldots,n-1\}$.
+The move swaps the jobs at positions $i$ and $i+1$ for
+$i \in \{1,\ldots,n-1\}$, so the neighborhood has cardinality
+$|N_{\mathrm{adj}}| = n-1$.
 In the scheduling literature this move is known as the adjacent
 pairwise interchange (API); Della Croce's generalized pairwise
 interchanges~\citep{dellacroce95} place it at the bottom of a whole
 hierarchy of interchange moves.
-Cardinality $|N_{\mathrm{adj}}| = n-1$.
 
 \paragraph{Fibonacci \textup{($N_{\mathrm{fib}}$)}}
-A set of non-overlapping adjacent swaps applied simultaneously: a subset
-$S \subseteq \{1,\ldots,n-1\}$ is valid if $i \in S \Rightarrow i+1 \notin S$.
+The move applies a set of non-overlapping adjacent swaps
+simultaneously: a subset $S \subseteq \{1,\ldots,n-1\}$ is valid if
+$i \in S \Rightarrow i+1 \notin S$.
 The number of such valid subsets in a permutation of length $n$ equals the
 Fibonacci number $F_{n+1}$, which gives the neighborhood its
 name; we introduced it in~\citep{WojewodzkiBozejko2026}.
@@ -407,8 +410,8 @@ The optimal subset minimizing the joint makespan change is selected by
 dynamic programming in $O(n)$ time given precomputed adjacent-swap deltas.
 
 \paragraph{Dynasearch \textup{($N_{\mathrm{dyn}}$)}}
-Endpoint-swap moves over segments of arbitrary length:
-for every pair $(i,j)$ with $i < j \leq n-1$ the move exchanges
+The neighborhood consists of endpoint-swap moves over segments of
+arbitrary length: for every pair $(i,j)$ with $i < j \leq n-1$ the move exchanges
 $\pi(i)$ and $\pi(j)$, leaving the interior $\pi(i+1),\ldots,\pi(j-1)$
 unchanged. Dynamic programming~\citep{congram02} selects the subset
 of pairs that are pairwise non-overlapping as intervals
@@ -418,8 +421,8 @@ runs in $O(n^3)$ in the worst case, accelerated by the NPI block-property
 filter described in Section~\ref{sec:accelerators}.
 
 \paragraph{Motzkin \textup{($N_{\mathrm{motz}}$)}}
-Identical endpoint-swap moves as Dynasearch (pairs $(i,j)$ with
-$i < j \leq n-1$, exchanging only $\pi(i)$ and $\pi(j)$), but the
+The moves are the same endpoint swaps as in Dynasearch (pairs $(i,j)$
+with $i < j \leq n-1$, exchanging only $\pi(i)$ and $\pi(j)$), but the
 admissible subsets follow Motzkin path
 combinatorics~\citep{motzkin1948,Motzkin_PWR,Motzkin_PWR_EXIT}: pairs may not cross
 ($i_1 < i_2 < j_1 < j_2$ is forbidden) nor share an endpoint, while
@@ -587,11 +590,12 @@ $\lambda = \bigl(\sum_k |\delta_k|\bigr) + 1$, which dominates the
 objective and ensures feasibility.
 
 \paragraph{Adjacent Enhanced}
-One-hot constraint: $Q_{ii} = \delta_i$, $Q_{ij} = 2\lambda$
-for all $i \neq j$. Exactly one swap is selected.
+The one-hot constraint sets $Q_{ii} = \delta_i$ and $Q_{ij} = 2\lambda$
+for all $i \neq j$, so exactly one swap is selected.
 
 \paragraph{Fibonacci Enhanced}
-Tridiagonal structure: $Q_{ii} = \delta_i$, $Q_{i,i+1} = \lambda$.
+The QUBO is tridiagonal: $Q_{ii} = \delta_i$ and
+$Q_{i,i+1} = \lambda$.
 The number of feasible (independent set) solutions equals $F_{n+1}$
 ($(n+1)$-th Fibonacci number), matching the name of the neighborhood.
 
@@ -1143,10 +1147,11 @@ numbers because they define what a fair wall-clock comparison of
 quantum and classical neighborhood search can claim.
 
 \paragraph{Future work}
-Adaptive window sizing from per-window convergence feedback;
-QAOA circuits on the Google Willow gate-based processor~\citep{ref_willow};
-decomposition strategies that preserve cross-window swap interactions;
-extension to hybrid flow shop with machine-dependent times.
+Future work will pursue adaptive window sizing driven by per-window
+convergence feedback, QAOA circuits on gate-based
+processors~\citep{ref_willow}, decomposition strategies that preserve
+cross-window swap interactions, and an extension to the hybrid flow
+shop with machine-dependent processing times.
 
 %% CRediT
 \section*{CRediT authorship contribution statement}

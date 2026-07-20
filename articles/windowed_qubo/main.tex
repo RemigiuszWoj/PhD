@@ -801,51 +801,41 @@ Q-Motzkin Enhanced         & 38.44 & 26.03 & n/a & n/a & n/a \\
 \end{table}
 
 \paragraph{Comparison at $n = 20$}
-Tables~\ref{tab:rpd_n20} and~\ref{tab:rpd_n20_full} report the
-classical baseline across all three Taillard machine counts.
-Dynasearch and motzkin lead adjacent and fibonacci at every $m$,
-and the lead grows with $m$: 0.7--1.2 percentage points at
-$m = 5$, 1.2--1.4 points at $m = 20$. The SA gap to ILS also
-depends on the neighborhood. SA adjacent and fibonacci trail ILS
-by 7--10 pp at $m = 5$, because a best-move oracle over a sparse
-neighborhood traps SA in narrow basins that the reheat-kick of
-Section~\ref{sec:sa-kick} only partly resolves. SA dynasearch and
-motzkin sit within 0.7 pp of ILS at $m = 5$ and within 0.6 pp at
-$m = 20$; the richer neighborhoods supply enough escape paths for
-SA to match ILS within a 10\,s budget.
+In the classical baseline (Tables~\ref{tab:rpd_n20},
+\ref{tab:rpd_n20_full}) dynasearch and motzkin lead adjacent and
+fibonacci at every $m$, and the lead grows with $m$ (0.7--1.2 pp at
+$m = 5$, 1.2--1.4 at $m = 20$). The SA gap to ILS is neighborhood
+dependent: SA adjacent and fibonacci trail by 7--10 pp at $m = 5$,
+because a best-move oracle over a sparse neighborhood traps SA in
+narrow basins that the reheat-kick only partly resolves, whereas SA
+dynasearch and motzkin stay within 0.7 pp of ILS --- their richer
+move sets supply enough escape paths.
 
 \paragraph{Quantum QUBO on the QPU at $n = 20$}
-The quantum QUBO rows of Table~\ref{tab:rpd_n20} are the first QPU
-measurements taken under the instrumented protocol: every run records
-its own iteration count, so the comparison regime is explicit rather
-than inferred. At $t_{\max} = 1000$\,ms each quantum run completes
-exactly one metaheuristic iteration --- one QPU-selected composite
-move applied to the initial solution --- because a single call costs
-about 2.1\,s of wall time for adjacent and fibonacci, more for the
-others.
+Every quantum run records its own iteration count, so the comparison
+regime is explicit. At $t_{\max} = 1000$\,ms each run completes exactly
+one metaheuristic iteration --- one QPU-selected composite move on the
+initial solution --- because a single call costs about 2.1\,s of wall
+time for adjacent and fibonacci, more for the others. In this regime
+the ranking inverts relative to the classical rows: motzkin leads at
+21.7\,\%, then fibonacci (23.8\,\%), adjacent (25.1\,\%), and
+dynasearch (26.9\,\%) --- when one move is all the budget allows, the
+richest admissible move set wins, and motzkin's non-crossing arcs are
+the richest of the four. Quality then tracks the iteration count
+(Fig.~\ref{fig:qpu_conv_n20}): at $t_{\max} = 5000$\,ms adjacent and
+fibonacci fit three iterations and improve by 2.8 and 3.7\,pp
+(fibonacci to 19.9\,\%, motzkin to 19.5\,\%), while dynasearch stays
+at one iteration and moves half a point.
+Table~\ref{tab:rpd_n20_tl} gives the same comparison per budget without
+ILS/SA pooling: the flat enhanced rows below 1000\,ms are this
+single-iteration regime.
 
-Two observations survive this regime. First, the ranking inverts
-relative to the classical rows: motzkin leads at 21.7\,\%, then
-fibonacci (23.8\,\%), adjacent (25.1\,\%), and dynasearch (26.9\,\%).
-When one move is all the budget allows, the richest admissible move
-set wins, and motzkin's non-crossing arc configurations are the
-richest of the four. Second, quality tracks the iteration count.
-Figure~\ref{fig:qpu_conv_n20} shows the effect: at
-$t_{\max} = 5000$\,ms adjacent and fibonacci fit three iterations per
-run and improve by 2.8 and 3.7\,pp, landing fibonacci at 19.9\,\% and
-motzkin at 19.5\,\%. Dynasearch stays at one iteration and moves by
-half a point. Table~\ref{tab:rpd_n20_tl} tabulates the same
-comparison for every tested budget without ILS/SA pooling; the flat
-enhanced rows between 100 and 1000\,ms are the single-iteration
-regime made visible in a table rather than a curve.
-
-Dynasearch also exposes the embedding capacity bound. Without the
-delta filter its QUBO carries roughly 190 densely coupled variables,
-and 4 of 200 runs found no embedding on the Pegasus topology. Motzkin,
-with a similar variable count but a sparser conflict graph --- nesting
-is allowed, so fewer penalty edges --- embedded every time. QPU
-feasibility is governed by conflict-graph density, not by variable
-count alone.
+Dynasearch also exposes the embedding bound: its unfiltered QUBO
+carries roughly 190 densely coupled variables and 4 of 200 runs found
+no embedding, whereas motzkin --- same variable count but a sparser
+conflict graph, since nesting adds no penalty edges --- embedded every
+time. QPU feasibility is governed by conflict-graph density, not
+variable count alone.
 
 \begin{figure}[t]
 \centering
@@ -1020,17 +1010,13 @@ wall time at $n = 200$ that ILS completes fewer full scans and
 accumulates fewer improvements within the budget. Fibonacci's $O(n)$
 evaluation does not have that problem.
 
-Motzkin is worse. It trailed dynasearch by 0.2\,pp at $n = 20$, by
-8.1\,pp at $n = 50$, and by $n = 100$ it sits at 14.21\,\%, last among
-the four classical neighborhoods. The $O(n^3)$ arc-selection DP is
-simply more expensive per call than the $O(n^2)$ dynasearch DP, which
-means fewer ILS iterations in any fixed time budget.
-
-The crossover sits between $n = 100$ and $n = 200$. Dynasearch is
-competitive up to roughly $n = 100$; fibonacci is the right classical
-baseline beyond that. At $n = 500$ fibonacci reaches 11.12\,\% while
-adjacent sits at 15.36\,\% (ILS, $m = 20$, $t_{\max} = 5$\,s),
-confirming the trend.
+Motzkin fares worse still, from a 0.2\,pp deficit to dynasearch at
+$n = 20$ to last place at $n = 100$ (14.21\,\%): its $O(n^3)$
+arc-selection DP is costlier per call than dynasearch's $O(n^2)$, so
+ILS runs fewer iterations. The classical crossover therefore sits
+between $n = 100$ and $n = 200$ --- dynasearch competitive up to
+$n = 100$, fibonacci the right baseline beyond, reaching 11.12\,\%
+against adjacent's 15.36\,\% at $n = 500$.
 
 At $n = 500$ both dynasearch and motzkin run out of room. A single
 dynasearch DP call (over $\approx 1.2 \times 10^5$ candidate pairs)
@@ -1038,25 +1024,14 @@ takes about 200\,s; motzkin's $O(n^3)$ arc-selection DP takes about
 30\,s. Both exceed every tested budget, so ILS and SA each complete
 exactly one local-search iteration per run and return identical
 solutions. Dynasearch ends up at 14.53\,\% (range $13.30$--$16.05$),
-motzkin at 16.26\,\% (range $13.00$--$18.40$).
-
-These two entries should be read with a caveat. They are not a
-like-for-like comparison with adjacent or fibonacci, which used the
-full budget to run thousands of iterations. Dynasearch and motzkin
-each had time for a single local-search step. We report them to
-document the scaling boundary, not to argue that one neighborhood
-beats another at $n = 500$.
-
-Compared to the iterative neighborhoods at the same budget,
-dynasearch's single call still beats adjacent (15.36\,\%), which had
-thousands of iterations to use. One dynasearch call picks a
-near-optimal set of non-overlapping swaps and applies them at once;
-adjacent applies one swap per iteration, and the per-iteration gains
-shrink fast. Motzkin's one call gives a smaller move (nested
-non-crossing arcs are more constrained than non-overlapping
-intervals), which is why it lands behind both dynasearch and
-adjacent. The move structure matters more than the move count at
-this scale, as long as the move itself carries enough swaps.
+motzkin at 16.26\,\% (range $13.00$--$18.40$); these document the
+scaling boundary rather than a fair head-to-head (Table caption).
+Even so, dynasearch's single call still beats adjacent's thousands of
+iterations (15.36\,\%): one call picks a near-optimal set of
+non-overlapping swaps and applies them at once, whereas adjacent's
+per-iteration gains shrink fast. At this scale the move structure
+matters more than the move count, as long as the move carries enough
+swaps.
 
 The windowed dynasearch and motzkin variants stop at $n = 50$, where
 they land within 0.4\,pp of each other (26.37 and 26.03\,\%) and
@@ -1072,82 +1047,49 @@ experiments beyond $n = 200$, fibonacci enhanced is the only quantum
 neighborhood that still scales without truncation.
 
 \paragraph{Windowed decomposition quality}
-The windowed approach introduces a bounded approximation: swap pairs
-crossing window boundaries are never evaluated. The loss is measured
-at $n = 20$, the largest size where the full QUBO still embeds
-(Table~\ref{tab:rpd_n20}, Fig.~\ref{fig:qpu_conv_n20}): near zero for
-dynasearch, about 4\,pp and compounding with the budget for motzkin.
-All windowed runs use overlap ratio $\rho = 0.5$; larger overlap would
-reduce boundary artifacts at the cost of more QPU submissions per
-iteration, and sensitivity to $\rho$ remains untested.
+The approximation the windowing introduces --- swap pairs crossing
+window boundaries are never evaluated --- is what the $n = 20$ loss
+above quantifies. All runs use overlap ratio $\rho = 0.5$; larger
+overlap would reduce boundary artifacts at the cost of more QPU
+submissions per iteration, and sensitivity to $\rho$ remains untested.
 
 \paragraph{BackTrackJumpList contribution}
-ILS diversification uses the BackTrackJumpList throughout: the
-double-bridge move guarantees displacement from the current basin,
-and round-robin selection prevents the pool from degenerating into
-repeated perturbations of the single global best. A controlled
-ablation on the classical neighborhoods (3600 paired runs: both arms
-at $n = 20$, $m \in \{5, 10, 20\}$, $t_{\max} \in \{1, 5, 10\}$\,s,
-10 instances $\times$ 5 seeds) confirms the design. ILS with the
-BackTrackJumpList beats ILS with uniform random restart in every
-machine-count/budget cell, by 1.1--2.6\,pp of mean RPD (Wilcoxon
-signed-rank, $p < 10^{-17}$ per cell). The margin tracks neighborhood
-richness in the expected direction: sparse neighborhoods, which rely
-on diversification to escape narrow basins, gain 4.1\,pp (adjacent)
-and 3.5\,pp (fibonacci), while dynasearch and motzkin --- whose
-composite moves supply escape paths of their own --- still gain a
-small but significant 0.4 and 0.3\,pp ($p < 10^{-19}$).
-
-\paragraph{Throughput analysis}
-Quantum neighborhood performance within a fixed time budget depends
-critically on the number of QUBO evaluations per second.
-The enhanced formulations submit multiple QUBO calls per iteration
-(one per window for Dynasearch/Motzkin Enhanced), whereas the
-original formulations submit a single call. The tradeoff between
-increased neighborhood coverage and higher per-iteration QPU latency
-is visible directly in Table~\ref{tab:qpu_anatomy} and the iteration
-counts of Fig.~\ref{fig:qpu_conv_n20}: a windowed call multiplies the
-30\,ms billed access by the window count, while its wall-clock cost
-stays dominated by embedding search and queueing.
+A controlled ablation on the classical neighborhoods (3600 paired
+runs: both arms at $n = 20$, $m \in \{5, 10, 20\}$,
+$t_{\max} \in \{1, 5, 10\}$\,s, 10 instances $\times$ 5 seeds) isolates
+the elite-pool effect. ILS with the BackTrackJumpList beats ILS with
+uniform random restart in every machine-count/budget cell, by
+1.1--2.6\,pp of mean RPD (Wilcoxon signed-rank, $p < 10^{-17}$ per
+cell). The margin tracks neighborhood richness: sparse neighborhoods,
+which rely on diversification to escape narrow basins, gain 4.1\,pp
+(adjacent) and 3.5\,pp (fibonacci), while dynasearch and motzkin ---
+whose composite moves supply their own escape paths --- gain a small
+but significant 0.4 and 0.3\,pp ($p < 10^{-19}$).
 
 % ---------------------------------------------------------------
 \section{Conclusions}
 
 The quantum QUBO enhanced class breaks the $n = 20$ barrier for
-quantum annealing-based PFSP search through two changes: removing
-the delta filter for linear-variable neighborhoods, and applying a
-windowed decomposition for quadratic-variable ones.
-The Smutnicki block-property accelerator, shared across all twelve
-neighborhoods, cuts QUBO variable counts by 30--60\% before QPU
-submission, which directly lowers embedding chain length and
-chain-break probability.
-The BackTrackJumpList replaces uniform random restarts in ILS with
-double-bridge perturbations of the $k = 10$ best solutions seen,
-a design change that costs nothing at runtime and beats uniform
-random restart in every cell of a 3600-run paired ablation
-(1.1--2.6\,pp mean RPD, $p < 10^{-17}$).
+quantum annealing-based PFSP search through two changes: removing the
+delta filter for linear-variable neighborhoods and applying a windowed
+decomposition for quadratic-variable ones, with the Smutnicki
+accelerator cutting variable counts by 30--60\% and the
+BackTrackJumpList replacing random restarts in ILS.
 
 The July 2026 QPU campaigns filled every tractable cell of
 Tables~\ref{tab:rpd_n20} and~\ref{tab:rpd_scaling} with real
 \texttt{Advantage\_system4.1} measurements and answered the two
-hypotheses this design posed. (i) Fibonacci Enhanced holds its ground
-across the full range: mean RPD falls monotonically from 31.7\,\% at
-$n = 20$ to 15.0\,\% at $n = 200$, and the gap to classical fibonacci
-narrows from 20.4 to 4.6 percentage points at $n = 500$, where the
-quantum neighborhood matches the classical adjacent baseline (15.75
-vs.\ 15.36\,\%). (ii) The windowed decomposition's cost turned out to
-be structural rather than uniform: windowed dynasearch replicates or
-slightly beats its full QUBO at $n = 20$ while eliminating embedding
-failures, whereas windowed motzkin pays about 4\,pp --- a loss that
-grows with the time budget, because cross-window nesting is exactly
-what the full formulation converts additional iterations into. At
-$n = 50$, where no full $O(n^2)$ QUBO embeds at all, both windowed
-variants deliver working QPU moves within 3\,pp of fibonacci
-enhanced. The single-iteration regime, the anatomy of QPU call cost
-(Table~\ref{tab:qpu_anatomy}), and the stochasticity of embedding
-near the dense capacity bound are reported alongside the quality
-numbers because they define what a fair wall-clock comparison of
-quantum and classical neighborhood search can claim.
+hypotheses the design posed. Fibonacci Enhanced holds its ground
+across the full range, its gap to the classical baseline narrowing
+from 20.4\,pp at $n = 20$ to 4.6 at $n = 500$. The windowed
+decomposition's cost is structural, not uniform: it is near-free for
+dynasearch, whose conflicts are local, but grows with the budget for
+motzkin, whose strength is the cross-window nesting the windows cut.
+Throughout, the single-iteration regime, the QPU call-cost anatomy,
+and the stochasticity of embedding near the capacity bound are
+reported alongside the quality numbers because they define what a fair
+wall-clock comparison of quantum and classical neighborhood search can
+claim.
 
 \paragraph{Future work}
 Future work will pursue adaptive window sizing driven by per-window

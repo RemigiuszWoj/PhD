@@ -172,8 +172,10 @@ This paper addresses both restrictions directly. Two properties of the
 original formulations block scalability. The first is an unnecessary
 delta filter: the original implementation discarded swap candidates
 with non-negative makespan delta ($\delta_k \geq 0$) before QUBO
-assembly. That filter was a workaround for the classical simulator and
-is counterproductive on real QPU hardware --- the QPU assigns
+assembly. That filter was a workaround for the classical
+simulated-annealing sampler (dimod's \texttt{SimulatedAnnealingSampler})
+used to prototype the QUBOs, and is counterproductive on real QPU
+hardware --- the QPU assigns
 $x_k = 0$ to non-improving candidates on its own, while the filter
 discards information about the joint penalty structure that helps the
 annealer avoid degenerate solutions. For Adjacent and Fibonacci, whose
@@ -274,9 +276,10 @@ neighborhood is the only component that varies.
 \emph{Iterated Local Search} (ILS)~\citep{lourenco2003iterated} runs
 with a tabu list~\citep{glover1989} of tenure $\tau = 10$ and an
 aspiration criterion that accepts a tabu move if it strictly improves
-the global best $C_{\max}^*$, in the spirit of the fast taboo search
-that Nowicki and Smutnicki developed for the job
-shop~\citep{nowicki96ms}.
+the incumbent best $C_{\max}^*$ (the lowest makespan the search has
+reached so far, as opposed to the external reference optimum $C^*$ of
+Eq.~\eqref{eq:rpd}), in the spirit of the fast taboo search that
+Nowicki and Smutnicki developed for the job shop~\citep{nowicki96ms}.
 When no non-tabu move is available and aspiration is not met, the
 search diversifies via the BackTrackJumpList mechanism described in
 Section~\ref{sec:btjl}.

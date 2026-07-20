@@ -716,51 +716,42 @@ Motzkin     & 2.64 &  3.25 & 10.21 & 10.68 & 21.46 & 21.73 \\
 \end{table}
 
 \paragraph{Porównanie przy $n=20$}
-Tabele~\ref{tab:rpd_n20} i~\ref{tab:rpd_n20_full} raportują baseline
-klasyczny dla wszystkich trzech liczb maszyn Taillarda. Dynasearch
-i motzkin prowadzą nad adjacent i fibonaccim przy każdym $m$,
-a przewaga rośnie z $m$: 0.7--1.2 punktu procentowego przy $m=5$,
-1.2--1.4 punktu przy $m=20$. Luka SA do ILS też zależy od sąsiedztwa.
-SA adjacent i fibonacci tracą do ILS 7--10 pp przy $m=5$, ponieważ
-oraculum najlepszego ruchu nad rzadkim sąsiedztwem więzi SA w wąskich
-basenach, które reheat-kick z Sekcji~\ref{sec:sa-kick} rozwiązuje
-tylko częściowo. SA dynasearch i motzkin siedzą w granicach 0.7 pp od
-ILS przy $m=5$ i w granicach 0.6 pp przy $m=20$; bogatsze sąsiedztwa
-dostarczają dość ścieżek ucieczki, by SA dorównało ILS w budżecie
-10 s.
+W baseline klasycznym (Tabele~\ref{tab:rpd_n20},
+\ref{tab:rpd_n20_full}) dynasearch i motzkin prowadzą nad adjacent
+i fibonaccim przy każdym $m$, a przewaga rośnie z $m$ (0.7--1.2 pp
+przy $m=5$, 1.2--1.4 przy $m=20$). Luka SA do ILS zależy od
+sąsiedztwa: SA adjacent i fibonacci tracą 7--10 pp przy $m=5$,
+ponieważ oraculum najlepszego ruchu nad rzadkim sąsiedztwem więzi SA
+w wąskich basenach, które reheat-kick rozwiązuje tylko częściowo,
+podczas gdy SA dynasearch i motzkin zostają w granicach 0.7 pp od ILS
+--- ich bogatsze zbiory ruchów dostarczają dość ścieżek ucieczki.
 
 \paragraph{Quantum QUBO na QPU przy $n=20$}
-Wiersze quantum QUBO Tabeli~\ref{tab:rpd_n20} to pierwsze pomiary QPU
-wykonane w oprzyrządowanym protokole: każdy run rejestruje własną
-liczbę iteracji, więc reżim porównania jest jawny, a nie wnioskowany.
-Przy $t_{\max}=1000$ ms każdy run kwantowy kończy dokładnie jedną
-iterację metaheurystyczną --- jeden wybrany przez QPU ruch złożony
-zaaplikowany do rozwiązania początkowego --- ponieważ pojedyncze
+Każdy run kwantowy rejestruje własną liczbę iteracji, więc reżim
+porównania jest jawny. Przy $t_{\max}=1000$ ms każdy run kończy
+dokładnie jedną iterację metaheurystyczną --- jeden wybrany przez QPU
+ruch złożony na rozwiązaniu początkowym --- ponieważ pojedyncze
 wywołanie kosztuje około 2.1 s czasu ściennego dla adjacent
-i fibonacciego, a więcej dla pozostałych.
+i fibonacciego, więcej dla pozostałych. W tym reżimie ranking odwraca
+się względem wierszy klasycznych: motzkin prowadzi z 21.7\%, potem
+fibonacci (23.8\%), adjacent (25.1\%) i dynasearch (26.9\%) --- gdy
+jeden ruch to wszystko, na co pozwala budżet, wygrywa najbogatszy
+dopuszczalny zbiór ruchów, a niekrzyżujące łuki motzkina są
+najbogatsze z czterech. Jakość podąża wtedy za liczbą iteracji
+(Rys.~\ref{fig:qpu_conv_n20}): przy $t_{\max}=5000$ ms adjacent
+i fibonacci mieszczą trzy iteracje i poprawiają się o 2.8 i 3.7 pp
+(fibonacci do 19.9\%, motzkin do 19.5\%), podczas gdy dynasearch
+zostaje na jednej iteracji i rusza się o pół punktu.
+Tabela~\ref{tab:rpd_n20_tl} daje to samo porównanie per budżet bez
+poolingu ILS/SA: płaskie wiersze enhanced poniżej 1000 ms to ten reżim
+jednej iteracji.
 
-Dwie obserwacje przeżywają ten reżim. Po pierwsze, ranking odwraca się
-względem wierszy klasycznych: motzkin prowadzi z 21.7\%, potem
-fibonacci (23.8\%), adjacent (25.1\%) i dynasearch (26.9\%). Gdy jeden
-ruch to wszystko, na co pozwala budżet, wygrywa najbogatszy
-dopuszczalny zbiór ruchów, a niekrzyżujące się konfiguracje łuków
-motzkina są najbogatsze z czterech. Po drugie, jakość podąża za liczbą
-iteracji. Rysunek~\ref{fig:qpu_conv_n20} pokazuje efekt: przy
-$t_{\max}=5000$ ms adjacent i fibonacci mieszczą trzy iteracje na run
-i poprawiają się o 2.8 i 3.7 pp, lądując fibonaccim na 19.9\%,
-a motzkinem na 19.5\%. Dynasearch zostaje na jednej iteracji i rusza
-się o pół punktu. Tabela~\ref{tab:rpd_n20_tl} tabelaryzuje to samo
-porównanie dla każdego testowanego budżetu bez poolingu ILS/SA;
-płaskie wiersze enhanced między 100 a 1000 ms to reżim jednej
-iteracji uwidoczniony w tabeli zamiast na krzywej.
-
-Dynasearch obnaża też granicę pojemności embeddingu. Bez filtra delty
-jego QUBO niesie około 190 gęsto sprzężonych zmiennych i 4 z 200
-runów nie znalazły embeddingu na topologii Pegasus. Motzkin,
-z podobną liczbą zmiennych, ale rzadszym grafem konfliktów ---
-zagnieżdżanie jest dozwolone, więc mniej krawędzi kar --- embedował
-się za każdym razem. Wykonalność QPU rządzi się gęstością grafu
-konfliktów, nie samą liczbą zmiennych.
+Dynasearch obnaża też granicę embeddingu: jego niefiltrowane QUBO
+niesie około 190 gęsto sprzężonych zmiennych i 4 z 200 runów nie
+znalazły embeddingu, podczas gdy motzkin --- ta sama liczba zmiennych,
+ale rzadszy graf konfliktów, bo zagnieżdżanie nie dokłada krawędzi kar
+--- embedował się za każdym razem. Wykonalność QPU rządzi się
+gęstością grafu konfliktów, nie samą liczbą zmiennych.
 
 \begin{figure}[h]
 \centering
@@ -984,17 +975,13 @@ $n=200$ dość czasu ściennego, że ILS kończy mniej pełnych skanów
 i akumuluje mniej popraw w budżecie. Ewaluacja $O(n)$ fibonacciego
 tego problemu nie ma.
 
-Motzkin wypada gorzej. Tracił do dynasearcha 0.2 pp przy $n=20$,
-8.1 pp przy $n=50$, a przy $n=100$ siedzi na 14.21\%, ostatni wśród
-czterech klasycznych sąsiedztw. DP selekcji łuków $O(n^3)$ jest po
-prostu droższe na wywołanie niż DP dynasearcha $O(n^2)$, co oznacza
-mniej iteracji ILS w każdym stałym budżecie czasowym.
-
-Crossover siedzi między $n=100$ a $n=200$. Dynasearch jest
-konkurencyjny do mniej więcej $n=100$; fibonacci jest właściwym
-klasycznym baseline'em powyżej. Przy $n=500$ fibonacci osiąga
-11.12\%, podczas gdy adjacent siedzi na 15.36\% (ILS, $m=20$,
-$t_{\max}=5$ s), co potwierdza trend.
+Motzkin wypada jeszcze gorzej, od deficytu 0.2 pp do dynasearcha przy
+$n=20$ do ostatniego miejsca przy $n=100$ (14.21\%): jego DP selekcji
+łuków $O(n^3)$ jest droższe na wywołanie niż $O(n^2)$ dynasearcha,
+więc ILS robi mniej iteracji. Klasyczny crossover siedzi zatem między
+$n=100$ a $n=200$ --- dynasearch konkurencyjny do $n=100$, fibonacci
+właściwym baseline'em powyżej, osiągając 11.12\% wobec 15.36\%
+adjacenta przy $n=500$.
 
 Przy $n=500$ zarówno dynasearchowi, jak i motzkinowi kończy się
 miejsce. Pojedyncze wywołanie DP dynasearcha (nad
@@ -1003,25 +990,13 @@ selekcji łuków motzkina $O(n^3)$ zajmuje około 30 s. Oba przekraczają
 każdy testowany budżet, więc ILS i SA kończą dokładnie jedną iterację
 lokalnego przeszukiwania na run i zwracają identyczne rozwiązania.
 Dynasearch ląduje na 14.53\% (zakres 13.30--16.05), motzkin na
-16.26\% (zakres 13.00--18.40).
-
-Te dwa wpisy należy czytać z zastrzeżeniem. Nie są porównaniem
-jak-za-jak z adjacent czy fibonaccim, które użyły pełnego budżetu na
-tysiące iteracji. Dynasearch i motzkin miały czas na pojedynczy krok
-lokalnego przeszukiwania. Raportujemy je, by udokumentować granicę
-skalowania, a nie by twierdzić, że jedno sąsiedztwo bije drugie przy
-$n=500$.
-
-W porównaniu z sąsiedztwami iteracyjnymi przy tym samym budżecie
-pojedyncze wywołanie dynasearcha wciąż bije adjacent (15.36\%), który
-miał do dyspozycji tysiące iteracji. Jedno wywołanie dynasearcha
-wybiera niemal optymalny zbiór nienakładających się swapów i aplikuje
-je naraz; adjacent aplikuje jeden swap na iterację, a zyski
-per-iteracja szybko maleją. Jedno wywołanie motzkina daje mniejszy
-ruch (zagnieżdżone niekrzyżujące łuki są bardziej ograniczone niż
-nienakładające się przedziały), dlatego ląduje za dynasearchem
-i adjacentem. Struktura ruchu znaczy w tej skali więcej niż liczba
-ruchów, o ile sam ruch niesie dość swapów.
+16.26\% (zakres 13.00--18.40); dokumentują one granicę skalowania,
+a nie uczciwe porównanie bezpośrednie (podpis tabeli). Mimo to
+pojedyncze wywołanie dynasearcha wciąż bije tysiące iteracji adjacenta
+(15.36\%): jedno wywołanie wybiera niemal optymalny zbiór
+nienakładających się swapów i aplikuje je naraz, podczas gdy zyski
+per-iteracja adjacenta szybko maleją. W tej skali struktura ruchu
+znaczy więcej niż liczba ruchów, o ile ruch niesie dość swapów.
 
 Okienkowane warianty dynasearcha i motzkina zatrzymują się na
 $n=50$, gdzie lądują w granicach 0.4 pp od siebie (26.37 i 26.03\%)
@@ -1038,24 +1013,18 @@ jest jedynym kwantowym sąsiedztwem, które wciąż skaluje się bez
 obcięć.
 
 \paragraph{Jakość dekompozycji okienkowej}
-Podejście okienkowe wprowadza ograniczone przybliżenie: pary swapów
-przecinające granice okien nigdy nie są ewaluowane. Strata jest
-zmierzona przy $n=20$, największym rozmiarze, przy którym pełne QUBO
-jeszcze się embeduje (Tabela~\ref{tab:rpd_n20},
-Rys.~\ref{fig:qpu_conv_n20}): bliska zera dla dynasearcha, około
-4 pp i kumulująca się z budżetem dla motzkina. Wszystkie runy
-okienkowane używają współczynnika nakładania $\rho=0.5$; większy
-overlap redukowałby artefakty granic kosztem większej liczby
-submisji QPU na iterację, a czułość na $\rho$ pozostaje niezbadana.
+Przybliżenie wprowadzane przez okienkowanie --- pary swapów
+przecinające granice okien nigdy nie są ewaluowane --- jest tym, co
+kwantyfikuje powyższa strata przy $n=20$. Wszystkie runy używają
+współczynnika nakładania $\rho=0.5$; większy overlap redukowałby
+artefakty granic kosztem większej liczby submisji QPU na iterację,
+a czułość na $\rho$ pozostaje niezbadana.
 
 \paragraph{Wkład BackTrackJumpList}
-Dywersyfikacja ILS używa BackTrackJumpListy w całym studium: ruch
-double-bridge gwarantuje przemieszczenie z bieżącego basenu, a wybór
-round-robin zapobiega degeneracji puli w wielokrotne perturbacje
-pojedynczego globalnego najlepszego. Kontrolowana ablacja na
-sąsiedztwach klasycznych (3600 parowanych runów: oba ramiona przy
-$n=20$, $m\in\{5,10,20\}$, $t_{\max}\in\{1,5,10\}$ s, 10 instancji
-$\times$ 5 seedów) potwierdza konstrukcję. ILS z BackTrackJumpList
+Kontrolowana ablacja na sąsiedztwach klasycznych (3600 parowanych
+runów: oba ramiona przy $n=20$, $m\in\{5,10,20\}$,
+$t_{\max}\in\{1,5,10\}$ s, 10 instancji $\times$ 5 seedów) izoluje
+efekt elitarnej puli. ILS z BackTrackJumpList
 bije ILS z jednostajnym restartem losowym w każdej komórce
 liczba-maszyn/budżet, o 1.1--2.6 pp średniego RPD (Wilcoxon,
 $p<10^{-17}$ na komórkę). Margines podąża za bogactwem sąsiedztwa
@@ -1065,56 +1034,28 @@ dywersyfikacji przy ucieczce z wąskich basenów, zyskują 4.1 pp
 których ruchy złożone dostarczają własnych ścieżek ucieczki --- wciąż
 zyskują małe, lecz istotne 0.4 i 0.3 pp ($p<10^{-19}$).
 
-\paragraph{Analiza przepustowości}
-Wydajność sąsiedztwa kwantowego w stałym budżecie czasowym zależy
-krytycznie od liczby ewaluacji QUBO na sekundę. Formulacje enhanced
-submitują wiele wywołań QUBO na iterację (jedno na okno dla
-Dynasearch/Motzkin Enhanced), podczas gdy formulacje oryginalne
-submitują pojedyncze wywołanie. Kompromis między zwiększonym
-pokryciem sąsiedztwa a wyższą latencją QPU na iterację widać wprost
-w Tabeli~\ref{tab:qpu_anatomy} i licznikach iteracji
-z Rys.~\ref{fig:qpu_conv_n20}: wywołanie okienkowane mnoży 30 ms
-rozliczanego dostępu przez liczbę okien, podczas gdy jego koszt
-ścienny pozostaje zdominowany przez szukanie embeddingu i kolejkę.
-
 \section{Wnioski}
 
 Klasa quantum QUBO enhanced łamie barierę $n=20$ dla przeszukiwania
 PFSP opartego na wyżarzaniu kwantowym dwiema zmianami: usunięciem
 filtra delty dla sąsiedztw o liniowej liczbie zmiennych
-i zastosowaniem dekompozycji okienkowej dla kwadratowych.
-Akcelerator własności blokowych Smutnickiego, współdzielony przez
-wszystkie dwanaście sąsiedztw, tnie liczbę zmiennych QUBO o 30--60\%
-przed submisją, co wprost obniża długość łańcuchów embeddingu
-i prawdopodobieństwo ich zerwań. BackTrackJumpList zastępuje
-jednostajne restarty losowe w ILS perturbacjami double-bridge $k=10$
-najlepszych widzianych rozwiązań --- zmiana konstrukcyjna, która nie
-kosztuje nic w czasie działania i bije jednostajny restart losowy
-w każdej komórce 3600-runowej parowanej ablacji (1.1--2.6 pp
-średniego RPD, $p<10^{-17}$).
+i zastosowaniem dekompozycji okienkowej dla kwadratowych, przy czym
+akcelerator Smutnickiego tnie liczbę zmiennych o 30--60\%,
+a BackTrackJumpList zastępuje restarty losowe w ILS.
 
 Kampanie QPU z lipca 2026 wypełniły każdą traktowalną komórkę
 Tabel~\ref{tab:rpd_n20} i~\ref{tab:rpd_scaling} realnymi pomiarami
 \texttt{Advantage\_system4.1} i odpowiedziały na dwie hipotezy, które
-ta konstrukcja postawiła. (i) Fibonacci Enhanced trzyma poziom
-w całym zakresie: średni RPD spada monotonicznie z 31.7\% przy
-$n=20$ do 15.0\% przy $n=200$, a luka do klasycznego fibonacciego
-zwęża się z 20.4 do 4.6 punktu procentowego przy $n=500$, gdzie
-sąsiedztwo kwantowe dorównuje klasycznemu baseline'owi adjacent
-(15.75 vs 15.36\%). (ii) Koszt dekompozycji okienkowej okazał się
-strukturalny, a nie jednolity: okienkowany dynasearch replikuje lub
-lekko bije swoje pełne QUBO przy $n=20$, eliminując przy tym porażki
-embeddingu, podczas gdy okienkowany motzkin płaci około 4 pp ---
-stratę rosnącą z budżetem czasowym, ponieważ zagnieżdżanie
-międzyokienne jest dokładnie tym, w co pełna formulacja zamienia
-dodatkowe iteracje. Przy $n=50$, gdzie żadne pełne QUBO $O(n^2)$
-w ogóle się nie embeduje, oba okienkowane warianty dostarczają
-działające ruchy QPU w granicach 3 pp od fibonacciego enhanced.
-Reżim pojedynczej iteracji, anatomia kosztu wywołania QPU
-(Tabela~\ref{tab:qpu_anatomy}) i stochastyczność embeddingu przy
-granicy gęstej pojemności są raportowane obok liczb jakości,
-ponieważ definiują, co uczciwe porównanie ścienne kwantowego
-i klasycznego przeszukiwania sąsiedztwa może twierdzić.
+ta konstrukcja postawiła. Fibonacci Enhanced trzyma poziom w całym
+zakresie, a jego luka do klasycznego baseline'u zwęża się z 20.4 pp
+przy $n=20$ do 4.6 przy $n=500$. Koszt dekompozycji okienkowej jest
+strukturalny, nie jednolity: bliski darmowego dla dynasearcha, którego
+konflikty są lokalne, ale rosnący z budżetem dla motzkina, którego
+siłą jest międzyokienne zagnieżdżanie, cięte przez okna. W całym
+studium reżim pojedynczej iteracji, anatomia kosztu wywołania QPU
+i stochastyczność embeddingu przy granicy pojemności są raportowane
+obok liczb jakości, ponieważ definiują, co uczciwe porównanie ścienne
+kwantowego i klasycznego przeszukiwania sąsiedztwa może twierdzić.
 
 \paragraph{Dalsze prace}
 Dalsze prace będą dążyć do adaptacyjnego doboru rozmiaru okien

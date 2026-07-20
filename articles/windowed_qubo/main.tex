@@ -172,11 +172,11 @@ This paper addresses both restrictions directly. Two properties of the
 original formulations block scalability. The first is an unnecessary
 delta filter: the original implementation discarded swap candidates
 with non-negative makespan delta ($\delta_k \geq 0$) before QUBO
-assembly. That filter was a workaround for the classical
+assembly. That filter was a variable-count reduction for the classical
 simulated-annealing sampler (dimod's \texttt{SimulatedAnnealingSampler})
-used to prototype the QUBOs, and is counterproductive on real QPU
-hardware --- the QPU assigns
-$x_k = 0$ to non-improving candidates on its own, while the filter
+used to prototype the QUBOs --- harmless to that solver's optimum, but
+counterproductive on real QPU hardware, where the QPU assigns
+$x_k = 0$ to non-improving candidates on its own while the filter
 discards information about the joint penalty structure that helps the
 annealer avoid degenerate solutions. For Adjacent and Fibonacci, whose
 variable count is $K = n - 1$ regardless of filtering, removing it
@@ -1025,8 +1025,8 @@ takes about 200\,s; motzkin's $O(n^3)$ arc-selection DP takes about
 exactly one local-search iteration per run and return identical
 solutions. Dynasearch ends up at 14.53\,\% (range $13.30$--$16.05$),
 motzkin at 16.26\,\% (range $13.00$--$18.40$); these document the
-scaling boundary rather than a fair head-to-head (Table caption).
-Even so, dynasearch's single call still beats adjacent's thousands of
+scaling boundary rather than a fair head-to-head. Even so,
+dynasearch's single call still beats adjacent's thousands of
 iterations (15.36\,\%): one call picks a near-optimal set of
 non-overlapping swaps and applies them at once, whereas adjacent's
 per-iteration gains shrink fast. At this scale the move structure

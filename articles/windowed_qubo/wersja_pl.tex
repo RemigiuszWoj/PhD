@@ -151,12 +151,14 @@ Pegasus P16 z 5627 aktywnymi kubitami).
 Ten artykuł adresuje oba ograniczenia wprost. Skalowalność blokują dwie
 własności pierwotnych formulacji. Pierwszą jest zbędny filtr delty:
 pierwotna implementacja odrzucała kandydatów swapów z nieujemną deltą
-makespanu ($\delta_k\ge0$) przed montażem QUBO. Ten filtr był obejściem
-pod klasyczny symulator wyżarzania (dimod \texttt{SimulatedAnnealingSampler})
-używany do prototypowania QUBO i jest przeciwskuteczny na realnym QPU
---- QPU samo przypisuje $x_k=0$ kandydatom niepoprawiającym, podczas gdy filtr
-odrzuca informację o łącznej strukturze kar, która pomaga annealerowi
-unikać rozwiązań zdegenerowanych. Dla Adjacent i Fibonacciego, których
+makespanu ($\delta_k\ge0$) przed montażem QUBO. Ten filtr był redukcją
+liczby zmiennych dla klasycznego symulatora wyżarzania (dimod
+\texttt{SimulatedAnnealingSampler}) używanego do prototypowania QUBO
+--- nieszkodliwą dla optimum tego solvera, ale przeciwskuteczną na
+realnym QPU, gdzie QPU samo przypisuje $x_k=0$ kandydatom
+niepoprawiającym, podczas gdy filtr odrzuca informację o łącznej
+strukturze kar, która pomaga annealerowi unikać rozwiązań
+zdegenerowanych. Dla Adjacent i Fibonacciego, których
 liczba zmiennych wynosi $K=n-1$ niezależnie od filtrowania, usunięcie go
 nie kosztuje nic w narzucie embeddingu. Drugim blokerem jest sufit
 liczby zmiennych sąsiedztw $O(n^2)$: Dynasearch i Motzkin przekraczają
@@ -991,7 +993,7 @@ każdy testowany budżet, więc ILS i SA kończą dokładnie jedną iterację
 lokalnego przeszukiwania na run i zwracają identyczne rozwiązania.
 Dynasearch ląduje na 14.53\% (zakres 13.30--16.05), motzkin na
 16.26\% (zakres 13.00--18.40); dokumentują one granicę skalowania,
-a nie uczciwe porównanie bezpośrednie (podpis tabeli). Mimo to
+a nie uczciwe porównanie bezpośrednie. Mimo to
 pojedyncze wywołanie dynasearcha wciąż bije tysiące iteracji adjacenta
 (15.36\%): jedno wywołanie wybiera niemal optymalny zbiór
 nienakładających się swapów i aplikuje je naraz, podczas gdy zyski

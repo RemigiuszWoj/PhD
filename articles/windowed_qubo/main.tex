@@ -11,9 +11,14 @@
 \usepackage{enumitem}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
+\usepackage{microtype}
 \biboptions{authoryear,round}
 \setlist{nosep}
-\providecommand{\doi}[1]{\href{https://doi.org/#1}{\texttt{doi:#1}}}
+% Underscore-safe DOI (detokenize protects `_' in typewriter text).
+\providecommand{\doi}[1]{\href{https://doi.org/#1}{\texttt{doi:\detokenize{#1}}}}
+% Absorb residual overfull boxes from long \texttt{} tokens across TeX
+% Live versions (e.g. Overleaf) without visibly loosening spacing.
+\emergencystretch=3em
 
 \hypersetup{colorlinks=true, linkcolor=blue!60!black,
             citecolor=blue!60!black, urlcolor=blue!60!black}

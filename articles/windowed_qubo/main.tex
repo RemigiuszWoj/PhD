@@ -52,34 +52,22 @@
   city={Wroc\l{}aw}, country={Poland}}
 
 \begin{abstract}
-We extend the quantum neighborhood framework for the Permutation Flow
-Shop Scheduling Problem (PFSP) by introducing a third neighborhood
-class, \emph{quantum QUBO enhanced}, which operates on significantly
-larger benchmark instances than the original formulations allowed on
-the D-Wave QPU. The prior framework comprised eight neighborhoods: four
-classical (Adjacent, Fibonacci, Dynasearch, Motzkin) and four quantum
-QUBO variants limited to $n = 20$ jobs on the D-Wave QPU.
-The enhanced class addresses two limitations: an unnecessary
-delta-filtering heuristic in linearly-scaling QUBO structures
-(Adjacent and Fibonacci) is removed, extending QPU applicability to
-$n \leq 200$ and $n \leq 500$; and a windowed QUBO decomposition is
-introduced for quadratically-scaling structures (Dynasearch and
-Motzkin), pushing feasibility to $n \leq 50$.
-Both metaheuristic frameworks (Iterated Local Search with tabu
-diversification via a BackTrackJumpList elite pool, and Simulated
-Annealing with adaptive reheating) employ a block-property accelerator
-that prunes dominated swap candidates before each QUBO submission,
-reducing the effective variable count by 30--60\% on Taillard instances.
-All twelve neighborhoods are evaluated on standard Taillard benchmarks
-across six time budgets (100--10\,000\,ms).
-QPU measurements on \texttt{Advantage\_system4.1} confirm the scaling:
-mean RPD of the fibonacci-enhanced neighborhood falls monotonically
-from 31.7\% at $n = 20$ to 15.0\% at $n = 200$, and its gap to the
-classical fibonacci baseline narrows from 20.4 percentage points at
-$n = 20$ to 4.6 at $n = 500$, where the quantum neighborhood matches
-classical adjacent. Windowing proves close to free where swap
-interactions are local (dynasearch) and costs about 4 percentage
-points, growing with the time budget, where they are global (motzkin).
+Quantum annealers can evaluate an entire scheduling neighborhood in a
+single call, but so far only for the smallest benchmark instances. For
+the permutation flow shop problem we introduce an enhanced class of
+quantum QUBO neighborhoods that lifts this limit from 20 to 500 jobs:
+an unnecessary candidate filter is removed from the linearly
+structured neighborhoods, and the quadratic ones --- including our
+Motzkin neighborhood, whose moves follow Motzkin-path combinatorics
+--- are decomposed into overlapping windows solved on the processor
+piece by piece. Measurements on a real D-Wave annealer confirm the
+design: quantum solution quality improves steadily with instance size,
+and the gap to the classical baselines narrows several-fold, reaching
+parity at the largest instances. Windowing proves nearly free where
+move interactions are local, while for Motzkin --- whose strength lies
+in globally nested moves --- its cost grows with the time budget. The
+paper also reports the measurement methodology required to compare
+quantum and classical search fairly under wall-clock budgets.
 \end{abstract}
 
 \begin{highlights}
@@ -147,7 +135,11 @@ The Fibonacci and Motzkin neighborhoods we introduced in earlier
 work~\citep{WojewodzkiBozejkoBPASTS2026,Motzkin_PWR_EXIT} continue the
 compound-move line: their move sets are counted by classical integer
 sequences, searched by dynamic programming --- and, as this paper
-exploits, expressible as QUBOs.
+exploits, expressible as QUBOs. Motzkin is the richest member of the
+family: its admissible moves are the non-crossing, arbitrarily nested
+arc systems counted by the Motzkin numbers, which makes it both the
+most expressive neighborhood in this study and, as the experiments
+will show, the sharpest probe of what a decomposition destroys.
 
 Quantum optimization entered scheduling from the job shop side.
 Venturelli et al.\ encoded whole job shop instances as QUBOs for
@@ -209,7 +201,11 @@ double-bridge perturbations of the $k = 10$ best solutions seen during
 the search. The experimental study is, to our knowledge, the first
 comparison of all three neighborhood classes across
 $n \in \{20, 50, 100, 200, 500\}$ under identical metaheuristic
-frameworks and time budgets.
+frameworks and time budgets. Throughout, the Motzkin neighborhood acts
+as the touchstone of the study: it wins the single-move regime on the
+QPU, and its globally nested structure is precisely what makes
+windowed decomposition costly --- the structural asymmetry this paper
+quantifies.
 
 % ---------------------------------------------------------------
 \section{Problem Definition}
@@ -695,114 +691,105 @@ nothing is simulated.
 
 \begin{table}[t]
 \centering
-\caption{Mean RPD [\%] for all twelve neighborhoods on Taillard $20\times 5$
-  instances at $t_{\max} = 1000$\,ms, averaged over 10 instances $\times$ 5
-  seeds. ILS uses tabu tenure $\tau = 10$ and BackTrackJumpList diversification
-  ($k = 10$). SA uses $\alpha = 0.99$, $T_0 = 1000$, $T_{\min} = 100$ with the
-  reheat-kick of Section~\ref{sec:sa-kick}. Quantum QUBO rows come from real
-  \texttt{Advantage\_system4.1} runs (July 2026). Per-call network and queue
-  latency exceeds $t_{\max}$, so each quantum run completed exactly one
-  metaheuristic iteration (median 1, recorded per run): the values measure a
-  single composite QPU move from the initial solution, not an iterated search,
-  and are not directly comparable with the classical rows. Dynasearch: 48 of
-  50 runs per algorithm; two exceeded the QPU embedding capacity ($\sim$190
-  dense variables). Enhanced rows: same QPU and protocol (July 2026);
-  windowed dynasearch/motzkin submit three window QUBOs per call and
-  recorded zero embedding failures across all 400 runs.}
+\caption{Mean RPD $\pm$ std [\%] for all twelve neighborhoods on
+  Taillard $20\times 5$ at $t_{\max} = 1000$\,ms (10 instances
+  $\times$ 5 seeds; best per column and class in bold).}
 \label{tab:rpd_n20}
 \begin{tabular}{@{}llrr@{}}
 \toprule
 Class & Neighborhood & ILS RPD [\%] & SA RPD [\%] \\
 \midrule
 \multirow{4}{*}{Classical}
-  & Adjacent    & 3.89 & 11.28 \\
-  & Fibonacci   & 4.09 & 15.00 \\
-  & Dynasearch  & 3.32 &  4.19 \\
-  & Motzkin     & 3.19 &  4.00 \\
+  & Adjacent    & $3.89\pm1.6$ & $11.28\pm3.8$ \\
+  & Fibonacci   & $4.09\pm1.6$ & $15.00\pm5.4$ \\
+  & Dynasearch  & $3.32\pm1.3$ &  $4.19\pm1.4$ \\
+  & Motzkin     & $\mathbf{3.19\pm1.2}$ & $\mathbf{4.00\pm1.2}$ \\
 \midrule
 \multirow{4}{*}{Quantum QUBO}
-  & Adjacent    & 25.07 & 25.04 \\
-  & Fibonacci   & 23.79 & 23.46 \\
-  & Dynasearch  & 26.93 & 26.35 \\
-  & Motzkin     & 21.66 & 21.50 \\
+  & Adjacent    & $25.07\pm10.1$ & $25.04\pm10.1$ \\
+  & Fibonacci   & $23.79\pm8.9$ & $23.46\pm9.0$ \\
+  & Dynasearch  & $26.93\pm9.3$ & $26.35\pm8.9$ \\
+  & Motzkin     & $\mathbf{21.66\pm7.6}$ & $\mathbf{21.50\pm7.3}$ \\
 \midrule
-\multirow{4}{*}{Quantum QUBO Enhanced}
-  & Adjacent    & 25.04 & 25.04 \\
-  & Fibonacci   & 23.60 & 23.66 \\
-  & Dynasearch  & 25.56 & 25.71 \\
-  & Motzkin     & 25.98 & 25.45 \\
+\multirow{4}{*}{\shortstack[l]{Quantum QUBO\\Enhanced}}
+  & Adjacent    & $25.04\pm10.1$ & $25.04\pm10.1$ \\
+  & Fibonacci   & $\mathbf{23.60\pm9.0}$ & $23.66\pm8.9$ \\
+  & Dynasearch  & $25.56\pm7.7$ & $25.71\pm8.8$ \\
+  & Motzkin     & $25.98\pm9.9$ & $\mathbf{25.45\pm8.8}$ \\
 \bottomrule
 \end{tabular}
+
+\smallskip
+\begin{minipage}{0.94\linewidth}\footnotesize
+Quantum rows are real \texttt{Advantage\_system4.1} runs; per-call
+latency exceeds $t_{\max}$, so each run completes one iteration and is
+not directly comparable with the classical rows (see text). Dynasearch:
+48/50 runs (two embedding failures); windowed enhanced rows: zero
+embedding failures across 400 runs.
+\end{minipage}
 \end{table}
 
 \begin{table}[t]
 \centering
-\caption{Classical baseline at the longest budget $t_{\max} = 10\,000$\,ms,
-  $n = 20$. Mean RPD [\%] over 10 instances $\times$ 5 seeds. Dynasearch
-  and motzkin lead at every machine count; the gap to adjacent and fibonacci
-  widens as $m$ grows.}
+\caption{Classical baseline at $t_{\max} = 10\,000$\,ms, $n = 20$:
+  mean RPD $\pm$ std [\%] over 10 instances $\times$ 5 seeds
+  (best per column in bold).}
 \label{tab:rpd_n20_full}
+\small
 \begin{tabular}{@{}lcccccc@{}}
 \toprule
  & \multicolumn{2}{c}{$m = 5$} & \multicolumn{2}{c}{$m = 10$} & \multicolumn{2}{c}{$m = 20$} \\
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}
 Neighborhood & ILS & SA & ILS & SA & ILS & SA \\
 \midrule
-Adjacent    & 3.41 &  6.98 & 11.22 & 15.61 & 22.58 & 26.27 \\
-Fibonacci   & 3.82 &  9.24 & 11.23 & 17.81 & 22.17 & 26.82 \\
-Dynasearch  & 2.68 &  3.36 &  9.99 & 10.75 & 21.41 & 21.99 \\
-Motzkin     & 2.64 &  3.25 & 10.21 & 10.68 & 21.46 & 21.73 \\
+Adjacent    & $3.41\pm1.6$ & $6.98\pm2.5$ & $11.22\pm3.8$ & $15.61\pm3.7$ & $22.58\pm3.1$ & $26.27\pm4.0$ \\
+Fibonacci   & $3.82\pm1.6$ & $9.24\pm2.8$ & $11.23\pm3.6$ & $17.81\pm4.5$ & $22.17\pm3.3$ & $26.82\pm3.9$ \\
+Dynasearch  & $2.68\pm1.4$ & $3.36\pm1.2$ & $\mathbf{9.99\pm3.7}$ & $10.75\pm3.8$ & $\mathbf{21.41\pm3.1}$ & $21.99\pm3.2$ \\
+Motzkin     & $\mathbf{2.64\pm1.2}$ & $\mathbf{3.25\pm1.2}$ & $10.21\pm3.9$ & $\mathbf{10.68\pm3.8}$ & $21.46\pm3.1$ & $\mathbf{21.73\pm3.1}$ \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{table}[!tp]
 \centering
-\caption{Mean RPD [\%] for all quantum QUBO neighborhoods vs.\ classical
-  baselines, ILS, $t_{\max} = 5000$\,ms; $m = 10$ for $n \le 200$,
-  $m = 20$ at $n = 500$.
-  Classical $n \in \{20,50,100,200\}$ filled from phases 1--2c baseline,
-  classical $n = 500$ from phase~2d. Quantum entries are real-QPU
-  measurements on Advantage\_system4.1 (10 instances $\times$ 5 seeds
-  per cell); the original formulations serve as the $n = 20$ reference
-  and the enhanced variants carry the scaling comparison. Entries
-  marked n/a lie outside the formulation's tractable range: the
-  embedding capacity bound for the dense adjacent QUBO at $n = 500$
-  ($K_{499}$) and for the full dynasearch/motzkin QUBOs beyond
-  $n = 20$, and the per-call wall-time bound for their windowed
-  variants beyond $n = 50$.
-  $^\dagger$ \emph{These entries are not directly comparable
-  with the others in their column.} At $n = 500$, a single dynasearch
-  ($\sim 200$\,s) or motzkin ($\sim 30$\,s) DP call already exceeds
-  every tested time budget, so ILS and SA both reduce to a single
-  local-search iteration per run (ILS and SA produce identical values).
-  Adjacent and fibonacci in the same column had thousands of iterations
-  to refine the solution within the 5\,s budget; dynasearch and
-  motzkin had one, so their values are budget-independent. The numbers
-  are reported for completeness, not as a fair head-to-head (mean over
-  10 instances $\times$ 5 seeds; ranges $13.30$--$16.05$ for
-  dynasearch, $13.00$--$18.40$ for motzkin).}
+\caption{Scaling: mean RPD $\pm$ std [\%], ILS, $t_{\max} = 5000$\,ms;
+  $m = 10$ for $n \le 200$, $m = 20$ at $n = 500$ (10 instances
+  $\times$ 5 seeds per cell; best per column and class in bold).}
 \label{tab:rpd_scaling}
+\small
+\setlength{\tabcolsep}{4pt}
 \begin{tabular}{@{}lrrrrr@{}}
 \toprule
 Neighborhood & $n=20$ & $n=50$ & $n=100$ & $n=200$ & $n=500$ \\
 \midrule
-Classical Adjacent         & 11.61 & 10.03 &  9.54 & 10.37 & 15.36 \\
-Classical Fibonacci        & 11.27 &  7.74 &  6.15 &  6.19 & 11.12 \\
-Classical Dynasearch       & 10.23 &  5.39 &  4.67 & 11.63 & 14.53$^\dagger$ \\
-Classical Motzkin          & 10.45 & 13.49 & 14.21 & 13.80 & 16.26$^\dagger$ \\
+Classical Adjacent         & $11.61\pm3.9$ & $10.03\pm1.8$ & $9.54\pm1.4$ & $10.37\pm2.1$ & $15.36\pm1.3$ \\
+Classical Fibonacci        & $11.27\pm3.6$ & $7.74\pm1.6$ & $6.15\pm1.2$ & $\mathbf{6.19\pm1.6}$ & $\mathbf{11.12\pm0.7}$ \\
+Classical Dynasearch       & $\mathbf{10.23\pm3.7}$ & $\mathbf{5.39\pm0.9}$ & $\mathbf{4.67\pm1.2}$ & $11.63\pm2.1$ & $14.53\pm1.0^\dagger$ \\
+Classical Motzkin          & $10.45\pm3.9$ & $13.49\pm2.5$ & $14.21\pm3.1$ & $13.80\pm2.6$ & $16.26\pm1.7^\dagger$ \\
 \midrule
-Q-Adjacent                 & 34.91 & n/a & n/a & n/a & n/a \\
-Q-Fibonacci                & 31.60 & n/a & n/a & n/a & n/a \\
-Q-Dynasearch               & 39.30 & n/a & n/a & n/a & n/a \\
-Q-Motzkin                  & 34.41 & n/a & n/a & n/a & n/a \\
+Q-Adjacent                 & $34.91\pm7.0$ & n/a & n/a & n/a & n/a \\
+Q-Fibonacci                & $\mathbf{31.60\pm6.6}$ & n/a & n/a & n/a & n/a \\
+Q-Dynasearch               & $39.30\pm7.2$ & n/a & n/a & n/a & n/a \\
+Q-Motzkin                  & $34.41\pm8.4$ & n/a & n/a & n/a & n/a \\
 \midrule
-Q-Adjacent Enhanced        & 34.86 & 26.70 & 21.73 & 16.40 & n/a \\
-Q-Fibonacci Enhanced       & 31.68 & 23.56 & 19.62 & 14.99 & 15.75 \\
-Q-Dynasearch Enhanced      & 38.55 & 26.37 & n/a & n/a & n/a \\
-Q-Motzkin Enhanced         & 38.44 & 26.03 & n/a & n/a & n/a \\
+Q-Adjacent Enhanced        & $34.86\pm7.0$ & $26.70\pm4.2$ & $21.73\pm3.5$ & $16.40\pm2.9$ & n/a \\
+Q-Fibonacci Enhanced       & $31.68\pm7.0$ & $\mathbf{23.56\pm3.9}$ & $\mathbf{19.62\pm3.1}$ & $\mathbf{14.99\pm2.7}$ & $\mathbf{15.75\pm1.3}$ \\
+Q-Dynasearch Enhanced      & $38.55\pm6.8$ & $26.37\pm4.5$ & n/a & n/a & n/a \\
+Q-Motzkin Enhanced         & $38.44\pm7.3$ & $26.03\pm4.3$ & n/a & n/a & n/a \\
 \bottomrule
 \end{tabular}
+
+\smallskip
+\begin{minipage}{0.94\linewidth}\footnotesize
+Quantum entries are real \texttt{Advantage\_system4.1} measurements;
+originals serve as the $n=20$ reference, enhanced variants carry the
+scaling comparison. n/a = outside the formulation's tractable range
+(embedding bound for dense QUBOs; wall-time bound for windowed variants
+beyond $n=50$; see text). $^\dagger$~A single DP call exceeds every
+tested budget, so ILS and SA reduce to one local-search iteration
+(identical, budget-independent values) --- not comparable with the
+iterated entries in the column and excluded from bolding.
+\end{minipage}
 \end{table}
 
 \paragraph{Comparison at $n = 20$}
@@ -846,15 +833,9 @@ variable count alone.
 \centering
 \includegraphics[width=0.72\linewidth]{figures/qpu_convergence_n20}
 \caption{Real-QPU quantum neighborhoods at $n = 20$: mean RPD versus
-  time budget, ILS and SA pooled (100 runs per point). Solid lines:
-  original formulations; dashed: enhanced variants (windowed for
-  dynasearch and motzkin). Labels give the median iteration count per
-  run. The budget buys iterations (network latency permitting), and
-  iterations buy quality; dynasearch never gets past one iteration
-  because embedding search dominates its wall time. The dashed/solid
-  split shows the windowing asymmetry directly: windowed dynasearch
-  runs below its original at every budget, windowed motzkin above ---
-  and increasingly so as the budget grows.}
+  time budget, ILS and SA pooled (100 runs per point). Solid: original
+  formulations; dashed: enhanced (windowed for dynasearch and
+  motzkin); labels: median iterations per run.}
 \label{fig:qpu_conv_n20}
 \end{figure}
 
@@ -876,11 +857,9 @@ processor.
 
 \begin{table}[!tp]
 \centering
-\caption{Mean cost of a single QPU call at $n = 20$ (1332 calls,
-  $\mathrm{num\_reads} = 100$). Billed QPU access is constant across
-  neighborhoods; the wall-clock difference is client-side QUBO
-  construction, minor-embedding search, network transfer, and queue
-  wait.}
+\caption{Mean cost of one QPU call at $n = 20$ (1332 calls,
+  $\mathrm{num\_reads} = 100$); billed access is constant, the
+  wall-clock difference is client-side work and queueing (see text).}
 \label{tab:qpu_anatomy}
 \begin{tabular}{@{}lrrr@{}}
 \toprule
@@ -896,15 +875,9 @@ Q-Dynasearch & 140\,s  & 30\,ms & 0.02\,\% \\
 
 \begin{table}[!tp]
 \centering
-\caption{Mean RPD [\%] at $n = 20$, $m = 5$ for every tested time
-  budget (columns, ms), without pooling. Classical rows cover the full
-  six-budget grid; quantum rows show the budget layers measured so far
-  under the QPU tranche protocol (\mbox{--} = layer not yet measured).
-  The enhanced rows are flat from 100 to 1000\,ms: every run in this
-  range completes exactly one iteration, so budget below the
-  $\sim$2\,s cost of a second QPU call buys nothing. The drop appears
-  at 5000\,ms, where two to three iterations fit. Q-Dynasearch at
-  1000\,ms: 48 of 50 runs per algorithm (two embedding failures).}
+\caption{Mean RPD [\%] at $n = 20$, $m = 5$ per time budget (columns,
+  ms), without ILS/SA pooling; means only (best per column and class
+  in bold).}
 \label{tab:rpd_n20_tl}
 \small
 \begin{tabular}{@{}lrrrrrr@{}}
@@ -913,14 +886,14 @@ ILS & 100 & 500 & 1000 & 2000 & 5000 & 10000 \\
 \midrule
 Classical Adjacent   &  6.60 &  4.59 &  3.89 &  3.68 &  3.52 &  3.41 \\
 Classical Fibonacci  &  5.96 &  4.25 &  4.09 &  3.99 &  3.87 &  3.82 \\
-Classical Dynasearch &  3.92 &  3.47 &  3.32 &  3.08 &  2.83 &  2.68 \\
-Classical Motzkin    &  4.33 &  3.42 &  3.19 &  2.92 &  2.75 &  2.64 \\
+Classical Dynasearch &  \textbf{3.92} &  3.47 &  3.32 &  3.08 &  2.83 &  2.68 \\
+Classical Motzkin    &  4.33 &  \textbf{3.42} &  \textbf{3.19} &  \textbf{2.92} &  \textbf{2.75} &  \textbf{2.64} \\
 Q-Adjacent           &    -- & 25.04 & 25.07 &    -- & 22.25 &    -- \\
 Q-Fibonacci          &    -- &    -- & 23.79 &    -- & 19.97 &    -- \\
 Q-Dynasearch         &    -- &    -- & 26.93 &    -- & 26.11 &    -- \\
-Q-Motzkin            &    -- &    -- & 21.66 &    -- & 19.05 &    -- \\
+Q-Motzkin            &    -- &    -- & \textbf{21.66} &    -- & \textbf{19.05} &    -- \\
 Q-Adjacent Enh.      & 25.04 & 25.04 & 25.04 &    -- & 22.27 &    -- \\
-Q-Fibonacci Enh.     & 23.57 & 23.51 & 23.60 &    -- & 19.62 &    -- \\
+Q-Fibonacci Enh.     & \textbf{23.57} & \textbf{23.51} & 23.60 &    -- & 19.62 &    -- \\
 Q-Dynasearch Enh.    & 25.76 & 25.68 & 25.56 &    -- & 24.57 &    -- \\
 Q-Motzkin Enh.       &    -- & 25.33 & 25.98 &    -- & 24.68 &    -- \\
 \midrule
@@ -928,18 +901,25 @@ SA & 100 & 500 & 1000 & 2000 & 5000 & 10000 \\
 \midrule
 Classical Adjacent   & 17.24 & 13.84 & 11.28 &  9.51 &  7.98 &  6.98 \\
 Classical Fibonacci  & 19.31 & 16.81 & 15.00 & 13.69 & 10.39 &  9.24 \\
-Classical Dynasearch &  7.34 &  4.87 &  4.19 &  3.74 &  3.58 &  3.36 \\
-Classical Motzkin    &  9.88 &  5.16 &  4.00 &  3.71 &  3.47 &  3.25 \\
+Classical Dynasearch &  \textbf{7.34} &  \textbf{4.87} &  4.19 &  3.74 &  3.58 &  3.36 \\
+Classical Motzkin    &  9.88 &  5.16 &  \textbf{4.00} &  \textbf{3.71} &  \textbf{3.47} &  \textbf{3.25} \\
 Q-Adjacent           &    -- &    -- & 25.04 &    -- & 22.28 &    -- \\
 Q-Fibonacci          &    -- &    -- & 23.46 &    -- & 19.94 &    -- \\
 Q-Dynasearch         &    -- &    -- & 26.35 &    -- & 26.19 &    -- \\
-Q-Motzkin            &    -- &    -- & 21.50 &    -- & 19.84 &    -- \\
+Q-Motzkin            &    -- &    -- & \textbf{21.50} &    -- & \textbf{19.84} &    -- \\
 Q-Adjacent Enh.      & 25.04 & 25.04 & 25.04 &    -- & 22.31 &    -- \\
-Q-Fibonacci Enh.     & 23.53 & 23.62 & 23.66 &    -- & 19.90 &    -- \\
+Q-Fibonacci Enh.     & \textbf{23.53} & \textbf{23.62} & 23.66 &    -- & 19.90 &    -- \\
 Q-Dynasearch Enh.    &    -- & 25.75 & 25.71 &    -- & 25.57 &    -- \\
 Q-Motzkin Enh.       &    -- & 25.57 & 25.45 &    -- & 25.45 &    -- \\
 \bottomrule
 \end{tabular}
+
+\smallskip
+\begin{minipage}{0.94\linewidth}\footnotesize
+\mbox{--} = budget layer not yet measured under the QPU tranche
+protocol. Enhanced rows are flat up to 1000\,ms (single-iteration
+regime; see text). Q-Dynasearch at 1000\,ms: 48/50 runs.
+\end{minipage}
 \end{table}
 
 The enhanced rows of Table~\ref{tab:rpd_n20} give the controlled

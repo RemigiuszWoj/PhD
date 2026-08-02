@@ -35,6 +35,24 @@ i wpisany. Wnioski/abstract/highlights zaktualizowane o wyniki.
 - Budżet lipca po wszystkim: 194.5/~400 s zużyte, ~205 s wolne.
 
 ## Badania na przyszłość (sierpniowa quota lub później)
+- [ ] **Domknąć kolumnę tl=10000 w Tab. 6 (tab:rpd_n20_tl).** Zrobione
+      w P7: fibonacci orig = 17.94 (ILS) / 17.82 (SA). **P8 25.07:
+      quota lipca WYCZERPANA** po dorobieniu adjacent orig ILS 11→32/50
+      (SA 0/50) — żadna nowa komórka kompletna. D-Wave: "insufficient
+      remaining solver access time in project fdMX". Zostaje: adjacent
+      orig (wznawia 32/100), motzkin orig, dynasearch orig oraz WSZYSTKIE
+      enhanced. **SKRYPT GOTOWY: scripts/run_qpu_p8.py** (--resume,
+      kolejność tanie-najpierw, guard budżetu; flaga --fast = tylko
+      szybkie sąsiedztwa). Szacunek pełnej kolumny: ~73 s access,
+      ~6-7 h wall (dynasearch orig ~140 s/wyw.). Odpalić po odnowieniu:
+      `set -a; . ./.env; set +a; nohup .venv311/bin/python3
+      scripts/run_qpu_p8.py --budget 90 > results/p8.log 2>&1 &`
+      (NIE pokazywać tokena). 268 runów ma failed.json(quota) —
+      p8 --resume je ponowi. Po komplecie: średnie (lower_bound) do
+      Tab. 6 + odświeżyć „Mean/Śr.".
+- [x] Porażki embeddingu dynasearch — WSZYSTKIE odzyskane przez ponawianie
+      (scripts/run_qpu_dynretry.py; loteria minorminer, ostatnia instancja 6
+      tl=2000 wpadła 25.07). Wszystkie komórki dynasearch = 50/50, 0 porażek.
 - [ ] Czułość na overlap ρ: dyn/motz enhanced, ρ ∈ {0.25, 0.75}
       (ρ=0.5 zmierzone), n=20 i n=50, ILS tl=5000 → ~400 runów,
       ~25–30 s quoty (1 transza), ~1 noc wall. Kod: przepuścić

@@ -129,3 +129,11 @@ CLAUDE.md
 !articles/**/tables/**
 szkola_doktorska_2026/
 *.spl
+
+# Ruflo / claude-flow artifacts (local tooling, not part of the paper)
+.agents/
+.claude-flow/
+.swarm/
+.mcp.json
+ruvector.db
+skills-lock.json

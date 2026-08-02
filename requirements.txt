@@ -10,3 +10,7 @@ python-dotenv>=1.0
 # Quantum stack (D-Wave) — pinned for reproducibility of QPU experiments
 dimod==0.12.21
 dwave-system==1.34.0
+
+# Quantum stack (IBM / gate-model) — pinned for reproducibility of QAOA experiments
+qiskit==2.5.1
+qiskit-ibm-runtime==0.48.0

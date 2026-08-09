@@ -904,7 +904,8 @@ Q-Dynasearch & 140\,s  & 30\,ms & 0.02\,\% \\
   in bold; \emph{mean} row/column = per-block means over measured
   budgets).}
 \label{tab:rpd_n20_tl}
-\small
+\footnotesize
+\renewcommand{\arraystretch}{0.95}
 \begin{tabular}{@{}lrrrrrr@{\quad}r@{}}
 \toprule
 ILS & 100 & 500 & 1000 & 2000 & 5000 & 10000 & \emph{Mean} \\
@@ -916,19 +917,19 @@ Classical Motzkin    &  4.33 &  \textbf{3.42} &  \textbf{3.19} &  \textbf{2.92} 
 \cmidrule(l){2-8}
 \emph{Classical mean} & \emph{5.20} & \emph{3.93} & \emph{3.62} & \emph{3.42} & \emph{3.24} & \emph{3.14} & \emph{3.76} \\
 \midrule
-Q-Adjacent           & 25.09 & 25.04 & 25.07 & 23.53 & 22.25 &    -- & \emph{24.20} \\
-Q-Fibonacci          & 23.71 & 23.44 & 23.79 & 21.49 & 19.97 & 17.94 & \emph{21.72} \\
-Q-Dynasearch         & 25.77 & 26.21 & 26.66 & 26.13 & 26.11 &    -- & \emph{26.18} \\
-Q-Motzkin            & \textbf{21.33} & \textbf{21.68} & \textbf{21.66} & \textbf{21.40} & \textbf{19.05} &    -- & \emph{21.02} \\
+Q-Adjacent           & 25.09 & 25.04 & 25.07 & 23.53 & 22.25 & 20.17 & \emph{23.52} \\
+Q-Fibonacci          & 23.71 & 23.44 & 23.79 & 21.49 & 19.97 & \textbf{17.94} & \emph{21.72} \\
+Q-Dynasearch         & 25.77 & 26.21 & 26.66 & 26.13 & 26.11 & 25.85 & \emph{26.12} \\
+Q-Motzkin            & \textbf{21.33} & \textbf{21.68} & \textbf{21.66} & \textbf{21.40} & \textbf{19.05} & 19.02 & \emph{20.69} \\
 \cmidrule(l){2-8}
-\emph{Q-orig mean}   & \emph{23.98} & \emph{24.09} & \emph{24.30} & \emph{23.14} & \emph{21.84} & \emph{17.94} & \emph{23.21} \\
+\emph{Q-orig mean}   & \emph{23.98} & \emph{24.09} & \emph{24.30} & \emph{23.14} & \emph{21.84} & \emph{20.75} & \emph{23.02} \\
 \midrule
-Q-Adjacent Enh.      & 25.04 & 25.04 & 25.04 & 24.11 & 22.27 &    -- & \emph{24.30} \\
-Q-Fibonacci Enh.     & \textbf{23.57} & \textbf{23.51} & \textbf{23.60} & \textbf{22.74} & \textbf{19.62} &    -- & \emph{22.61} \\
-Q-Dynasearch Enh.    & 25.76 & 25.68 & 25.56 & 25.76 & 24.57 &    -- & \emph{25.47} \\
-Q-Motzkin Enh.       & 24.82 & 25.33 & 25.98 & 25.07 & 24.68 &    -- & \emph{25.18} \\
+Q-Adjacent Enh.      & 25.04 & 25.04 & 25.04 & 24.11 & 22.27 & 20.03 & \emph{23.59} \\
+Q-Fibonacci Enh.     & \textbf{23.57} & \textbf{23.51} & \textbf{23.60} & \textbf{22.74} & \textbf{19.62} & \textbf{18.20} & \emph{21.87} \\
+Q-Dynasearch Enh.    & 25.76 & 25.68 & 25.56 & 25.76 & 24.57 & 26.24 & \emph{25.59} \\
+Q-Motzkin Enh.       & 24.82 & 25.33 & 25.98 & 25.07 & 24.68 & 25.22 & \emph{25.18} \\
 \cmidrule(l){2-8}
-\emph{Q-enh mean}    & \emph{24.80} & \emph{24.89} & \emph{25.05} & \emph{24.42} & \emph{22.79} &    -- & \emph{24.39} \\
+\emph{Q-enh mean}    & \emph{24.80} & \emph{24.89} & \emph{25.05} & \emph{24.42} & \emph{22.79} & \emph{22.42} & \emph{24.06} \\
 \midrule
 SA & 100 & 500 & 1000 & 2000 & 5000 & 10000 & \emph{Mean} \\
 \midrule
@@ -939,26 +940,26 @@ Classical Motzkin    &  9.88 &  5.16 &  \textbf{4.00} &  \textbf{3.71} &  \textb
 \cmidrule(l){2-8}
 \emph{Classical mean} & \emph{13.44} & \emph{10.17} & \emph{8.62} & \emph{7.66} & \emph{6.36} & \emph{5.71} & \emph{8.66} \\
 \midrule
-Q-Adjacent           & 25.04 & 25.14 & 25.04 & 23.77 & 22.28 &    -- & \emph{24.25} \\
-Q-Fibonacci          & 23.50 & 23.66 & 23.46 & 21.67 & 19.94 & 17.82 & \emph{21.68} \\
-Q-Dynasearch         & 26.27 & 26.32 & 26.25 & 25.78 & 26.19 &    -- & \emph{26.16} \\
-Q-Motzkin            & \textbf{21.43} & \textbf{21.44} & \textbf{21.50} & \textbf{21.17} & \textbf{19.84} &    -- & \emph{21.08} \\
+Q-Adjacent           & 25.04 & 25.14 & 25.04 & 23.77 & 22.28 & 20.18 & \emph{23.57} \\
+Q-Fibonacci          & 23.50 & 23.66 & 23.46 & 21.67 & 19.94 & \textbf{17.82} & \emph{21.68} \\
+Q-Dynasearch         & 26.27 & 26.32 & 26.25 & 25.78 & 26.19 & 26.39 & \emph{26.20} \\
+Q-Motzkin            & \textbf{21.43} & \textbf{21.44} & \textbf{21.50} & \textbf{21.17} & \textbf{19.84} & 19.10 & \emph{20.75} \\
 \cmidrule(l){2-8}
-\emph{Q-orig mean}   & \emph{24.06} & \emph{24.14} & \emph{24.06} & \emph{23.10} & \emph{22.06} & \emph{17.82} & \emph{23.21} \\
+\emph{Q-orig mean}   & \emph{24.06} & \emph{24.14} & \emph{24.06} & \emph{23.10} & \emph{22.06} & \emph{20.87} & \emph{23.05} \\
 \midrule
-Q-Adjacent Enh.      & 25.04 & 25.04 & 25.04 & 24.14 & 22.31 &    -- & \emph{24.31} \\
-Q-Fibonacci Enh.     & \textbf{23.53} & \textbf{23.62} & \textbf{23.66} & \textbf{22.60} & \textbf{19.90} &    -- & \emph{22.66} \\
-Q-Dynasearch Enh.    & 26.31 & 25.75 & 25.71 & 26.09 & 25.57 &    -- & \emph{25.89} \\
-Q-Motzkin Enh.       & 24.68 & 25.57 & 25.45 & 25.12 & 25.45 &    -- & \emph{25.25} \\
+Q-Adjacent Enh.      & 25.04 & 25.04 & 25.04 & 24.14 & 22.31 & 20.16 & \emph{23.62} \\
+Q-Fibonacci Enh.     & \textbf{23.53} & \textbf{23.62} & \textbf{23.66} & \textbf{22.60} & \textbf{19.90} & \textbf{18.12} & \emph{21.91} \\
+Q-Dynasearch Enh.    & 26.31 & 25.75 & 25.71 & 26.09 & 25.57 & 26.21 & \emph{25.94} \\
+Q-Motzkin Enh.       & 24.68 & 25.57 & 25.45 & 25.12 & 25.45 & 25.15 & \emph{25.24} \\
 \cmidrule(l){2-8}
-\emph{Q-enh mean}    & \emph{24.89} & \emph{25.00} & \emph{24.96} & \emph{24.49} & \emph{23.31} &    -- & \emph{24.53} \\
+\emph{Q-enh mean}    & \emph{24.89} & \emph{25.00} & \emph{24.96} & \emph{24.49} & \emph{23.31} & \emph{22.41} & \emph{24.18} \\
 \bottomrule
 \end{tabular}
 
 \smallskip
 \begin{minipage}{0.94\linewidth}\footnotesize
-\mbox{--} = budget layer not yet measured (only Fibonacci reaches
-10000\,ms so far); all measured cells use 50 runs. See text.
+All cells use 50 runs; every budget layer up to 10000\,ms is now
+measured for all twelve neighborhoods. See text.
 \end{minipage}
 \end{table}
 

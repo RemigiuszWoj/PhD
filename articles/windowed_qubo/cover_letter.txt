@@ -1,0 +1,62 @@
+Wrocław, 9 August 2026
+
+Dear Editor-in-Chief,
+
+We are pleased to submit our manuscript, "Scalable Quantum Neighborhood
+Search for the Permutation Flow Shop Problem via Windowed QUBO
+Decomposition," for consideration as a research paper in Computers &
+Operations Research.
+
+Neighborhood-based metaheuristics remain the state of the art for the
+permutation flow shop problem (PFSP). A recent line of work evaluates an
+entire neighborhood in a single quantum-annealer call, but until now this
+was confined to the smallest benchmark instances (n = 20 jobs). Our paper
+removes that ceiling.
+
+The main contributions are:
+
+- Scaling from n = 20 to n = 500. We introduce an enhanced class of
+  quantum-QUBO neighborhoods -- removing an unnecessary candidate filter
+  from the linearly structured neighborhoods and decomposing the quadratic
+  ones into overlapping windows -- that carries real quantum-annealer
+  neighborhood search across the full Taillard benchmark range for the
+  first time. Fibonacci Enhanced reaches parity with the classical
+  baseline at n = 500.
+
+- Results measured on real quantum hardware. Every quantum figure comes
+  from a real D-Wave Advantage QPU under an instrumented protocol;
+  nothing is simulated.
+
+- A fair wall-clock benchmarking methodology. We report the anatomy of a
+  single QPU call (billed access versus queueing and minor-embedding
+  search), the single-iteration regime, and the stochasticity of
+  embedding near the hardware capacity bound -- the measurements needed
+  to compare quantum and classical neighborhood search honestly under
+  time budgets.
+
+The work fits the scope of Computers & Operations Research, which
+publishes computational methods for operations research, including
+metaheuristics, scheduling, and emerging quantum-optimization approaches.
+
+For transparency: this study substantially extends our preliminary n = 20
+investigation (currently under review as a separate short paper); the
+present manuscript lifts the instance-size ceiling to n = 500 and shares
+no results with it.
+
+This manuscript is original, has not been published previously, and is not
+under consideration for publication elsewhere. All authors have read and
+approved the submission and declare no competing interests. A generative-AI
+tool was used for language and typesetting assistance only, as disclosed in
+the manuscript; the authors take full responsibility for the content.
+
+We thank you for considering our submission and look forward to the
+reviewers' comments.
+
+Sincerely,
+
+Remigiusz Wojewódzki (corresponding author)
+Wojciech Bożejko
+Department of Control and Quantum Computing,
+Faculty of Information and Communication Technology,
+Wrocław University of Science and Technology, Wrocław, Poland
+remigiusz.wojewodzki@gmail.com

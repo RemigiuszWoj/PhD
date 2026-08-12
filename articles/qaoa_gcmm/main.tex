@@ -74,17 +74,142 @@ path to on-hardware execution.
 % =====================================================================
 \section{Introduction}
 \label{sec:intro}
-% PFSP + neighborhood-based metaheuristics; move evaluation is the
-% bottleneck. Quantum line so far: annealing only (D-Wave); gate model
-% unexplored for scheduling. Contribution: gate-model QAOA framework,
-% fixed-angle, swap-selection QUBO reused, 4 neighborhoods, depth =
-% gate-model analog of the annealer embedding limit.
+The permutation flow shop problem (PFSP) is one of the most extensively
+studied NP-hard problems in production scheduling. Given $n$ jobs that
+must be processed in the same order on $m$ machines, the task is to find
+a single job permutation that minimizes the makespan $C_{\max}$, the
+completion time of the last job on the last machine. Because the number
+of permutations grows factorially, exact methods are limited to small
+instances, and practical solvers rely on local-search metaheuristics
+such as iterated local search, simulated annealing, and tabu search.
+These methods spend the overwhelming majority of their running time in
+one inner operation: evaluating the moves of a neighborhood to decide
+where to step next. The cost of this evaluation, repeated millions of
+times over a search, is the dominant computational bottleneck and the
+natural target for acceleration.
+
+A recent line of work offloads that evaluation to quantum hardware by
+casting each neighborhood as a quadratic unconstrained binary
+optimization (QUBO) problem and solving it on a quantum
+annealer~\cite{wojewodzki2026bpasts,wojewodzki2026windowed}. The
+annealer selects, in a single call, the subset of moves that jointly
+improve the makespan without conflicting, and the classical
+metaheuristic proceeds from the returned permutation. The gate-model
+paradigm, however, has remained almost untouched for scheduling, even
+though it offers programmable circuits, routing to arbitrary qubit
+pairs, and steadily growing access through cloud platforms such as IBM
+Quantum. Whether the same neighborhood-as-QUBO idea can be carried from
+the annealer to a gate-model device, and what changes when it is, is the
+question this paper addresses.
+
+This paper introduces a gate-model framework that evaluates PFSP
+neighborhoods with the Quantum Approximate Optimization Algorithm
+(QAOA)~\cite{farhi2014qaoa} embedded in classical iterated local search
+and simulated annealing. The framework reuses the swap-selection QUBO
+encoding of the annealing line, so that a single problem matrix drives
+either an annealer or a QAOA circuit and the two paradigms are compared
+on identical instances. To keep the method viable on noisy
+intermediate-scale hardware, we adopt a fixed-angle QAOA whose
+variational angles are pre-optimized offline and then frozen, reducing
+the online cost to one circuit execution per move, the same budget the
+annealer spends. We formulate all four neighborhood structures used by
+the annealing line and analyze how the density of their conflict graphs
+governs circuit depth once the QUBO is compiled onto heavy-hex
+superconducting hardware. Our central observation is that this depth
+plays the role that embedding capacity plays on the annealer: it
+produces the same feasibility ordering of the neighborhoods for a
+different, compilation-grounded reason, and windowed decomposition tames
+the dense neighborhoods just as it does on the annealer.
+
+This work addresses the evaluation methodology and its analysis rather
+than a large-scale hardware benchmark, and two constraints justify that
+focus. Current gate-model devices are noisy and shallow, so a circuit
+that is slightly too deep returns almost random samples. It therefore
+matters to know in advance which neighborhoods compile to shallow
+circuits. Cloud access is also metered in minutes per month, which rules
+out the many exploratory executions that a variational QAOA would need
+and makes the offline fixed-angle design necessary. The framework already
+produces results that transfer beyond one device. A single swap-selection
+QUBO drives both an annealer and a QAOA circuit, so the neighborhoods and
+their penalties carry over unchanged and only the solver back-end
+changes. The depth argument then yields a hardware-agnostic rule for
+selecting neighborhoods. A neighborhood that fits an annealer's
+connectivity also compiles to a shallow gate-model circuit. We validate
+every neighborhood on a simulator before spending any hardware time, so
+the QPU only confirms the final result.
 
 % =====================================================================
 \section{Literature Review}
 \label{sec:related}
-% VLSN / PFSP neighborhoods; QUBO/Ising formulations; QAOA and
-% fixed-angle QAOA; quantum-enhanced scheduling (annealing companion).
+The permutation flow shop problem has served as a testbed for scheduling
+algorithms since Taillard released the benchmark instances that remain in
+standard use today~\cite{taillard1993}. Among constructive heuristics,
+the method of Nawaz, Enscore, and Ham is still regarded as the strongest
+of its kind and is the usual starting point for local
+search~\cite{neh1983}. Ruiz and Maroto compared a large collection of
+heuristics and metaheuristics for the makespan objective and confirmed
+that iterated local search and simulated annealing are among the most
+effective approaches~\cite{ruizmaroto2005}. The power of such methods
+depends on how large a neighborhood they can search at each step. Ahuja,
+Ergun, Orlin, and Punnen surveyed very large-scale neighborhood search,
+in which a neighborhood of exponential size is explored in polynomial
+time~\cite{ahuja2002}. Congram, Potts, and van de Velde introduced
+dynasearch, which uses dynamic programming to apply several independent
+interchange moves in a single step and gives its name to the Dynasearch
+neighborhood studied here~\cite{congram2002}.
+
+A more recent direction replaces the classical evaluation of these
+neighborhoods with a quantum subroutine, encoding each neighborhood as a
+QUBO whose solution selects a set of compatible improving swaps. One
+study formulated classical and quantum versions of several flow shop
+neighborhoods and compared them inside iterated local search and
+simulated annealing~\cite{wojewodzki2026bpasts}. A companion paper
+introduced the Motzkin neighborhood, whose non-crossing structure
+produces a sparser conflict graph than the overlap-based
+alternatives~\cite{wojewodzki2026soco}. A third made the approach
+scalable through a windowed QUBO decomposition that keeps every
+subproblem within the connectivity of the
+annealer~\cite{wojewodzki2026windowed}. The present work adopts these
+QUBO encodings without change and studies their behavior on gate-model
+hardware.
+
+The mapping from combinatorial problems to quadratic binary form rests on
+the Ising model, and Lucas catalogued Ising formulations for a broad
+range of NP problems while bounding the number of spins each
+requires~\cite{lucas2014ising}. Quantum annealing is the physical process
+these formulations target; Kadowaki and Nishimori introduced it as a
+transverse-field method for driving an Ising system toward its ground
+state~\cite{kadowaki1998}. On real hardware, Venturelli, Marchand, and
+Rojo implemented job-shop scheduling on a D-Wave annealer and reported
+both its promise and the embedding limits that constrain problem
+size~\cite{venturelli2015}.
+
+The gate-model counterpart of quantum annealing for optimization is the
+quantum approximate optimization algorithm of Farhi, Goldstone, and
+Gutmann, which alternates cost and mixer layers whose angles are tuned to
+minimize the objective~\cite{farhi2014qaoa}. Zhou, Wang, Choi, Pichler,
+and Lukin analyzed its optimization landscape on near-term devices and
+found that good angles follow a regular pattern rather than scattering
+across the parameter space~\cite{zhou2020}. Wurtz and Lykov turned this
+regularity into fixed-angle conjectures that supply near-optimal
+parameters without instance-specific tuning~\cite{wurtz2021fixed}, and
+Galda, Liu, Lykov, Alexeev, and Safro showed that optimal angles transfer
+between graphs that share local structure~\cite{galda2021}. Together
+these results are what make the offline, fixed-angle design of our
+framework possible.
+
+The hardware itself determines which circuits can run at all. Preskill
+characterized the noisy intermediate-scale quantum regime, in which noise
+sharply limits the depth of a reliable circuit~\cite{preskill2018}. IBM's
+superconducting processors are built on the heavy-hexagonal lattice of
+Chamberland, Zhu, Yoder, Hertzberg, and Cross, which reduces frequency
+collisions at the cost of sparse qubit connectivity~\cite{chamberland2020}.
+Compiling a QUBO with many couplings onto such a lattice therefore
+requires routing, and Li, Ding, and Xie gave an efficient qubit-mapping
+and routing method whose inserted SWAP gates are exactly what deepen the
+circuits analyzed here~\cite{li2019}. Circuit depth on this hardware thus
+assumes the role that embedding capacity plays on the annealer, which is
+the link this paper develops.
 
 % =====================================================================
 \section{Research Methodology}
@@ -201,7 +326,7 @@ neighborhood the optimal $p=1$ angles are near-constant across instances,
 a property we verify on the simulator before freezing. As a
 training-free baseline we also report the instance-independent $p=1$
 angles given by the fixed-angle conjectures of Wurtz and
-Love~\cite{wurtz2021fixed}. On hardware each move therefore costs one
+Lykov~\cite{wurtz2021fixed}. On hardware each move therefore costs one
 circuit execution, the direct gate-model analog of the annealer's single
 call per move, which is the basis for a fair wall-clock comparison. We
 work at $p=1$, the depth that current NISQ hardware supports reliably,
@@ -298,44 +423,106 @@ only on the final measurement rather than on debugging or angle tuning.
 \fi
 
 % =====================================================================
-\begin{thebibliography}{9}
+\begin{thebibliography}{18}
+
+\bibitem{ahuja2002}
+Ahuja, R.K., Ergun, \"{O}., Orlin, J.B., Punnen, A.P.: A survey of very
+large-scale neighborhood search techniques. Discrete Appl. Math.
+\textbf{123}(1--3), 75--102 (2002).
+\url{https://doi.org/10.1016/S0166-218X(01)00338-9}
+
+\bibitem{chamberland2020}
+Chamberland, C., Zhu, G., Yoder, T.J., Hertzberg, J.B., Cross, A.W.:
+Topological and subsystem codes on low-degree graphs with flag qubits.
+Phys. Rev. X \textbf{10}, 011022 (2020).
+\url{https://doi.org/10.1103/PhysRevX.10.011022}
+
+\bibitem{congram2002}
+Congram, R.K., Potts, C.N., van de Velde, S.L.: An iterated dynasearch
+algorithm for the single-machine total weighted tardiness scheduling
+problem. INFORMS J. Comput. \textbf{14}(1), 52--67 (2002).
+\url{https://doi.org/10.1287/ijoc.14.1.52.7712}
 
 \bibitem{farhi2014qaoa}
-Farhi, E., Goldstone, J., Gutmann, S.: A Quantum Approximate
-Optimization Algorithm. arXiv:1411.4028 (2014)
+Farhi, E., Goldstone, J., Gutmann, S.: A quantum approximate
+optimization algorithm. arXiv:1411.4028 (2014).
+\url{https://doi.org/10.48550/arXiv.1411.4028}
+
+\bibitem{galda2021}
+Galda, A., Liu, X., Lykov, D., Alexeev, Y., Safro, I.: Transferability of
+optimal QAOA parameters between random graphs. In: 2021 IEEE
+International Conference on Quantum Computing and Engineering (QCE),
+pp.\ 171--180. IEEE (2021).
+\url{https://doi.org/10.1109/QCE52317.2021.00034}
+
+\bibitem{kadowaki1998}
+Kadowaki, T., Nishimori, H.: Quantum annealing in the transverse Ising
+model. Phys. Rev. E \textbf{58}(5), 5355--5363 (1998).
+\url{https://doi.org/10.1103/PhysRevE.58.5355}
+
+\bibitem{li2019}
+Li, G., Ding, Y., Xie, Y.: Tackling the qubit mapping problem for
+NISQ-era quantum devices. In: Proceedings of the 24th International
+Conference on Architectural Support for Programming Languages and
+Operating Systems (ASPLOS), pp.\ 1001--1014. ACM (2019).
+\url{https://doi.org/10.1145/3297858.3304023}
 
 \bibitem{lucas2014ising}
 Lucas, A.: Ising formulations of many NP problems. Front. Phys.
-\textbf{2}, 5 (2014)
+\textbf{2}, 5 (2014). \url{https://doi.org/10.3389/fphy.2014.00005}
 
-\bibitem{wurtz2021fixed}
-Wurtz, J., Love, P.: Fixed-angle conjectures for the quantum
-approximate optimization algorithm on regular MaxCut graphs.
-Phys. Rev. A \textbf{103}, 042612 (2021)
+\bibitem{neh1983}
+Nawaz, M., Enscore, E.E., Ham, I.: A heuristic algorithm for the
+m-machine, n-job flow-shop sequencing problem. Omega \textbf{11}(1),
+91--95 (1983). \url{https://doi.org/10.1016/0305-0483(83)90088-9}
 
-\bibitem{wojewodzki2026soco}
-Wojew\'{o}dzki, R., Bo\.{z}ejko, W.: Motzkin Neighborhood Evaluation in
-Iterated Local Search and Simulated Annealing for the Permutational
-Flow Shop Problem. In: SOCO 2026, CCIS, vol.\ 3046, pp.\ 144--155.
-Springer (2026). \url{https://doi.org/10.1007/978-3-032-29254-4_12}
+\bibitem{preskill2018}
+Preskill, J.: Quantum computing in the NISQ era and beyond. Quantum
+\textbf{2}, 79 (2018). \url{https://doi.org/10.22331/q-2018-08-06-79}
 
-\bibitem{wojewodzki2026bpasts}
-Wojew\'{o}dzki, R., Bo\.{z}ejko, W.: Classical and Quantum Neighborhoods
-Evaluation in Iterated Local Search and Simulated Annealing for the
-Permutation Flow Shop Problem. Bull. Pol. Acad. Sci. Tech. Sci.
-(under review, 2026)
-
-\bibitem{wojewodzki2026windowed}
-Wojew\'{o}dzki, R., Bo\.{z}ejko, W.: Scalable Quantum Neighborhood Search
-for the Permutation Flow Shop Problem via Windowed QUBO Decomposition.
-Comput. Oper. Res. (in preparation, 2026)
+\bibitem{ruizmaroto2005}
+Ruiz, R., Maroto, C.: A comprehensive review and evaluation of
+permutation flowshop heuristics. Eur. J. Oper. Res. \textbf{165}(2),
+479--494 (2005). \url{https://doi.org/10.1016/j.ejor.2004.04.017}
 
 \bibitem{taillard1993}
 Taillard, E.: Benchmarks for basic scheduling problems. Eur. J. Oper.
-Res. \textbf{64}(2), 278--285 (1993)
+Res. \textbf{64}(2), 278--285 (1993).
+\url{https://doi.org/10.1016/0377-2217(93)90182-M}
 
-% TODO: rozszerzyć -- QAOA transferability of angles, heavy-hex
-% compilation/transpilation, PFSP tabu/VLSN.
+\bibitem{venturelli2015}
+Venturelli, D., Marchand, D.J.J., Rojo, G.: Quantum annealing
+implementation of job-shop scheduling. arXiv:1506.08479 (2015).
+\url{https://doi.org/10.48550/arXiv.1506.08479}
+
+\bibitem{wojewodzki2026bpasts}
+Wojew\'{o}dzki, R., Bo\.{z}ejko, W.: Classical and quantum neighborhoods
+evaluation in iterated local search and simulated annealing for the
+permutation flow shop problem. Bull. Pol. Acad. Sci. Tech. Sci.
+(under review, 2026)
+
+\bibitem{wojewodzki2026soco}
+Wojew\'{o}dzki, R., Bo\.{z}ejko, W.: Motzkin neighborhood evaluation in
+iterated local search and simulated annealing for the permutational
+flow shop problem. In: SOCO 2026, CCIS, vol.\ 3046, pp.\ 144--155.
+Springer (2026). \url{https://doi.org/10.1007/978-3-032-29254-4_12}
+
+\bibitem{wojewodzki2026windowed}
+Wojew\'{o}dzki, R., Bo\.{z}ejko, W.: Scalable quantum neighborhood search
+for the permutation flow shop problem via windowed QUBO decomposition.
+Comput. Oper. Res. (in preparation, 2026)
+
+\bibitem{wurtz2021fixed}
+Wurtz, J., Lykov, D.: Fixed-angle conjectures for the quantum approximate
+optimization algorithm on regular MaxCut graphs. Phys. Rev. A
+\textbf{104}, 052419 (2021).
+\url{https://doi.org/10.1103/PhysRevA.104.052419}
+
+\bibitem{zhou2020}
+Zhou, L., Wang, S.-T., Choi, S., Pichler, H., Lukin, M.D.: Quantum
+approximate optimization algorithm: performance, mechanism, and
+implementation on near-term devices. Phys. Rev. X \textbf{10}, 021067
+(2020). \url{https://doi.org/10.1103/PhysRevX.10.021067}
 
 \end{thebibliography}
 

@@ -18,14 +18,12 @@ QPU solution quality by removing irrelevant variables.
 
 from typing import Dict, List, Tuple
 
-from src.neighborhoods.common import (
-    apply_swaps,
-    compute_deltas,
-    compute_head,
-    solve_qubo,
-    validate_no_overlap,
+from src.neighborhoods.common import apply_swaps, solve_qubo, validate_no_overlap
+from src.neighborhoods.common_qubo import (
+    assemble_tridiagonal_qubo,
+    enumerate_adjacent_candidates,
+    selected_indices,
 )
-from src.neighborhoods.accelerator import compute_block_boundaries, filter_blocked_swaps
 from src.permutation_procesing import c_max
 
 
@@ -59,18 +57,10 @@ def quantum_fibonacci_neighborhood(
     if n < 2:
         return pi.copy(), c_max(pi, processing_times), []
 
-    deltas = compute_deltas(pi, processing_times)
-
-    # Build candidate list
-    candidates = list(enumerate(deltas))
-
-    # Block accelerator: filter dominated swaps
-    if use_block_accelerator:
-        Head = compute_head(pi, processing_times)
-        boundaries = compute_block_boundaries(Head, processing_times, pi)
-        candidates = filter_blocked_swaps(candidates, boundaries)
-
-    # Remap to contiguous indices
+    # Candidate swaps + tridiagonal QUBO. Enumeration and assembly are shared
+    # (common_qubo) with the enhanced and gate-model families: identical Q.
+    candidates = enumerate_adjacent_candidates(
+        pi, processing_times, use_block_accelerator=use_block_accelerator)
     positions = [pos for pos, _ in candidates]
     delta_vals = [d for _, d in candidates]
     num_vars = len(candidates)
@@ -78,19 +68,7 @@ def quantum_fibonacci_neighborhood(
     if num_vars == 0:
         return pi.copy(), c_max(pi, processing_times), []
 
-    # Build tridiagonal QUBO
-    # After filtering, consecutive positions in delta_vals may no longer
-    # be physically adjacent — we must check original positions overlap.
-    penalty = sum(abs(d) for d in delta_vals) + 1
-    Q: Dict[Tuple[str, str], float] = {}
-
-    for i in range(num_vars):
-        Q[(f"x{i}", f"x{i}")] = delta_vals[i]
-
-    for i in range(num_vars - 1):
-        # Only penalize if original positions are adjacent (overlap possible)
-        if positions[i + 1] == positions[i] + 1:
-            Q[(f"x{i}", f"x{i + 1}")] = penalty
+    Q = assemble_tridiagonal_qubo(candidates)
 
     # Solve QUBO
     solution = solve_qubo(
@@ -103,7 +81,7 @@ def quantum_fibonacci_neighborhood(
         chain_strength=chain_strength,
         num_spin_reversal_transforms=num_spin_reversal_transforms,
     )
-    selected_local = sorted(int(v[1:]) for v, val in solution.items() if val == 1)
+    selected_local = selected_indices(solution)
 
     # Map back to original positions and validate non-overlap
     selected_orig = [positions[i] for i in selected_local]

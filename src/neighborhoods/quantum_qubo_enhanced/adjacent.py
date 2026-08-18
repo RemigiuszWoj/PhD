@@ -18,13 +18,12 @@ For n > 200 use quantum_qubo_enhanced/fibonacci.py instead.
 
 from typing import Dict, List, Tuple
 
-from src.neighborhoods.common import (
-    apply_swaps,
-    compute_deltas,
-    compute_head,
-    solve_qubo,
+from src.neighborhoods.common import apply_swaps, solve_qubo
+from src.neighborhoods.common_qubo import (
+    assemble_onehot_qubo,
+    enumerate_adjacent_candidates,
+    selected_indices,
 )
-from src.neighborhoods.accelerator import compute_block_boundaries, filter_blocked_swaps
 from src.permutation_procesing import c_max
 
 
@@ -62,26 +61,12 @@ def quantum_adjacent_enhanced(
     if n < 2:
         return pi.copy(), c_max(pi, processing_times), (-1, -1)
 
-    deltas = compute_deltas(pi, processing_times)
-    candidates = list(enumerate(deltas))  # [(pos, delta), ...]
-
-    # Block accelerator (Smutnicki 7.9): filter dominated swaps
-    Head = compute_head(pi, processing_times)
-    boundaries = compute_block_boundaries(Head, processing_times, pi)
-    candidates = filter_blocked_swaps(candidates, boundaries)
-
+    # Candidate swaps + one-hot QUBO (shared via common_qubo: identical Q).
+    candidates = enumerate_adjacent_candidates(pi, processing_times)
     num_vars = len(candidates)
     positions = [pos for pos, _ in candidates]
     delta_vals = [d for _, d in candidates]
-
-    # One-hot QUBO: exactly one swap selected
-    penalty = 2 * max(abs(d) for d in delta_vals) + 1
-    Q: Dict[Tuple[str, str], float] = {}
-    for i in range(num_vars):
-        Q[(f"x{i}", f"x{i}")] = delta_vals[i] - penalty
-    for i in range(num_vars):
-        for j in range(i + 1, num_vars):
-            Q[(f"x{i}", f"x{j}")] = 2 * penalty
+    Q = assemble_onehot_qubo(candidates)
 
     solution = solve_qubo(
         Q,
@@ -93,7 +78,7 @@ def quantum_adjacent_enhanced(
         chain_strength=chain_strength,
         num_spin_reversal_transforms=num_spin_reversal_transforms,
     )
-    selected = sorted(int(v[1:]) for v, val in solution.items() if val == 1)
+    selected = selected_indices(solution)
 
     local_idx = selected[0] if selected else min(range(num_vars), key=lambda i: delta_vals[i])
     idx = positions[local_idx]

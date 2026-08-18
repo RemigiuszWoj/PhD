@@ -22,14 +22,12 @@ Use quantum_qubo/fibonacci.py for small instances or classical simulation.
 
 from typing import Dict, List, Tuple
 
-from src.neighborhoods.common import (
-    apply_swaps,
-    compute_deltas,
-    compute_head,
-    solve_qubo,
-    validate_no_overlap,
+from src.neighborhoods.common import apply_swaps, solve_qubo, validate_no_overlap
+from src.neighborhoods.common_qubo import (
+    assemble_tridiagonal_qubo,
+    enumerate_adjacent_candidates,
+    selected_indices,
 )
-from src.neighborhoods.accelerator import compute_block_boundaries, filter_blocked_swaps
 from src.permutation_procesing import c_max
 
 
@@ -69,27 +67,12 @@ def quantum_fibonacci_enhanced(
     if n < 2:
         return pi.copy(), c_max(pi, processing_times), []
 
-    # Compute deltas for all adjacent swaps — O(m·n)
-    deltas = compute_deltas(pi, processing_times)
-    candidates = list(enumerate(deltas))  # [(pos, delta), ...]
-
-    # Block accelerator (Smutnicki 7.9): filter dominated swaps
-    Head = compute_head(pi, processing_times)
-    boundaries = compute_block_boundaries(Head, processing_times, pi)
-    candidates = filter_blocked_swaps(candidates, boundaries)
-
+    # Candidate swaps + tridiagonal QUBO (shared via common_qubo: identical Q).
+    candidates = enumerate_adjacent_candidates(pi, processing_times)
     num_vars = len(candidates)
     positions = [pos for pos, _ in candidates]
     delta_vals = [d for _, d in candidates]
-
-    # Build tridiagonal QUBO — only penalize physically adjacent positions
-    penalty = sum(abs(d) for d in delta_vals) + 1
-    Q: Dict[Tuple[str, str], float] = {}
-    for i in range(num_vars):
-        Q[(f"x{i}", f"x{i}")] = delta_vals[i]
-    for i in range(num_vars - 1):
-        if positions[i + 1] == positions[i] + 1:  # only truly adjacent
-            Q[(f"x{i}", f"x{i + 1}")] = penalty
+    Q = assemble_tridiagonal_qubo(candidates)
 
     # Solve QUBO
     solution = solve_qubo(
@@ -102,7 +85,7 @@ def quantum_fibonacci_enhanced(
         chain_strength=chain_strength,
         num_spin_reversal_transforms=num_spin_reversal_transforms,
     )
-    selected_local = sorted(int(v[1:]) for v, val in solution.items() if val == 1)
+    selected_local = selected_indices(solution)
     selected_orig = [positions[i] for i in selected_local]
     valid_swaps = validate_no_overlap(selected_orig)
 

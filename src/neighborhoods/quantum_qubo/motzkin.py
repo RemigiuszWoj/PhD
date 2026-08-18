@@ -269,15 +269,13 @@ In code: P = Σₖ |δₖ| + 1  ("+1" for numerical margin)
 
 from typing import Dict, List, Optional, Tuple
 
-from src.neighborhoods.common import (
-    compute_endpoint_swap_delta,
-    compute_head,
-    compute_tail,
-    solve_qubo,
+from src.neighborhoods.common import solve_qubo
+from src.neighborhoods.common_qubo import (
+    assemble_pairwise_qubo,
+    enumerate_interval_candidates,
+    selected_intervals,
 )
 from src.neighborhoods.accelerator import (
-    compute_block_boundaries,
-    filter_blocked_pairs_npi,
     motzkin_conflict as _motzkin_conflict,
     validate_motzkin_selection as _validate_motzkin_selection,
 )
@@ -350,10 +348,8 @@ def quantum_motzkin_neighborhood(
     # Tail[r][j] = remaining time from position j on machine r to the end
     #   Tail[r][j] = max(Tail[r+1][j], Tail[r][j+1]) + p[r][π[j]]
     # base_c = Head[m-1][n-1] = current Cₘₐₓ
-    Head = compute_head(pi, processing_times)
-    Tail = compute_tail(pi, processing_times)
-    m = len(processing_times)
-    base_c = Head[m - 1][n - 1]
+    # Head/Tail, candidate enumeration and the NPI filter now live in
+    # common_qubo (shared with the enhanced and gate-model families).
 
     # ══════════════════════════════════════════════════════════════════════
     # STEP 2: Compute δₖ for each pair (i,j) — O(m·n³) total
@@ -362,19 +358,11 @@ def quantum_motzkin_neighborhood(
     # We use compute_endpoint_swap_delta(Head, Tail) instead of full
     # Cₘₐₓ recomputation → O(m·(j-i+1)) per pair.
     # L_max limits j-i+1 to reduce the number of QUBO variables.
-    all_candidates: List[Tuple[int, int, float]] = []  # (i, j, delta)
-    for i in range(n - 1):
-        j_max = n - 1 if L_max is None else min(n - 1, i + L_max - 1)
-        for j in range(i + 1, j_max + 1):
-            delta = compute_endpoint_swap_delta(pi, i, j, Head, Tail, processing_times, base_c)
-            all_candidates.append((i, j, delta))
+    all_candidates = enumerate_interval_candidates(
+        pi, processing_times, L_max=L_max, filter_delta=False)
 
     if not all_candidates:
-        return pi.copy(), base_c, []
-
-    # NPI block property: skip pairs where no boundary lies in [i, j]
-    boundaries = compute_block_boundaries(Head, processing_times, pi)
-    all_candidates = filter_blocked_pairs_npi(all_candidates, boundaries)
+        return pi.copy(), c_max(pi, processing_times), []
 
     # ══════════════════════════════════════════════════════════════════════
     # STEP 3: Filter candidates — O(K)
@@ -392,7 +380,7 @@ def quantum_motzkin_neighborhood(
             new_pi = pi.copy()
             new_pi[best[0]], new_pi[best[1]] = new_pi[best[1]], new_pi[best[0]]
             return new_pi, c_max(new_pi, processing_times), [(best[0], best[1])]
-        return pi.copy(), base_c, []
+        return pi.copy(), c_max(pi, processing_times), []
 
     num_vars = len(candidates)
 
@@ -405,26 +393,9 @@ def quantum_motzkin_neighborhood(
     #   Guarantees that one conflict costs more than the total gain
     #   from any subset of swaps. Mathematically:
     #     P > Σ|δₖ| ≥ max gain from subset → solver never violates rules.
-    penalty = sum(abs(d) for _, _, d in candidates) + 1
-    Q: Dict[Tuple[str, str], float] = {}
-
-    # ── Diagonal elements Q[k,k] = δₖ ──
-    # Each diagonal element encodes the linear cost of selecting swap k.
-    # δₖ < 0 → improvement (solver wants xₖ=1)
-    # δₖ > 0 → worsening (solver wants xₖ=0, but these are filtered above)
-    for k in range(num_vars):
-        Q[(f"x{k}", f"x{k}")] = candidates[k][2]  # delta_k
-
-    # ── Off-diagonal elements Q[k,l] = P if conflict(k,l) ──
-    # Penalty P for CROSSING or SHARED-ENDPOINT pairs.
-    # Nested pairs → no penalty (Q[k,l] = 0, entry not added).
-    # This is the key difference from quantum_dynasearch, where overlap → penalty.
-    for k in range(num_vars):
-        i1, j1, _ = candidates[k]
-        for l in range(k + 1, num_vars):
-            i2, j2, _ = candidates[l]
-            if _motzkin_conflict(i1, j1, i2, j2):
-                Q[(f"x{k}", f"x{l}")] = penalty
+    # Penalty on crossing / shared-endpoint pairs, nesting allowed. Same
+    # matrix Q as the annealer receives (assembled via common_qubo).
+    Q = assemble_pairwise_qubo(candidates, _motzkin_conflict)
 
     # ══════════════════════════════════════════════════════════════════════
     # STEP 5: Solve QUBO — solver
@@ -442,16 +413,13 @@ def quantum_motzkin_neighborhood(
         chain_strength=chain_strength,
         num_spin_reversal_transforms=num_spin_reversal_transforms,
     )
-    selected_indices = sorted(int(v[1:]) for v, val in solution.items() if val == 1)
-
     # ══════════════════════════════════════════════════════════════════════
     # STEP 6: Validation + Fallback — O(K²)
     # ══════════════════════════════════════════════════════════════════════
     # SA may return a sub-optimal solution violating constraints.
     # Greedy validation: iterate over pairs sorted by i,
     # keep a pair if it doesn't conflict with any already accepted pair.
-    selected_pairs = [(candidates[k][0], candidates[k][1]) for k in selected_indices]
-    valid_swaps = _validate_motzkin_selection(selected_pairs)
+    valid_swaps = _validate_motzkin_selection(selected_intervals(solution, candidates))
 
     # Fallback: if solver selected nothing useful,
     # pick the single swap with the best (lowest) δₖ.

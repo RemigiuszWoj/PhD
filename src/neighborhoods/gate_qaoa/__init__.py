@@ -17,6 +17,10 @@ from .circuit import (
 )
 from .angles import interp_seed, optimize_neighborhood
 from .solve import solve_qaoa
+from .adjacent import gate_adjacent_neighborhood
+from .dynasearch import gate_dynasearch_neighborhood
+from .fibonacci import gate_fibonacci_neighborhood
+from .motzkin import gate_motzkin_neighborhood
 
 __all__ = [
     "qubo_to_ising",
@@ -28,4 +32,8 @@ __all__ = [
     "optimize_neighborhood",
     "interp_seed",
     "solve_qaoa",
+    "gate_adjacent_neighborhood",
+    "gate_dynasearch_neighborhood",
+    "gate_fibonacci_neighborhood",
+    "gate_motzkin_neighborhood",
 ]

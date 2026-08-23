@@ -137,10 +137,11 @@ def _extract_quantum_params(quantum_config: dict | None, mode: str) -> dict:
             "backend": cfg.get("qaoa_backend", "statevector"),
             "shots": cfg.get("qaoa_shots", 4096),
         }
-        if mode == "gate_dynasearch":
-            params["L_max"] = cfg.get("L_max_dynasearch")
-        if mode == "gate_motzkin":
-            params["L_max"] = cfg.get("L_max_motzkin")
+        if mode in ("gate_dynasearch", "gate_motzkin"):
+            params["window_size"] = cfg.get("qaoa_window_size")     # None = single QUBO
+            params["overlap_ratio"] = cfg.get("qaoa_overlap_ratio", 0.5)
+            params["L_max"] = cfg.get(
+                "L_max_dynasearch" if mode == "gate_dynasearch" else "L_max_motzkin")
         return params
     if not quantum_config:
         return {}
@@ -372,6 +373,7 @@ def get_neighbor(
         new_pi, new_c, swaps = gate_dynasearch_neighborhood(
             current_pi, processing_times,
             p=qp["p"], backend=qp["backend"], shots=qp["shots"], L_max=qp.get("L_max"),
+            window_size=qp.get("window_size"), overlap_ratio=qp.get("overlap_ratio", 0.5),
         )
         return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
 
@@ -380,6 +382,7 @@ def get_neighbor(
         new_pi, new_c, swaps = gate_motzkin_neighborhood(
             current_pi, processing_times,
             p=qp["p"], backend=qp["backend"], shots=qp["shots"], L_max=qp.get("L_max"),
+            window_size=qp.get("window_size"), overlap_ratio=qp.get("overlap_ratio", 0.5),
         )
         return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
 

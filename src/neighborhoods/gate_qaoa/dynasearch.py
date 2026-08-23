@@ -19,6 +19,7 @@ from src.neighborhoods.common_qubo import (
 )
 from src.neighborhoods.accelerator import intervals_overlap, validate_no_overlap_intervals
 from src.neighborhoods.gate_qaoa.solve import solve_qaoa
+from src.neighborhoods.gate_qaoa.windowed import windowed_interval_swaps
 from src.permutation_procesing import c_max
 
 
@@ -30,9 +31,14 @@ def gate_dynasearch_neighborhood(
     angles: Optional[Tuple[Sequence[float], Sequence[float]]] = None,
     shots: int = 4096,
     L_max: Optional[int] = None,
+    window_size: Optional[int] = None,
+    overlap_ratio: float = 0.5,
 ) -> Tuple[List[int], int, List[Tuple[int, int]]]:
     """Select non-overlapping endpoint swaps via a fixed-angle QAOA circuit.
 
+    With ``window_size`` set, the permutation is decomposed into overlapping
+    windows (needed for full Taillard instances, where the single QUBO is too
+    large for a gate device); otherwise a single QUBO is built (small n / L_max).
     Returns (new_pi, new_cmax, applied_swaps) with swaps as (i, j) pairs.
     """
     n = len(pi)
@@ -40,6 +46,24 @@ def gate_dynasearch_neighborhood(
         return pi.copy(), c_max(pi, processing_times), []
 
     filter_delta = backend == "statevector"        # simulator may filter; hardware never
+
+    if window_size is not None:                     # windowed path (large n)
+        raw = windowed_interval_swaps(
+            pi, processing_times, "dynasearch", intervals_overlap,
+            p=p, backend=backend, angles=angles, shots=shots,
+            window_size=window_size, overlap_ratio=overlap_ratio, filter_delta=filter_delta)
+        valid_swaps = validate_no_overlap_intervals(raw)
+        if not valid_swaps:                         # fallback: best single improving swap
+            all_c = enumerate_interval_candidates(pi, processing_times, L_max=L_max, filter_delta=False)
+            if all_c:
+                best_k = min(range(len(all_c)), key=lambda k: all_c[k][2])
+                if all_c[best_k][2] < 0:
+                    valid_swaps = [(all_c[best_k][0], all_c[best_k][1])]
+        new_pi = pi.copy()
+        for i, j in sorted(valid_swaps):
+            new_pi[i], new_pi[j] = new_pi[j], new_pi[i]
+        return new_pi, c_max(new_pi, processing_times), valid_swaps
+
     all_candidates = enumerate_interval_candidates(
         pi, processing_times, L_max=L_max, filter_delta=False)
     if not all_candidates:

@@ -32,6 +32,12 @@ from src.neighborhoods.quantum_qubo_enhanced.adjacent import quantum_adjacent_en
 from src.neighborhoods.quantum_qubo_enhanced.dynasearch import quantum_dynasearch_enhanced
 from src.neighborhoods.quantum_qubo_enhanced.fibonacci import quantum_fibonacci_enhanced
 from src.neighborhoods.quantum_qubo_enhanced.motzkin import quantum_motzkin_enhanced
+
+# gate_qaoa (gate-model QAOA)
+from src.neighborhoods.gate_qaoa.adjacent import gate_adjacent_neighborhood
+from src.neighborhoods.gate_qaoa.dynasearch import gate_dynasearch_neighborhood
+from src.neighborhoods.gate_qaoa.fibonacci import gate_fibonacci_neighborhood
+from src.neighborhoods.gate_qaoa.motzkin import gate_motzkin_neighborhood
 from src.permutation_procesing import c_max
 
 # ---------------------------------------------------------------------------
@@ -50,7 +56,13 @@ QUANTUM_ENHANCED_MODES = (
     "quantum_dynasearch_enhanced",
     "quantum_motzkin_enhanced",
 )
-ALL_MODES = CLASSICAL_MODES + QUANTUM_QUBO_MODES + QUANTUM_ENHANCED_MODES
+GATE_QAOA_MODES = (
+    "gate_adjacent",
+    "gate_fibonacci",
+    "gate_dynasearch",
+    "gate_motzkin",
+)
+ALL_MODES = CLASSICAL_MODES + QUANTUM_QUBO_MODES + QUANTUM_ENHANCED_MODES + GATE_QAOA_MODES
 
 
 @dataclass
@@ -115,6 +127,21 @@ def log_iteration(log_file: Any, state: SearchState) -> None:
 
 def _extract_quantum_params(quantum_config: dict | None, mode: str) -> dict:
     """Extract per-mode quantum parameters from quantum_config dict."""
+    # gate_qaoa modes use their own parameter set (QAOA depth/backend/shots),
+    # not the D-Wave annealer parameters; angles are loaded by solve_qaoa from
+    # the calibration table.
+    if mode.startswith("gate_"):
+        cfg = quantum_config or {}
+        params = {
+            "p": cfg.get("qaoa_p", 1),
+            "backend": cfg.get("qaoa_backend", "statevector"),
+            "shots": cfg.get("qaoa_shots", 4096),
+        }
+        if mode == "gate_dynasearch":
+            params["L_max"] = cfg.get("L_max_dynasearch")
+        if mode == "gate_motzkin":
+            params["L_max"] = cfg.get("L_max_motzkin")
+        return params
     if not quantum_config:
         return {}
     params = {
@@ -318,6 +345,41 @@ def get_neighbor(
             annealing_time_us=p.get("annealing_time_us"),
             chain_strength=p.get("chain_strength"),
             num_spin_reversal_transforms=p.get("num_spin_reversal_transforms"),
+        )
+        return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
+
+    # ------------------------------------------------------------------
+    # GATE-MODEL QAOA
+    # ------------------------------------------------------------------
+    elif neigh_mode == "gate_adjacent":
+        qp = _extract_quantum_params(quantum_config, neigh_mode)
+        new_pi, new_c, move = gate_adjacent_neighborhood(
+            current_pi, processing_times,
+            p=qp["p"], backend=qp["backend"], shots=qp["shots"],
+        )
+        return new_pi, new_c, move, None
+
+    elif neigh_mode == "gate_fibonacci":
+        qp = _extract_quantum_params(quantum_config, neigh_mode)
+        new_pi, new_c, swaps = gate_fibonacci_neighborhood(
+            current_pi, processing_times,
+            p=qp["p"], backend=qp["backend"], shots=qp["shots"],
+        )
+        return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
+
+    elif neigh_mode == "gate_dynasearch":
+        qp = _extract_quantum_params(quantum_config, neigh_mode)
+        new_pi, new_c, swaps = gate_dynasearch_neighborhood(
+            current_pi, processing_times,
+            p=qp["p"], backend=qp["backend"], shots=qp["shots"], L_max=qp.get("L_max"),
+        )
+        return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
+
+    elif neigh_mode == "gate_motzkin":
+        qp = _extract_quantum_params(quantum_config, neigh_mode)
+        new_pi, new_c, swaps = gate_motzkin_neighborhood(
+            current_pi, processing_times,
+            p=qp["p"], backend=qp["backend"], shots=qp["shots"], L_max=qp.get("L_max"),
         )
         return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
 

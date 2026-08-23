@@ -16,10 +16,14 @@ from src.parser import parser
 
 ALGORITHMS_ALL = ("ils", "sa")
 
-# Trzy klasy sąsiedztw:
-#   classical          - CPU only
-#   quantum_qubo       - D-Wave, oryginalne sformułowania (małe n)
+# Klasy sąsiedztw:
+#   classical             - CPU only
+#   quantum_qubo          - D-Wave, oryginalne sformułowania (małe n)
 #   quantum_qubo_enhanced - D-Wave, duże n (windowed / bez filtrów delta)
+#   gate_qaoa             - gate-model QAOA (gate_adjacent/fibonacci/dynasearch/
+#                           motzkin). Opt-in przez experiment.neighborhoods w
+#                           config.yaml; wymaga tabeli kątów data/qaoa_angles.json
+#                           (uruchom kalibrację), więc NIE jest w domyślnych.
 _DEFAULT_NEIGHBORHOODS = (
     # classical
     "adjacent",

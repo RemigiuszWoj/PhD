@@ -419,8 +419,9 @@ reported results are measured on \texttt{ibm\_fez}.
 \label{sec:results}
 \subsection{Evaluation protocol}
 We evaluate on Taillard PFSP instances with $n=20$ jobs and $m\in\{5,10,20\}$
-machines, ten instances per size, under the same protocol as our windowed
-annealing study so that the two sets of results are directly comparable. Each
+machines, ten instances per size, under the protocol of the windowed
+annealing study~\cite{wojewodzki2026windowed} so that the two sets of results
+are directly comparable. Each
 neighborhood drives an iterated-local-search and a simulated-annealing loop; at
 every move the swap-selection QUBO of Section~\ref{sec:method} is assembled and
 handed to the fixed-angle QAOA circuit in place of the annealer. Solution
@@ -511,9 +512,41 @@ Gate Motzkin    & --- & --- & --- & --- & --- & $23.59\pm8.1$ \\
 % =====================================================================
 \section{Conclusions}
 \label{sec:conclusions}
-% Portable hybrid quantum-classical local-search scheme bridging the
-% annealing and gate paradigms; depth-as-embedding-limit result;
-% Motzkin nesting hypothesis; path to on-hardware execution.
+We have carried the neighborhood-as-QUBO idea from the quantum annealer to the
+gate model. A single swap-selection matrix now drives either device, so the four
+neighborhood structures, their penalties and their map-back to a permutation are
+shared, and only the solver behind them changes. Freezing the QAOA angles offline
+reduces the online cost to one circuit execution per move, the same budget an
+annealer call consumes, which is what makes the scheme usable inside a
+metaheuristic that evaluates thousands of moves.
+
+The analysis identifies compiled circuit depth as the gate-model counterpart of
+embedding capacity. A conflict graph that exceeds an annealer's connectivity
+also routes into a deep, noisy circuit on heavy-hex hardware, so the two
+paradigms order the neighborhoods for feasibility in the same way, for reasons
+that are otherwise unrelated. Motzkin's nested moves keep its conflict graph
+sparser than Dynasearch's and it compiles to the shallower circuit of the two,
+while windowed decomposition brings the dense neighborhoods within reach on
+either device.
+
+Executing the framework on an IBM Heron processor confirms that the pipeline
+works end to end and returns a measurement over ten Taillard instances, but it
+also exposes what currently governs such experiments. Every run completed a
+single move irrespective of the budget it was given, because a move costs about
+thirty seconds of wall-clock time against three to seven seconds of computation.
+The time dimension of the protocol therefore collapses: at this access latency
+the budget does not change what the algorithm does.
+
+Three questions follow, and none of them is about the algorithm. The first is
+how far the per-move cost can be driven down by batching, shallower circuits or
+fewer shots. The second is how much of the protocol can be measured at all under
+a metered monthly quota, which presently admits about one budget column at one
+seed. The third is methodological and we leave it open: a strict wall-clock
+criterion charges the queue wait to the algorithm, yet that wait measures
+contention on a shared device and varies by an order of magnitude between
+identical submissions. Until quantum and classical resources are reached by
+comparable paths, wall-clock figures from queued hardware should be read with
+that in mind.
 
 % =====================================================================
 \ifblind\else

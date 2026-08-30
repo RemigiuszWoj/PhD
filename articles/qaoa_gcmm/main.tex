@@ -427,8 +427,8 @@ every move the swap-selection QUBO of Section~\ref{sec:method} is assembled and
 handed to the fixed-angle QAOA circuit in place of the annealer. Solution
 quality is reported as the relative percentage deviation
 $\mathrm{RPD}=(C_{\max}-\mathrm{LB})/\mathrm{LB}\times100$ from the Taillard
-lower bound $\mathrm{LB}$, averaged over instances and seeds under a fixed
-wall-clock budget.
+lower bound $\mathrm{LB}$, averaged over instances under a fixed wall-clock
+budget.
 
 A move reads out the circuit by sampling it and returning the sampled bitstring
 of lowest \emph{original}-QUBO energy. This energy-based readout is essential:
@@ -455,30 +455,27 @@ already exceeds the longest budget, the shorter budgets of the protocol cannot
 admit more than one move either; we report the measured column and leave the
 remaining ones for later measurement.
 
-Two features of the table follow from this single-move regime. Adjacent returns
-the same value under both metaheuristics, 25.04, because both loops start from
-the identity permutation and the choice of metaheuristic cannot matter before a
-second move. The differences between ILS and SA for the other three
-neighborhoods amount to hundredths of a percentage point and reflect sampling
-noise on the device rather than algorithmic behaviour.
+Adjacent returns 25.04 under both metaheuristics because both loops start from
+the identity permutation, and the choice of metaheuristic cannot matter before a
+second move. For the other three neighborhoods the ILS and SA values differ by
+hundredths of a percentage point, which is sampling noise on the device rather
+than algorithmic behaviour.
 
-Two limitations bound what we could measure. The account used here provides ten
-minutes of QPU time per month, which admits roughly one budget column of the
-protocol at a single seed; extending the measurement to the remaining columns,
-to further seeds and to greater depths is a matter of access rather than of
-method. The second limitation concerns speed and is partly ours to solve: a move
-costs about thirty seconds of wall-clock time against three to seven seconds of
-computation, and how much of that gap can be closed---by batching more
-aggressively, by shallower circuits, or by fewer shots per circuit---is an open
+What we could measure was bounded in two ways, and neither concerns the method.
+The account used here provides ten minutes of QPU time per month, which admits
+roughly one budget column at a single seed; the remaining columns, further seeds
+and greater depths are a question of access. The other bound is speed, and part
+of it is ours: a move costs about thirty seconds of wall-clock time against
+three to seven seconds of computation. How much of that gap can be closed by
+batching more aggressively, by shallower circuits or by fewer shots is an open
 engineering question.
 
-This also raises a question of measurement that we do not regard as settled.
-Charging the queue wait to the running time of the algorithm is what a strict
+A question of measurement follows, and we do not regard it as settled. Charging the queue wait to the running time of the algorithm is what a strict
 wall-clock criterion demands, yet that wait reflects contention among users of a
 shared device rather than any property of the method, and it can differ by an
 order of magnitude between two submissions of the same circuit. Whether such an
 accounting is fair, and what the right one is when quantum and classical
-resources are reached by such different paths, deserves to be settled before
+resources are reached by such different paths, should be settled before
 wall-clock figures from queued devices are read as statements about algorithms.
 
 \begin{table}[t]
@@ -517,7 +514,7 @@ gate model. A single swap-selection matrix now drives either device, so the four
 neighborhood structures, their penalties and their map-back to a permutation are
 shared, and only the solver behind them changes. Freezing the QAOA angles offline
 reduces the online cost to one circuit execution per move, the same budget an
-annealer call consumes, which is what makes the scheme usable inside a
+annealer call consumes, and that is what makes the scheme usable inside a
 metaheuristic that evaluates thousands of moves.
 
 The analysis identifies compiled circuit depth as the gate-model counterpart of
@@ -537,16 +534,15 @@ thirty seconds of wall-clock time against three to seven seconds of computation.
 The time dimension of the protocol therefore collapses: at this access latency
 the budget does not change what the algorithm does.
 
-Three questions follow, and none of them is about the algorithm. The first is
-how far the per-move cost can be driven down by batching, shallower circuits or
-fewer shots. The second is how much of the protocol can be measured at all under
-a metered monthly quota, which presently admits about one budget column at one
-seed. The third is methodological and we leave it open: a strict wall-clock
-criterion charges the queue wait to the algorithm, yet that wait measures
-contention on a shared device and varies by an order of magnitude between
-identical submissions. Until quantum and classical resources are reached by
-comparable paths, wall-clock figures from queued hardware should be read with
-that in mind.
+The questions that follow concern access rather than the algorithm. One is how
+far the per-move cost can be driven down by batching, shallower circuits or
+fewer shots. Another is how much of the protocol a metered monthly quota admits
+at all; ours presently allows about one budget column at one seed. The last is
+methodological and we leave it open: a strict wall-clock criterion charges the
+queue wait to the algorithm, yet that wait measures contention on a shared
+device and varies by an order of magnitude between identical submissions. Until
+quantum and classical resources are reached by comparable paths, wall-clock
+figures from queued hardware carry that caveat.
 
 % =====================================================================
 \ifblind\else

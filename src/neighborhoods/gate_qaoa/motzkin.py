@@ -28,7 +28,7 @@ def gate_motzkin_neighborhood(
     pi: List[int],
     processing_times: List[List[int]],
     p: int = 1,
-    backend: str = "statevector",
+    backend: str = "ibm",
     angles: Optional[Tuple[Sequence[float], Sequence[float]]] = None,
     shots: int = 4096,
     L_max: Optional[int] = None,
@@ -45,7 +45,7 @@ def gate_motzkin_neighborhood(
     if n < 2:
         return pi.copy(), c_max(pi, processing_times), []
 
-    filter_delta = backend == "statevector"        # simulator may filter; hardware never
+    filter_delta = False                            # hardware never filters candidates
 
     if window_size is not None:                     # windowed path (large n)
         raw = windowed_interval_swaps(

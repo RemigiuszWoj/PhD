@@ -20,7 +20,7 @@ def gate_adjacent_neighborhood(
     pi: List[int],
     processing_times: List[List[int]],
     p: int = 1,
-    backend: str = "statevector",
+    backend: str = "ibm",
     angles: Optional[Tuple[Sequence[float], Sequence[float]]] = None,
     shots: int = 4096,
 ) -> Tuple[List[int], int, Tuple[int, int]]:

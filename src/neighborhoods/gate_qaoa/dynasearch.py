@@ -3,12 +3,10 @@
 Same endpoint-swap QUBO as quantum_qubo/dynasearch.py (built through the
 shared common_qubo helpers), solved by a fixed-angle QAOA circuit.
 
-Filter policy: the delta<0 improving-only filter is applied ONLY on the
-noiseless simulator (backend='statevector'), never on real hardware -- there
-the full candidate set is submitted, as on the annealer. ``L_max`` caps the
-interval length to keep K within the reach of the simulator / device; for
-full Taillard instances on hardware a windowed variant (analogous to
-quantum_qubo_enhanced) will be used.
+Filter policy: no improving-only (delta<0) filter is applied -- the full
+candidate set is submitted, as on the annealer. ``L_max`` caps the interval
+length to keep K within reach of the device; for full Taillard instances the
+windowed variant (analogous to quantum_qubo_enhanced) is used.
 """
 from typing import List, Optional, Sequence, Tuple
 
@@ -27,7 +25,7 @@ def gate_dynasearch_neighborhood(
     pi: List[int],
     processing_times: List[List[int]],
     p: int = 1,
-    backend: str = "statevector",
+    backend: str = "ibm",
     angles: Optional[Tuple[Sequence[float], Sequence[float]]] = None,
     shots: int = 4096,
     L_max: Optional[int] = None,
@@ -45,7 +43,7 @@ def gate_dynasearch_neighborhood(
     if n < 2:
         return pi.copy(), c_max(pi, processing_times), []
 
-    filter_delta = backend == "statevector"        # simulator may filter; hardware never
+    filter_delta = False                            # hardware never filters candidates
 
     if window_size is not None:                     # windowed path (large n)
         raw = windowed_interval_swaps(

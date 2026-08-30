@@ -8,13 +8,13 @@ Scope (identical to windowed_qubo for the n=20 size class):
   seeds     : 0..4                                          (5 per instance)
   algorithms: ils, sa
   budgets   : 1000 and 5000 ms   (the two the QPU class reports)
-  gate      : gate_adjacent / fibonacci / dynasearch / motzkin, p=1, statevector
+  gate      : gate_adjacent / fibonacci / dynasearch / motzkin, p=1, ibm_fez
 
 Results are written under results/experiments/qaoa_gate_n20/ and the run is
 resumable (finished result.json files are skipped).
 
 Usage:  python -m src.experiments.qaoa_gate_campaign [--tl 1000 5000] [--p 1]
-        [--backend statevector] [--window 6]
+        [--backend ibm] [--window 6]
 """
 from __future__ import annotations
 
@@ -48,7 +48,7 @@ def main():
     ap.add_argument("--instances", type=int, nargs="+", default=list(range(10)))
     ap.add_argument("--seeds", type=int, nargs="+", default=list(range(5)))
     ap.add_argument("--p", type=int, default=1)
-    ap.add_argument("--backend", type=str, default="statevector")
+    ap.add_argument("--backend", type=str, default="ibm")
     ap.add_argument("--window", type=int, default=6)
     args = ap.parse_args()
 

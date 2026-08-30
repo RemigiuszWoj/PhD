@@ -32,7 +32,7 @@ runner.py → ils/sa → base.get_neighbor("gate_*")          # warstwa 3: wpię
 
 ```yaml
 quantum:
-  qaoa_backend: statevector   # statevector | aer_noisy | ibm
+  qaoa_backend: ibm           # ibm | aer_noisy  (brak backendu symulatorowego)
   qaoa_p: 1                   # głębokość QAOA
   qaoa_window_size: 6         # gate_dynasearch/motzkin: rozmiar okna (pełne n); None = pojedyncza Q
   qaoa_overlap_ratio: 0.5     # nakładanie okien
@@ -91,8 +91,8 @@ run() → _run_single(cfg):
           _load_angles("fibonacci", p)                          ← data/qaoa_angles.json
           variables,h,J,_ = qubo_to_ising(Q)                    [circuit]  x=(1−Z)/2 → bit=x
           hn,Jn,_         = normalize_ising(h, J)
-          statevector:  qc=build_qaoa_circuit(...);           top=max(Statevector(qc).probabilities_dict())
-          ibm:          qc=build_qaoa_circuit(...,measure=True); transpile→ibm_fez; top=max(SamplerV2.counts)
+          ibm: qc=build_qaoa_circuit(...,measure=True); transpile→ibm_fez;
+               SamplerV2 (wszystkie okna ruchu w JEDNYM zadaniu) → próbka o min. energii QUBO
           return bitstring_to_assignment(top, variables)        → {"x_k":0/1}
         valid = validate_no_overlap(selected_positions(solution, positions))  (+fallback)
         return apply_swaps(pi, valid), c_max(...), valid
@@ -103,8 +103,9 @@ run() → _run_single(cfg):
   _persist_result → results/experiments/<ts>/algo=ils__neigh=gate_fibonacci__.../result.json
 ```
 
-**Jedyna różnica symulator ↔ sprzęt** jest w `solve_qaoa` (statevector vs
-transpilacja+SamplerV2 na `ibm_fez`); cała reszta łańcucha identyczna.
+Eksperymenty biegną **wyłącznie na sprzęcie** (`ibm_fez`). Backend symulatorowy
+został usunięty z `solve.py`; statevector występuje już tylko w `angles.py`,
+przy jednorazowej kalibracji kątów offline.
 
 gate_dynasearch/motzkin z `window_size`: zamiast pojedynczej Q →
 `windowed_interval_swaps()` — pętla po nakładających się oknach, per okno
@@ -118,9 +119,9 @@ Taillardów, gdzie pojedyncza Q ma K = O(n²).
 
 | plik | rola |
 |---|---|
-| `circuit.py` | QUBO→Ising, obwód QAOA dowolnego p, statevector, mapowanie bitu |
+| `circuit.py` | QUBO→Ising, obwód QAOA dowolnego p, mapowanie bitu |
 | `angles.py` | offline dobór kątów (⟨H_C⟩, p=1 siatka, p≥2 NM+INTERP+monotoniczność) |
-| `solve.py` | `solve_qaoa(Q, neighborhood, p, backend, angles)` → `{"x_k":0/1}` (kontrakt jak `solve_qubo`) |
+| `solve.py` | `solve_qaoa` / `solve_qaoa_batch` → `{"x_k":0/1}` (kontrakt jak `solve_qubo`); wsad = jedno zadanie |
 | `adjacent.py` `fibonacci.py` | pojedyncza Q (K=n−1) |
 | `dynasearch.py` `motzkin.py` | pojedyncza Q (L_max) lub okienkowa (window_size) |
 | `windowed.py` | dekompozycja okienkowa dla otoczeń interwałowych |
@@ -133,13 +134,13 @@ Taillardów, gdzie pojedyncza Q ma K = O(n²).
 ## Status
 
 Zrobione: silnik, 4 otoczenia (z okienkowaniem), wpięcie w `base.py`/`runner.py`,
-skrypt kalibracji, golden test. Zweryfikowane na symulatorze (statevector).
+skrypt kalibracji, golden test, batching okien w jedno zadanie. Zweryfikowane na `ibm_fez`.
 
 Nie zrobione: pełna kalibracja (mamy tylko szybką), przebiegi RPD na symulatorze
 i na `ibm_fez`, porównanie do poprzednich artykułów. Ścieżka `ibm` w `solve.py`
 zaimplementowana, ale nieuruchamiana (budżet QPU).
 
-Uwaga metodologiczna: statevector QAOA jest wolny per ruch, więc przy stałym
-limicie czasu gate-symulator zrobi mniej ruchów niż annealer — porównanie
-wall-clock jest sensowne dopiero na sprzęcie; na symulatorze rozważ porównanie
-przy stałej liczbie iteracji.
+Uwaga metodologiczna: jeden ruch na `ibm_fez` trwa ~30 s zegarowych (kolejka +
+wykonanie), więc przy każdym budżecie z zakresu 100–10000 ms wykonuje się
+dokładnie **jeden ruch**. Wszystkie kolumny czasowe mają wtedy tę samą wartość —
+tak samo jak wiersze D-Wave w artykule windowed, które też były jednoiteracyjne.

@@ -134,9 +134,9 @@ QUBO drives both an annealer and a QAOA circuit, so the neighborhoods and
 their penalties carry over unchanged and only the solver back-end
 changes. The depth argument then yields a hardware-agnostic rule for
 selecting neighborhoods. A neighborhood that fits an annealer's
-connectivity also compiles to a shallow gate-model circuit. We validate
-every neighborhood on a simulator before spending any hardware time, so
-the QPU only confirms the final result.
+connectivity also compiles to a shallow gate-model circuit. Simulation enters
+only once, offline, to fix the QAOA angles; every result we report is
+measured on the quantum processor.
 
 % =====================================================================
 \section{Literature Review}
@@ -323,7 +323,7 @@ window---this is not viable inside a metaheuristic that evaluates
 thousands of moves. We therefore fix the angles per neighborhood type and
 obtain them offline, once. For each of the four neighborhoods a single
 angle pair $(\gamma^\star,\beta^\star)$ is optimized on a classical
-statevector simulator (Qiskit Aer) by minimizing the expected cost
+statevector simulation by minimizing the expected cost
 \begin{equation}
   (\gamma^\star,\beta^\star)
   \;=\; \arg\min_{\gamma,\beta}\
@@ -336,14 +336,16 @@ of that neighborhood at run time, so the offline cost is amortized over
 the whole search and the online cost per move stays at a single circuit
 execution. This strategy relies on angle transferability: for a fixed
 neighborhood the optimal $p=1$ angles are near-constant across instances,
-a property we verify on the simulator before freezing. As a
+a property this design relies on. As a
 training-free baseline we also report the instance-independent $p=1$
 angles given by the fixed-angle conjectures of Wurtz and
 Lykov~\cite{wurtz2021fixed}. On hardware each move therefore costs one
 circuit execution, the direct gate-model analog of the annealer's single
 call per move, which is the basis for a fair wall-clock comparison. We
-work at $p=1$, the depth that current NISQ hardware supports reliably,
-and consider $p=2$ only where the simulator shows a clear gain.
+work throughout at $p=1$, the depth that current NISQ hardware supports
+reliably. Whether greater depths pay off on hardware is a question for future
+work: it requires many more circuit executions than a queued, quota-limited
+account allows, and therefore better access to the device than we had here.
 
 \subsection{Neighborhoods and their conflict graphs}
 \label{subsec:neigh}
@@ -407,19 +409,104 @@ coherence budget of the hardware.
 The circuits target the IBM Heron~r2 processor \texttt{ibm\_fez} (156
 qubits, heavy-hex coupling map, native gate set CZ, RZ, SX, X), accessed
 through Qiskit Runtime (\texttt{qiskit}~2.5.1 with
-\texttt{qiskit-ibm-runtime}). Development follows a simulator-first
-protocol: we validate each neighborhood on the statevector Aer simulator,
-then on a noisy fake-Heron backend, and only then commit a single
-confirmatory run on \texttt{ibm\_fez}, so that scarce QPU time is spent
-only on the final measurement rather than on debugging or angle tuning.
+\texttt{qiskit-ibm-runtime}). The angle schedule is fixed
+beforehand by the offline calibration of Section~\ref{subsec:fixed}, so that
+scarce QPU time is spent on measurement rather than on angle tuning; all
+reported results are measured on \texttt{ibm\_fez}.
 
 % =====================================================================
 \section{Results and Discussion}
 \label{sec:results}
-% Evaluation methodology; per-neighborhood circuit depth / feasibility
-% ordering; move-selection behavior; open challenges toward on-hardware
-% runs. (Scope: framework + analysis; hard experiments may follow in an
-% extended version.)
+\subsection{Evaluation protocol}
+We evaluate on Taillard PFSP instances with $n=20$ jobs and $m\in\{5,10,20\}$
+machines, ten instances per size, under the same protocol as our windowed
+annealing study so that the two sets of results are directly comparable. Each
+neighborhood drives an iterated-local-search and a simulated-annealing loop; at
+every move the swap-selection QUBO of Section~\ref{sec:method} is assembled and
+handed to the fixed-angle QAOA circuit in place of the annealer. Solution
+quality is reported as the relative percentage deviation
+$\mathrm{RPD}=(C_{\max}-\mathrm{LB})/\mathrm{LB}\times100$ from the Taillard
+lower bound $\mathrm{LB}$, averaged over instances and seeds under a fixed
+wall-clock budget.
+
+A move reads out the circuit by sampling it and returning the sampled bitstring
+of lowest \emph{original}-QUBO energy. This energy-based readout is essential:
+the single most probable bitstring of a low-depth QAOA state is typically the
+all-zeros (do-nothing) assignment or a high-energy, many-bit state, neither of
+which is the QUBO optimum the distribution concentrates on.
+
+\subsection{Execution on quantum hardware}
+\label{subsec:hwresults}
+We ran the four gate neighborhoods on \texttt{ibm\_fez} over the ten Taillard
+$20\times5$ instances under both metaheuristics, eighty runs in total, consuming
+about 460 seconds of QPU time. All windows of a move are submitted as one job,
+so a move costs a single submission irrespective of how many windows the
+decomposition produces.
+
+Table~\ref{tab:rpd_hw} reports the outcome at the longest budget of the
+protocol, ten seconds. Every one of the eighty runs completed exactly one move,
+and every run overshot its budget: measured run times ranged from 10 to 288
+seconds against the ten-second limit. The overshoot is dominated by queueing and
+job overhead rather than by computation, since the billed QPU time per move is
+about three seconds for the linear neighborhoods and seven for the windowed
+ones. Because a single move is the least any run can perform, and one move
+already exceeds the longest budget, the shorter budgets of the protocol cannot
+admit more than one move either; we report the measured column and leave the
+remaining ones for later measurement.
+
+Two features of the table follow from this single-move regime. Adjacent returns
+the same value under both metaheuristics, 25.04, because both loops start from
+the identity permutation and the choice of metaheuristic cannot matter before a
+second move. The differences between ILS and SA for the other three
+neighborhoods amount to hundredths of a percentage point and reflect sampling
+noise on the device rather than algorithmic behaviour.
+
+Two limitations bound what we could measure. The account used here provides ten
+minutes of QPU time per month, which admits roughly one budget column of the
+protocol at a single seed; extending the measurement to the remaining columns,
+to further seeds and to greater depths is a matter of access rather than of
+method. The second limitation concerns speed and is partly ours to solve: a move
+costs about thirty seconds of wall-clock time against three to seven seconds of
+computation, and how much of that gap can be closed---by batching more
+aggressively, by shallower circuits, or by fewer shots per circuit---is an open
+engineering question.
+
+This also raises a question of measurement that we do not regard as settled.
+Charging the queue wait to the running time of the algorithm is what a strict
+wall-clock criterion demands, yet that wait reflects contention among users of a
+shared device rather than any property of the method, and it can differ by an
+order of magnitude between two submissions of the same circuit. Whether such an
+accounting is fair, and what the right one is when quantum and classical
+resources are reached by such different paths, deserves to be settled before
+wall-clock figures from queued devices are read as statements about algorithms.
+
+\begin{table}[t]
+\centering
+\caption{Gate QAOA neighborhoods on the \texttt{ibm\_fez} Heron~r2 processor:
+  mean RPD $\pm$ std [\%] on Taillard $20\times5$ per time budget (columns, ms),
+  over 10 instances at one seed, $p=1$, 4096 shots. Only the 10\,000\,ms column
+  is measured; every run there completed exactly one move.}
+\label{tab:rpd_hw}
+\footnotesize
+\renewcommand{\arraystretch}{0.95}
+\begin{tabular}{@{}lcccccr@{}}
+\toprule
+ILS & 100 & 500 & 1000 & 2000 & 5000 & 10000 \\
+\midrule
+Gate Adjacent   & --- & --- & --- & --- & --- & $25.04\pm10.0$ \\
+Gate Fibonacci  & --- & --- & --- & --- & --- & $23.41\pm9.2$ \\
+Gate Dynasearch & --- & --- & --- & --- & --- & $\mathbf{22.12\pm8.0}$ \\
+Gate Motzkin    & --- & --- & --- & --- & --- & $23.12\pm8.0$ \\
+\midrule
+SA & 100 & 500 & 1000 & 2000 & 5000 & 10000 \\
+\midrule
+Gate Adjacent   & --- & --- & --- & --- & --- & $25.04\pm10.0$ \\
+Gate Fibonacci  & --- & --- & --- & --- & --- & $23.48\pm9.0$ \\
+Gate Dynasearch & --- & --- & --- & --- & --- & $\mathbf{22.38\pm8.7}$ \\
+Gate Motzkin    & --- & --- & --- & --- & --- & $23.59\pm8.1$ \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 % =====================================================================
 \section{Conclusions}

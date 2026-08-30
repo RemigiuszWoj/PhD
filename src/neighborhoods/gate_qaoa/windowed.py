@@ -15,7 +15,7 @@ from src.neighborhoods.common_qubo import (
     enumerate_interval_candidates,
     selected_intervals,
 )
-from src.neighborhoods.gate_qaoa.solve import solve_qaoa
+from src.neighborhoods.gate_qaoa.solve import solve_qaoa_batch
 
 
 def windowed_interval_swaps(
@@ -40,7 +40,7 @@ def windowed_interval_swaps(
 
     w = min(window_size, n)
     step = max(1, int(w * (1 - overlap_ratio)))
-    swaps: List[Tuple[int, int]] = []
+    windows = []                      # (candidates, Q) for each non-empty window
     for start in range(0, n, step):
         end = min(start + w, n)
         if end - start < 2:
@@ -50,10 +50,17 @@ def windowed_interval_swaps(
             head=Head, tail=Tail, boundaries=boundaries,
         )
         if cands:
-            Q = assemble_pairwise_qubo(cands, conflict_fn)
-            solution = solve_qaoa(Q, neighborhood, p=p, backend=backend,
-                                  angles=angles, shots=shots)
-            swaps.extend(selected_intervals(solution, cands))
+            windows.append((cands, assemble_pairwise_qubo(cands, conflict_fn)))
         if end == n:
             break
+    if not windows:
+        return []
+
+    # All windows of this move go out as one batch: on hardware that is a single
+    # job instead of one per window, which is what the queue actually charges for.
+    solutions = solve_qaoa_batch([Q for _, Q in windows], neighborhood, p=p,
+                                 backend=backend, angles=angles, shots=shots)
+    swaps: List[Tuple[int, int]] = []
+    for (cands, _), solution in zip(windows, solutions):
+        swaps.extend(selected_intervals(solution, cands))
     return swaps

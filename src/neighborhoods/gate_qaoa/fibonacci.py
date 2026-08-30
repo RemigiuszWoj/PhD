@@ -20,7 +20,7 @@ def gate_fibonacci_neighborhood(
     pi: List[int],
     processing_times: List[List[int]],
     p: int = 1,
-    backend: str = "statevector",
+    backend: str = "ibm",
     angles: Optional[Tuple[Sequence[float], Sequence[float]]] = None,
     shots: int = 4096,
     use_block_accelerator: bool = True,

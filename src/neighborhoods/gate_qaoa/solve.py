@@ -5,34 +5,27 @@
 This is the gate-model analog of the single annealer call -- one circuit
 execution per move. Backends:
 
-  * ``"statevector"`` : exact noiseless simulation (calibration / validation).
-  * ``"aer_noisy"``   : noisy simulation (requires ``qiskit-aer``).
-  * ``"ibm"``         : real IBM Heron QPU via Qiskit Runtime.
+  * ``"ibm"``       : real IBM Heron QPU via Qiskit Runtime (default).
+  * ``"aer_noisy"`` : noisy simulation (requires ``qiskit-aer``).
+
+Experiments run on hardware only; there is no noiseless-simulator backend.
+Offline angle calibration (``angles.py``) is a separate, one-off step and is
+the only place a statevector is evaluated.
 
 Readout (standard QAOA): the circuit prepares a distribution over bitstrings;
 we draw ``shots`` samples and return the sample with the lowest *original*
-QUBO energy -- exactly what one does on hardware (finite shots, pick the best).
-The statevector backend samples from the exact distribution; the device
-backends sample from the hardware/noisy simulator. Reading out the single
-most-probable bitstring instead is wrong: at low p the argmax basis state is
-typically the all-zeros (do-nothing) state or a high-energy, many-bit state,
-neither of which is the QUBO optimum the distribution actually concentrates on.
-
-Sampling is seeded from the QUBO content, so a given move is reproducible
-across runs (the same sub-QUBO always yields the same selection on the
-noiseless simulator).
+QUBO energy. Reading out the single most-probable bitstring instead is wrong:
+at low p the argmax basis state is typically the all-zeros (do-nothing) state
+or a high-energy, many-bit state, neither of which is the QUBO optimum the
+distribution actually concentrates on.
 
 Angles come from the frozen calibration table ``data/qaoa_angles.json`` keyed
 by ``(neighborhood, p)``, or may be passed explicitly as ``(gammas, betas)``.
 """
-import hashlib
 import json
 import os
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
-
-import numpy as np
-from qiskit.quantum_info import Statevector
 
 from .circuit import (
     QUBO,
@@ -69,32 +62,35 @@ def _load_angles(neighborhood: str, p: int) -> Tuple[List[float], List[float]]:
     return entry["gamma"], entry["beta"]
 
 
-def _qubo_seed(Q: QUBO) -> int:
-    """Deterministic seed derived from the QUBO content.
+_IBM_CACHE = None
 
-    Makes a move's statevector sampling reproducible: the same sub-QUBO always
-    produces the same sampled selection on the noiseless simulator.
+
+def _get_ibm():
+    """Cached (backend, pass manager); building these per move is slow."""
+    global _IBM_CACHE
+    if _IBM_CACHE is None:
+        from qiskit_ibm_runtime import QiskitRuntimeService
+        from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
+
+        token = os.environ.get("IBM_TOKEN")
+        if not token:
+            raise ValueError("backend='ibm' requires IBM_TOKEN in the environment (.env).")
+        service = QiskitRuntimeService(
+            channel="ibm_quantum_platform",
+            token=token,
+            instance=os.environ.get("IBM_CRN"),
+        )
+        hw = service.backend(os.environ.get("IBM_BACKEND", _IBM_BACKEND))
+        _IBM_CACHE = (hw, generate_preset_pass_manager(optimization_level=1, backend=hw))
+    return _IBM_CACHE
+
+
+def _device_counts_batch(circuits, backend: str, shots: int) -> List[Dict[str, int]]:
+    """Run all circuits and return one shot-count histogram per circuit.
+
+    On ``ibm`` the whole list goes out as a single SamplerV2 job, so the queue is
+    paid once per batch rather than once per circuit.
     """
-    items = sorted((f"{a}|{b}", round(float(w), 6)) for (a, b), w in Q.items())
-    return int(hashlib.md5(repr(items).encode()).hexdigest()[:8], 16)
-
-
-def _statevector_counts(K, hn, Jn, gammas, betas, shots: int, seed: int) -> Dict[str, int]:
-    """Sample ``shots`` bitstrings from the exact QAOA distribution."""
-    qc = build_qaoa_circuit(K, hn, Jn, gammas, betas)
-    probs = Statevector(qc).probabilities_dict()
-    keys = list(probs)
-    p = np.fromiter((probs[k] for k in keys), dtype=float)
-    p /= p.sum()
-    draws = np.random.default_rng(seed).choice(len(keys), size=shots, p=p)
-    vals, cnts = np.unique(draws, return_counts=True)
-    return {keys[int(i)]: int(c) for i, c in zip(vals, cnts)}
-
-
-def _device_counts(K, hn, Jn, gammas, betas, backend: str, shots: int) -> Dict[str, int]:
-    """Run a measured circuit and return the full shot-count histogram."""
-    qc = build_qaoa_circuit(K, hn, Jn, gammas, betas, measure=True)
-
     if backend == "aer_noisy":
         try:
             from qiskit_aer import AerSimulator
@@ -102,33 +98,73 @@ def _device_counts(K, hn, Jn, gammas, betas, backend: str, shots: int) -> Dict[s
             raise ImportError(
                 "backend='aer_noisy' requires qiskit-aer (pip install qiskit-aer)."
             ) from exc
-        sim = AerSimulator()
         from qiskit import transpile
-        return sim.run(transpile(qc, sim), shots=shots).result().get_counts()
+        sim = AerSimulator()
+        res = sim.run(transpile(circuits, sim), shots=shots).result()
+        return [res.get_counts(i) for i in range(len(circuits))]
 
     # backend == "ibm": real IBM Heron QPU
-    from qiskit_ibm_runtime import QiskitRuntimeService, SamplerV2
-    from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
+    from qiskit_ibm_runtime import SamplerV2
 
-    token = os.environ.get("IBM_TOKEN")
-    if not token:
-        raise ValueError("backend='ibm' requires IBM_TOKEN in the environment (.env).")
-    service = QiskitRuntimeService(
-        channel="ibm_quantum_platform",
-        token=token,
-        instance=os.environ.get("IBM_CRN"),
-    )
-    hw = service.backend(os.environ.get("IBM_BACKEND", _IBM_BACKEND))
-    isa = generate_preset_pass_manager(optimization_level=1, backend=hw).run(qc)
-    result = SamplerV2(mode=hw).run([isa], shots=shots).result()
-    return result[0].data.meas.get_counts()
+    hw, pm = _get_ibm()
+    result = SamplerV2(mode=hw).run(pm.run(circuits), shots=shots).result()
+    return [result[i].data.meas.get_counts() for i in range(len(circuits))]
+
+
+def _prepare(Q: QUBO, neighborhood: str, p: int, angles):
+    """Shared setup: Ising mapping, normalization and the angle schedule."""
+    variables, h, J, _ = qubo_to_ising(Q)
+    hn, Jn, _ = normalize_ising(h, J)
+    gammas, betas = angles if angles is not None else _load_angles(neighborhood, p)
+    if len(gammas) != p or len(betas) != p:
+        raise ValueError(
+            f"angle schedule length {len(gammas)}/{len(betas)} does not match p={p}."
+        )
+    return variables, len(variables), hn, Jn, gammas, betas
+
+
+def _pick_lowest(Q: QUBO, variables, counts) -> Dict[str, int]:
+    """Energy-based readout: lowest original-QUBO-energy sample."""
+    best = min(counts, key=lambda bs: qubo_energy(Q, bitstring_to_assignment(bs, variables)))
+    return bitstring_to_assignment(best, variables)
+
+
+def solve_qaoa_batch(
+    Qs: Sequence[QUBO],
+    neighborhood: str,
+    p: int = 1,
+    backend: str = "ibm",
+    angles: Optional[Tuple[Sequence[float], Sequence[float]]] = None,
+    shots: int = 4096,
+) -> List[Dict[str, int]]:
+    """Solve several QUBOs at once; returns one assignment per input QUBO.
+
+    Every circuit of the batch is submitted in a single job, so the queue is
+    paid once per batch instead of once per QUBO -- the windows of one move
+    become one submission.
+    """
+    out: List[Dict[str, int]] = [{} for _ in Qs]
+    prepared = {i: _prepare(Q, neighborhood, p, angles) for i, Q in enumerate(Qs) if Q}
+
+    if backend not in ("aer_noisy", "ibm"):
+        raise ValueError(f"unknown backend {backend!r} (ibm|aer_noisy).")
+
+    idx = list(prepared)
+    circuits = [
+        build_qaoa_circuit(prepared[i][1], prepared[i][2], prepared[i][3],
+                           prepared[i][4], prepared[i][5], measure=True)
+        for i in idx
+    ]
+    for i, counts in zip(idx, _device_counts_batch(circuits, backend, shots)):
+        out[i] = _pick_lowest(Qs[i], prepared[i][0], counts)
+    return out
 
 
 def solve_qaoa(
     Q: QUBO,
     neighborhood: str,
     p: int = 1,
-    backend: str = "statevector",
+    backend: str = "ibm",
     angles: Optional[Tuple[Sequence[float], Sequence[float]]] = None,
     shots: int = 4096,
 ) -> Dict[str, int]:
@@ -137,30 +173,9 @@ def solve_qaoa(
     Same contract and return shape as ``common.solve_qubo`` so a neighborhood
     can swap the annealer for QAOA without changing its map-back. The returned
     assignment is the lowest-QUBO-energy sample among ``shots`` draws from the
-    QAOA distribution.
+    QAOA distribution. This is the single-QUBO case of ``solve_qaoa_batch``.
     """
     if not Q:
         return {}
-    variables, h, J, _ = qubo_to_ising(Q)
-    K = len(variables)
-    hn, Jn, _ = normalize_ising(h, J)
-
-    gammas, betas = angles if angles is not None else _load_angles(neighborhood, p)
-    if len(gammas) != p or len(betas) != p:
-        raise ValueError(
-            f"angle schedule length {len(gammas)}/{len(betas)} does not match p={p}."
-        )
-
-    if backend == "statevector":
-        counts = _statevector_counts(K, hn, Jn, gammas, betas, shots, _qubo_seed(Q))
-    elif backend in ("aer_noisy", "ibm"):
-        counts = _device_counts(K, hn, Jn, gammas, betas, backend, shots)
-    else:
-        raise ValueError(f"unknown backend {backend!r} (statevector|aer_noisy|ibm).")
-
-    # Energy-based readout: pick the lowest original-QUBO-energy sampled bitstring.
-    best = min(
-        counts,
-        key=lambda bs: qubo_energy(Q, bitstring_to_assignment(bs, variables)),
-    )
-    return bitstring_to_assignment(best, variables)
+    return solve_qaoa_batch([Q], neighborhood, p=p, backend=backend,
+                            angles=angles, shots=shots)[0]

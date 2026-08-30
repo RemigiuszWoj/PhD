@@ -1,9 +1,8 @@
 """QAOA circuit construction for QUBO neighborhood evaluation.
 
 QUBO -> Ising -> depth-p QAOA circuit. The same functions serve the noiseless
-statevector simulator (angle calibration and validation) and real hardware
-(the circuit transpiles to IBM Heron); only the executing backend differs
-(see solve.py). The variable convention x = (1 - Z)/2 makes a measured
+offline angle calibration (angles.py) and real hardware (the circuit
+transpiles to IBM Heron); only the executing backend differs (see solve.py). The variable convention x = (1 - Z)/2 makes a measured
 computational-basis bit value equal to the QUBO variable value, so a sampled
 bitstring maps straight back to a swap selection.
 """
@@ -97,7 +96,7 @@ def build_qaoa_circuit(
     (``RZ(2 gamma h_i)`` + ``RZZ(2 gamma J_ij)``) and a mixer
     ``e^{-i beta_l H_M}`` (``RX(2 beta)``). Native gates only, so it transpiles
     directly to IBM Heron. ``measure=True`` adds a final measurement (hardware
-    / shot-based sampling); leave it False for exact statevector work.
+    / shot-based sampling); leave it False for offline angle calibration.
     """
     if len(gammas) != len(betas):
         raise ValueError("gammas and betas must have equal length (= p)")

@@ -134,7 +134,7 @@ def _extract_quantum_params(quantum_config: dict | None, mode: str) -> dict:
         cfg = quantum_config or {}
         params = {
             "p": cfg.get("qaoa_p", 1),
-            "backend": cfg.get("qaoa_backend", "statevector"),
+            "backend": cfg.get("qaoa_backend", "ibm"),
             "shots": cfg.get("qaoa_shots", 4096),
         }
         if mode in ("gate_dynasearch", "gate_motzkin"):

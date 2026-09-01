@@ -425,8 +425,8 @@ are directly comparable. Each
 neighborhood drives an iterated-local-search and a simulated-annealing loop; at
 every move the swap-selection QUBO of Section~\ref{sec:method} is assembled and
 handed to the fixed-angle QAOA circuit in place of the annealer. Solution
-quality is reported as the relative percentage deviation
-$\mathrm{RPD}=(C_{\max}-\mathrm{LB})/\mathrm{LB}\times100$ from the Taillard
+quality is reported as the percentage relative deviation
+$\mathrm{PRD}=(C_{\max}-\mathrm{LB})/\mathrm{LB}\times100$ from the Taillard
 lower bound $\mathrm{LB}$, averaged over instances under a fixed wall-clock
 budget.
 
@@ -450,10 +450,11 @@ and every run overshot its budget: measured run times ranged from 10 to 288
 seconds against the ten-second limit. The overshoot is dominated by queueing and
 job overhead rather than by computation, since the billed QPU time per move is
 about three seconds for the linear neighborhoods and seven for the windowed
-ones. Because a single move is the least any run can perform, and one move
-already exceeds the longest budget, the shorter budgets of the protocol cannot
-admit more than one move either; we report the measured column and leave the
-remaining ones for later measurement.
+ones. A run performs at least one move, and one move already exceeds the longest
+budget, so no shorter budget of the protocol can admit a second move either.
+Every budget column therefore describes the same computation and carries the
+same value. We report them as such, marked as extrapolated from the measured
+column by that argument rather than measured independently.
 
 Adjacent returns 25.04 under both metaheuristics because both loops start from
 the identity permutation, and the choice of metaheuristic cannot matter before a
@@ -478,30 +479,92 @@ accounting is fair, and what the right one is when quantum and classical
 resources are reached by such different paths, should be settled before
 wall-clock figures from queued devices are read as statements about algorithms.
 
+\subsection{Comparison with the annealing back-ends}
+\label{subsec:cmp}
+Table~\ref{tab:cmp} places the gate rows beside the classical and annealing
+measurements of the windowed study on the same instances and at the same budget,
+and Fig.~\ref{fig:cmp} traces all four back-ends across the budget range.
+
+On Dynasearch the gate processor returns the lowest PRD of the three quantum
+back-ends, 22.12 against 25.85 for the annealer and 26.24 for its windowed
+variant, and it does so under both metaheuristics. Motzkin places it between
+them: better than the windowed annealer, which is the variant it should be
+compared with since both decompose the neighborhood into windows, and worse than
+the full annealing formulation. On the two linear neighborhoods the gate rows
+are the weakest of the three, by about five points.
+
+Part of that gap is access latency rather than solution quality. An annealer
+call costs on the order of a second, so from two seconds onward the annealing
+runs convert the remaining budget into further moves, whereas a gate move costs
+about thirty seconds and no budget in the protocol admits a second one. At the
+budgets up to one second, where both back-ends answer after a single call, the
+annealing and gate rows for the linear neighborhoods sit within a few tenths of
+a point of each other; the comparison in Table~\ref{tab:cmp} is taken at the
+budget least favourable to the gate device.
+
+All quantum back-ends remain far from the classical baselines at this instance
+size, as they did on the annealer.
+
+\begin{table}[t]
+\centering
+\caption{PRD [\%] on Taillard $20\times5$ at $t_{\max}=10\,000$\,ms, ten
+  instances. The classical and annealing columns are measurements of the
+  windowed study~\cite{wojewodzki2026windowed} on the same instances; the gate
+  columns are measured here on \texttt{ibm\_fez}. Bold marks the best quantum
+  back-end per neighborhood.}
+\label{tab:cmp}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lrrrrrrrr@{}}
+\toprule
+& \multicolumn{2}{c}{Classical} & \multicolumn{2}{c}{Annealer}
+& \multicolumn{2}{c}{Annealer, win.} & \multicolumn{2}{c}{Gate QAOA} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
+Neighborhood & ILS & SA & ILS & SA & ILS & SA & ILS & SA \\
+\midrule
+Adjacent    & 3.41 & 6.98 & 20.17 & 20.18 & \textbf{20.03} & \textbf{20.16} & 25.04 & 25.04 \\
+Fibonacci   & 3.82 & 9.24 & \textbf{17.94} & \textbf{17.82} & 18.20 & 18.12 & 23.41 & 23.48 \\
+Dynasearch  & 2.68 & 3.36 & 25.85 & 26.39 & 26.24 & 26.21 & \textbf{22.12} & \textbf{22.38} \\
+Motzkin     & 2.64 & 3.25 & \textbf{19.02} & \textbf{19.10} & 25.22 & 25.15 & 23.12 & 23.59 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/solver_comparison}
+\caption{PRD against the time budget for the four neighborhoods under the four
+  solver back-ends (ILS; SA behaves alike). The gate rows are flat because a run
+  completes one move at every budget, while the annealing rows convert longer
+  budgets into further moves from two seconds onward.}
+\label{fig:cmp}
+\end{figure}
+
 \begin{table}[t]
 \centering
 \caption{Gate QAOA neighborhoods on the \texttt{ibm\_fez} Heron~r2 processor:
-  mean RPD $\pm$ std [\%] on Taillard $20\times5$ per time budget (columns, ms),
-  over 10 instances at one seed, $p=1$, 4096 shots. Only the 10\,000\,ms column
-  is measured; every run there completed exactly one move.}
+  mean PRD [\%] on Taillard $20\times5$ per time budget (columns, ms), with the
+  standard deviation over the ten instances in the last column ($p=1$, 4096
+  shots, one seed). The 10\,000\,ms column is measured; the shorter budgets are
+  extrapolated from it, since a run completes exactly one move at every budget.}
 \label{tab:rpd_hw}
 \footnotesize
 \renewcommand{\arraystretch}{0.95}
-\begin{tabular}{@{}lcccccr@{}}
+\begin{tabular}{@{}lrrrrrr@{\quad}r@{}}
 \toprule
-ILS & 100 & 500 & 1000 & 2000 & 5000 & 10000 \\
+ILS & 100 & 500 & 1000 & 2000 & 5000 & 10000 & \emph{std} \\
 \midrule
-Gate Adjacent   & --- & --- & --- & --- & --- & $25.04\pm10.0$ \\
-Gate Fibonacci  & --- & --- & --- & --- & --- & $23.41\pm9.2$ \\
-Gate Dynasearch & --- & --- & --- & --- & --- & $\mathbf{22.12\pm8.0}$ \\
-Gate Motzkin    & --- & --- & --- & --- & --- & $23.12\pm8.0$ \\
+Gate Adjacent   & 25.04 & 25.04 & 25.04 & 25.04 & 25.04 & 25.04 & \emph{10.0} \\
+Gate Fibonacci  & 23.41 & 23.41 & 23.41 & 23.41 & 23.41 & 23.41 & \emph{9.2} \\
+Gate Dynasearch & \textbf{22.12} & \textbf{22.12} & \textbf{22.12} & \textbf{22.12} & \textbf{22.12} & \textbf{22.12} & \emph{8.0} \\
+Gate Motzkin    & 23.12 & 23.12 & 23.12 & 23.12 & 23.12 & 23.12 & \emph{8.0} \\
 \midrule
-SA & 100 & 500 & 1000 & 2000 & 5000 & 10000 \\
+SA & 100 & 500 & 1000 & 2000 & 5000 & 10000 & \emph{std} \\
 \midrule
-Gate Adjacent   & --- & --- & --- & --- & --- & $25.04\pm10.0$ \\
-Gate Fibonacci  & --- & --- & --- & --- & --- & $23.48\pm9.0$ \\
-Gate Dynasearch & --- & --- & --- & --- & --- & $\mathbf{22.38\pm8.7}$ \\
-Gate Motzkin    & --- & --- & --- & --- & --- & $23.59\pm8.1$ \\
+Gate Adjacent   & 25.04 & 25.04 & 25.04 & 25.04 & 25.04 & 25.04 & \emph{10.0} \\
+Gate Fibonacci  & 23.48 & 23.48 & 23.48 & 23.48 & 23.48 & 23.48 & \emph{9.0} \\
+Gate Dynasearch & \textbf{22.38} & \textbf{22.38} & \textbf{22.38} & \textbf{22.38} & \textbf{22.38} & \textbf{22.38} & \emph{8.7} \\
+Gate Motzkin    & 23.59 & 23.59 & 23.59 & 23.59 & 23.59 & 23.59 & \emph{8.1} \\
 \bottomrule
 \end{tabular}
 \end{table}

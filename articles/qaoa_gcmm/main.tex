@@ -66,7 +66,7 @@ embedding capacity plays on annealers, producing the same feasibility
 ordering for a different, compilation-grounded reason, and we discuss
 windowed decomposition as a means of taming dense neighborhoods. The
 paper sets out the evaluation methodology and the open challenges on the
-path to on-hardware execution.
+path to routine on-hardware execution.
 \keywords{combinatorial optimization, QUBO, metaheuristics, simulated
   annealing, circuit compilation on heavy-hex hardware, NISQ}
 \end{abstract}
@@ -181,7 +181,7 @@ QUBO encodings without change and studies their behavior on gate-model
 hardware.
 
 The mapping from combinatorial problems to quadratic binary form rests on
-the Ising model, and Lucas catalogued Ising formulations for a broad
+the Ising model, and Lucas cataloged Ising formulations for a broad
 range of NP problems while bounding the number of spins each
 requires~\cite{lucas2014ising}. Quantum annealing is the physical process
 these formulations target; Kadowaki and Nishimori introduced it as a
@@ -460,7 +460,7 @@ Adjacent returns 25.04 under both metaheuristics because both loops start from
 the identity permutation, and the choice of metaheuristic cannot matter before a
 second move. For the other three neighborhoods the ILS and SA values differ by
 hundredths of a percentage point, which is sampling noise on the device rather
-than algorithmic behaviour.
+than algorithmic behavior.
 
 What we could measure was bounded in two ways, and neither concerns the method.
 The account used here provides ten minutes of QPU time per month, which admits
@@ -471,7 +471,8 @@ three to seven seconds of computation. How much of that gap can be closed by
 batching more aggressively, by shallower circuits or by fewer shots is an open
 engineering question.
 
-A question of measurement follows, and we do not regard it as settled. Charging the queue wait to the running time of the algorithm is what a strict
+The measurement convention itself is unsettled. Charging the queue wait to the
+running time of the algorithm is what a strict
 wall-clock criterion demands, yet that wait reflects contention among users of a
 shared device rather than any property of the method, and it can differ by an
 order of magnitude between two submissions of the same circuit. Whether such an
@@ -500,45 +501,10 @@ about thirty seconds and no budget in the protocol admits a second one. At the
 budgets up to one second, where both back-ends answer after a single call, the
 annealing and gate rows for the linear neighborhoods sit within a few tenths of
 a point of each other; the comparison in Table~\ref{tab:cmp} is taken at the
-budget least favourable to the gate device.
+budget least favorable to the gate device.
 
 All quantum back-ends remain far from the classical baselines at this instance
-size, as they did on the annealer.
-
-\begin{table}[t]
-\centering
-\caption{PRD [\%] on Taillard $20\times5$ at $t_{\max}=10\,000$\,ms, ten
-  instances. The classical and annealing columns are measurements of the
-  windowed study~\cite{wojewodzki2026windowed} on the same instances; the gate
-  columns are measured here on \texttt{ibm\_fez}. Bold marks the best quantum
-  back-end per neighborhood.}
-\label{tab:cmp}
-\footnotesize
-\setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}lrrrrrrrr@{}}
-\toprule
-& \multicolumn{2}{c}{Classical} & \multicolumn{2}{c}{Annealer}
-& \multicolumn{2}{c}{Annealer, win.} & \multicolumn{2}{c}{Gate QAOA} \\
-\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
-Neighborhood & ILS & SA & ILS & SA & ILS & SA & ILS & SA \\
-\midrule
-Adjacent    & 3.41 & 6.98 & 20.17 & 20.18 & \textbf{20.03} & \textbf{20.16} & 25.04 & 25.04 \\
-Fibonacci   & 3.82 & 9.24 & \textbf{17.94} & \textbf{17.82} & 18.20 & 18.12 & 23.41 & 23.48 \\
-Dynasearch  & 2.68 & 3.36 & 25.85 & 26.39 & 26.24 & 26.21 & \textbf{22.12} & \textbf{22.38} \\
-Motzkin     & 2.64 & 3.25 & \textbf{19.02} & \textbf{19.10} & 25.22 & 25.15 & 23.12 & 23.59 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\linewidth]{figures/solver_comparison}
-\caption{PRD against the time budget for the four neighborhoods under the four
-  solver back-ends (ILS; SA behaves alike). The gate rows are flat because a run
-  completes one move at every budget, while the annealing rows convert longer
-  budgets into further moves from two seconds onward.}
-\label{fig:cmp}
-\end{figure}
+size, as they did in the annealing study.
 
 \begin{table}[t]
 \centering
@@ -565,6 +531,41 @@ Gate Adjacent   & 25.04 & 25.04 & 25.04 & 25.04 & 25.04 & 25.04 & \emph{10.0} \\
 Gate Fibonacci  & 23.48 & 23.48 & 23.48 & 23.48 & 23.48 & 23.48 & \emph{9.0} \\
 Gate Dynasearch & \textbf{22.38} & \textbf{22.38} & \textbf{22.38} & \textbf{22.38} & \textbf{22.38} & \textbf{22.38} & \emph{8.7} \\
 Gate Motzkin    & 23.59 & 23.59 & 23.59 & 23.59 & 23.59 & 23.59 & \emph{8.1} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/solver_comparison}
+\caption{PRD against the time budget for the four neighborhoods under the four
+  solver back-ends (ILS; SA behaves alike). The gate rows are flat because a run
+  completes one move at every budget, while the annealing rows convert longer
+  budgets into further moves from two seconds onward.}
+\label{fig:cmp}
+\end{figure}
+
+\begin{table}[t]
+\centering
+\caption{PRD [\%] on Taillard $20\times5$ at $t_{\max}=10\,000$\,ms, ten
+  instances. The classical and annealing columns are measurements of the
+  windowed study~\cite{wojewodzki2026windowed} on the same instances; the gate
+  columns are measured here on \texttt{ibm\_fez}. Bold marks the best quantum
+  back-end per neighborhood.}
+\label{tab:cmp}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lrrrrrrrr@{}}
+\toprule
+& \multicolumn{2}{c}{Classical} & \multicolumn{2}{c}{Annealer}
+& \multicolumn{2}{c}{Annealer, win.} & \multicolumn{2}{c}{Gate QAOA} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
+Neighborhood & ILS & SA & ILS & SA & ILS & SA & ILS & SA \\
+\midrule
+Adjacent    & 3.41 & 6.98 & 20.17 & 20.18 & \textbf{20.03} & \textbf{20.16} & 25.04 & 25.04 \\
+Fibonacci   & 3.82 & 9.24 & \textbf{17.94} & \textbf{17.82} & 18.20 & 18.12 & 23.41 & 23.48 \\
+Dynasearch  & 2.68 & 3.36 & 25.85 & 26.39 & 26.24 & 26.21 & \textbf{22.12} & \textbf{22.38} \\
+Motzkin     & 2.64 & 3.25 & \textbf{19.02} & \textbf{19.10} & 25.22 & 25.15 & 23.12 & 23.59 \\
 \bottomrule
 \end{tabular}
 \end{table}

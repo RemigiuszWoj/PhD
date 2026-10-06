@@ -23,9 +23,13 @@ from src.neighborhoods.common import (
     compute_tail,
     solve_qubo,
 )
+from src.neighborhoods.common_qubo import (
+    assemble_pairwise_qubo,
+    enumerate_interval_candidates,
+    selected_intervals,
+)
 from src.neighborhoods.accelerator import (
     compute_block_boundaries,
-    filter_blocked_pairs_npi,
     motzkin_conflict as _motzkin_conflict,
     validate_motzkin_selection as _validate_motzkin,
 )
@@ -57,34 +61,16 @@ def _solve_window_motzkin_qubo(
     num_spin_reversal_transforms: int | None,
 ) -> List[Tuple[int, int]]:
     """Build and solve Motzkin QUBO for window [start..end-1]."""
-    candidates: List[Tuple[int, int, float]] = []
-    for i in range(start, end - 1):
-        for j in range(i + 1, end):
-            delta = compute_endpoint_swap_delta(
-                pi, i, j, Head, Tail, processing_times, base_c
-            )
-            candidates.append((i, j, delta))
-
-    # NPI block property: skip pairs with no boundary in [i, j]
-    candidates = filter_blocked_pairs_npi(candidates, boundaries)
-
+    # Same enumeration + assembly as the single-QUBO and gate families
+    # (common_qubo); Head/Tail/boundaries are reused to avoid recomputation.
+    candidates = enumerate_interval_candidates(
+        pi, processing_times, window=(start, end), filter_delta=False,
+        head=Head, tail=Tail, boundaries=boundaries,
+    )
     if not candidates:
         return []
 
-    num_vars = len(candidates)
-    penalty = sum(abs(d) for _, _, d in candidates) + 1
-    Q: Dict[Tuple[str, str], float] = {}
-
-    for k in range(num_vars):
-        Q[(f"x{k}", f"x{k}")] = candidates[k][2]
-
-    for k in range(num_vars):
-        i1, j1, _ = candidates[k]
-        for l in range(k + 1, num_vars):
-            i2, j2, _ = candidates[l]
-            if _motzkin_conflict(i1, j1, i2, j2):
-                Q[(f"x{k}", f"x{l}")] = penalty
-            # nested/disjoint pairs → Q[k,l] = 0 (no penalty)
+    Q = assemble_pairwise_qubo(candidates, _motzkin_conflict)
 
     solution = solve_qubo(
         Q,
@@ -96,9 +82,7 @@ def _solve_window_motzkin_qubo(
         chain_strength=chain_strength,
         num_spin_reversal_transforms=num_spin_reversal_transforms,
     )
-    selected_k = [int(v[1:]) for v, val in solution.items() if val == 1]
-    raw = [(candidates[k][0], candidates[k][1]) for k in selected_k]
-    return _validate_motzkin(raw)
+    return _validate_motzkin(selected_intervals(solution, candidates))
 
 
 def quantum_motzkin_enhanced(

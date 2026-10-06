@@ -50,17 +50,13 @@ Objective: Find binary assignment minimizing H, selecting non-overlapping
 
 from typing import Dict, List, Optional, Tuple
 
-from src.neighborhoods.common import (
-    compute_endpoint_swap_delta,
-    compute_head,
-    compute_tail,
-    solve_qubo,
+from src.neighborhoods.common import solve_qubo
+from src.neighborhoods.common_qubo import (
+    assemble_pairwise_qubo,
+    enumerate_interval_candidates,
+    selected_intervals,
 )
-from src.neighborhoods.accelerator import (
-    compute_block_boundaries,
-    filter_blocked_pairs_npi,
-    validate_no_overlap_intervals,
-)
+from src.neighborhoods.accelerator import validate_no_overlap_intervals
 from src.permutation_procesing import c_max
 
 
@@ -103,30 +99,16 @@ def quantum_dynasearch_neighborhood(
     if n < 2:
         return pi.copy(), c_max(pi, processing_times), []
 
-    # Compute Head+Tail matrices
-    Head = compute_head(pi, processing_times)
-    Tail = compute_tail(pi, processing_times)
-    m = len(processing_times)
-    base_c = Head[m - 1][n - 1]
-
-    # Enumerate candidates and compute deltas.
-    # L_max caps segment length to keep the simulator tractable; on the real
-    # QPU (backend='dwave') the full O(n²) variable space is used natively,
-    # so the cap is ignored there.
+    # Enumerate endpoint-swap candidates (shared with enhanced/gate via
+    # common_qubo). L_max caps segment length for the simulator; on the QPU
+    # (backend='dwave') the full O(n^2) space is used. The NPI block filter is
+    # applied inside the enumerator.
     effective_L_max = L_max if backend != "dwave" else None
-    all_candidates: List[Tuple[int, int, float]] = []  # (i, j, delta)
-    for i in range(n - 1):
-        j_max = n - 1 if effective_L_max is None else min(n - 1, i + effective_L_max - 1)
-        for j in range(i + 1, j_max + 1):
-            delta = compute_endpoint_swap_delta(pi, i, j, Head, Tail, processing_times, base_c)
-            all_candidates.append((i, j, delta))
+    all_candidates = enumerate_interval_candidates(
+        pi, processing_times, L_max=effective_L_max, filter_delta=False)
 
     if not all_candidates:
-        return pi.copy(), base_c, []
-
-    # NPI block property: skip pairs where no boundary lies in [i, j]
-    boundaries = compute_block_boundaries(Head, processing_times, pi)
-    all_candidates = filter_blocked_pairs_npi(all_candidates, boundaries)
+        return pi.copy(), c_max(pi, processing_times), []
 
     # Delta filter (δ ≥ 0 removed) is a simulator-only size reduction: the
     # solver would set those x_k = 0 anyway. On the real QPU (backend='dwave')
@@ -144,25 +126,12 @@ def quantum_dynasearch_neighborhood(
             new_pi = pi.copy()
             new_pi[best[0]], new_pi[best[1]] = new_pi[best[1]], new_pi[best[0]]
             return new_pi, c_max(new_pi, processing_times), [(best[0], best[1])]
-        return pi.copy(), base_c, []
+        return pi.copy(), c_max(pi, processing_times), []
 
     num_vars = len(candidates)
 
-    # Build QUBO: interval no-overlap
-    penalty = sum(abs(d) for _, _, d in candidates) + 1
-    Q: Dict[Tuple[str, str], float] = {}
-
-    # Diagonal: cost of selecting each swap
-    for k in range(num_vars):
-        Q[(f"x{k}", f"x{k}")] = candidates[k][2]  # delta_k
-
-    # Off-diagonal: penalty for overlapping intervals
-    for k in range(num_vars):
-        i1, j1, _ = candidates[k]
-        for l in range(k + 1, num_vars):
-            i2, j2, _ = candidates[l]
-            if _intervals_overlap(i1, j1, i2, j2):
-                Q[(f"x{k}", f"x{l}")] = penalty
+    # Build QUBO: interval no-overlap (same matrix Q as the annealer receives)
+    Q = assemble_pairwise_qubo(candidates, _intervals_overlap)
 
     # Solve QUBO
     solution = solve_qubo(
@@ -175,11 +144,8 @@ def quantum_dynasearch_neighborhood(
         chain_strength=chain_strength,
         num_spin_reversal_transforms=num_spin_reversal_transforms,
     )
-    selected_indices = sorted(int(v[1:]) for v, val in solution.items() if val == 1)
-
     # Extract selected intervals and validate no-overlap
-    selected_intervals = [(candidates[k][0], candidates[k][1]) for k in selected_indices]
-    valid_swaps = validate_no_overlap_intervals(selected_intervals)
+    valid_swaps = validate_no_overlap_intervals(selected_intervals(solution, candidates))
 
     # Fallback: if nothing selected, pick the single swap with minimal delta
     if not valid_swaps:

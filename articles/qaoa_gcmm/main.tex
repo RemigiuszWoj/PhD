@@ -1,0 +1,883 @@
+%% GCMM 2026 -- Special Session SS3 "Quantum-Enhanced Optimization and
+%% Intelligent Control". OFFICIAL Springer Proceedings template (svproc),
+%% as provided on the GCMM site for LNME/LNNS.
+%% The class files svproc.cls + aliascnt.sty + remreset.sty are bundled
+%% in this folder because svproc is NOT in TeXLive; on Overleaf start
+%% from the official "ProcSci_TeX" template instead.
+\documentclass{svproc}
+
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{url}
+% Springer proceedings: do NOT load hyperref in the final camera-ready.
+\def\UrlFont{\rmfamily}
+
+%% Blind-review toggle: \blindtrue = first (review) submission -- GCMM
+%% requires a blind first version (no author names/affiliation/
+%% acknowledgements); \blindfalse = camera-ready with full details.
+\newif\ifblind
+\blindtrue
+
+\begin{document}
+\mainmatter
+
+\title{Gate-Model Quantum Neighborhood Search for the Permutation
+       Flow Shop Problem via Fixed-Angle QAOA}
+\titlerunning{Gate-Model Quantum Neighborhood Search for the PFSP}
+
+\ifblind
+  \author{}
+  \authorrunning{}
+  \institute{}
+\else
+  \author{Remigiusz Wojew\'{o}dzki \and Wojciech Bo\.{z}ejko}
+  \authorrunning{R. Wojew\'{o}dzki and W. Bo\.{z}ejko}
+  % GCMM: corresponding author only, corporate (institutional) e-mail only.
+  \institute{Wroc\l{}aw University of Science and Technology, Faculty of
+    Information and Communication Technology, Department of Control and
+    Quantum Computing, Wroc\l{}aw, Poland,\\
+    \email{wojciech.bozejko@pwr.edu.pl}}
+\fi
+
+\maketitle
+
+\begin{abstract}
+The permutation flow shop problem (PFSP) is a canonical NP-hard
+scheduling problem whose local-search solvers spend most of their
+effort evaluating neighborhood moves. Recent work has offloaded this
+evaluation to quantum annealers by casting neighborhoods as QUBO
+problems, yet the gate-model paradigm -- despite its flexible
+connectivity -- remains largely unexplored for scheduling. This paper
+introduces a gate-model framework that evaluates PFSP neighborhoods with
+the Quantum Approximate Optimization Algorithm (QAOA) embedded in
+classical Iterated Local Search and Simulated Annealing metaheuristics.
+We reuse the swap-selection QUBO encoding from the annealing
+line, so a single problem matrix drives either an annealer or a QAOA
+circuit, and we adopt a fixed-angle QAOA whose variational angles are
+pre-optimized offline; on hardware each move then costs a single circuit
+execution, which keeps the method viable under NISQ constraints. We
+formulate all four neighborhood structures (Adjacent, Fibonacci,
+Dynasearch, Motzkin) and analyze how their conflict-graph density
+governs circuit depth once the QUBO is compiled onto superconducting
+hardware, from a heavy-hex lattice to a resonator-coupled star. Depth
+assumes the role that embedding capacity plays on annealers and produces
+the same feasibility ordering for a different, compilation-grounded
+reason, and windowed decomposition tames the dense neighborhoods.
+Measurements on three processors separate two regimes: neighborhoods
+whose circuits stay short return the same makespan on a 156-qubit
+heavy-hex device and on a 16-qubit resonator device, instance by
+instance, while the deepest circuits shift between coupling maps. The
+paper sets out the evaluation methodology, reports this execution, and
+states the open challenges that remain.
+\keywords{combinatorial optimization, QUBO, metaheuristics, simulated
+  annealing, circuit compilation on superconducting hardware, NISQ}
+\end{abstract}
+
+% =====================================================================
+\section{Introduction}
+\label{sec:intro}
+The permutation flow shop problem (PFSP) is one of the most extensively
+studied NP-hard problems in production scheduling. Given $n$ jobs that
+must be processed in the same order on $m$ machines, the task is to find
+a single job permutation that minimizes the makespan $C_{\max}$, the
+completion time of the last job on the last machine. Because the number
+of permutations grows factorially, exact methods are limited to small
+instances, and practical solvers rely on local-search metaheuristics
+such as iterated local search, simulated annealing, and tabu search.
+These methods spend the overwhelming majority of their running time in
+one inner operation: evaluating the moves of a neighborhood to decide
+where to step next. The cost of this evaluation, repeated millions of
+times over a search, is the dominant computational bottleneck and the
+natural target for acceleration.
+
+A recent line of work offloads that evaluation to quantum hardware by
+casting each neighborhood as a quadratic unconstrained binary
+optimization (QUBO) problem and solving it on a quantum
+annealer~\cite{wojewodzki2026bpasts,wojewodzki2026windowed}. The
+annealer selects, in a single call, the subset of moves that jointly
+improve the makespan without conflicting, and the classical
+metaheuristic proceeds from the returned permutation. The gate-model
+paradigm, however, has remained almost untouched for scheduling, even
+though it offers programmable circuits, routing to arbitrary qubit
+pairs, and steadily growing access through cloud platforms such as IBM
+Quantum. Whether the same neighborhood-as-QUBO idea can be carried from
+the annealer to a gate-model device, and what changes when it is, is the
+question this paper addresses.
+
+This paper introduces a gate-model framework that evaluates PFSP
+neighborhoods with the Quantum Approximate Optimization Algorithm
+(QAOA)~\cite{farhi2014qaoa} embedded in classical iterated local search
+and simulated annealing. The framework reuses the swap-selection QUBO
+encoding of the annealing line, so that a single problem matrix drives
+either an annealer or a QAOA circuit and the two paradigms are compared
+on identical instances. To keep the method viable on noisy
+intermediate-scale hardware, we adopt a fixed-angle QAOA whose
+variational angles are pre-optimized offline and then frozen, which reduces
+the online cost to one circuit execution per move, the same budget the
+annealer spends. We formulate all four neighborhood structures used by
+the annealing line and analyze how the density of their conflict graphs
+governs circuit depth once the QUBO is compiled onto superconducting
+hardware, on coupling maps ranging from a heavy-hex lattice to a
+resonator-coupled star. Our central observation is that this depth
+plays the role that embedding capacity plays on the annealer: it
+produces the same feasibility ordering of the neighborhoods for a
+different, compilation-grounded reason, and windowed decomposition tames
+the dense neighborhoods just as it does on the annealer.
+
+This work addresses the evaluation methodology and its analysis rather
+than a large-scale hardware benchmark, and two constraints justify that
+focus. Current gate-model devices are noisy and shallow, so a circuit
+that is slightly too deep returns almost random samples. It therefore
+matters to know in advance which neighborhoods compile to shallow
+circuits. Cloud access is also metered in minutes per month, which rules
+out the many exploratory executions that a variational QAOA would need
+and makes the offline fixed-angle design necessary. The framework already
+produces results that transfer beyond one device. A single swap-selection
+QUBO drives both an annealer and a QAOA circuit, so the neighborhoods and
+their penalties carry over unchanged and only the solver back-end
+changes. The depth argument then yields a hardware-agnostic rule for
+selecting neighborhoods. A neighborhood that fits an annealer's
+connectivity also compiles to a shallow gate-model circuit. Simulation enters
+only once, offline, to fix the QAOA angles; every result we report is
+measured on quantum processors.
+
+% =====================================================================
+\section{Literature Review}
+\label{sec:related}
+The permutation flow shop problem has served as a testbed for scheduling
+algorithms since Taillard released the benchmark instances that remain in
+standard use today~\cite{taillard1993}. The problem is strongly NP-hard
+once three or more machines are involved, as established by Garey,
+Johnson, and Sethi~\cite{garey1976}, which is why practical solvers rely
+on heuristics. Among constructive heuristics, the method of Nawaz,
+Enscore, and Ham is still regarded as the strongest of its kind and is
+the usual starting point for local search~\cite{neh1983}. Ruiz and Maroto
+compared a large collection of heuristics and metaheuristics for the
+makespan objective and confirmed that iterated local search and simulated
+annealing are among the most effective approaches~\cite{ruizmaroto2005}.
+These two metaheuristics, which host the quantum subroutine in our
+framework, trace back to this literature: simulated annealing was
+introduced as a general optimization method by Kirkpatrick, Gelatt, and
+Vecchi~\cite{kirkpatrick1983}, and iterated local search was later
+formalized by Louren\c{c}o, Martin, and St\"{u}tzle~\cite{lourenco2003}.
+The power of such methods depends on how large a neighborhood they can
+search at each step. Ahuja, Ergun, Orlin, and Punnen surveyed very
+large-scale neighborhood search, in which a neighborhood of exponential
+size is explored in polynomial time~\cite{ahuja2002}. Congram, Potts, and
+van de Velde introduced dynasearch, which uses dynamic programming to
+apply several independent interchange moves in a single step and gives
+its name to the Dynasearch neighborhood studied here~\cite{congram2002}.
+
+A more recent direction replaces the classical evaluation of these
+neighborhoods with a quantum subroutine, encoding each neighborhood as a
+QUBO whose solution selects a set of compatible improving swaps. One
+study formulated classical and quantum versions of several flow shop
+neighborhoods and compared them inside iterated local search and
+simulated annealing~\cite{wojewodzki2026bpasts}. A companion paper
+introduced the Motzkin neighborhood, whose non-crossing structure
+produces a sparser conflict graph than the overlap-based
+alternatives~\cite{wojewodzki2026soco}. A third made the approach
+scalable through a windowed QUBO decomposition that keeps every
+subproblem within the connectivity of the
+annealer~\cite{wojewodzki2026windowed}. The present work adopts these
+QUBO encodings without change and studies their behavior on gate-model
+hardware.
+
+The mapping from combinatorial problems to quadratic binary form rests on
+the Ising model, and Lucas cataloged Ising formulations for a broad
+range of NP problems while bounding the number of spins each
+requires~\cite{lucas2014ising}. Quantum annealing is the physical process
+these formulations target; Kadowaki and Nishimori introduced it as a
+transverse-field method for driving an Ising system toward its ground
+state~\cite{kadowaki1998}. On real hardware, Venturelli, Marchand, and
+Rojo implemented job-shop scheduling on a D-Wave annealer and reported
+both its promise and the embedding limits that constrain problem
+size~\cite{venturelli2015}.
+
+The gate-model counterpart of quantum annealing for optimization is the
+quantum approximate optimization algorithm of Farhi, Goldstone, and
+Gutmann, which alternates cost and mixer layers whose angles are tuned to
+minimize the objective~\cite{farhi2014qaoa}. Zhou, Wang, Choi, Pichler,
+and Lukin analyzed its optimization landscape on near-term devices and
+found that good angles follow a regular pattern rather than scattering
+across the parameter space~\cite{zhou2020}. Wurtz and Lykov turned this
+regularity into fixed-angle conjectures that supply near-optimal
+parameters without instance-specific tuning~\cite{wurtz2021fixed}, and
+Galda, Liu, Lykov, Alexeev, and Safro showed that optimal angles transfer
+between graphs that share local structure~\cite{galda2021}. Together
+these results are what make the offline, fixed-angle design of our
+framework possible. The closest gate-model work on scheduling is that of
+Amaro, Rosenkranz, Fitzpatrick, Hirano, and Fiorentini, who ran several
+variational quantum heuristics, QAOA among them, on a small job-shop
+instance and found convergence on present hardware difficult~\cite{amaro2022}.
+Our neighborhood-level encoding keeps each circuit small, which is
+precisely what makes a fixed-angle approach practical where an
+end-to-end formulation struggles.
+
+The hardware itself determines which circuits can run at all. Preskill
+characterized the noisy intermediate-scale quantum regime, in which noise
+sharply limits the depth of a reliable circuit~\cite{preskill2018}. IBM's
+superconducting processors are built on the heavy-hexagonal lattice of
+Chamberland, Zhu, Yoder, Hertzberg, and Cross, which reduces frequency
+collisions at the cost of sparse qubit connectivity~\cite{chamberland2020}.
+Compiling a QUBO with many couplings onto such a lattice therefore
+requires routing, and Li, Ding, and Xie gave an efficient qubit-mapping
+and routing method whose inserted SWAP gates are exactly what deepen the
+circuits analyzed here~\cite{li2019}. Circuit depth on this hardware thus
+assumes the role that embedding capacity plays on the annealer, which is
+the link this paper develops.
+
+% =====================================================================
+\section{Research Methodology}
+\label{sec:method}
+
+Our framework leaves the classical metaheuristic untouched and replaces
+only the neighborhood-evaluation oracle with a gate-model quantum
+subroutine. Every move evaluation is cast as a QUBO instance, mapped to
+an Ising Hamiltonian, and solved approximately by a fixed-angle QAOA
+circuit~\cite{farhi2014qaoa}. This mirrors the annealing line of
+work~\cite{wojewodzki2026bpasts,wojewodzki2026windowed}: a single
+swap-selection QUBO drives either a quantum annealer or a gate-model
+QAOA circuit, so only the solver backend changes and the two paradigms
+are compared on identical instances. The quantum subroutine is embedded,
+unchanged, in the same Iterated Local Search and Simulated Annealing
+hosts used by the annealing line.
+
+\subsection{Swap-selection QUBO encoding}
+\label{subsec:qubo}
+We reuse the swap-selection encoding of the annealing
+line~\cite{wojewodzki2026bpasts}. The neighborhood supplies $K$ swap
+candidates, and a binary variable $x_k=1$, for $k=1,\dots,K$, indicates
+that candidate $k$ is applied to the current permutation. Selecting
+a subset of compatible swaps is written as the minimization of a
+quadratic form
+\begin{equation}
+  \min_{\mathbf{x}\in\{0,1\}^{K}}\
+  \mathbf{x}^{\mathsf T} Q\,\mathbf{x},
+  \label{eq:qubo}
+\end{equation}
+where $Q_{kk}=\delta_k$, for $k=1,\dots,K$, is the makespan change induced
+by swap $k$, evaluated in $O(1)$ time through the Head--Tail decomposition.
+The matrix is upper triangular, so for $1\le k<l\le K$ the entry $Q_{kl}$
+equals $\lambda$ when candidates $k$ and $l$ conflict and zero otherwise, and
+each conflicting pair is penalized once. The penalty
+\begin{equation}
+  \lambda \;=\; \sum_{k=1}^{K}\lvert\delta_k\rvert \;+\; 1
+  \label{eq:penalty}
+\end{equation}
+dominates the objective, so any solution that selects two conflicting
+swaps is more expensive than any feasible one. The one-hot Adjacent encoding
+is the exception. There every pair conflicts, so the penalty also enters the
+diagonal, with $Q_{kk}=\delta_k-P$ and $Q_{kl}=2P$ for $k<l$, where
+$P=2\max_{k}\lvert\delta_k\rvert+1$. The pattern of penalized
+pairs is the fingerprint of the neighborhood
+(Section~\ref{subsec:neigh}). The matrix $Q$ in~\eqref{eq:qubo} is the
+same matrix submitted to the quantum annealer in the companion
+work~\cite{wojewodzki2026windowed}; only the solver that follows differs.
+
+\subsection{From the QUBO to a QAOA circuit}
+\label{subsec:circuit}
+The change of variables $Z_k=2x_k-1$, i.e.\ $x_k=(1+Z_k)/2$, turns the
+QUBO~\eqref{eq:qubo} into an Ising cost
+Hamiltonian~\cite{lucas2014ising}
+\begin{equation}
+  H_C \;=\; \sum_{i=1}^{K} h_i Z_i \;+\; \sum_{1\le i<j\le K} J_{ij} Z_i Z_j
+  \;+\; \mathrm{const},
+  \label{eq:ising}
+\end{equation}
+where $Z_i$ and $X_i$ are the Pauli-$Z$ and Pauli-$X$ operators acting on
+qubit $i$, with one qubit per swap candidate, and the linear fields $h_i$ and
+the couplings $J_{ij}$ follow directly from the entries of $Q$. A depth-$p$ QAOA prepares the parameterized
+state
+\begin{equation}
+  \lvert\gamma,\beta\rangle \;=\;
+  \Bigl(\textstyle\prod_{l=1}^{p}
+        e^{-i\beta_l H_M}\,e^{-i\gamma_l H_C}\Bigr)
+  \lvert +\rangle^{\otimes K},
+  \qquad H_M=\sum_{i=1}^{K} X_i,
+  \label{eq:qaoa}
+\end{equation}
+with the transverse-field mixer $H_M$. The circuit carries $p$ layers and two
+angles per layer, $\gamma_l$ for the cost evolution and $\beta_l$ for the
+mixer, which we optimize over $\gamma_l\in[0,\pi]$ and
+$\beta_l\in[0,\pi/2]$. For $p=1$ each layer compiles to elementary gates. An initial layer of Hadamard gates places the register
+in an equal superposition over all move selections. The cost evolution
+$e^{-i\gamma H_C}$ is realized as a single-qubit rotation
+$R_Z(2\gamma h_i)$ on every variable together with a two-qubit rotation
+$R_{ZZ}(2\gamma J_{ij})$ on every coupled pair, and the mixer
+$e^{-i\beta H_M}$ as a rotation $R_X(2\beta)$ on every qubit. Sampling
+the circuit and taking the most frequent bitstring yields the selected
+swap set, that is, the chosen neighborhood move. Figure~\ref{fig:qaoa_fib}
+shows the resulting $p=1$ circuit for a small Fibonacci instance. The set
+of $R_{ZZ}$ gates is exactly the edge set of the conflict graph of $Q$,
+so the neighborhood structure alone determines the two-qubit layer of the
+circuit.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/qaoa_circuit_fibonacci}
+\caption{QAOA circuit ($p=1$) for a four-variable Fibonacci neighborhood.}
+\label{fig:qaoa_fib}
+\end{figure}
+
+\subsection{Fixed-angle QAOA with offline angle optimization}
+\label{subsec:fixed}
+Variational QAOA re-optimizes the angles $(\gamma,\beta)$ for every
+instance, spending tens to hundreds of circuit executions before a single
+move is chosen. Under NISQ noise and a tight quantum-runtime budget---the
+IBM Open plan grants roughly ten minutes of QPU time per twenty-eight-day
+window---this is not viable inside a metaheuristic that evaluates
+thousands of moves. We therefore fix the angles per neighborhood type and
+obtain them offline, once. For each of the four neighborhoods a single
+angle pair $(\gamma^\star,\beta^\star)$ is optimized on a classical
+statevector simulation by an exhaustive two-dimensional grid search over that
+range followed by local refinement, by minimizing the expected cost
+\begin{equation}
+  (\gamma^\star,\beta^\star)
+  \;=\; \arg\min_{\gamma,\beta}\
+  \langle\gamma,\beta\lvert H_C\rvert\gamma,\beta\rangle,
+  \qquad \gamma\in[0,\pi],\ \beta\in[0,\pi/2],
+  \label{eq:angleopt}
+\end{equation}
+averaged over a small training set of representative QUBO instances of
+that neighborhood. The angles are then frozen and reused for every move
+of that neighborhood at run time, so the offline cost is amortized over
+the whole search and the online cost per move stays at a single circuit
+execution. This strategy relies on angle transferability: for a fixed
+neighborhood the optimal $p=1$ angles are near-constant across instances,
+a property this design relies on. As a
+training-free baseline we also report the instance-independent $p=1$
+angles given by the fixed-angle conjectures of Wurtz and
+Lykov~\cite{wurtz2021fixed}. On hardware each move therefore costs one
+circuit execution, the direct gate-model analog of the annealer's single
+call per move, which is the basis for a fair wall-clock comparison. We
+work throughout at $p=1$, the depth that current NISQ hardware supports
+reliably. Whether greater depths pay off on hardware is a question for future
+work: it requires many more circuit executions than a queued, quota-limited
+account allows, and therefore better access to the device than we had here.
+
+\subsection{Neighborhoods and their conflict graphs}
+\label{subsec:neigh}
+All four neighborhoods reuse their annealing
+QUBOs~\cite{wojewodzki2026bpasts,wojewodzki2026soco} and differ only in
+the coupling pattern of the $R_{ZZ}$ layer in~\eqref{eq:qaoa}, that is,
+in the topology of the conflict graph. The Adjacent neighborhood selects
+one of the $n-1$ adjacent transpositions under a one-hot constraint, so
+every pair of variables conflicts and its conflict graph is complete. The
+Fibonacci neighborhood penalizes only consecutive overlapping swaps and
+so yields a tridiagonal chain, the sparsest of the four. The Dynasearch
+and Motzkin neighborhoods both act on endpoint-swap intervals but apply
+different conflict rules: Dynasearch penalizes every pair of overlapping
+intervals, nested ones included, whereas Motzkin admits nested intervals
+and penalizes only crossings and shared endpoints. Motzkin's conflict
+graph is therefore a subgraph of Dynasearch's and is strictly sparser,
+which is precisely the property that motivates the Motzkin
+neighborhood~\cite{wojewodzki2026soco}. The Adjacent and Dynasearch
+graphs are dense and compile to the deepest circuits, while Fibonacci's
+tridiagonal chain stays shallowest; Motzkin sits between them, sparser than
+Dynasearch but far denser than Fibonacci.
+Figure~\ref{fig:neigh_circuits} shows example $p=1$ circuits for the
+Adjacent, Dynasearch, and Motzkin neighborhoods; the Fibonacci circuit is
+the one in Fig.~\ref{fig:qaoa_fib}. Each $R_{ZZ}$ gate corresponds to one
+edge of the conflict graph, so the two-qubit gate count is read directly
+off the graph.
+
+\begin{figure}[p]
+\centering
+\includegraphics[width=\textwidth]{figures/qaoa_adjacent}\\[0.4ex]
+{\footnotesize (a) Adjacent: complete conflict graph (dense)}\\[2.2ex]
+\includegraphics[width=\textwidth]{figures/qaoa_dynasearch}\\[0.4ex]
+{\footnotesize (b) Dynasearch: all interval overlaps penalized (dense)}\\[2.2ex]
+\includegraphics[width=\textwidth]{figures/qaoa_motzkin}\\[0.4ex]
+{\footnotesize (c) Motzkin: nesting admitted, only crossings penalized (sparse)}
+\caption{Example QAOA cost-and-mixer layers ($p=1$) for the Adjacent,
+  Dynasearch, and Motzkin neighborhoods; Fibonacci is in
+  Fig.~\ref{fig:qaoa_fib}.}
+\label{fig:neigh_circuits}
+\end{figure}
+
+\subsection{Compilation across coupling maps}
+\label{subsec:depth}
+An $R_{ZZ}$ gate requires its two qubits to be physically adjacent, so on any
+fixed coupling map the compiler routes the remaining pairs through SWAP
+networks, which deepen the circuit and inject additional noise. Circuit depth
+after transpilation therefore plays the role that embedding capacity plays on
+the annealer. To separate the effect of the coupling map from everything else,
+we compiled the same four swap-selection QUBOs, taken from the first Taillard
+$20\times5$ instance, onto four processors: the heavy-hex lattice of IBM
+Heron~r2, the square lattices of IQM Crystal~20 and Crystal~54, and the star
+architecture of IQM Star~16, where every qubit couples to one central
+resonator and a MOVE operation takes the place of a SWAP network. All
+figures are taken at $p=1$, with windows of six for the dense neighborhoods,
+and summed over the circuits of one move; on Star~16 the two-qubit count is CZ
+plus MOVE. Transpilation consumes no device time, so this comparison cost no quota.
+
+Table~\ref{tab:depth} admits two readings. The ordering of the four
+neighborhoods by compiled depth is the same on every coupling map, with
+Fibonacci well below Adjacent and both well below Motzkin and Dynasearch, so
+the feasibility ordering the annealing line observed does not depend on the
+choice of hardware. The absolute depths do depend on it, and heavy-hex is the
+least favourable of the four, since the square lattices compile the same
+circuits between 1.7 and 2.6 times shallower.
+
+The Fibonacci row is the control. Its tridiagonal QUBO compiles to fourteen CZ
+gates on all four maps, because a tridiagonal interaction graph embeds in a
+path and needs no routing anywhere, so nothing in that row can be attributed
+to the device. The star architecture removes routing for the dense
+neighborhoods too, cutting the CZ count of Dynasearch from 1668 to 696, but it
+pays in MOVE operations that serialize through the single resonator, which is
+why its depth lands between the two lattices rather than below them.
+Connectivity buys gate count, not depth.
+
+For the dense neighborhoods we reuse the windowed decomposition of the
+annealing line~\cite{wojewodzki2026windowed}: solving the QUBO on small
+overlapping windows keeps each per-window circuit shallow enough to run within
+the coherence budget of the hardware.
+
+\begin{table}[t]
+\centering
+\caption{Compiled depth $d$ and two-qubit gate count for one move of each
+  neighborhood, with the mean over the four coupling maps on the right.}
+\label{tab:depth}
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrrrrrrrr@{\hspace{1.2em}}rr@{}}
+\toprule
+& \multicolumn{2}{c}{Heron~r2} & \multicolumn{2}{c}{Crystal~20}
+& \multicolumn{2}{c}{Crystal~54} & \multicolumn{2}{c}{Star~16}
+& \multicolumn{2}{c}{\emph{Average}} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}\cmidrule(lr){10-11}
+Neighborhood & $d$ & 2q & $d$ & 2q & $d$ & 2q & $d$ & 2q & $d$ & 2q \\
+\midrule
+Fibonacci  & 58   & 14   & \textbf{22}   & 14   & \textbf{22}   & 14   & 38   & 28            & \emph{35}   & \emph{18} \\
+Adjacent   & 337  & 195  & 200  & 153  & \textbf{188}  & 159  & 227  & \textbf{180}  & \emph{238}  & \emph{172} \\
+Motzkin    & 2208 & 1455 & 1280 & 1080 & \textbf{1177} & 1077 & 1438 & \textbf{1180} & \emph{1526} & \emph{1198} \\
+Dynasearch & 2509 & 1668 & 1466 & 1287 & \textbf{1383} & 1275 & 1758 & \textbf{1438} & \emph{1779} & \emph{1417} \\
+\bottomrule
+\end{tabular*}
+\end{table}
+
+\subsection{Hardware and software}
+\label{subsec:hw}
+The circuits target the IBM Heron~r2 processor \texttt{ibm\_fez} (156
+qubits, heavy-hex coupling map with 352 couplings, native gate set CZ, RZ,
+SX, X), accessed through Qiskit Runtime (\texttt{qiskit}~2.5.1 with
+\texttt{qiskit-ibm-runtime}). A second set of measurements runs on two IQM
+processors reached through IQM Resonance: \texttt{garnet} (Crystal~20, 20
+qubits on a square lattice with 30 couplings) and \texttt{sirius} (Star~16,
+16 qubits coupled to one central resonator). Both use a CZ two-qubit gate
+with single-qubit rotations, and \texttt{sirius} adds the qubit-resonator
+MOVE operation, so the circuits of Section~\ref{sec:method} compile to all
+three devices unchanged. The angle schedule is fixed beforehand by the
+offline calibration of Section~\ref{subsec:fixed}, so that scarce QPU time is
+spent on measurement rather than on angle tuning.
+
+% =====================================================================
+\section{Results and Discussion}
+\label{sec:results}
+The evaluation has two parts. The first repeats the protocol of the annealing
+line on a heavy-hex processor, which places the gate rows beside the published
+classical and annealing measurements on the same instances. The second changes
+the coupling map and holds everything else fixed, which puts the compilation
+argument of Section~\ref{subsec:depth} to a test on hardware rather than in
+the compiler alone. We state the protocol first and then report each part in
+turn.
+
+\subsection{Evaluation protocol}
+We follow the protocol of the windowed annealing
+study~\cite{wojewodzki2026windowed} so that the two sets of results are
+directly comparable: Taillard PFSP instances with $n=20$ jobs, ten instances
+per configuration, and the same lower bounds. Within that protocol the quota
+reached one machine count, so every measurement we report is on the ten $m=5$
+instances; the $m=10$ and $m=20$ configurations belong to the full protocol
+discussed in Section~\ref{sec:conclusions}. Each
+neighborhood drives an iterated-local-search and a simulated-annealing loop; at
+every move the swap-selection QUBO of Section~\ref{sec:method} is assembled and
+handed to the fixed-angle QAOA circuit in place of the annealer. Solution
+quality is reported as the percentage relative deviation
+$\mathrm{PRD}=(C_{\max}-\mathrm{LB})/\mathrm{LB}\times100$ from the Taillard
+lower bound $\mathrm{LB}$, averaged over instances under a fixed wall-clock
+budget.
+
+A move reads out the circuit by sampling it and returning the sampled bitstring
+of lowest \emph{original}-QUBO energy. This energy-based readout is essential:
+the single most probable bitstring of a low-depth QAOA state is typically the
+all-zeros (do-nothing) assignment or a high-energy, many-bit state, neither of
+which is the QUBO optimum the distribution concentrates on.
+
+\subsection{Execution on the heavy-hex processor}
+\label{subsec:hwresults}
+We ran the four gate neighborhoods on \texttt{ibm\_fez} over the ten Taillard
+$20\times5$ instances under both metaheuristics, eighty runs in total, consuming
+about 460 seconds of QPU time. All windows of a move are submitted as one job,
+so a move costs a single submission irrespective of how many windows the
+decomposition produces.
+
+Table~\ref{tab:rpd_hw} reports the outcome at the longest budget of the
+protocol, ten seconds. Every one of the eighty runs completed exactly one move,
+and every run overshot its budget: measured run times ranged from 10 to 288
+seconds against the ten-second limit. The overshoot is dominated by queueing and
+job overhead rather than by computation, since the billed QPU time per move is
+about three seconds for the linear neighborhoods and seven for the windowed
+ones. A run performs at least one move, and one move already exceeds the longest
+budget, so no shorter budget of the protocol can admit a second move either.
+Every budget column therefore describes the same computation and carries the
+same value. We report them as such, marked as extrapolated from the measured
+column by that argument rather than measured independently.
+
+Adjacent returns 25.04 under both metaheuristics because both loops start from
+the identity permutation, and the choice of metaheuristic cannot matter before a
+second move. For the other three neighborhoods the ILS and SA values differ by
+hundredths of a percentage point, which is sampling noise on the device rather
+than algorithmic behavior.
+
+The quota behind these rows provides ten minutes of QPU time per month, which
+admits roughly one budget column at a single seed. How much of the per-move
+cost can be recovered by batching more aggressively, by shallower circuits or
+by fewer shots is an open engineering question. The same circuits run on two
+further processors, with different coupling maps, in
+Section~\ref{subsec:arch}.
+
+\subsection{Comparison with the annealing back-ends}
+\label{subsec:cmp}
+Table~\ref{tab:cmp} places the gate rows beside the classical and annealing
+measurements of the windowed study on the same instances and at the same budget,
+and Fig.~\ref{fig:cmp} traces all four back-ends across the budget range.
+
+On Dynasearch the gate processor returns the lowest PRD of the three quantum
+back-ends, 22.12 against 25.85 for the annealer and 26.24 for its windowed
+variant, and it does so under both metaheuristics. Motzkin places it between
+them: better than the windowed annealer, which is the variant it should be
+compared with since both decompose the neighborhood into windows, and worse than
+the full annealing formulation. On the two linear neighborhoods the gate rows
+are the weakest of the three, by about five points.
+
+Part of that gap is access latency rather than solution quality. An annealer
+call costs on the order of a second, so from two seconds onward the annealing
+runs convert the remaining budget into further moves, whereas a gate move costs
+about thirty seconds and no budget in the protocol admits a second one. At the
+budgets up to one second, where both back-ends answer after a single call, the
+annealing and gate rows for the linear neighborhoods sit within a few tenths of
+a point of each other; the comparison in Table~\ref{tab:cmp} is taken at the
+budget least favorable to the gate device.
+
+All quantum back-ends remain far from the classical baselines at this instance
+size, as they did in the annealing study.
+
+\begin{table}[t]
+\centering
+\caption{Mean PRD [\%] on \texttt{ibm\_fez} per time budget (columns, ms),
+  with the standard deviation over the ten instances in the last column.}
+\label{tab:rpd_hw}
+\footnotesize
+\renewcommand{\arraystretch}{0.95}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrrrrrr@{\hspace{1.2em}}r@{}}
+\toprule
+ILS & 100 & 500 & 1000 & 2000 & 5000 & 10000 & \emph{std} \\
+\midrule
+Gate Adjacent   & 25.04 & 25.04 & 25.04 & 25.04 & 25.04 & 25.04 & \emph{10.0} \\
+Gate Fibonacci  & 23.41 & 23.41 & 23.41 & 23.41 & 23.41 & 23.41 & \emph{9.2} \\
+Gate Dynasearch & \textbf{22.12} & \textbf{22.12} & \textbf{22.12} & \textbf{22.12} & \textbf{22.12} & \textbf{22.12} & \emph{8.0} \\
+Gate Motzkin    & 23.12 & 23.12 & 23.12 & 23.12 & 23.12 & 23.12 & \emph{8.0} \\
+\midrule
+SA & 100 & 500 & 1000 & 2000 & 5000 & 10000 & \emph{std} \\
+\midrule
+Gate Adjacent   & 25.04 & 25.04 & 25.04 & 25.04 & 25.04 & 25.04 & \emph{10.0} \\
+Gate Fibonacci  & 23.48 & 23.48 & 23.48 & 23.48 & 23.48 & 23.48 & \emph{9.0} \\
+Gate Dynasearch & \textbf{22.38} & \textbf{22.38} & \textbf{22.38} & \textbf{22.38} & \textbf{22.38} & \textbf{22.38} & \emph{8.7} \\
+Gate Motzkin    & 23.59 & 23.59 & 23.59 & 23.59 & 23.59 & 23.59 & \emph{8.1} \\
+\bottomrule
+\end{tabular*}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/solver_comparison}
+\caption{PRD against the time budget for the four neighborhoods under the
+  four solver back-ends (ILS; SA behaves alike).}
+\label{fig:cmp}
+\end{figure}
+
+\begin{table}[t]
+\centering
+\caption{PRD [\%] on Taillard $20\times5$ at $t_{\max}=10\,000$\,ms, ten
+  instances. Bold marks the best quantum back-end per neighborhood.}
+\label{tab:cmp}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrrrrrrrr@{}}
+\toprule
+& \multicolumn{2}{c}{Classical} & \multicolumn{2}{c}{Annealer}
+& \multicolumn{2}{c}{Annealer, win.} & \multicolumn{2}{c}{Gate QAOA} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
+Neighborhood & ILS & SA & ILS & SA & ILS & SA & ILS & SA \\
+\midrule
+Adjacent    & 3.41 & 6.98 & 20.17 & 20.18 & \textbf{20.03} & \textbf{20.16} & 25.04 & 25.04 \\
+Fibonacci   & 3.82 & 9.24 & \textbf{17.94} & \textbf{17.82} & 18.20 & 18.12 & 23.41 & 23.48 \\
+Dynasearch  & 2.68 & 3.36 & 25.85 & 26.39 & 26.24 & 26.21 & \textbf{22.12} & \textbf{22.38} \\
+Motzkin     & 2.64 & 3.25 & \textbf{19.02} & \textbf{19.10} & 25.22 & 25.15 & 23.12 & 23.59 \\
+\midrule
+\emph{Average} & 3.14 & 5.71 & 20.75 & 20.87 & 22.42 & 22.41 & 23.42 & 23.62 \\
+\bottomrule
+\end{tabular*}
+\end{table}
+
+\subsection{The same neighborhoods on three coupling maps}
+\label{subsec:arch}
+The depth argument of Section~\ref{subsec:depth} concerns compilation, so it
+can be tested by changing the coupling map and holding everything else fixed.
+We repeated the protocol under iterated local search on \texttt{garnet} and
+on \texttt{sirius} with the same QUBOs, angles, shots and identity start.
+For Adjacent and Fibonacci, whose moves compile to a single circuit each, the
+quota covered the ten-instance protocol. The result is an equality rather than
+an agreement. On all nine instances that fit the sixteen qubits of
+\texttt{sirius}, Adjacent returns the same makespan there as on
+\texttt{ibm\_fez}, instance by instance, and both columns read $25.79 \pm 10.26$;
+the gap to Table~\ref{tab:rpd_hw} is the omitted instance, not the device.
+Fibonacci agrees on six of those nine and differs by at most 0.85 percentage
+points on the rest, at $24.39 \pm 8.99$ against $24.43 \pm 9.15$. A
+tridiagonal or near-tridiagonal conflict graph compiles to a circuit short
+enough that a heavy-hex lattice of 156 qubits and a 16-qubit resonator device
+return the same answer, and the Fibonacci row of Table~\ref{tab:depth} says
+why: both compile it to fourteen CZ gates.
+
+The dense neighborhoods behave differently, and Table~\ref{tab:arch} reports
+them on the first instance, which is as far as the quota reached. The runs
+start from the identity permutation, whose makespan there is 1448 against a
+lower bound of 1232, a PRD of 17.53, and the Heron~r2 column is recomputed
+from that one instance rather than taken from the ten-instance mean. Motzkin
+improves monotonically as the coupling map changes, by 3.65 points in total,
+while Dynasearch does not follow that order and is worst on the square
+lattice. One instance cannot separate a device effect from sampling noise, and
+we report the row as measured.
+
+Taken together the two groups describe a threshold rather than a gradient.
+Adjacent needs 195 CZ gates on heavy-hex, 153 on the square lattice and 90 on
+the resonator device, and returns the same makespan on all three. Motzkin
+falls by a similar ratio across the same three maps, from 1455 CZ gates
+through 1080 to 576, and there the PRD drops from 16.96 to 13.31. A comparable
+reduction in gate count therefore changes nothing in one case and 3.65
+percentage points in the other: below some compiled depth the coupling map is
+invisible to the result, and above it the map decides.
+
+The sixteen qubits of \texttt{sirius} are also a binding constraint even at
+$n=20$, because the width of the swap-selection QUBO varies between 5 and 18
+variables across the ten instances and one of them does not fit.
+
+\begin{table}[t]
+\centering
+\caption{PRD [\%] after one move on the first Taillard $20\times5$ instance.
+  Bold marks the best coupling map; the Adjacent row is unmarked because the
+  three agree exactly.}
+\label{tab:arch}
+\footnotesize
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrrr@{}}
+\toprule
+Neighborhood & Heron~r2 & Crystal~20 & Star~16 \\
+\midrule
+Adjacent    & 12.82 & 12.82 & 12.82 \\
+Fibonacci   & 12.26 & \textbf{12.01} & \textbf{12.01} \\
+Dynasearch  & 12.42 & 15.10 & \textbf{12.09} \\
+Motzkin     & 16.96 & 14.85 & \textbf{13.31} \\
+\midrule
+\emph{Average} & 13.62 & 13.70 & 12.56 \\
+\bottomrule
+\end{tabular*}
+\end{table}
+
+% =====================================================================
+\section{Conclusions}
+\label{sec:conclusions}
+We have carried the neighborhood-as-QUBO idea from the quantum annealer to the
+gate model. A single swap-selection matrix drives either device, so the four
+neighborhood structures, their penalties and their map-back to a permutation
+are shared and only the solver changes, while freezing the QAOA angles offline
+reduces the online cost to one circuit execution per move, the budget an
+annealer call consumes. The analysis identifies compiled circuit depth as the
+gate-model counterpart of embedding capacity: a conflict graph that exceeds an
+annealer's connectivity also routes into a deep, noisy circuit, so the two
+paradigms order the neighborhoods for feasibility in the same way for
+otherwise unrelated reasons. Compiling the same four QUBOs onto a heavy-hex
+lattice, two square lattices and a resonator-coupled device leaves that
+ordering unchanged while moving the absolute depths by a factor of two, which
+makes the argument a statement about compilation rather than about one
+vendor's topology, and heavy-hex is the least favourable of the four. On
+hardware the consequence is a threshold rather than a trend: the neighborhoods
+that compile to short circuits return the same makespan on a 156-qubit
+heavy-hex processor and on a 16-qubit resonator device, instance by instance.
+
+What we could measure is bounded by allocation rather than by method. Every
+run completed a single move irrespective of its budget, because a move costs
+about thirty seconds of wall-clock time against three to seven of computation,
+and the same move takes twelve seconds on a less heavily shared processor, so
+that figure measures contention; the time dimension of the protocol therefore
+collapses. The full protocol of the annealing line, ten instances at five
+seeds across six budgets for both metaheuristics, costs about 550 credits of
+device time per processor at the rates we measured, against the thirty a
+monthly allocation provides, and we intend to run it once a larger allocation
+is in place, on the same instances, seeds and budgets and on each of the
+coupling maps. Scaling in $n$ carries a cost of its own, since billing tracks
+the number of circuits rather than their depth: one move of a dense
+neighborhood needs six circuits at $n=20$ and 166 at $n=500$, so the price
+grows linearly with instance size where one annealer call covers the whole
+QUBO up to its embedding limit. One question we leave open is methodological,
+because a strict wall-clock criterion charges the queue wait to the algorithm
+although that wait varies by an order of magnitude between identical
+submissions.
+
+% =====================================================================
+\ifblind\else
+\subsubsection{Acknowledgements.}
+The authors used a large language model as a writing and code-review aid in
+preparing this manuscript; the results, their interpretation and the final
+text are the authors' own.
+\fi
+
+% =====================================================================
+\begin{thebibliography}{22}
+
+\bibitem{ahuja2002}
+Ahuja, R.K., Ergun, \"{O}., Orlin, J.B., Punnen, A.P.: A survey of very
+large-scale neighborhood search techniques. Discrete Appl. Math.
+\textbf{123}(1--3), 75--102 (2002).
+\url{https://doi.org/10.1016/S0166-218X(01)00338-9}
+
+\bibitem{amaro2022}
+Amaro, D., Rosenkranz, M., Fitzpatrick, N., Hirano, K., Fiorentini, M.:
+A case study of variational quantum algorithms for a job shop scheduling
+problem. EPJ Quantum Technol. \textbf{9}, 5 (2022).
+\url{https://doi.org/10.1140/epjqt/s40507-022-00123-4}
+
+\bibitem{chamberland2020}
+Chamberland, C., Zhu, G., Yoder, T.J., Hertzberg, J.B., Cross, A.W.:
+Topological and subsystem codes on low-degree graphs with flag qubits.
+Phys. Rev. X \textbf{10}, 011022 (2020).
+\url{https://doi.org/10.1103/PhysRevX.10.011022}
+
+\bibitem{congram2002}
+Congram, R.K., Potts, C.N., van de Velde, S.L.: An iterated dynasearch
+algorithm for the single-machine total weighted tardiness scheduling
+problem. INFORMS J. Comput. \textbf{14}(1), 52--67 (2002).
+\url{https://doi.org/10.1287/ijoc.14.1.52.7712}
+
+\bibitem{farhi2014qaoa}
+Farhi, E., Goldstone, J., Gutmann, S.: A quantum approximate
+optimization algorithm. arXiv:1411.4028 (2014).
+\url{https://doi.org/10.48550/arXiv.1411.4028}
+
+\bibitem{galda2021}
+Galda, A., Liu, X., Lykov, D., Alexeev, Y., Safro, I.: Transferability of
+optimal QAOA parameters between random graphs. In: 2021 IEEE
+International Conference on Quantum Computing and Engineering (QCE),
+pp.\ 171--180. IEEE (2021).
+\url{https://doi.org/10.1109/QCE52317.2021.00034}
+
+\bibitem{garey1976}
+Garey, M.R., Johnson, D.S., Sethi, R.: The complexity of flowshop and
+jobshop scheduling. Math. Oper. Res. \textbf{1}(2), 117--129 (1976).
+\url{https://doi.org/10.1287/moor.1.2.117}
+
+\bibitem{kadowaki1998}
+Kadowaki, T., Nishimori, H.: Quantum annealing in the transverse Ising
+model. Phys. Rev. E \textbf{58}(5), 5355--5363 (1998).
+\url{https://doi.org/10.1103/PhysRevE.58.5355}
+
+\bibitem{kirkpatrick1983}
+Kirkpatrick, S., Gelatt, C.D., Vecchi, M.P.: Optimization by simulated
+annealing. Science \textbf{220}(4598), 671--680 (1983).
+\url{https://doi.org/10.1126/science.220.4598.671}
+
+\bibitem{li2019}
+Li, G., Ding, Y., Xie, Y.: Tackling the qubit mapping problem for
+NISQ-era quantum devices. In: Proceedings of the 24th International
+Conference on Architectural Support for Programming Languages and
+Operating Systems (ASPLOS), pp.\ 1001--1014. ACM (2019).
+\url{https://doi.org/10.1145/3297858.3304023}
+
+\bibitem{lourenco2003}
+Louren\c{c}o, H.R., Martin, O.C., St\"{u}tzle, T.: Iterated local search.
+In: Glover, F., Kochenberger, G.A. (eds.) Handbook of Metaheuristics,
+pp.\ 320--353. Kluwer, Boston (2003).
+\url{https://doi.org/10.1007/0-306-48056-5_11}
+
+\bibitem{lucas2014ising}
+Lucas, A.: Ising formulations of many NP problems. Front. Phys.
+\textbf{2}, 5 (2014). \url{https://doi.org/10.3389/fphy.2014.00005}
+
+\bibitem{neh1983}
+Nawaz, M., Enscore, E.E., Ham, I.: A heuristic algorithm for the
+m-machine, n-job flow-shop sequencing problem. Omega \textbf{11}(1),
+91--95 (1983). \url{https://doi.org/10.1016/0305-0483(83)90088-9}
+
+\bibitem{preskill2018}
+Preskill, J.: Quantum computing in the NISQ era and beyond. Quantum
+\textbf{2}, 79 (2018). \url{https://doi.org/10.22331/q-2018-08-06-79}
+
+\bibitem{ruizmaroto2005}
+Ruiz, R., Maroto, C.: A comprehensive review and evaluation of
+permutation flowshop heuristics. Eur. J. Oper. Res. \textbf{165}(2),
+479--494 (2005). \url{https://doi.org/10.1016/j.ejor.2004.04.017}
+
+\bibitem{taillard1993}
+Taillard, \'{E}.: Benchmarks for basic scheduling problems. Eur. J. Oper.
+Res. \textbf{64}(2), 278--285 (1993).
+\url{https://doi.org/10.1016/0377-2217(93)90182-M}
+
+\bibitem{venturelli2015}
+Venturelli, D., Marchand, D.J.J., Rojo, G.: Quantum annealing
+implementation of job-shop scheduling. arXiv:1506.08479 (2015).
+\url{https://doi.org/10.48550/arXiv.1506.08479}
+
+\bibitem{wojewodzki2026bpasts}
+\ifblind
+[Authors omitted for blind review]: Classical and quantum neighborhoods
+evaluation in iterated local search and simulated annealing for the
+permutation flow shop problem. Bull. Pol. Acad. Sci. Tech. Sci.
+(under review, 2026)
+\else
+Wojew\'{o}dzki, R., Bo\.{z}ejko, W.: Classical and quantum neighborhoods
+evaluation in iterated local search and simulated annealing for the
+permutation flow shop problem. Bull. Pol. Acad. Sci. Tech. Sci.
+(under review, 2026)
+\fi
+
+\bibitem{wojewodzki2026soco}
+\ifblind
+[Authors omitted for blind review]: Motzkin neighborhood evaluation in
+iterated local search and simulated annealing for the permutational
+flow shop problem. In: SOCO 2026, CCIS, vol.\ 3046, pp.\ 144--155.
+Springer (2026)
+\else
+Wojew\'{o}dzki, R., Bo\.{z}ejko, W.: Motzkin neighborhood evaluation in
+iterated local search and simulated annealing for the permutational
+flow shop problem. In: SOCO 2026, CCIS, vol.\ 3046, pp.\ 144--155.
+Springer (2026). \url{https://doi.org/10.1007/978-3-032-29254-4_12}
+\fi
+
+\bibitem{wojewodzki2026windowed}
+\ifblind
+[Authors omitted for blind review]: Scalable quantum neighborhood search
+for the permutation flow shop problem via windowed QUBO decomposition.
+Comput. Oper. Res. (under review, 2026)
+\else
+Wojew\'{o}dzki, R., Bo\.{z}ejko, W.: Scalable quantum neighborhood search
+for the permutation flow shop problem via windowed QUBO decomposition.
+Comput. Oper. Res. (under review, 2026)
+\fi
+
+\bibitem{wurtz2021fixed}
+Wurtz, J., Lykov, D.: Fixed-angle conjectures for the quantum approximate
+optimization algorithm on regular MaxCut graphs. Phys. Rev. A
+\textbf{104}, 052419 (2021).
+\url{https://doi.org/10.1103/PhysRevA.104.052419}
+
+\bibitem{zhou2020}
+Zhou, L., Wang, S.-T., Choi, S., Pichler, H., Lukin, M.D.: Quantum
+approximate optimization algorithm: performance, mechanism, and
+implementation on near-term devices. Phys. Rev. X \textbf{10}, 021067
+(2020). \url{https://doi.org/10.1103/PhysRevX.10.021067}
+
+\end{thebibliography}
+
+\end{document}

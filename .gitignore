@@ -141,3 +141,15 @@ skills-lock.json
 # Prywatne dokumenty aplikacyjne — NIGDY nie commitować/pushować
 pwr_recruitment/
 szkola_doktorska_2026_wrzesien/
+szkola_doktorska_1_rok/
+
+# venv dla klienta IQM (osobny, bo iqm-client wymaga qiskit<2.2)
+.venv-iqm/
+
+# artefakty LaTeX-a i kopie zapasowe artykulow
+texput.log
+*.xdv
+articles/*/main.PREV_*.tex
+
+# skrypt celujacy w usuniety backend 'statevector' (odrzucone podejscie)
+articles/gate_qaoa/scripts/gate_m5_budgets.py

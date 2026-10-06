@@ -6,6 +6,7 @@ This is the gate-model analog of the single annealer call -- one circuit
 execution per move. Backends:
 
   * ``"ibm"``       : real IBM Heron QPU via Qiskit Runtime (default).
+  * ``"iqm"``       : real IQM QPU on Resonance (Crystal 20/54, Star 16).
   * ``"aer_noisy"`` : noisy simulation (requires ``qiskit-aer``).
 
 Experiments run on hardware only; there is no noiseless-simulator backend.
@@ -85,11 +86,35 @@ def _get_ibm():
     return _IBM_CACHE
 
 
+_IQM_SERVER = "https://resonance.iqm.tech"
+_IQM_COMPUTER = "garnet"  # garnet (Crystal 20) | emerald (Crystal 54) | sirius (Star 16)
+_IQM_CACHE = None
+
+
+def _get_iqm():
+    """Cached IQM Resonance backend; building the provider per move is slow."""
+    global _IQM_CACHE
+    if _IQM_CACHE is None:
+        from iqm.qiskit_iqm import IQMProvider
+
+        if not os.environ.get("IQM_TOKEN"):
+            raise ValueError("backend='iqm' requires IQM_TOKEN in the environment (.env).")
+        # The token is deliberately NOT passed as an argument: IQMClient refuses a
+        # token supplied both as an init arg and as IQM_TOKEN in the environment
+        # ("Parameter sources must not be mixed"), so it reads the variable itself.
+        _IQM_CACHE = IQMProvider(
+            os.environ.get("IQM_SERVER", _IQM_SERVER),
+            quantum_computer=os.environ.get("IQM_COMPUTER", _IQM_COMPUTER),
+        ).get_backend()
+    return _IQM_CACHE
+
+
 def _device_counts_batch(circuits, backend: str, shots: int) -> List[Dict[str, int]]:
     """Run all circuits and return one shot-count histogram per circuit.
 
-    On ``ibm`` the whole list goes out as a single SamplerV2 job, so the queue is
-    paid once per batch rather than once per circuit.
+    On ``ibm`` the whole list goes out as a single SamplerV2 job, and on ``iqm``
+    as a single ``backend.run`` job, so the queue is paid once per batch rather
+    than once per circuit.
     """
     if backend == "aer_noisy":
         try:
@@ -102,6 +127,17 @@ def _device_counts_batch(circuits, backend: str, shots: int) -> List[Dict[str, i
         sim = AerSimulator()
         res = sim.run(transpile(circuits, sim), shots=shots).result()
         return [res.get_counts(i) for i in range(len(circuits))]
+
+    if backend == "iqm":
+        # transpile_to_IQM takes one circuit at a time (it calls .count_ops on the
+        # argument), but backend.run takes the whole list as a single job, so the
+        # queue is still paid once per batch.
+        from iqm.qiskit_iqm import transpile_to_IQM
+
+        hw = _get_iqm()
+        tc = [transpile_to_IQM(c, hw, optimization_level=1) for c in circuits]
+        counts = hw.run(tc, shots=shots).result().get_counts()
+        return counts if isinstance(counts, list) else [counts]
 
     # backend == "ibm": real IBM Heron QPU
     from qiskit_ibm_runtime import SamplerV2
@@ -146,8 +182,8 @@ def solve_qaoa_batch(
     out: List[Dict[str, int]] = [{} for _ in Qs]
     prepared = {i: _prepare(Q, neighborhood, p, angles) for i, Q in enumerate(Qs) if Q}
 
-    if backend not in ("aer_noisy", "ibm"):
-        raise ValueError(f"unknown backend {backend!r} (ibm|aer_noisy).")
+    if backend not in ("aer_noisy", "ibm", "iqm"):
+        raise ValueError(f"unknown backend {backend!r} (ibm|iqm|aer_noisy).")
 
     idx = list(prepared)
     circuits = [

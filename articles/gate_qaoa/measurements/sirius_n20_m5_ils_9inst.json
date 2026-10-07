@@ -1,0 +1,284 @@
+{
+ "0_adjacent": {
+  "inst": 0,
+  "neigh": "adjacent",
+  "machine": "sirius",
+  "lb": 1232,
+  "cmax_start": 1448,
+  "cmax": 1390,
+  "prd": 12.824675324675324,
+  "swaps": [
+   10,
+   11
+  ],
+  "wall_s": 5.047059774398804
+ },
+ "0_fibonacci": {
+  "inst": 0,
+  "neigh": "fibonacci",
+  "machine": "sirius",
+  "lb": 1232,
+  "cmax_start": 1448,
+  "cmax": 1380,
+  "prd": 12.012987012987013,
+  "swaps": [
+   2,
+   4,
+   10
+  ],
+  "wall_s": 4.563835859298706
+ },
+ "1_adjacent": {
+  "inst": 1,
+  "neigh": "adjacent",
+  "machine": "sirius",
+  "lb": 1290,
+  "cmax_start": 1545,
+  "cmax": 1507,
+  "prd": 16.82170542635659,
+  "swaps": [
+   4,
+   5
+  ],
+  "wall_s": 4.552974224090576
+ },
+ "1_fibonacci": {
+  "inst": 1,
+  "neigh": "fibonacci",
+  "machine": "sirius",
+  "lb": 1290,
+  "cmax_start": 1545,
+  "cmax": 1510,
+  "prd": 17.05426356589147,
+  "swaps": [
+   2,
+   4
+  ],
+  "wall_s": 4.8678858280181885
+ },
+ "2_adjacent": {
+  "inst": 2,
+  "neigh": "adjacent",
+  "machine": "sirius",
+  "lb": 1073,
+  "cmax_start": 1597,
+  "cmax": 1557,
+  "prd": 45.1071761416589,
+  "swaps": [
+   18,
+   19
+  ],
+  "wall_s": 4.632617950439453
+ },
+ "2_fibonacci": {
+  "inst": 2,
+  "neigh": "fibonacci",
+  "machine": "sirius",
+  "lb": 1073,
+  "cmax_start": 1597,
+  "cmax": 1517,
+  "prd": 41.37931034482759,
+  "swaps": [
+   1,
+   3,
+   10,
+   14,
+   16,
+   18
+  ],
+  "wall_s": 3.450057029724121
+ },
+ "3_adjacent": {
+  "inst": 3,
+  "neigh": "adjacent",
+  "machine": "sirius",
+  "lb": 1268,
+  "cmax_start": 1754,
+  "cmax": 1720,
+  "prd": 35.646687697160885,
+  "swaps": [
+   0,
+   1
+  ],
+  "wall_s": 4.316033124923706
+ },
+ "3_fibonacci": {
+  "inst": 3,
+  "neigh": "fibonacci",
+  "machine": "sirius",
+  "lb": 1268,
+  "cmax_start": 1754,
+  "cmax": 1658,
+  "prd": 30.757097791798106,
+  "swaps": [
+   0,
+   5,
+   9
+  ],
+  "wall_s": 3.231788158416748
+ },
+ "4_adjacent": {
+  "inst": 4,
+  "neigh": "adjacent",
+  "machine": "sirius",
+  "lb": 1198,
+  "cmax_start": 1431,
+  "cmax": 1431,
+  "prd": 19.449081803005008,
+  "swaps": [
+   4,
+   5
+  ],
+  "wall_s": 4.438112020492554
+ },
+ "4_fibonacci": {
+  "inst": 4,
+  "neigh": "fibonacci",
+  "machine": "sirius",
+  "lb": 1198,
+  "cmax_start": 1431,
+  "cmax": 1431,
+  "prd": 19.449081803005008,
+  "swaps": [
+   4
+  ],
+  "wall_s": 3.3869588375091553
+ },
+ "5_adjacent": {
+  "inst": 5,
+  "neigh": "adjacent",
+  "machine": "sirius",
+  "lb": 1180,
+  "cmax_start": 1616,
+  "cmax": 1593,
+  "prd": 35.0,
+  "swaps": [
+   18,
+   19
+  ],
+  "wall_s": 4.6902430057525635
+ },
+ "5_fibonacci": {
+  "inst": 5,
+  "neigh": "fibonacci",
+  "machine": "sirius",
+  "lb": 1180,
+  "cmax_start": 1616,
+  "cmax": 1569,
+  "prd": 32.96610169491525,
+  "swaps": [
+   3,
+   5,
+   9,
+   18
+  ],
+  "wall_s": 4.435064077377319
+ },
+ "6_adjacent": {
+  "error": "TranspilerError: 'Number of qubits greater than device.'"
+ },
+ "6_fibonacci": {
+  "error": "TranspilerError: 'Number of qubits greater than device.'"
+ },
+ "7_adjacent": {
+  "inst": 7,
+  "neigh": "adjacent",
+  "machine": "sirius",
+  "lb": 1170,
+  "cmax_start": 1428,
+  "cmax": 1393,
+  "prd": 19.05982905982906,
+  "swaps": [
+   7,
+   8
+  ],
+  "wall_s": 4.492506980895996
+ },
+ "7_fibonacci": {
+  "inst": 7,
+  "neigh": "fibonacci",
+  "machine": "sirius",
+  "lb": 1170,
+  "cmax_start": 1428,
+  "cmax": 1403,
+  "prd": 19.914529914529915,
+  "swaps": [
+   5,
+   7,
+   12
+  ],
+  "wall_s": 3.0945982933044434
+ },
+ "8_adjacent": {
+  "inst": 8,
+  "neigh": "adjacent",
+  "machine": "sirius",
+  "lb": 1206,
+  "cmax_start": 1468,
+  "cmax": 1435,
+  "prd": 18.988391376451077,
+  "swaps": [
+   0,
+   1
+  ],
+  "wall_s": 4.40221095085144
+ },
+ "8_fibonacci": {
+  "inst": 8,
+  "neigh": "fibonacci",
+  "machine": "sirius",
+  "lb": 1206,
+  "cmax_start": 1468,
+  "cmax": 1412,
+  "prd": 17.081260364842453,
+  "swaps": [
+   0,
+   18
+  ],
+  "wall_s": 3.7600598335266113
+ },
+ "9_adjacent": {
+  "inst": 9,
+  "neigh": "adjacent",
+  "machine": "sirius",
+  "lb": 1082,
+  "cmax_start": 1404,
+  "cmax": 1398,
+  "prd": 29.20517560073937,
+  "swaps": [
+   1,
+   2
+  ],
+  "wall_s": 3.1897759437561035
+ },
+ "9_fibonacci": {
+  "inst": 9,
+  "neigh": "fibonacci",
+  "machine": "sirius",
+  "lb": 1082,
+  "cmax_start": 1404,
+  "cmax": 1395,
+  "prd": 28.927911275415898,
+  "swaps": [
+   1,
+   4
+  ],
+  "wall_s": 3.1612789630889893
+ },
+ "_summary": {
+  "adjacent": {
+   "n": 9,
+   "mean": 25.789191381097357,
+   "std": 10.880541006628569,
+   "min": 12.824675324675324,
+   "max": 45.1071761416589
+  },
+  "fibonacci": {
+   "n": 9,
+   "mean": 24.393615974245854,
+   "std": 9.540586337537682,
+   "min": 12.012987012987013,
+   "max": 41.37931034482759
+  }
+ }
+}

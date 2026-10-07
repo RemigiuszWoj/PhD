@@ -137,8 +137,14 @@ def _extract_quantum_params(quantum_config: dict | None, mode: str) -> dict:
             "backend": cfg.get("qaoa_backend", "ibm"),
             "shots": cfg.get("qaoa_shots", 4096),
         }
-        if mode in ("gate_dynasearch", "gate_motzkin"):
-            params["window_size"] = cfg.get("qaoa_window_size")     # None = single QUBO
+        if mode in ("gate_dynasearch", "gate_motzkin", "gate_fibonacci"):
+            # The window must differ per neighborhood class: a window of w positions
+            # gives w-1 variables for the tridiagonal (linear) QUBO but w(w-1)/2 for
+            # the pairwise (dense) one, so one value cannot serve both. On 16 qubits
+            # that is w=17 linear against w=6 dense.
+            params["window_size"] = cfg.get(
+                "qaoa_window_size_linear" if mode == "gate_fibonacci"
+                else "qaoa_window_size")                            # None = single QUBO
             params["overlap_ratio"] = cfg.get("qaoa_overlap_ratio", 0.5)
             params["L_max"] = cfg.get(
                 "L_max_dynasearch" if mode == "gate_dynasearch" else "L_max_motzkin")
@@ -365,6 +371,7 @@ def get_neighbor(
         new_pi, new_c, swaps = gate_fibonacci_neighborhood(
             current_pi, processing_times,
             p=qp["p"], backend=qp["backend"], shots=qp["shots"],
+            window_size=qp.get("window_size"), overlap_ratio=qp.get("overlap_ratio", 0.5),
         )
         return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
 

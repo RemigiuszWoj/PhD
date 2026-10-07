@@ -109,6 +109,25 @@ def _get_iqm():
     return _IQM_CACHE
 
 
+def _assert_real_counts(counts, shots: int, backend: str) -> None:
+    """Refuse histograms that no device actually produced.
+
+    A declined or failed job (out of credits, device offline, invalid circuit)
+    comes back from the client as empty histograms without raising. The
+    neighborhood would then select no swaps and fall back to a classical greedy
+    swap, so the run would be silently CLASSICAL while still being labelled a
+    hardware result. Fail loudly instead.
+    """
+    for i, c in enumerate(counts):
+        total = sum(c.values()) if c else 0
+        if total < shots // 2:
+            raise RuntimeError(
+                f"backend {backend!r}: circuit {i} came back with {total} of {shots} "
+                f"shots -- the job was declined or failed. Refusing to continue: a "
+                f"classical fallback here would be reported as a quantum result."
+            )
+
+
 def _device_counts_batch(circuits, backend: str, shots: int) -> List[Dict[str, int]]:
     """Run all circuits and return one shot-count histogram per circuit.
 
@@ -137,14 +156,18 @@ def _device_counts_batch(circuits, backend: str, shots: int) -> List[Dict[str, i
         hw = _get_iqm()
         tc = [transpile_to_IQM(c, hw, optimization_level=1) for c in circuits]
         counts = hw.run(tc, shots=shots).result().get_counts()
-        return counts if isinstance(counts, list) else [counts]
+        counts = counts if isinstance(counts, list) else [counts]
+        _assert_real_counts(counts, shots, backend)
+        return counts
 
     # backend == "ibm": real IBM Heron QPU
     from qiskit_ibm_runtime import SamplerV2
 
     hw, pm = _get_ibm()
     result = SamplerV2(mode=hw).run(pm.run(circuits), shots=shots).result()
-    return [result[i].data.meas.get_counts() for i in range(len(circuits))]
+    counts = [result[i].data.meas.get_counts() for i in range(len(circuits))]
+    _assert_real_counts(counts, shots, backend)
+    return counts
 
 
 def _prepare(Q: QUBO, neighborhood: str, p: int, angles):

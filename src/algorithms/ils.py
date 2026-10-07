@@ -121,6 +121,7 @@ def iterated_local_search(
     mushroom_list.offer(initial_pi, initial_cmax)
 
     neigh_time_s = 0.0  # cumulative wall time inside get_neighbor()
+    move_log: List[Tuple[int, int]] = []   # (czas konca ruchu w ms, best_cmax po ruchu)
 
     with open_log_file(iter_log_path, "iterated_local_search") as log_file:
         while time.time() - state.start_time < max_time_seconds:
@@ -144,6 +145,7 @@ def iterated_local_search(
                 if alt_pi is None:
                     # No alternative - skip iteration
                     state.iteration += 1
+                    move_log.append((state.elapsed_ms(), state.best_cmax))
                     continue
                 # Use alternative move
                 new_pi, new_c, move_id = alt_pi, alt_c, alt_move
@@ -160,9 +162,11 @@ def iterated_local_search(
 
             log_iteration(log_file, state)
             state.iteration += 1
+            move_log.append((state.elapsed_ms(), state.best_cmax))
 
     stats = {
         "iterations": state.iteration,
         "neigh_time_ms": int(neigh_time_s * 1000),
+        "move_log": move_log,
     }
     return state.best_pi, state.best_cmax, state.iteration_history, state.cmax_history, stats

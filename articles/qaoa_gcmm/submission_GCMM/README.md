@@ -8,12 +8,23 @@ Dogrywać do **istniejącego submission 59** (abstrakt przyjęty 9.08), nie twor
 
 | pole w EasyChair | plik | uwagi |
 |---|---|---|
-| **Abstract** | `01_abstract.pdf` | 249 słów, limit konferencji 500. Wersja slepa. |
+| **Abstract** | `01_abstract.pdf` | Sam abstrakt: bez tytułu, słów kluczowych, autorów. 249 słów w obu sposobach liczenia. |
 | **Blind Paper** | `02_blind_paper.pdf` | 15 stron, svproc, `\blindtrue`. Sprawdzone: 0 trafień na nazwiska, afiliacje, podziękowania i e-mail, w treści i w metadanych PDF. |
 
 Tytuł, abstrakt i słowa kluczowe do wklejenia w pola formularza: `pola_easychaira.txt`.
 Sesja: **SS3 „Quantum-Enhanced Optimization and Intelligent Control"**.
 Przed wysłaniem: iThenticate poniżej 20% (nasze pokrycie z własnymi pracami 0,61%).
+
+**Pole tekstowe abstraktu w EasyChair trzeba nadpisać** treścią z `pola_easychaira.txt`.
+Strona konferencji wymaga, by „the title, abstract, authors, and affiliations ... in the
+submission system ... be the same as in your paper", a abstrakt zmienił się wobec wersji
+sierpniowej w dwóch miejscach: „single circuit execution" → „single device submission"
+oraz półdywizy wokół wtrącenia zamienione na przecinki.
+
+**Limit słów abstraktu jest sprzeczny między źródłami:** formularz EasyChaira mówi
+„up to 500 words", strona konferencji „150-250 words". Trzymamy się ostrzejszego.
+Abstrakt ma 249 słów i liczy się tak samo niezależnie od metody — półdywizy stojące
+samodzielnie były wcześniej liczone przez Worda jako osobne słowa i dawały 251.
 
 ## Pozostałe sześć pól — DOPIERO PO RECENZJACH
 

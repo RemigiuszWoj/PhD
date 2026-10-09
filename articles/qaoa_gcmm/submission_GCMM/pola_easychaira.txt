@@ -1,0 +1,21 @@
+GCMM 2026 -- zgloszenie pelnego artykulu (paper 59, sesja SS3)
+EasyChair: https://easychair.org/conferences/?conf=gcmm2026
+Plik do dogrania: main.pdf (15 stron, tryb blind)
+Deadline: 10.10.2026
+
+==================== TITLE ====================
+Gate-Model Quantum Neighborhood Search for the Permutation Flow Shop Problem via Fixed-Angle QAOA
+
+==================== ABSTRACT (249 slow) ====================
+The permutation flow shop problem (PFSP) is a canonical NP-hard scheduling problem whose local-search solvers spend most of their effort evaluating neighborhood moves. Recent work has offloaded this evaluation to quantum annealers by casting neighborhoods as QUBO problems, yet the gate-model paradigm - despite its flexible connectivity - remains largely unexplored for scheduling. This paper introduces a gate-model framework that evaluates PFSP neighborhoods with the Quantum Approximate Optimization Algorithm (QAOA) embedded in classical Iterated Local Search and Simulated Annealing metaheuristics. We reuse the swap-selection QUBO encoding from the annealing line, so a single problem matrix drives either an annealer or a QAOA circuit, and we adopt a fixed-angle QAOA whose variational angles are pre-optimized offline; on hardware each move then costs a single device submission, which keeps the method viable under NISQ constraints. We formulate all four neighborhood structures (Adjacent, Fibonacci, Dynasearch, Motzkin) and analyze how their conflict-graph density governs circuit depth once the QUBO is compiled onto superconducting hardware, from a heavy-hex lattice to a resonator-coupled star. Depth assumes the role that embedding capacity plays on annealers and produces the same feasibility ordering for a different, compilation-grounded reason, and windowed decomposition tames the dense neighborhoods. Measurements on three processors separate two regimes: neighborhoods whose circuits stay short return the same makespan on a 156-qubit heavy-hex device and on a 16-qubit resonator device, instance by instance, while the deepest circuits shift between coupling maps. The paper sets out the evaluation methodology, reports this execution, and states the open challenges that remain.
+
+==================== KEYWORDS ====================
+combinatorial optimization, QUBO, metaheuristics, simulated annealing, circuit compilation on superconducting hardware, NISQ
+
+==================== AUTORZY (do pol EasyChaira, NIE do PDF) ====================
+Remigiusz Wojewodzki
+Wojciech Bozejko (corresponding)
+Wroclaw University of Science and Technology, Faculty of Information and
+Communication Technology, Department of Control and Quantum Computing,
+Wroclaw, Poland
+e-mail: wojciech.bozejko@pwr.edu.pl

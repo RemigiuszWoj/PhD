@@ -109,7 +109,7 @@ def _get_iqm():
     return _IQM_CACHE
 
 
-def _assert_real_counts(counts, shots: int, backend: str) -> None:
+def _assert_real_counts(counts, shots: int, backend: str, expected: int) -> None:
     """Refuse histograms that no device actually produced.
 
     A declined or failed job (out of credits, device offline, invalid circuit)
@@ -117,7 +117,17 @@ def _assert_real_counts(counts, shots: int, backend: str) -> None:
     neighborhood would then select no swaps and fall back to a classical greedy
     swap, so the run would be silently CLASSICAL while still being labelled a
     hardware result. Fail loudly instead.
+
+    The count of histograms is checked first: a declined job returns an EMPTY
+    LIST, and a per-histogram loop over an empty list checks nothing at all.
+    That hole let a whole campaign record classical fallbacks as hardware.
     """
+    if len(counts) != expected:
+        raise RuntimeError(
+            f"backend {backend!r}: got {len(counts)} histograms for {expected} "
+            f"circuits -- the job was declined or failed. Refusing to continue: a "
+            f"classical fallback here would be reported as a quantum result."
+        )
     for i, c in enumerate(counts):
         total = sum(c.values()) if c else 0
         if total < shots // 2:
@@ -157,7 +167,7 @@ def _device_counts_batch(circuits, backend: str, shots: int) -> List[Dict[str, i
         tc = [transpile_to_IQM(c, hw, optimization_level=1) for c in circuits]
         counts = hw.run(tc, shots=shots).result().get_counts()
         counts = counts if isinstance(counts, list) else [counts]
-        _assert_real_counts(counts, shots, backend)
+        _assert_real_counts(counts, shots, backend, len(circuits))
         return counts
 
     # backend == "ibm": real IBM Heron QPU
@@ -166,7 +176,7 @@ def _device_counts_batch(circuits, backend: str, shots: int) -> List[Dict[str, i
     hw, pm = _get_ibm()
     result = SamplerV2(mode=hw).run(pm.run(circuits), shots=shots).result()
     counts = [result[i].data.meas.get_counts() for i in range(len(circuits))]
-    _assert_real_counts(counts, shots, backend)
+    _assert_real_counts(counts, shots, backend, len(circuits))
     return counts
 
 

@@ -1,0 +1,323 @@
+\documentclass[runningheads]{llncs}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{booktabs}
+
+% ============================================================================
+% ACIIDS 2027 -- 19th Asian Conference on Intelligent Information and
+% Database Systems. Bali, Indonezja, 5-7 kwietnia 2027.
+%
+% SPRAWDZONE NA STRONIE KONFERENCJI (aciids.pwr.edu.pl/2027, 8.10.2026):
+%   deadline       31.10.2026, oznaczony "Extended" (pierwotnie 31.07, potem 30.09)
+%   seria          LNCS / LNAI (Springer)  -> klasa llncs, ta sama co tutaj
+%   dlugosc        12-15 stron WLACZNIE z rysunkami, tabelami i bibliografia
+%                  (powyzej doplata, absolutne maksimum 25 stron)
+%   zgloszenie     PDF przez EasyChair: easychair.org/conferences/?conf=aciids2027
+%   recenzja       dwustopniowa; strona NIE mowi, czy slepa -> zostawiam nazwiska,
+%                  do potwierdzenia przed wyslaniem
+%   uwaga          prace sa przepuszczane przez kontrole podobienstwa, a
+%                  autoplagiat = desk reject. Mamy dwie prace o pokrywajacej sie
+%                  tematyce (windowed_qubo, qaoa_gcmm), wiec sekcje 2-3 musza byc
+%                  pisane od nowa, nie przeklejane. W GCMM zmierzylismy 0,61%
+%                  pokrycia -- utrzymac ten poziom.
+%
+% SZKIELET -- sekcje, po 2-3 zdania, tabele tam gdzie sa dane.
+% Status danych: [MAM] gotowe, [TRANSZA] po transzy 2000 kredytow, [BRAK] do zdobycia.
+% ============================================================================
+
+\begin{document}
+
+\title{Windowed QAOA Neighborhoods for the Permutation Flow Shop Problem
+       on the Full Taillard Benchmark}
+\author{Remigiusz Wojew\'{o}dzki \and Wojciech Bo\.{z}ejko}
+\authorrunning{R. Wojew\'{o}dzki and W. Bo\.{z}ejko}
+\institute{Wroc\l{}aw University of Science and Technology, Faculty of
+  Information and Communication Technology, Department of Control and
+  Quantum Computing, Wroc\l{}aw, Poland\\
+  \email{wojciech.bozejko@pwr.edu.pl}}
+\maketitle
+
+\begin{abstract}
+% [PISAC NA KONCU] 150-250 slow. Teza: dekompozycja okienkowa przenosi cztery
+% sasiedztwa bramkowe na caly zakres Taillarda na 16 kubitach; jedna ewaluacja
+% sasiedztwa przekracza najdluzszy budzet protokolu, wiec porownanie idzie na
+% ruch, nie na sekunde; PRD lezy wysoko nad klasyka i annealingiem.
+\keywords{Permutation flow shop \and QAOA \and Quantum neighborhoods
+          \and Iterated local search \and Taillard benchmark}
+\end{abstract}
+
+% =====================================================================
+\section{Introduction}
+% [MAM] -- proza ciagla, bez wypunktowan
+The permutation flow shop problem remains strongly NP-hard for three or more
+machines, and practical solvers evaluate neighborhoods millions of times inside
+local search. Recent work replaces that evaluation with a quantum subroutine,
+either on an annealer or on a gate processor, but every gate-model study so far
+stops at twenty jobs because the swap-selection QUBO needs $K = n-1$ variables
+for the linear neighborhoods and $O(n^2)$ for the dense ones, while current
+devices hold sixteen to fifty-four qubits.
+
+This paper removes that ceiling. A windowed decomposition carries all four
+neighborhoods to the entire Taillard range on a sixteen-qubit processor, and the
+measurements that follow are the first for gate-model neighborhoods beyond
+$n = 20$. The results also show where the comparison protocol inherited from the
+annealing line breaks down, since one neighborhood evaluation already costs more
+wall-clock time than the longest budget under which the classical baselines were
+measured.
+
+% =====================================================================
+\section{Related Work}
+% [MAM] -- skrotowo, 1 akapit
+% Taillard 1993; Smutnicki blocks; Wodecki NPI; QUBO dla PFSP (Bozejko, Venturelli,
+% Amaro); QAOA fixed-angle (Farhi, Wurtz); nasze dwa poprzednie artykuly.
+
+% =====================================================================
+\section{Problem and QUBO Formulation}
+\label{sec:method}
+
+\subsection{Permutation flow shop and the four neighborhoods}
+% [MAM] -- skrotowo, odeslanie do poprzednich prac zeby nie powtarzac
+% Adjacent (jeden swap), Fibonacci (nienachodzace swapy), Dynasearch i Motzkin
+% (przedzialy). Jedna formula delty, akcelerator blokowy i filtr NPI.
+
+\subsection{Swap-selection QUBO}
+% [MAM] -- jedno sformulowanie, trzy macierze: one-hot, trojdiagonalna, parowa.
+% Podac zakresy indeksow i czym jest kazdy symbol (uwaga promotora z GCMM).
+
+\subsection{Fixed-angle QAOA}
+% [MAM] -- mapowanie Isinga Z_k = 2x_k - 1, mikser poprzeczny, p=1, kalibrowane
+% katy, odczyt po najnizszej energii oryginalnego QUBO (nie po modzie).
+
+% =====================================================================
+\section{Windowed Decomposition}
+\label{sec:windowed}
+
+\subsection{Why the full QUBO does not fit}
+% [MAM] -- Tabela 1
+The width of the linear QUBO is instance-dependent, because the block
+accelerator removes candidates outside the critical block. Table~\ref{tab:cap}
+reports it across all 120 Taillard instances against the capacity of the three
+IQM processors, and shows that without decomposition the linear neighborhoods
+reach 24 of 120 instances on sixteen qubits and 79 on fifty-four.
+
+\begin{table}[t]
+\caption{Width of the undecomposed linear QUBO over the ten instances of each
+configuration, and the number of instances that fit each device.}
+\label{tab:cap}
+\centering
+\begin{tabular}{@{}lrrrrrrrr@{}}
+\toprule
+& & & \multicolumn{3}{c}{variables} & \multicolumn{3}{c}{instances fitting} \\
+\cmidrule(lr){4-6}\cmidrule(lr){7-9}
+file & $n$ & $m$ & min & med & max & 16q & 20q & 54q \\
+\midrule
+tai20\_5 & 20 & 5 & 5 & 10 & 18 & 9 & 10 & 10 \\
+tai20\_10 & 20 & 10 & 11 & 15 & 19 & 8 & 10 & 10 \\
+tai20\_20 & 20 & 20 & 11 & 16 & 18 & 5 & 10 & 10 \\
+tai50\_5 & 50 & 5 & 10 & 24 & 32 & 2 & 3 & 10 \\
+tai50\_10 & 50 & 10 & 19 & 30 & 38 & 0 & 1 & 10 \\
+tai50\_20 & 50 & 20 & 26 & 36 & 42 & 0 & 0 & 10 \\
+tai100\_5 & 100 & 5 & 17 & 30 & 52 & 0 & 1 & 10 \\
+tai100\_10 & 100 & 10 & 31 & 48 & 71 & 0 & 0 & 7 \\
+tai100\_20 & 100 & 20 & 49 & 65 & 78 & 0 & 0 & 1 \\
+tai200\_10 & 200 & 10 & 42 & 70 & 93 & 0 & 0 & 1 \\
+tai200\_20 & 200 & 20 & 77 & 101 & 117 & 0 & 0 & 0 \\
+tai500\_20 & 500 & 20 & 129 & 184 & 219 & 0 & 0 & 0 \\
+\midrule
+total & & & & & & 24 & 35 & 79 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Window geometry}
+% [MAM] -- kluczowe: dwa rezimy skalowania
+A window of $w$ consecutive positions yields $w-1$ variables for the
+tridiagonal and one-hot matrices but $w(w-1)/2$ for the pairwise one, so one
+window size cannot serve both classes. On sixteen qubits this means $w = 17$ for
+the linear neighborhoods against $w = 6$ for the dense ones, and the window of
+19 used by the annealing study fits no gate device, since it would need 171
+variables.
+
+\subsection{Tridiagonal and pairwise windows}
+% [MAM] -- fibonacci nowe, dynasearch/motzkin istnialo
+Fibonacci's QUBO couples only physically adjacent swaps, so the matrix of a
+position window is exactly the global matrix restricted to that window and the
+decomposition leaves the formulation unchanged. Swaps straddling a window
+boundary are resolved by the same non-overlap validation the single-QUBO path
+uses.
+
+\subsection{One-hot windows}
+% [MAM] -- adjacent, dwupoziomowy argmin; uzasadnienie ze to ten sam cel
+The global one-hot QUBO selects the candidate of lowest delta, so solving one
+one-hot QUBO per window and keeping the best proposal computes the same
+$\arg\min$ and still applies exactly one swap. This matters because the D-Wave
+enhanced variants never decomposed the linear neighborhoods; they relied on the
+annealer holding around 190 logical variables, which no gate device does.
+
+\subsection{Batching the windows of a move}
+% [MAM]
+Every window of one move is submitted as a single job, so the queue and the job
+overhead are paid once per move rather than once per window.
+
+% =====================================================================
+\section{Experimental Protocol}
+\label{sec:protocol}
+
+\subsection{Benchmarks, metaheuristic and metrics}
+% [MAM] -- 12 konfiguracji, 5 instancji, ILS, 10 s, p=1, 4096 shotow, PRD od LB
+We follow the protocol of the windowed annealing study so that the rows stay
+comparable: Taillard instances with $n \in \{20, 50, 100, 200, 500\}$ and
+$m \in \{5, 10, 20\}$, percentage relative deviation from the Taillard lower
+bound, and a wall-clock budget of ten seconds. Each neighborhood drives an
+iterated-local-search loop on the \texttt{sirius} processor, sixteen qubits in a
+star topology, with $p = 1$ and 4096 shots per circuit.
+
+\subsection{Deviations from the annealing protocol}
+% [MAM] -- trzy odstepstwa, kazde z uzasadnieniem
+Three departures are deliberate. Only iterated local search is run, because a
+single move from the identity permutation cannot distinguish it from simulated
+annealing; one run replaces five seeds, because repeated runs sample shot noise
+alone and the measured spread is 0.00 points for Adjacent and 0.03 for
+Fibonacci; and five instances replace ten, because at the measured rate of
+0.75 credits per circuit the full ten-instance protocol would cost about 12\,750
+credits.
+
+% =====================================================================
+\section{Results}
+\label{sec:results}
+
+\subsection{Solution quality across the Taillard range}
+% [TRANSZA] -- Tabela 2 jest rdzeniem artykulu
+% Po transzy: 12 konfiguracji x 4 sasiedztwa, srednie PRD po 5 instancjach.
+% Ponizej stan obecny: instancja 0, piec plikow -- do zastapienia.
+
+\begin{table}[t]
+\caption{Mean PRD [\%] on \texttt{sirius}. PRELIMINARY: instance 0 only, the
+dense columns averaged over five repetitions. To be replaced by five instances
+per configuration.}
+\label{tab:rpd}
+\centering
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+file & $n$ & $m$ & Adjacent & Fibonacci & Dynasearch & Motzkin & moves \\
+\midrule
+tai20\_5 & 20 & 5 & 12.34 & 9.17 & 13.08 & 15.58 & 2 \\
+tai20\_10 & 20 & 10 & 34.12 & 30.18 & 23.95 & 26.08 & 2 \\
+tai20\_20 & 20 & 20 & 40.19 & 37.89 & 41.39 & 44.95 & 2 \\
+tai50\_5 & 50 & 5 & 11.95 & 12.24 & 11.59 & 11.59 & 1 \\
+tai50\_10 & 50 & 10 & 28.07 & 26.87 & 24.10 & -- & 1 \\
+tai50\_20 & 50 & 20 & -- & -- & -- & -- & -- \\
+tai100\_5 & 100 & 5 & -- & -- & -- & -- & -- \\
+tai100\_10 & 100 & 10 & -- & -- & -- & -- & -- \\
+tai100\_20 & 100 & 20 & -- & -- & -- & -- & -- \\
+tai200\_10 & 200 & 10 & -- & -- & -- & -- & -- \\
+tai200\_20 & 200 & 20 & -- & -- & -- & -- & -- \\
+tai500\_20 & 500 & 20 & -- & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Comparison with the classical and annealing baselines}
+% [TRANSZA dla kolumny bramkowej; klasyczne i annealingowe MAM w results/]
+% Tabela 3: te same instancje, trzy klasy. Klasyczny ILS na tai20_5 przy 10 s
+% daje 3.41% dla Adjacent wobec 12.34% bramkowego -- rzad wielkosci.
+
+\subsection{Collapse of the time-budget axis}
+% [MAM czesciowo] -- Tabela 4
+One move takes between three and seventy-three seconds depending on $n$ and on
+the neighborhood class, so the ten-second budget admits two moves at $n = 20$
+and one from $n = 50$ upward. Every shorter budget of the protocol therefore
+describes the same computation, which is why the comparison is reported per move
+rather than per second.
+
+\subsection{Resource model}
+% [MAM] -- Tabela 5, w calosci zmierzona
+Billing follows QPU time and therefore circuit count: the job log gives 1.5
+seconds per circuit, which at the published rate is about 0.75 credits per
+circuit. Table~\ref{tab:res} turns that into the cost of one move for each
+configuration, and shows that the two largest size classes account for roughly
+half of the full protocol.
+
+\begin{table}[t]
+\caption{Circuits per move, QPU seconds and credits per move, with windows of 17
+for the linear neighborhoods and 6 for the dense ones. Measured on
+\texttt{sirius}, averaged over the ten instances of each configuration.}
+\label{tab:res}
+\centering
+\begin{tabular}{@{}lrrrrrrrr@{}}
+\toprule
+& & & \multicolumn{2}{c}{circuits} & \multicolumn{2}{c}{seconds}
+& \multicolumn{2}{c}{credits} \\
+\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
+file & $n$ & $m$ & lin. & dense & lin. & dense & lin. & dense \\
+\midrule
+tai20\_5 & 20 & 5 & 2.0 & 3.5 & 3 & 5 & 1.5 & 2.6 \\
+tai20\_10 & 20 & 10 & 2.0 & 4.7 & 3 & 7 & 1.5 & 3.5 \\
+tai20\_20 & 20 & 20 & 2.0 & 5.7 & 3 & 9 & 1.5 & 4.3 \\
+tai50\_5 & 50 & 5 & 5.6 & 4.8 & 8 & 7 & 4.2 & 3.6 \\
+tai50\_10 & 50 & 10 & 5.9 & 8.4 & 9 & 13 & 4.4 & 6.3 \\
+tai50\_20 & 50 & 20 & 6.0 & 11.1 & 9 & 17 & 4.5 & 8.3 \\
+tai100\_5 & 100 & 5 & 8.6 & 6.2 & 13 & 9 & 6.4 & 4.7 \\
+tai100\_10 & 100 & 10 & 10.5 & 10.4 & 16 & 16 & 7.9 & 7.8 \\
+tai100\_20 & 100 & 20 & 11.8 & 18.8 & 18 & 28 & 8.9 & 14.1 \\
+tai200\_10 & 200 & 10 & 18.5 & 14.1 & 28 & 21 & 13.9 & 10.6 \\
+tai200\_20 & 200 & 20 & 21.6 & 25.2 & 32 & 38 & 16.2 & 18.9 \\
+tai500\_20 & 500 & 20 & 48.7 & 28.4 & 73 & 43 & 36.5 & 21.3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =====================================================================
+\section{Discussion}
+\label{sec:discussion}
+
+\subsection{The first move agrees across coupling maps}
+% [MAM] -- mocny wynik, potwierdza teze progowa z GCMM na trzeciej architekturze
+Adjacent returns a makespan of 1390 on instance 0 of \texttt{tai20\_5} on
+\texttt{garnet}, \texttt{emerald} and \texttt{sirius} alike, three different
+coupling maps. The processors differ only in how many moves fit the budget, so a
+cross-architecture comparison that does not hold the move count fixed measures
+queue latency rather than fidelity.
+
+\subsection{Non-additive deltas in the dense neighborhoods}
+% [MAM] -- 8 z 52 przebiegow bez poprawy, motzkin na tai20_20 piec razy z pieciu
+Eight of the fifty-two hardware runs returned the starting makespan, and Motzkin
+on \texttt{tai20\_20} did so in all five repetitions. The deltas entering the
+QUBO are computed independently, while the pairwise penalties do not capture how
+several swaps compose, so a set of individually improving swaps can worsen the
+schedule; this limits the formulation rather than the device, and it applies to
+the annealing line as well.
+
+\subsection{What a full campaign would cost}
+% [MAM]
+% Pelny protokol windowed_qubo (10 instancji, 5 powtorzen dla gestych) ~12 750
+% kredytow; z jednym powtorzeniem ~4 200; piec instancji ~2 100.
+
+% =====================================================================
+\section{Reproducibility}
+\label{sec:repro}
+% [MAM] -- tryb awarii i straz; w literaturze QPU nikt tego nie opisuje
+A declined job returns an empty list of histograms without raising, and each
+neighborhood then falls back to a classical greedy swap, so the run completes
+and is stored as a hardware measurement while being entirely classical. We
+detected this on a motzkin row whose moves took 2.5 seconds against the 12
+seconds of the valid rows, and the guard now compares the number of returned
+histograms against the number of submitted circuits.
+
+% =====================================================================
+\section{Conclusions}
+\label{sec:conclusions}
+% [NA KONIEC] -- max 2 akapity (uwaga promotora z GCMM)
+% Akapit 1: metoda dosięga n=500 na 16 kubitach, cztery sasiedztwa, pierwsze
+% pomiary poza n=20.
+% Akapit 2: bariera jest zasobowa i policzona; czego wymagalaby pelna kampania.
+
+\begin{thebibliography}{8}
+% [DO UZUPELNIENIA] -- przeniesc z qaoa_gcmm te, ktore sie powtarzaja
+\bibitem{taillard1993}
+Taillard, E.: Benchmarks for basic scheduling problems.
+Eur. J. Oper. Res. \textbf{64}(2), 278--285 (1993)
+\end{thebibliography}
+
+\end{document}

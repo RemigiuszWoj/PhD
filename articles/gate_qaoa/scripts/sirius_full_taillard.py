@@ -46,11 +46,17 @@ BUDZET_MS = 10_000
 BUDZETY = [100, 500, 1000, 2000, 5000, 10000]
 W_LIN, W_GEST, OVERLAP = 17, 6, 0.5
 SHOTS, P = 4096, 1
-POWT = {"gate_adjacent": 1, "gate_fibonacci": 1, "gate_dynasearch": 5, "gate_motzkin": 5}
+# Jedno powtorzenie wszedzie: powtorzenia kosztuja 3x wiecej niz instancje i
+# probkuja tylko szum shotow (zmierzone odchylenie 0,00 pkt dla adjacenta,
+# 0,03 dla fibonacciego). Piec powtorzen dla gestych na instancji 0 pieciu
+# plikow juz mamy -- to wystarczy na oszacowanie szumu sprzetowego.
+POWT = {"gate_adjacent": 1, "gate_fibonacci": 1, "gate_dynasearch": 1, "gate_motzkin": 1}
 SASIEDZTWA = ["gate_adjacent", "gate_fibonacci", "gate_dynasearch", "gate_motzkin"]
 PLIKI = ["tai20_5", "tai20_10", "tai20_20", "tai50_5", "tai50_10", "tai50_20",
          "tai100_5", "tai100_10", "tai100_20", "tai200_10", "tai200_20", "tai500_20"]
-INSTANCJI = 10
+# Partie po poziomach instancji; budzet 2000 kredytow na caly artykul miesci
+# cztery poziomy (~1706 kr) plus 150 rezerwy. Podnosic po kazdej partii.
+INSTANCJI = int(os.environ.get("CAMPAIGN_INSTANCES", "1"))
 
 OUT = Path(__file__).resolve().parents[1] / "measurements" / "sirius_full_taillard_ils.json"
 QC = {"qaoa_backend": "iqm", "qaoa_p": P, "qaoa_shots": SHOTS,

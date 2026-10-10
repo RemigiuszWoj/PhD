@@ -77,17 +77,74 @@ measured.
 \label{sec:method}
 
 \subsection{Permutation flow shop and the four neighborhoods}
-% [MAM] -- skrotowo, odeslanie do poprzednich prac zeby nie powtarzac
-% Adjacent (jeden swap), Fibonacci (nienachodzace swapy), Dynasearch i Motzkin
-% (przedzialy). Jedna formula delty, akcelerator blokowy i filtr NPI.
+\label{subsec:pfsp}
+An instance gives $n$ jobs and $m$ machines, each job passing the machines in
+the same order, and a solution is a permutation $\pi$ of the jobs whose
+makespan $C_{\max}(\pi)$ is the moment the final job clears the final
+machine. The four neighborhoods differ in how far a single move reaches along
+$\pi$: Adjacent exchanges one pair of consecutive jobs, Fibonacci applies a set
+of pairwise disjoint consecutive exchanges, and Dynasearch and Motzkin select
+non-crossing intervals whose endpoints are exchanged. That reach is what later
+fixes how wide a window may be, so we record it here rather than in the
+decomposition.
+
+For every candidate move the makespan change $\delta_k$ follows in constant
+time from the Head and Tail profiles of the current permutation, so a whole
+candidate set is priced in one pass. Two classical filters cut that set before
+it ever reaches a solver: the block property of Smutnicki discards moves that
+cannot touch the critical path, and the no-positive-improvement rule drops
+moves with $\delta_k \ge 0$. Both matter for what follows, because they make
+the number of surviving candidates depend on the instance rather than on $n$
+alone, and that number is what a device has to hold.
 
 \subsection{Swap-selection QUBO}
-% [MAM] -- jedno sformulowanie, trzy macierze: one-hot, trojdiagonalna, parowa.
-% Podac zakresy indeksow i czym jest kazdy symbol (uwaga promotora z GCMM).
+\label{subsec:qubo}
+Let the neighborhood supply $K$ candidates and let $x_k \in \{0,1\}$ record
+whether candidate $k$ is applied, for $k = 1, \dots, K$. Choosing a compatible
+subset is the quadratic program
+\begin{equation}
+  \min_{\mathbf{x} \in \{0,1\}^{K}} \mathbf{x}^{\mathsf T} Q \mathbf{x},
+  \qquad Q_{kk} = \delta_k, \qquad
+  Q_{kl} = \lambda \ \text{ for } 1 \le k < l \le K \text{ in conflict},
+  \label{eq:qubo}
+\end{equation}
+with $Q$ upper triangular so that each conflicting pair is charged once, and
+with $\lambda = \sum_{k=1}^{K} \lvert \delta_k \rvert + 1$ large enough that no
+infeasible selection can beat a feasible one. Adjacent is the one exception:
+there every pair conflicts, so the constraint becomes one-hot and the penalty
+moves onto the diagonal as well, with $Q_{kk} = \delta_k - P$ and
+$Q_{kl} = 2P$, where $P = 2\max_k \lvert \delta_k \rvert + 1$.
+
+Which pairs are charged is the only thing that separates the four
+neighborhoods, and it is also what decides whether the matrix survives being
+cut down to a window. Fibonacci charges a pair only when the two exchanges
+touch the same position, which makes $Q$ tridiagonal, and Adjacent charges
+every pair. Both patterns depend on the candidates alone, so restricting them
+to a subset of positions yields exactly the matrix the full problem would have
+assigned to that subset. The interval neighborhoods charge a pair whenever two
+intervals cross, which is a relation between candidates rather than positions,
+and Section~\ref{sec:windowed} treats them separately for that reason.
 
 \subsection{Fixed-angle QAOA}
-% [MAM] -- mapowanie Isinga Z_k = 2x_k - 1, mikser poprzeczny, p=1, kalibrowane
-% katy, odczyt po najnizszej energii oryginalnego QUBO (nie po modzie).
+\label{subsec:qaoa}
+Substituting $x_k = (Z_k + 1)/2$ turns~\eqref{eq:qubo} into an Ising
+Hamiltonian $H_C$ over $K$ spins, and QAOA prepares
+$\lvert \psi \rangle = e^{-i\beta H_M} e^{-i\gamma H_C} H^{\otimes K}
+\lvert 0 \rangle^{K}$ at depth $p = 1$, with the transverse field
+$H_M = \sum_{k=1}^{K} X_k$ as mixer and $\gamma \in [0, \pi]$,
+$\beta \in [0, \pi/2]$. The two angles are optimized once per neighborhood on
+a small set of representative matrices and then frozen, which keeps the online
+cost of a move at one submission instead of the hundreds of circuits a
+variational loop would spend before committing to a single move.
+
+A move samples the circuit and keeps whichever assignment scores lowest
+against the original $Q$, rather than whichever one came up most often. The
+distinction decides whether the method works at all on a noisy device: at
+$p = 1$ the modal outcome is usually the all-zeros assignment, which applies no
+swap, or a high-energy string with many bits set. Energy-based readout also
+makes the windowed solver of the next section well defined, since each window
+is sampled and reduced independently and the winner is whichever assignment its
+own matrix scores lowest.
 
 % =====================================================================
 \section{Windowed Decomposition}

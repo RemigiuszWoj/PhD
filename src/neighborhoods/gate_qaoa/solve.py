@@ -89,6 +89,9 @@ def _get_ibm():
 _IQM_SERVER = "https://resonance.iqm.tech"
 _IQM_COMPUTER = "garnet"  # garnet (Crystal 20) | emerald (Crystal 54) | sirius (Star 16)
 _IQM_CACHE = None
+# Maksymalna liczba obwodow w jednym zadaniu IQM Resonance (zmierzone 10.10.2026:
+# zadanie na 166 obwodow odrzucone z "exceeds the maximum allowed value: 100").
+IQM_MAX_CIRCUITS = 100
 
 
 def _get_iqm():
@@ -161,13 +164,24 @@ def _device_counts_batch(circuits, backend: str, shots: int) -> List[Dict[str, i
         # transpile_to_IQM takes one circuit at a time (it calls .count_ops on the
         # argument), but backend.run takes the whole list as a single job, so the
         # queue is still paid once per batch.
+        #
+        # IQM Resonance refuses a job of more than IQM_MAX_CIRCUITS circuits
+        # ("Job circuit count exceeds the maximum allowed value: 100"), which the
+        # dense neighborhoods reach at n=500, where the decomposition produces 166
+        # windows. Oversized batches are split across jobs. Billing follows QPU
+        # time and therefore circuit count, so splitting costs no more than the
+        # single job would have.
         from iqm.qiskit_iqm import transpile_to_IQM
 
         hw = _get_iqm()
         tc = [transpile_to_IQM(c, hw, optimization_level=1) for c in circuits]
-        counts = hw.run(tc, shots=shots).result().get_counts()
-        counts = counts if isinstance(counts, list) else [counts]
-        _assert_real_counts(counts, shots, backend, len(circuits))
+        counts: List[Dict[str, int]] = []
+        for i in range(0, len(tc), IQM_MAX_CIRCUITS):
+            part = tc[i:i + IQM_MAX_CIRCUITS]
+            got = hw.run(part, shots=shots).result().get_counts()
+            got = got if isinstance(got, list) else [got]
+            _assert_real_counts(got, shots, backend, len(part))
+            counts.extend(got)
         return counts
 
     # backend == "ibm": real IBM Heron QPU

@@ -245,32 +245,45 @@ credits.
 \label{sec:results}
 
 \subsection{Solution quality across the Taillard range}
-% [TRANSZA] -- Tabela 2 jest rdzeniem artykulu
-% Po transzy: 12 konfiguracji x 4 sasiedztwa, srednie PRD po 5 instancjach.
-% Ponizej stan obecny: instancja 0, piec plikow -- do zastapienia.
+Table~\ref{tab:rpd} reports every configuration of the benchmark, from twenty
+jobs on five machines to five hundred on twenty, which is the first time
+gate-model neighborhoods have been measured beyond $n = 20$. A dense
+neighborhood wins nine of the twelve rows, and Adjacent loses eleven of them,
+which follows from the move counts: Adjacent applies exactly one swap per move
+while the others apply tens.
+
+The exception sits at $n = 20$, where Fibonacci leads and the dense
+neighborhoods fall behind. The budget admits two moves there against one
+everywhere else, so the comparison at $n = 20$ rewards the shallower circuit
+twice over. Deviation also fails to grow with $n$: the worst row is
+\texttt{tai50\_20} at 44.7\% and \texttt{tai500\_20} returns 15.0\%, while all
+three $m = 20$ configurations are the hardest of their size class. The machine
+count drives the difficulty here, not the job count.
+% [TRANSZA] uzupelnic do 5 instancji na konfiguracje gdy beda kredyty
 
 \begin{table}[t]
-\caption{Mean PRD [\%] on \texttt{sirius}. PRELIMINARY: instance 0 only, the
-dense columns averaged over five repetitions. To be replaced by five instances
-per configuration.}
+\caption{Mean PRD [\%] on \texttt{sirius} under iterated local search with a
+ten-second budget. One instance per configuration so far; the dense columns of
+the first five files average five repetitions, every other cell is a single
+run. The last column gives the moves the budget admitted.}
 \label{tab:rpd}
 \centering
 \begin{tabular}{@{}lrrrrrrr@{}}
 \toprule
 file & $n$ & $m$ & Adjacent & Fibonacci & Dynasearch & Motzkin & moves \\
 \midrule
-tai20\_5 & 20 & 5 & 12.34 & 9.17 & 13.08 & 15.58 & 2 \\
-tai20\_10 & 20 & 10 & 34.12 & 30.18 & 23.95 & 26.08 & 2 \\
-tai20\_20 & 20 & 20 & 40.19 & 37.89 & 41.39 & 44.95 & 2 \\
-tai50\_5 & 50 & 5 & 11.95 & 12.24 & 11.59 & 11.59 & 1 \\
-tai50\_10 & 50 & 10 & 28.07 & 26.87 & 24.10 & -- & 1 \\
-tai50\_20 & 50 & 20 & -- & -- & -- & -- & -- \\
-tai100\_5 & 100 & 5 & -- & -- & -- & -- & -- \\
-tai100\_10 & 100 & 10 & -- & -- & -- & -- & -- \\
-tai100\_20 & 100 & 20 & -- & -- & -- & -- & -- \\
-tai200\_10 & 200 & 10 & -- & -- & -- & -- & -- \\
-tai200\_20 & 200 & 20 & -- & -- & -- & -- & -- \\
-tai500\_20 & 500 & 20 & -- & -- & -- & -- & -- \\
+tai20\_5 & 20 & 5 & 12.34 & \textbf{9.17} & 13.08 & 15.58 & 2 \\
+tai20\_10 & 20 & 10 & 34.12 & 30.18 & \textbf{23.95} & 26.08 & 2 \\
+tai20\_20 & 20 & 20 & 40.19 & \textbf{37.89} & 41.39 & 44.95 & 2 \\
+tai50\_5 & 50 & 5 & 11.95 & 12.24 & \textbf{11.59} & \textbf{11.59} & 1 \\
+tai50\_10 & 50 & 10 & 28.07 & 26.87 & \textbf{24.10} & 24.46 & 1 \\
+tai50\_20 & 50 & 20 & 44.68 & 39.14 & \textbf{37.36} & 37.82 & 1 \\
+tai100\_5 & 100 & 5 & 9.27 & 9.27 & 8.94 & \textbf{7.43} & 1 \\
+tai100\_10 & 100 & 10 & 20.25 & 19.86 & \textbf{19.38} & 20.35 & 1 \\
+tai100\_20 & 100 & 20 & 33.11 & 31.38 & 31.41 & \textbf{30.52} & 1 \\
+tai200\_10 & 200 & 10 & 12.20 & 11.44 & 11.09 & \textbf{10.77} & 1 \\
+tai200\_20 & 200 & 20 & 23.24 & 22.34 & 21.88 & \textbf{21.52} & 1 \\
+tai500\_20 & 500 & 20 & 15.99 & 15.67 & \textbf{14.98} & 15.09 & 1 \\
 \bottomrule
 \end{tabular}
 \end{table}

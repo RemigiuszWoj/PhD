@@ -68,9 +68,59 @@ measured.
 
 % =====================================================================
 \section{Related Work}
-% [MAM] -- skrotowo, 1 akapit
-% Taillard 1993; Smutnicki blocks; Wodecki NPI; QUBO dla PFSP (Bozejko, Venturelli,
-% Amaro); QAOA fixed-angle (Farhi, Wurtz); nasze dwa poprzednie artykuly.
+\label{sec:related}
+Scheduling $n$ jobs through $m$ machines in one shared order is strongly
+NP-hard once $m$ reaches three~\cite{garey1976}, and the benchmark that
+settled how such methods are compared is Taillard's~\cite{taillard1993}, whose
+twelve configurations and lower bounds this paper uses throughout. Ruiz and
+Maroto surveyed the heuristics built on it and found local search dominating
+the field~\cite{ruizmaroto2005}, which puts the weight on what a single move is
+allowed to change. Congram, Potts and van de Velde widened that move into
+dynasearch, where a dynamic program selects several independent interchanges at
+once~\cite{congram2002}; Ahuja and colleagues placed such constructions in the
+general setting of very large-scale neighborhoods, searched implicitly rather
+than enumerated~\cite{ahuja2002}. The Motzkin neighborhood takes its arc
+structure from the paths Aigner counts~\cite{aigner1998}, and is the densest of
+the four studied here.
+
+A move set that large is only tractable because most of it can be discarded
+before it is examined. Nowicki and Smutnicki showed that a swap outside the
+critical blocks cannot improve the makespan~\cite{nowicki1996}, a property
+Smutnicki later placed on firmer worst-case ground~\cite{smutnicki1998}, and
+Wodecki and Bo\.{z}ejko discard in addition every move whose delta is not
+negative~\cite{wodecki04}. Both filters matter here for a reason they were not
+designed for: together they decide how many candidate variables a quantum
+device is asked to hold, and that count, not $n$, is what the decomposition of
+Section~\ref{sec:windowed} has to fit.
+
+Casting that selection as a quadratic binary program follows Lucas's catalogue
+of Ising formulations~\cite{lucas2014ising}, and the machine that reads such a
+matrix directly is the annealer of Kadowaki and
+Nishimori~\cite{kadowaki1998}. Venturelli, Marchand and Rojo mapped whole job
+shop instances onto one~\cite{venturelli2015}, which runs into the qubit budget
+quickly, and Bo\.{z}ejko and colleagues instead handed the annealer the
+neighborhood rather than the schedule~\cite{bozejko2021}. Our own line follows
+that second route: the four swap-selection matrices and their comparison on an
+annealer~\cite{wojewodzki2026bpasts}, the Motzkin neighborhood in
+detail~\cite{wojewodzki2026soco}, its composite counterpart under tabu search
+and simulated annealing~\cite{wojewodzki2026icaisc}, the combinatorial account
+of the Motzkin arcs~\cite{wojewodzki2025exit}, and the windowed decomposition
+that carried the dense neighborhoods to $n = 500$ on D-Wave
+hardware~\cite{wojewodzki2026windowed}.
+
+The gate model reads the same matrix through QAOA~\cite{farhi2014qaoa}, whose
+behaviour at shallow depth Zhou and colleagues analysed in
+detail~\cite{zhou2020}. Tuning its angles per instance is what makes the
+algorithm expensive inside a metaheuristic, and two results remove that cost:
+Galda and colleagues showed the optimal angles transfer between instances of
+one problem family~\cite{galda2021}, and Wurtz and Lykov gave angles that need
+no training at all~\cite{wurtz2021fixed}. What remains is the hardware, whose
+limits Preskill set out for this era~\cite{preskill2018} and which we met in a
+form rarely reported: a cap on circuits per job, a charge proportional to
+quantum processor time, and a move that outlasts the budget it was measured
+under. The gate-model study closest to this one is our
+own~\cite{wojewodzki2026gcmm}, and it stops at twenty jobs for exactly the
+reason this paper removes.
 
 % =====================================================================
 \section{Problem and QUBO Formulation}
@@ -226,9 +276,11 @@ overhead are paid once per move rather than once per window.
 We follow the protocol of the windowed annealing study so that the rows stay
 comparable: Taillard instances with $n \in \{20, 50, 100, 200, 500\}$ and
 $m \in \{5, 10, 20\}$, percentage relative deviation from the Taillard lower
-bound, and a wall-clock budget of ten seconds. Each neighborhood drives an
-iterated-local-search loop on the \texttt{sirius} processor, sixteen qubits in a
-star topology, with $p = 1$ and 4096 shots per circuit.
+bound, and a wall-clock budget of ten seconds. Each neighborhood drives the
+iterated local search of Louren\c{c}o, Martin and St\"{u}tzle~\cite{lourenco2003},
+which perturbs and re-optimises a single incumbent, on the \texttt{sirius}
+processor, sixteen qubits in a star topology, with $p = 1$ and 4096 shots per
+circuit.
 
 \subsection{Deviations from the annealing protocol}
 % [MAM] -- trzy odstepstwa, kazde z uzasadnieniem
@@ -383,11 +435,143 @@ histograms against the number of submitted circuits.
 % pomiary poza n=20.
 % Akapit 2: bariera jest zasobowa i policzona; czego wymagalaby pelna kampania.
 
-\begin{thebibliography}{8}
-% [DO UZUPELNIENIA] -- przeniesc z qaoa_gcmm te, ktore sie powtarzaja
+\begin{thebibliography}{25}
+\bibitem{ahuja2002}
+Ahuja, R.K., Ergun, \"{O}., Orlin, J.B., Punnen, A.P.: A survey of very
+large-scale neighborhood search techniques. Discrete Appl. Math.
+\textbf{123}(1--3), 75--102 (2002).
+\url{https://doi.org/10.1016/S0166-218X(01)00338-9}
+
+\bibitem{aigner1998}
+Aigner, M.: Motzkin numbers. Eur. J. Comb. \textbf{19}(6), 663--675 (1998).
+\url{https://doi.org/10.1006/eujc.1998.0235}
+
+\bibitem{bozejko2021}
+Bo\.{z}ejko, W., Smutnicki, C., Uchro\'{n}ski, M., Wodecki, M.: Quantum
+annealing for the flow shop scheduling problem. In: ICAISC 2021, LNAI,
+pp.\ 35--46. Springer (2021).
+\url{https://doi.org/10.1007/978-3-030-87986-0_4}
+
+\bibitem{congram2002}
+Congram, R.K., Potts, C.N., van de Velde, S.L.: An iterated dynasearch
+algorithm for the single-machine total weighted tardiness scheduling
+problem. INFORMS J. Comput. \textbf{14}(1), 52--67 (2002).
+\url{https://doi.org/10.1287/ijoc.14.1.52.7712}
+
+\bibitem{farhi2014qaoa}
+Farhi, E., Goldstone, J., Gutmann, S.: A quantum approximate
+optimization algorithm. arXiv:1411.4028 (2014).
+\url{https://doi.org/10.48550/arXiv.1411.4028}
+
+\bibitem{galda2021}
+Galda, A., Liu, X., Lykov, D., Alexeev, Y., Safro, I.: Transferability of
+optimal QAOA parameters between random graphs. In: 2021 IEEE
+International Conference on Quantum Computing and Engineering (QCE),
+pp.\ 171--180. IEEE (2021).
+\url{https://doi.org/10.1109/QCE52317.2021.00034}
+
+\bibitem{garey1976}
+Garey, M.R., Johnson, D.S., Sethi, R.: The complexity of flowshop and
+jobshop scheduling. Math. Oper. Res. \textbf{1}(2), 117--129 (1976).
+\url{https://doi.org/10.1287/moor.1.2.117}
+
+\bibitem{kadowaki1998}
+Kadowaki, T., Nishimori, H.: Quantum annealing in the transverse Ising
+model. Phys. Rev. E \textbf{58}(5), 5355--5363 (1998).
+\url{https://doi.org/10.1103/PhysRevE.58.5355}
+
+\bibitem{lourenco2003}
+Louren\c{c}o, H.R., Martin, O.C., St\"{u}tzle, T.: Iterated local search.
+In: Glover, F., Kochenberger, G.A. (eds.) Handbook of Metaheuristics,
+pp.\ 320--353. Kluwer, Boston (2003).
+\url{https://doi.org/10.1007/0-306-48056-5_11}
+
+\bibitem{lucas2014ising}
+Lucas, A.: Ising formulations of many NP problems. Front. Phys.
+\textbf{2}, 5 (2014). \url{https://doi.org/10.3389/fphy.2014.00005}
+
+\bibitem{nowicki1996}
+Nowicki, E., Smutnicki, C.: A fast tabu search algorithm for the permutation
+flow-shop problem. Eur. J. Oper. Res. \textbf{91}(1), 160--175 (1996).
+\url{https://doi.org/10.1016/0377-2217(95)00037-2}
+
+\bibitem{preskill2018}
+Preskill, J.: Quantum computing in the NISQ era and beyond. Quantum
+\textbf{2}, 79 (2018). \url{https://doi.org/10.22331/q-2018-08-06-79}
+
+\bibitem{ruizmaroto2005}
+Ruiz, R., Maroto, C.: A comprehensive review and evaluation of
+permutation flowshop heuristics. Eur. J. Oper. Res. \textbf{165}(2),
+479--494 (2005). \url{https://doi.org/10.1016/j.ejor.2004.04.017}
+
+\bibitem{smutnicki1998}
+Smutnicki, C.: Some results of the worst-case analysis for flow shop
+scheduling. Eur. J. Oper. Res. \textbf{109}(1), 66--87 (1998).
+\url{https://doi.org/10.1016/S0377-2217(97)00139-X}
+
 \bibitem{taillard1993}
-Taillard, E.: Benchmarks for basic scheduling problems.
-Eur. J. Oper. Res. \textbf{64}(2), 278--285 (1993)
+Taillard, \'{E}.: Benchmarks for basic scheduling problems. Eur. J. Oper.
+Res. \textbf{64}(2), 278--285 (1993).
+\url{https://doi.org/10.1016/0377-2217(93)90182-M}
+
+\bibitem{venturelli2015}
+Venturelli, D., Marchand, D.J.J., Rojo, G.: Quantum annealing
+implementation of job-shop scheduling. arXiv:1506.08479 (2015).
+\url{https://doi.org/10.48550/arXiv.1506.08479}
+
+\bibitem{wodecki04}
+Wodecki, M., Bo\.{z}ejko, W.: Solving the flow shop problem by parallel
+simulated annealing. In: Parallel Processing and Applied Mathematics, LNCS,
+vol.\ 2328, pp.\ 236--244. Springer (2004).
+\url{https://doi.org/10.1007/3-540-48086-2_26}
+
+\bibitem{wurtz2021fixed}
+Wurtz, J., Lykov, D.: Fixed-angle conjectures for the quantum approximate
+optimization algorithm on regular MaxCut graphs. Phys. Rev. A
+\textbf{104}, 052419 (2021).
+\url{https://doi.org/10.1103/PhysRevA.104.052419}
+
+\bibitem{zhou2020}
+Zhou, L., Wang, S.-T., Choi, S., Pichler, H., Lukin, M.D.: Quantum
+approximate optimization algorithm: performance, mechanism, and
+implementation on near-term devices. Phys. Rev. X \textbf{10}, 021067
+(2020). \url{https://doi.org/10.1103/PhysRevX.10.021067}
+
+\bibitem{wojewodzki2026bpasts}
+
+Wojew\'{o}dzki, R., Bo\.{z}ejko, W.: Classical and quantum neighborhoods
+evaluation in iterated local search and simulated annealing for the
+permutation flow shop problem. Bull. Pol. Acad. Sci. Tech. Sci.
+(under review, 2026)
+
+\bibitem{wojewodzki2026soco}
+
+Wojew\'{o}dzki, R., Bo\.{z}ejko, W.: Motzkin neighborhood evaluation in
+iterated local search and simulated annealing for the permutational
+flow shop problem. In: SOCO 2026, CCIS, vol.\ 3046, pp.\ 144--155.
+Springer (2026). \url{https://doi.org/10.1007/978-3-032-29254-4_12}
+
+\bibitem{wojewodzki2026icaisc}
+Wojew\'{o}dzki, R., Bo\.{z}ejko, W.: Hybrid neighborhood evaluation in tabu
+search and simulated annealing for the permutation flow shop problem. In:
+ICAISC 2026, LNAI. Springer (2026, accepted)
+
+\bibitem{wojewodzki2025exit}
+Wojew\'{o}dzki, R., Bo\.{z}ejko, W.: S\k{a}siedztwo Motzkina dla
+permutacyjnego problemu przep\l{}ywowego. In: monograph, Oficyna Wydawnicza
+EXIT, Warsaw (2025)
+
+\bibitem{wojewodzki2026windowed}
+
+Wojew\'{o}dzki, R., Bo\.{z}ejko, W.: Scalable quantum neighborhood search
+for the permutation flow shop problem via windowed QUBO decomposition.
+Comput. Oper. Res. (under review, 2026)
+
+\bibitem{wojewodzki2026gcmm}
+Wojew\'{o}dzki, R., Bo\.{z}ejko, W.: Gate-model quantum neighborhood search
+for the permutation flow shop problem via fixed-angle QAOA. In: GCMM 2026,
+Springer (2026, submitted)
+
 \end{thebibliography}
 
 \end{document}

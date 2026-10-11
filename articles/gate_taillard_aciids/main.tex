@@ -366,12 +366,25 @@ mean & & & 24.98 & 23.62 & \textbf{23.11} & 23.39 & & \\
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.78\textwidth]{figures/prd_vs_ratio.pdf}
-\caption{PRD of the best neighborhood of each configuration. Holding the
+\caption{Each point is the best of the four neighborhoods on one
+configuration; the three curves are the three machine counts, not the
+neighborhoods. Holding the
 machine count fixed, deviation falls as jobs are added, and the three curves
 are ordered by that count; together these produce the correlation of $0.89$
 with $m/n$ quoted in the text. Taillard provides no $m = 5$ instances beyond
 $n = 100$ and no $m = 10$ beyond $n = 200$, which is where those curves stop.}
 \label{fig:ratio}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.78\textwidth]{figures/paired_diff.pdf}
+\caption{Paired differences against Adjacent, one point per combination of
+file and instance, with the median marked. The four neighborhoods cannot be
+told apart in absolute deviation, where they sit 2.0 points apart on a scale
+that spans 27, but within a pair the instance difficulty cancels and the
+ordering appears.}
+\label{fig:paired}
 \end{figure}
 
 \subsection{Which neighborhood wins, instance by instance}
@@ -388,7 +401,8 @@ Motzkin gains 1.50 and wins 37, and Dynasearch gains 1.86 and wins 41; a
 two-sided sign test puts all three below $p=0.001$. Grouped, the two dense
 neighborhoods beat the two linear ones in 37 of 47 pairs ($p=0.0001$).
 Counting outright winners, Motzkin takes nineteen pairs, Dynasearch eighteen,
-Fibonacci seven and Adjacent three. The ranking is settled even though no row of
+Fibonacci seven and Adjacent three. Fig.~\ref{fig:paired} shows the three
+distributions. The ranking is settled even though no row of
 Table~\ref{tab:rpd} separates its columns by more than the spread between its
 own instances.
 

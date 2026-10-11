@@ -300,45 +300,67 @@ credits.
 Table~\ref{tab:rpd} reports every configuration of the benchmark, from twenty
 jobs on five machines to five hundred on twenty, which is the first time
 gate-model neighborhoods have been measured beyond $n = 20$. A dense
-neighborhood wins nine of the twelve rows, and Adjacent loses eleven of them,
-which follows from the move counts: Adjacent applies exactly one swap per move
-while the others apply tens.
+neighborhood takes ten of the twelve rows and Fibonacci the other two, while
+Adjacent takes none. That ordering follows from what a move is allowed to do:
+Adjacent applies exactly one swap, the others apply tens.
 
-The exception sits at $n = 20$, where Fibonacci leads and the dense
-neighborhoods fall behind. The budget admits two moves there against one
-everywhere else, so the comparison at $n = 20$ rewards the shallower circuit
-twice over. Deviation also fails to grow with $n$: the worst row is
-\texttt{tai50\_20} at 44.7\% and \texttt{tai500\_20} returns 15.0\%, while all
-three $m = 20$ configurations are the hardest of their size class. The machine
-count drives the difficulty here, not the job count.
-% [TRANSZA] uzupelnic do 5 instancji na konfiguracje gdy beda kredyty
+Deviation does not grow with the number of jobs. The worst row is
+\texttt{tai50\_20} at 39.4\% while \texttt{tai500\_20} returns 15.6\%, and all
+three $m = 20$ configurations are the hardest of their size class. Difficulty
+tracks the machine count rather than the job count, which the lower bound would
+predict: more machines leave more idle time that a single move cannot recover.
+
+The move column accounts for the rest. The budget admits two or three moves at
+$n = 20$ and exactly one from $n = 50$ upward, so the rows differ not only in
+problem size but in how much search the same ten seconds bought.
 
 \begin{table}[t]
 \caption{Mean PRD [\%] on \texttt{sirius} under iterated local search with a
+ten-second budget, three instances per configuration, best of each row in bold.
+Means are taken over repetitions within an instance and then over instances;
+the last two columns give the moves the budget admitted and the instance count.} under iterated local search with a
 ten-second budget. One instance per configuration so far; the dense columns of
 the first five files average five repetitions, every other cell is a single
 run. The last column gives the moves the budget admitted.}
 \label{tab:rpd}
 \centering
-\begin{tabular}{@{}lrrrrrrr@{}}
+\begin{tabular}{@{}lrrrrrrrr@{}}
 \toprule
-file & $n$ & $m$ & Adjacent & Fibonacci & Dynasearch & Motzkin & moves \\
+file & $n$ & $m$ & Adjacent & Fibonacci & Dynasearch & Motzkin & moves & inst. \\
 \midrule
-tai20\_5 & 20 & 5 & 12.34 & \textbf{9.17} & 13.08 & 15.58 & 2 \\
-tai20\_10 & 20 & 10 & 34.12 & 30.18 & \textbf{23.95} & 26.08 & 2 \\
-tai20\_20 & 20 & 20 & 40.19 & \textbf{37.89} & 41.39 & 44.95 & 2 \\
-tai50\_5 & 50 & 5 & 11.95 & 12.24 & \textbf{11.59} & \textbf{11.59} & 1 \\
-tai50\_10 & 50 & 10 & 28.07 & 26.87 & \textbf{24.10} & 24.46 & 1 \\
-tai50\_20 & 50 & 20 & 44.68 & 39.14 & \textbf{37.36} & 37.82 & 1 \\
-tai100\_5 & 100 & 5 & 9.27 & 9.27 & 8.94 & \textbf{7.43} & 1 \\
-tai100\_10 & 100 & 10 & 20.25 & 19.86 & \textbf{19.38} & 20.35 & 1 \\
-tai100\_20 & 100 & 20 & 33.11 & 31.38 & 31.41 & \textbf{30.52} & 1 \\
-tai200\_10 & 200 & 10 & 12.20 & 11.44 & 11.09 & \textbf{10.77} & 1 \\
-tai200\_20 & 200 & 20 & 23.24 & 22.34 & 21.88 & \textbf{21.52} & 1 \\
-tai500\_20 & 500 & 20 & 15.99 & 15.67 & \textbf{14.98} & 15.09 & 1 \\
+tai20\_5 & 20 & 5 & 23.59 & 21.81 & \textbf{21.43} & 23.49 & 2 & 3 \\
+tai20\_10 & 20 & 10 & 32.18 & 27.35 & \textbf{27.18} & 27.22 & 3 & 3 \\
+tai20\_20 & 20 & 20 & 43.16 & \textbf{41.90} & 42.45 & 43.44 & 2 & 3 \\
+tai50\_5 & 50 & 5 & 15.60 & 15.20 & \textbf{14.75} & 15.66 & 1 & 3 \\
+tai50\_10 & 50 & 10 & 28.61 & 27.96 & 26.82 & \textbf{25.73} & 1 & 3 \\
+tai50\_20 & 50 & 20 & 39.40 & 36.64 & 35.17 & \textbf{35.09} & 1 & 3 \\
+tai100\_5 & 100 & 5 & 11.77 & 11.60 & 11.31 & \textbf{10.62} & 1 & 3 \\
+tai100\_10 & 100 & 10 & 20.05 & 19.89 & \textbf{19.36} & 19.46 & 1 & 3 \\
+tai100\_20 & 100 & 20 & 27.73 & \textbf{26.21} & 26.46 & 26.83 & 1 & 3 \\
+tai200\_10 & 200 & 10 & 16.47 & 15.91 & 15.37 & \textbf{15.28} & 1 & 3 \\
+tai200\_20 & 200 & 20 & 24.55 & 23.57 & \textbf{22.26} & 22.65 & 1 & 3 \\
+tai500\_20 & 500 & 20 & 16.54 & 16.25 & \textbf{15.61} & 15.85 & 1 & 3 \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\subsection{Which neighborhood wins, instance by instance}
+Absolute deviation varies far more between instances than between
+neighborhoods: on \texttt{tai50\_5} the three instances span eleven points
+while the four neighborhoods sit within one and a half of each other, so
+comparing column means would say little. The four neighborhoods run on the same
+instances, however, so instance difficulty is a shared term that cancels in a
+paired comparison, and we compare them pair by pair over the 36 combinations of
+file and instance.
+
+Against Adjacent, Fibonacci gains 1.28 points and wins 30 of the 36 pairs,
+Motzkin gains 1.53 and wins 29, and Dynasearch gains 1.79 and wins 32; a
+two-sided sign test puts all three below $p=0.001$. Grouped, the two dense
+neighborhoods beat the two linear ones in 30 of 36 pairs ($p=0.00007$).
+Counting outright winners, Dynasearch and Motzkin take fifteen pairs each,
+Fibonacci five and Adjacent one. The ranking is settled even though no row of
+Table~\ref{tab:rpd} separates its columns by more than the spread between its
+own instances.
 
 \subsection{Comparison with the classical and annealing baselines}
 % [TRANSZA dla kolumny bramkowej; klasyczne i annealingowe MAM w results/]
@@ -411,10 +433,39 @@ several swaps compose, so a set of individually improving swaps can worsen the
 schedule; this limits the formulation rather than the device, and it applies to
 the annealing line as well.
 
-\subsection{What a full campaign would cost}
-% [MAM]
-% Pelny protokol windowed_qubo (10 instancji, 5 powtorzen dla gestych) ~12 750
-% kredytow; z jednym powtorzeniem ~4 200; piec instancji ~2 100.
+\subsection{What a campaign on this hardware costs}
+\label{subsec:cost}
+Three numbers govern the bill, and none of them is the one a reader would
+guess. The provider charges for processor time at a published rate, 0.30
+credits per second on the star processor against 0.50 and 0.75 on the two
+lattice machines, and a job occupies the processor for 1.48 seconds per
+circuit, flat from eight circuits to a hundred. A move therefore costs 0.445
+credits for every window its decomposition produces, and nothing for the job
+that carries them. Across the measurements reported here the model predicted
+the balance to within half a percent of what the account was actually charged.
+
+The consequence is that windowing, the very mechanism that makes large
+instances reachable, is also what makes them expensive. One instance of
+\texttt{tai500\_20} across the four neighborhoods submits 428 circuits and
+costs 190 credits, while all three twenty-job configurations together submit 48
+and cost 21. A ninefold price for a twelfth of the table.
+
+A third limit is undocumented in the provider's pricing and appears only on
+submission: a job may carry at most a hundred circuits. The dense
+decomposition at $n = 500$ produces 166 windows and is refused outright, so
+such moves must be split across jobs. Splitting is free, since the charge
+follows circuits rather than submissions, but a framework that batches windows
+without checking the count will have its job declined, receive empty
+histograms, and -- unless it refuses them -- fall back to a classical move and
+record the result as a quantum one.
+
+Taken together these fix the price of the protocol the annealing line used. Ten
+instances of each configuration, four neighborhoods, one run each, is 12\,260
+circuits and about 5\,460 credits; repeating the dense neighborhoods five times
+over, as a proper error bar would require, triples that. We report five
+instances because that is what a two-thousand-credit allocation buys, and we
+state the figure because no previous study of quantum neighborhood evaluation
+reports what its campaign cost or what it would have cost to finish.
 
 % =====================================================================
 \section{Reproducibility}

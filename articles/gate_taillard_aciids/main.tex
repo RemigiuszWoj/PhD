@@ -52,7 +52,7 @@ The method reaches the entire Taillard benchmark on sixteen qubits, and we
 report 223 runs covering all twelve configurations from twenty jobs to five
 hundred, which is the first measurement of gate-model neighborhoods beyond
 twenty. One neighborhood evaluation outlasts the longest budget of the
-protocol, so quality is compared per move rather than per second. Deviation
+protocol, so we compare quality per move rather than per second. Deviation
 from the lower bound tracks the ratio of machines to jobs rather than either
 alone, and a paired comparison over 47 instances places the dense
 neighborhoods ahead of the linear ones in 37 of them. Against a classical loop
@@ -330,8 +330,8 @@ recovers a fixed amount of it, so the same move is worth less where there is
 more to recover.
 
 The move column accounts for the rest. The budget admits two or three moves at
-$n = 20$ and exactly one from $n = 50$ upward, so the rows differ not only in
-problem size but in how much search the same ten seconds bought.
+$n = 20$ and exactly one from $n = 50$ upward, so the rows differ in problem
+size and in how much search the same ten seconds bought.
 
 \begin{table}[t]
 \caption{Mean PRD [\%] on \texttt{sirius} under iterated local search with a

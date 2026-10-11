@@ -60,6 +60,9 @@ INSTANCJI = int(os.environ.get("CAMPAIGN_INSTANCES", "1"))
 # Pliki pominiete w tej partii. tai500_20 kosztuje 190 kredytow za instancje,
 # tyle co 27 instancji tai20_5, wiec przy koncowce budzetu zostaje w tyle.
 POMIN = {x for x in os.environ.get("CAMPAIGN_SKIP", "").split(",") if x}
+# Sasiedztwa w tej partii. Przy koncowce budzetu liniowe (1 obwod na okno) sa
+# rzedy wielkosci tansze od gestych, wiec czasem miesci sie tylko ich para.
+TYLKO = {x for x in os.environ.get("CAMPAIGN_NEIGH", "").split(",") if x}
 
 OUT = Path(__file__).resolve().parents[1] / "measurements" / "sirius_full_taillard_ils.json"
 QC = {"qaoa_backend": "iqm", "qaoa_p": P, "qaoa_shots": SHOTS,
@@ -91,12 +94,14 @@ dane.setdefault("_meta", {
 })
 
 zadania = [(i, f, ne, r) for i in range(INSTANCJI) for f in PLIKI if f not in POMIN
-           for ne in SASIEDZTWA for r in range(POWT[ne])]
+           for ne in SASIEDZTWA if not TYLKO or ne in TYLKO
+           for r in range(POWT[ne])]
 zrobione = sum(1 for k in dane if not k.startswith("_"))
 print(f"{hw.name}, {hw.num_qubits} kubitow | budzet {BUDZET_MS} ms | "
       f"okna {W_LIN} lin / {W_GEST} gest")
 print(f"{len(zadania)} przebiegow w planie, {zrobione} juz policzonych"
-      + (f"  (pominiete: {', '.join(sorted(POMIN))})" if POMIN else "") + "\n")
+      + (f"  (pominiete: {', '.join(sorted(POMIN))})" if POMIN else "")
+      + (f"  (tylko: {', '.join(sorted(TYLKO))})" if TYLKO else "") + "\n")
 print(f"{'inst':>4} {'plik':>10} {'sasiedztwo':>16} {'powt':>4} {'ruchow':>6} "
       f"{'cmax':>7} {'PRD':>7} {'czas':>7} {'zadan':>6}")
 

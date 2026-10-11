@@ -315,50 +315,44 @@ because at 0.445 credits per circuit the remaining six would have cost about
 Table~\ref{tab:rpd} reports every configuration of the benchmark, from twenty
 jobs on five machines to five hundred on twenty, which is the first time
 gate-model neighborhoods have been measured beyond $n = 20$. A dense
-neighborhood takes ten of the twelve rows and Fibonacci the other two, while
-Adjacent takes none. That ordering follows from what a move is allowed to do:
+neighborhood takes ten of the twelve columns and Fibonacci the other two, while
+Adjacent takes none and has the worst mean. That ordering follows from what a move is allowed to do:
 Adjacent applies exactly one swap, the others apply tens.
 
-Deviation falls as the instances grow. The hardest row is
-\texttt{tai20\_20}, where even the best neighborhood leaves 42.8\%, and the
-easiest is \texttt{tai100\_5} at 11.2\%; holding $m = 20$ and raising $n$ walks
+Deviation falls as the instances grow. The hardest column is
+$20\times20$, where even the best neighborhood leaves 42.8\%, and the easiest
+is $100\times5$ at 11.2\%; holding $m = 20$ and raising $n$ walks
 monotonically down from 42.8 to 15.6. What the rows track is the ratio $m/n$,
-which correlates with the best value of each row at $0.89$ against $-0.45$ for
+which correlates with the best value of each column at $0.89$ against $-0.45$ for
 $n$ alone and $0.56$ for $m$ alone; Fig.~\ref{fig:ratio} separates the two. The lower bound explains the direction:
 machines per job measures how much idle time a schedule carries, and one move
 recovers a fixed amount of it, so the same move is worth less where there is
 more to recover.
 
-The move column accounts for the rest. The budget admits two or three moves at
-$n = 20$ and exactly one from $n = 50$ upward, so the rows differ in problem
+The move row accounts for the rest. The budget admits two or three moves at
+$n = 20$ and exactly one from $n = 50$ upward, so the columns differ in problem
 size and in how much search the same ten seconds bought.
 
 \begin{table}[t]
 \caption{Mean PRD [\%] on \texttt{sirius} under iterated local search with a
-ten-second budget, four instances per configuration; on \texttt{tai500\_20} the dense columns rest
-on three, written 4/3. Best of each row in bold.
-Means are taken over repetitions within an instance and then over instances;
-the last two columns give the moves the budget admitted and the instance count.}
+ten-second budget, four instances per configuration and three for
+\texttt{tai500\_20}. Best per column in bold; the mean column is italicised.}
 \label{tab:rpd}
 \centering
-\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrrrrrrrr@{}}
+\setlength{\tabcolsep}{3.2pt}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrrrrrrrrrrrrr@{}}
 \toprule
-file & $n$ & $m$ & Adjacent & Fibonacci & Dynasearch & Motzkin & moves & inst. \\
+& \multicolumn{3}{c}{$n = 20$} & \multicolumn{3}{c}{$n = 50$}
+& \multicolumn{3}{c}{$n = 100$} & \multicolumn{2}{c}{$n = 200$} & $n = 500$ & \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}\cmidrule(lr){11-12}\cmidrule(lr){13-13}
+Neighborhood & 5 & 10 & 20 & 5 & 10 & 20 & 5 & 10 & 20 & 10 & 20 & 20 & \emph{Mean} \\
 \midrule
-tai20\_5 & 20 & 5 & 25.97 & 22.86 & \textbf{22.73} & 25.66 & 2 & 4 \\
-tai20\_10 & 20 & 10 & 31.51 & \textbf{27.89} & 28.37 & 28.40 & 3 & 4 \\
-tai20\_20 & 20 & 20 & 44.71 & \textbf{42.75} & 42.82 & 43.85 & 2 & 4 \\
-tai50\_5 & 50 & 5 & 14.66 & 14.39 & \textbf{14.10} & 14.73 & 1 & 4 \\
-tai50\_10 & 50 & 10 & 27.14 & 26.14 & 24.96 & \textbf{23.56} & 1 & 4 \\
-tai50\_20 & 50 & 20 & 40.14 & 37.06 & \textbf{36.00} & 36.17 & 1 & 4 \\
-tai100\_5 & 100 & 5 & 12.36 & 12.17 & 11.77 & \textbf{11.20} & 1 & 4 \\
-tai100\_10 & 100 & 10 & 21.72 & 21.60 & \textbf{21.12} & 21.44 & 1 & 4 \\
-tai100\_20 & 100 & 20 & 28.12 & 26.81 & \textbf{26.43} & 27.15 & 1 & 4 \\
-tai200\_10 & 200 & 10 & 15.46 & 14.95 & 14.38 & \textbf{14.30} & 1 & 4 \\
-tai200\_20 & 200 & 20 & 23.57 & 22.57 & \textbf{21.56} & 21.77 & 1 & 4 \\
-tai500\_20 & 500 & 20 & 16.09 & 15.84 & \textbf{15.61} & 15.85 & 1 & 4/3 \\
+Adjacent & 26.0 & 31.5 & 44.7 & 14.7 & 27.1 & 40.1 & 12.4 & 21.7 & 28.1 & 15.5 & 23.6 & 16.1 & \emph{25.12} \\
+Fibonacci & 22.9 & \textbf{27.9} & \textbf{42.8} & 14.4 & 26.1 & 37.1 & 12.2 & 21.6 & 26.8 & 14.9 & 22.6 & 15.8 & \emph{23.75} \\
+Dynasearch & \textbf{22.7} & 28.4 & 42.8 & \textbf{14.1} & 25.0 & \textbf{36.0} & 11.8 & \textbf{21.1} & \textbf{26.4} & 14.4 & \textbf{21.6} & \textbf{15.6} & \textbf{\emph{23.32}} \\
+Motzkin & 25.7 & 28.4 & 43.9 & 14.7 & \textbf{23.6} & 36.2 & \textbf{11.2} & 21.4 & 27.1 & \textbf{14.3} & 21.8 & 15.8 & \emph{23.67} \\
 \midrule
-mean & & & 24.98 & 23.62 & \textbf{23.11} & 23.39 & & \\
+moves & 2 & 3 & 2 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & \\
 \bottomrule
 \end{tabular*}
 \end{table}
@@ -379,11 +373,11 @@ $n = 100$ and no $m = 10$ beyond $n = 200$, which is where those curves stop.}
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.78\textwidth]{figures/paired_diff.pdf}
-\caption{Paired differences against Adjacent, one point per combination of
-file and instance, with the median marked. The four neighborhoods cannot be
-told apart in absolute deviation, where they sit 2.0 points apart on a scale
-that spans 27, but within a pair the instance difficulty cancels and the
-ordering appears.}
+\caption{How far each neighborhood falls from the mean of its own pair, one
+point per combination of file and instance, with the median marked. In
+absolute deviation the four sit 2.0 points apart on a scale spanning 27 and
+cannot be told apart; referred to their pair the instance difficulty cancels
+and the ordering appears. Adjacent is above the mean in 41 of the 47 pairs.}
 \label{fig:paired}
 \end{figure}
 
@@ -402,8 +396,8 @@ two-sided sign test puts all three below $p=0.001$. Grouped, the two dense
 neighborhoods beat the two linear ones in 37 of 47 pairs ($p=0.0001$).
 Counting outright winners, Motzkin takes nineteen pairs, Dynasearch eighteen,
 Fibonacci seven and Adjacent three. Fig.~\ref{fig:paired} shows the three
-distributions. The ranking is settled even though no row of
-Table~\ref{tab:rpd} separates its columns by more than the spread between its
+distributions. The ranking is settled even though no column of
+Table~\ref{tab:rpd} separates the four rows by more than the spread between its
 own instances.
 
 \subsection{Comparison with the classical baseline}

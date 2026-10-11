@@ -284,7 +284,13 @@ circuit.
 
 \subsection{Deviations from the annealing protocol}
 % [MAM] -- trzy odstepstwa, kazde z uzasadnieniem
-Three departures are deliberate. Only iterated local search is run, because a
+Coverage is four instances of every configuration except \texttt{tai500\_20},
+which has three. The reason is price rather than principle: one instance of
+that file submits 428 circuits against the 48 of all three twenty-job
+configurations together, so the last instance it would have consumed bought
+eleven instances elsewhere instead.
+
+Three departures from the annealing protocol are deliberate. Only iterated local search is run, because a
 single move from the identity permutation cannot distinguish it from simulated
 annealing; one run replaces five seeds, because repeated runs sample shot noise
 alone and the measured spread is 0.00 points for Adjacent and 0.03 for
@@ -304,11 +310,15 @@ neighborhood takes ten of the twelve rows and Fibonacci the other two, while
 Adjacent takes none. That ordering follows from what a move is allowed to do:
 Adjacent applies exactly one swap, the others apply tens.
 
-Deviation does not grow with the number of jobs. The worst row is
-\texttt{tai50\_20} at 39.4\% while \texttt{tai500\_20} returns 15.6\%, and all
-three $m = 20$ configurations are the hardest of their size class. Difficulty
-tracks the machine count rather than the job count, which the lower bound would
-predict: more machines leave more idle time that a single move cannot recover.
+Deviation falls as the instances grow. The hardest row is
+\texttt{tai20\_20}, where even the best neighborhood leaves 42.8\%, and the
+easiest is \texttt{tai100\_5} at 11.2\%; holding $m = 20$ and raising $n$ walks
+monotonically down from 42.8 to 15.6. What the rows track is the ratio $m/n$,
+which correlates with the best value of each row at $0.89$ against $-0.45$ for
+$n$ alone and $0.56$ for $m$ alone. The lower bound explains the direction:
+machines per job measures how much idle time a schedule carries, and one move
+recovers a fixed amount of it, so the same move is worth less where there is
+more to recover.
 
 The move column accounts for the rest. The budget admits two or three moves at
 $n = 20$ and exactly one from $n = 50$ upward, so the rows differ not only in
@@ -316,7 +326,8 @@ problem size but in how much search the same ten seconds bought.
 
 \begin{table}[t]
 \caption{Mean PRD [\%] on \texttt{sirius} under iterated local search with a
-ten-second budget, three instances per configuration, best of each row in bold.
+ten-second budget, four instances per configuration, three for \texttt{tai500\_20}, best of
+each row in bold.
 Means are taken over repetitions within an instance and then over instances;
 the last two columns give the moves the budget admitted and the instance count.}
 \label{tab:rpd}
@@ -325,17 +336,17 @@ the last two columns give the moves the budget admitted and the instance count.}
 \toprule
 file & $n$ & $m$ & Adjacent & Fibonacci & Dynasearch & Motzkin & moves & inst. \\
 \midrule
-tai20\_5 & 20 & 5 & 23.59 & 21.81 & \textbf{21.43} & 23.49 & 2 & 3 \\
-tai20\_10 & 20 & 10 & 32.18 & 27.35 & \textbf{27.18} & 27.22 & 3 & 3 \\
-tai20\_20 & 20 & 20 & 43.16 & \textbf{41.90} & 42.45 & 43.44 & 2 & 3 \\
-tai50\_5 & 50 & 5 & 15.60 & 15.20 & \textbf{14.75} & 15.66 & 1 & 3 \\
-tai50\_10 & 50 & 10 & 28.61 & 27.96 & 26.82 & \textbf{25.73} & 1 & 3 \\
-tai50\_20 & 50 & 20 & 39.40 & 36.64 & 35.17 & \textbf{35.09} & 1 & 3 \\
-tai100\_5 & 100 & 5 & 11.77 & 11.60 & 11.31 & \textbf{10.62} & 1 & 3 \\
-tai100\_10 & 100 & 10 & 20.05 & 19.89 & \textbf{19.36} & 19.46 & 1 & 3 \\
-tai100\_20 & 100 & 20 & 27.73 & \textbf{26.21} & 26.46 & 26.83 & 1 & 3 \\
-tai200\_10 & 200 & 10 & 16.47 & 15.91 & 15.37 & \textbf{15.28} & 1 & 3 \\
-tai200\_20 & 200 & 20 & 24.55 & 23.57 & \textbf{22.26} & 22.65 & 1 & 3 \\
+tai20\_5 & 20 & 5 & 25.97 & 22.86 & \textbf{22.73} & 25.66 & 2 & 4 \\
+tai20\_10 & 20 & 10 & 31.51 & \textbf{27.89} & 28.37 & 28.40 & 3 & 4 \\
+tai20\_20 & 20 & 20 & 44.71 & \textbf{42.75} & 42.82 & 43.85 & 2 & 4 \\
+tai50\_5 & 50 & 5 & 14.66 & 14.39 & \textbf{14.10} & 14.73 & 1 & 4 \\
+tai50\_10 & 50 & 10 & 27.14 & 26.14 & 24.96 & \textbf{23.56} & 1 & 4 \\
+tai50\_20 & 50 & 20 & 40.14 & 37.06 & \textbf{36.00} & 36.17 & 1 & 4 \\
+tai100\_5 & 100 & 5 & 12.36 & 12.17 & 11.77 & \textbf{11.20} & 1 & 4 \\
+tai100\_10 & 100 & 10 & 21.72 & 21.60 & \textbf{21.12} & 21.44 & 1 & 4 \\
+tai100\_20 & 100 & 20 & 28.12 & 26.81 & \textbf{26.43} & 27.15 & 1 & 4 \\
+tai200\_10 & 200 & 10 & 15.46 & 14.95 & 14.38 & \textbf{14.30} & 1 & 4 \\
+tai200\_20 & 200 & 20 & 23.57 & 22.57 & \textbf{21.56} & 21.77 & 1 & 4 \\
 tai500\_20 & 500 & 20 & 16.54 & 16.25 & \textbf{15.61} & 15.85 & 1 & 3 \\
 \bottomrule
 \end{tabular}
@@ -347,15 +358,15 @@ neighborhoods: on \texttt{tai50\_5} the three instances span eleven points
 while the four neighborhoods sit within one and a half of each other, so
 comparing column means would say little. The four neighborhoods run on the same
 instances, however, so instance difficulty is a shared term that cancels in a
-paired comparison, and we compare them pair by pair over the 36 combinations of
+paired comparison, and we compare them pair by pair over the 47 combinations of
 file and instance.
 
-Against Adjacent, Fibonacci gains 1.28 points and wins 30 of the 36 pairs,
-Motzkin gains 1.53 and wins 29, and Dynasearch gains 1.79 and wins 32; a
+Against Adjacent, Fibonacci gains 1.39 points and wins 39 of the 47 pairs,
+Motzkin gains 1.50 and wins 37, and Dynasearch gains 1.86 and wins 41; a
 two-sided sign test puts all three below $p=0.001$. Grouped, the two dense
-neighborhoods beat the two linear ones in 30 of 36 pairs ($p=0.00007$).
-Counting outright winners, Dynasearch and Motzkin take fifteen pairs each,
-Fibonacci five and Adjacent one. The ranking is settled even though no row of
+neighborhoods beat the two linear ones in 37 of 47 pairs ($p=0.0001$).
+Counting outright winners, Motzkin takes nineteen pairs, Dynasearch eighteen,
+Fibonacci seven and Adjacent three. The ranking is settled even though no row of
 Table~\ref{tab:rpd} separates its columns by more than the spread between its
 own instances.
 

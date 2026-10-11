@@ -1,8 +1,8 @@
 \documentclass[runningheads]{llncs}
 \usepackage[T1]{fontenc}
-\usepackage{graphicx}
 \usepackage{amsmath}
 \usepackage{booktabs}
+\usepackage{graphicx}
 
 % ============================================================================
 % ACIIDS 2027 -- 19th Asian Conference on Intelligent Information and
@@ -228,7 +228,7 @@ reach 24 of 120 instances on sixteen qubits and 79 on fifty-four.
 configuration, and the number of instances that fit each device.}
 \label{tab:cap}
 \centering
-\begin{tabular}{@{}lrrrrrrrr@{}}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrrrrrrrr@{}}
 \toprule
 & & & \multicolumn{3}{c}{variables} & \multicolumn{3}{c}{instances fitting} \\
 \cmidrule(lr){4-6}\cmidrule(lr){7-9}
@@ -247,9 +247,9 @@ tai200\_10 & 200 & 10 & 42 & 70 & 93 & 0 & 0 & 1 \\
 tai200\_20 & 200 & 20 & 77 & 101 & 117 & 0 & 0 & 0 \\
 tai500\_20 & 500 & 20 & 129 & 184 & 219 & 0 & 0 & 0 \\
 \midrule
-total & & & & & & 24 & 35 & 79 \\
+mean / total & & & 36 & 52 & 66 & 24 & 35 & 79 \\
 \bottomrule
-\end{tabular}
+\end{tabular*}
 \end{table}
 
 \subsection{Window geometry}
@@ -324,7 +324,7 @@ Deviation falls as the instances grow. The hardest row is
 easiest is \texttt{tai100\_5} at 11.2\%; holding $m = 20$ and raising $n$ walks
 monotonically down from 42.8 to 15.6. What the rows track is the ratio $m/n$,
 which correlates with the best value of each row at $0.89$ against $-0.45$ for
-$n$ alone and $0.56$ for $m$ alone. The lower bound explains the direction:
+$n$ alone and $0.56$ for $m$ alone; Fig.~\ref{fig:ratio} separates the two. The lower bound explains the direction:
 machines per job measures how much idle time a schedule carries, and one move
 recovers a fixed amount of it, so the same move is worth less where there is
 more to recover.
@@ -341,7 +341,7 @@ Means are taken over repetitions within an instance and then over instances;
 the last two columns give the moves the budget admitted and the instance count.}
 \label{tab:rpd}
 \centering
-\begin{tabular}{@{}lrrrrrrrr@{}}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrrrrrrrr@{}}
 \toprule
 file & $n$ & $m$ & Adjacent & Fibonacci & Dynasearch & Motzkin & moves & inst. \\
 \midrule
@@ -357,9 +357,22 @@ tai100\_20 & 100 & 20 & 28.12 & 26.81 & \textbf{26.43} & 27.15 & 1 & 4 \\
 tai200\_10 & 200 & 10 & 15.46 & 14.95 & 14.38 & \textbf{14.30} & 1 & 4 \\
 tai200\_20 & 200 & 20 & 23.57 & 22.57 & \textbf{21.56} & 21.77 & 1 & 4 \\
 tai500\_20 & 500 & 20 & 16.09 & 15.84 & \textbf{15.61} & 15.85 & 1 & 4/3 \\
+\midrule
+mean & & & 24.98 & 23.62 & \textbf{23.11} & 23.39 & & \\
 \bottomrule
-\end{tabular}
+\end{tabular*}
 \end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.78\textwidth]{figures/prd_vs_ratio.pdf}
+\caption{PRD of the best neighborhood of each configuration. Holding the
+machine count fixed, deviation falls as jobs are added, and the three curves
+are ordered by that count; together these produce the correlation of $0.89$
+with $m/n$ quoted in the text. Taillard provides no $m = 5$ instances beyond
+$n = 100$ and no $m = 10$ beyond $n = 200$, which is where those curves stop.}
+\label{fig:ratio}
+\end{figure}
 
 \subsection{Which neighborhood wins, instance by instance}
 Absolute deviation varies far more between instances than between
@@ -408,7 +421,7 @@ with a ten-second budget: the classical loop against the gate pipeline, on the
 same instances. The last column is the ratio.}
 \label{tab:cls}
 \centering
-\begin{tabular}{@{}lrrrrr@{}}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrrrrr@{}}
 \toprule
 file & $n$ & $m$ & classical & gate & ratio \\
 \midrule
@@ -427,7 +440,7 @@ tai500\_20 & 500 & 20 & 13.87 & 15.87 & 1.1 \\
 \midrule
 mean & & & 11.18 & 23.97 & 2.1 \\
 \bottomrule
-\end{tabular}
+\end{tabular*}
 \end{table}
 
 \subsection{Collapse of the time-budget axis}
@@ -451,7 +464,7 @@ for the linear neighborhoods and 6 for the dense ones. Measured on
 \texttt{sirius}, averaged over the ten instances of each configuration.}
 \label{tab:res}
 \centering
-\begin{tabular}{@{}lrrrrrrrr@{}}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrrrrrrrr@{}}
 \toprule
 & & & \multicolumn{2}{c}{circuits} & \multicolumn{2}{c}{seconds}
 & \multicolumn{2}{c}{credits} \\
@@ -470,8 +483,10 @@ tai100\_20 & 100 & 20 & 11.8 & 18.8 & 18 & 28 & 8.9 & 14.1 \\
 tai200\_10 & 200 & 10 & 18.5 & 14.1 & 28 & 21 & 13.9 & 10.6 \\
 tai200\_20 & 200 & 20 & 21.6 & 25.2 & 32 & 38 & 16.2 & 18.9 \\
 tai500\_20 & 500 & 20 & 48.7 & 28.4 & 73 & 43 & 36.5 & 21.3 \\
+\midrule
+mean & & & 11.9 & 11.8 & 17.9 & 17.8 & 8.9 & 8.8 \\
 \bottomrule
-\end{tabular}
+\end{tabular*}
 \end{table}
 
 % =====================================================================

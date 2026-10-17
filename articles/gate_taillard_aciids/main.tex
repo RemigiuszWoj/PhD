@@ -30,8 +30,7 @@ problem. Every window of a move is submitted as one job, subject to a hundred-ci
 The method reaches the entire Taillard benchmark on sixteen qubits, and we
 report 225 runs covering all twelve configurations from twenty jobs to five
 hundred, to our knowledge the first measurement of gate-model neighborhoods
-beyond twenty. One neighborhood evaluation outlasts the longest budget of the
-protocol, so we compare quality per move, not per second. Deviation
+beyond twenty. Deviation
 from the lower bound follows the ratio of machines to jobs more closely than
 either count alone, and a paired comparison over 48 instances places the dense
 neighborhoods ahead of the linear ones in 38 of them. Against a classical loop
@@ -56,7 +55,7 @@ devices hold sixteen to fifty-four qubits.
 This paper removes that ceiling. A windowed decomposition carries all four
 neighborhoods to the entire Taillard range on a sixteen-qubit processor, and the
 measurements that follow extend gate-model neighborhoods beyond $n = 20$. The results also show where the comparison protocol inherited from the
-annealing line breaks down, since one neighborhood evaluation already costs more
+annealing line breaks down, since from fifty jobs on one neighborhood evaluation already costs more
 wall-clock time than the longest budget under which the classical baselines were
 measured.
 
@@ -93,7 +92,7 @@ matrix directly is the annealer of Kadowaki and
 Nishimori~\cite{kadowaki1998}. Venturelli, Marchand and Rojo mapped whole job
 shop instances onto one~\cite{venturelli2015}, which runs into the qubit budget
 quickly, and Bo\.{z}ejko and colleagues instead handed the annealer the
-neighborhood rather than the schedule~\cite{bozejko2021}. Our own line follows
+neighborhood rather than the schedule~\cite{bozejko2026new}. Our own line follows
 that second route: the four swap-selection matrices and their comparison on an
 annealer~\cite{wojewodzki2026bpasts}, the Motzkin neighborhood in
 detail~\cite{wojewodzki2026soco}, its composite counterpart under tabu search
@@ -112,29 +111,25 @@ no training at all~\cite{wurtz2021fixed}. That leaves the hardware, whose
 limits Preskill set out for this era~\cite{preskill2018} and which we met in a
 form rarely reported: a cap on circuits per job and a move that outlasts the
 budget it was measured under. The gate-model study closest to this one is our
-own~\cite{wojewodzki2026gcmm}, and it stops at twenty jobs for exactly the
-reason this paper removes.
+own~\cite{wojewodzki2026gcmm}, which stops at twenty jobs because it has no
+decomposition.
 
 % =====================================================================
 \section{Problem and QUBO Formulation}
 \label{sec:method}
-
-\subsection{Permutation flow shop and the four neighborhoods}
-\label{subsec:pfsp}
 An instance gives $n$ jobs and $m$ machines, each job passing the machines in
 the same order, and a solution is a permutation $\pi$ of the jobs whose
 makespan $C_{\max}(\pi)$ is the moment the final job clears the final
 machine. The four neighborhoods differ in how far a single move reaches along
 $\pi$: Adjacent exchanges one pair of consecutive jobs, Fibonacci applies a set
 of pairwise disjoint consecutive exchanges, and Dynasearch and Motzkin select
-non-crossing intervals whose endpoints are exchanged. That reach later fixes how
-wide a window may be.
+non-crossing intervals whose endpoints are exchanged. 
 
 For every candidate move the makespan change $\delta_k$ follows in constant
 time from the Head and Tail profiles of the current permutation, so a whole
-candidate set is priced in one pass. The hardware pipeline applies only
-the block property of Smutnicki, which discards moves that cannot touch the
-critical path; moves with $\delta_k \ge 0$ stay in the QUBO, where their
+candidate set is priced in one pass. The hardware pipeline applies only the block property of Nowicki and Smutnicki, which discards moves that cannot touch the
+critical path; moves with $\delta_k \ge 0$ stay in the QUBO, as in the enhanced annealing
+variants~\cite{wojewodzki2026windowed}, where their
 non-negative diagonal entries already make them unattractive to the solver.
 The block property matters for what follows, because it makes the number of
 surviving candidates depend on the instance rather than on $n$ alone, and that
@@ -192,17 +187,15 @@ own matrix scores lowest.
 % =====================================================================
 \section{Windowed Decomposition}
 \label{sec:windowed}
-
-\subsection{Why the full QUBO does not fit}
-The width of the linear QUBO is instance-dependent, because the block
-accelerator removes candidates outside the critical block. Table~\ref{tab:cap}
+The width of the linear QUBO is instance-dependent, because the block property removes candidates outside the critical block. Table~\ref{tab:cap}
 reports it across all 120 Taillard instances against the capacity of the three
 IQM processors, and shows that without decomposition the linear neighborhoods
 reach 24 of 120 instances on sixteen qubits and 79 on fifty-four.
 
 \begin{table}[!t]
-\caption{Width of the undecomposed linear QUBO over the ten instances of each
-configuration, and the number of instances that fit each device.}
+\caption{Width of the undecomposed linear QUBO at the starting permutation over
+the ten instances of each configuration, and the number of instances that fit
+each device.}
 \label{tab:cap}
 \centering
 \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrrrrrrrr@{}}
@@ -237,37 +230,41 @@ the linear neighborhoods against $w = 6$ for the dense ones, and the window of
 19 used by the annealing study fits no gate device, since it would need 171
 variables.
 
-\subsection{Tridiagonal and pairwise windows}
+Every window of one move is submitted as a single job, so the queue and the job
+overhead are paid once per move rather than once per window. The exception is
+the dense decomposition at $n = 500$, whose 166 windows exceed the cap of a
+hundred circuits per job and go out in two jobs; a framework that batches
+windows without checking the count has its job declined. A declined job returns an empty list of histograms without raising, and each
+neighborhood then falls back to a classical greedy swap, so the run completes
+and is stored as a hardware measurement while being entirely classical. We
+detected this on the Motzkin rows of \texttt{tai50\_10}, whose moves took 2.5
+seconds against the 28 seconds of the valid rows, and the guard now compares the number of returned
+histograms against the number of submitted circuits.
+
+\subsection{Tridiagonal, pairwise and one-hot windows}
 Fibonacci's QUBO couples only physically adjacent swaps, so the matrix of a
 position window is exactly the global matrix restricted to that window and the
 decomposition leaves the formulation unchanged. Swaps straddling a window
 boundary are resolved by the same non-overlap validation the single-QUBO path
-uses. The dense neighborhoods use windows of six positions, and consecutive
-windows of either class overlap by half their width. Each window enumerates the
+uses. Consecutive windows of either class overlap by half their width. Each window enumerates the
 intervals that lie inside it and builds its own pairwise matrix; the intervals
 selected in all windows are then merged, and a greedy left-to-right pass drops
-every interval that conflicts with one already kept. If no interval survives
+every interval that conflicts with one already kept.
+An interval longer than a window is never a candidate, so for the dense
+neighborhoods the decomposition approximates the global problem instead of
+reproducing it. If no interval survives
 the merge, the move falls back to the best single improving interchange,
 computed classically.
 
-\subsection{One-hot windows}
 The global one-hot QUBO selects the candidate of lowest delta, so solving one
 one-hot QUBO per window and keeping the best proposal computes the same
-$\arg\min$ and still applies exactly one swap. This matters because the D-Wave
-enhanced variants never decomposed the linear neighborhoods; they relied on the
-annealer holding around 190 logical variables, which no gate device does.
-
-\subsection{Batching the windows of a move}
-Every window of one move is submitted as a single job, so the queue and the job
-overhead are paid once per move rather than once per window. The exception is
-the dense decomposition at $n = 500$, whose 166 windows exceed the cap of a
-hundred circuits per job and go out in two jobs (Section~\ref{sec:repro}).
+$\arg\min$ and still applies exactly one swap. This matters because the D-Wave enhanced variants never decomposed the linear
+neighborhoods; the annealer held the whole linear QUBO, which no gate device
+can.
 
 % =====================================================================
 \section{Experimental Protocol}
 \label{sec:protocol}
-
-\subsection{Benchmarks, metaheuristic and metrics}
 To keep the rows comparable with the windowed annealing study, we reuse its
 protocol: the Taillard instances with $n \in \{20, 50, 100, 200, 500\}$
 jobs and $m \in \{5, 10, 20\}$ machines, the percentage relative deviation
@@ -277,10 +274,9 @@ perturbs and re-optimises a single incumbent. All runs use the \texttt{sirius}
 processor, sixteen qubits in a star topology, with $p = 1$ and 4096 shots per
 circuit.
 
-\subsection{Deviations from the annealing protocol}
 We depart from the annealing protocol in three places. We run only iterated
-local search, since a single move from the identity permutation cannot tell it
-apart from simulated annealing. One run replaces five seeds, because repeated
+local search, since with one to three moves per run from the identity permutation it would
+barely differ from simulated annealing. One run replaces five seeds, because repeated
 runs only resample shot noise: the measured spread is 0.00 points for Adjacent
 and 0.03 for Fibonacci. Four instances replace ten, because the processor time
 available to us covered four.
@@ -288,8 +284,6 @@ available to us covered four.
 % =====================================================================
 \section{Results}
 \label{sec:results}
-
-\subsection{Solution quality across the Taillard range}
 Table~\ref{tab:rpd} reports every configuration of the benchmark, from twenty
 jobs on five machines to five hundred on twenty. A dense
 neighborhood takes ten of the twelve columns and Fibonacci the other two, while
@@ -308,10 +302,16 @@ more to recover.
 
 The move row accounts for the rest: the columns differ in problem size and also
 in how many moves the same ten seconds bought.
+One move takes between four seconds and four and a half minutes of wall-clock
+time, depending on $n$ and on the neighborhood class, so the ten-second budget
+admits one to three moves at $n = 20$ and one from $n = 50$ upward. From
+$n = 50$ on, every shorter budget of the protocol therefore describes the same
+computation, which is why we report the comparison per move.
 
 \begin{table}[!t]
 \caption{Mean PRD [\%] on \texttt{sirius} under iterated local search with a
-ten-second budget and four instances per configuration. Best per column in bold; the mean column is italicised.}
+ten-second budget and four instances per configuration. Best per column in bold; the mean column is italicised. The moves row
+gives the most moves a run made within the budget.}
 \label{tab:rpd}
 \centering
 \scriptsize
@@ -336,13 +336,10 @@ moves & 2 & 3 & 2 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & \\
 \begin{figure}[!t]
 \centering
 \includegraphics[width=0.78\textwidth]{figures/prd_vs_ratio.pdf}
-\caption{Each point is the best of the four neighborhoods on one
-configuration; the three curves are the three machine counts, not the
-neighborhoods. Holding the
-machine count fixed, deviation falls as jobs are added, and the three curves
-are ordered by that count; together these produce the correlation of $0.89$
-with $m/n$ quoted in the text. Taillard provides no $m = 5$ instances beyond
-$n = 100$ and no $m = 10$ beyond $n = 200$, which is where those curves stop.}
+\caption{Best PRD among the four neighborhoods on each configuration against
+the number of jobs; the three curves are the machine counts, not the
+neighborhoods. Taillard has no $m = 5$ instances beyond $n = 100$ and no
+$m = 10$ beyond $n = 200$, where those curves end.}
 \label{fig:ratio}
 \end{figure}
 
@@ -350,10 +347,8 @@ $n = 100$ and no $m = 10$ beyond $n = 200$, which is where those curves stop.}
 \centering
 \includegraphics[width=0.78\textwidth]{figures/paired_diff.pdf}
 \caption{How far each neighborhood falls from the mean of its own pair, one
-point per combination of file and instance, with the median marked. In
-absolute deviation the row means sit 1.8 points apart while single instances
-span 42, so the four cannot be told apart; referred to their pair the instance difficulty cancels
-and the ordering appears. Adjacent is above the mean in 42 of the 48 pairs.}
+point per combination of file and instance, with the median marked. Adjacent
+is above the mean in 42 of the 48 pairs.}
 \label{fig:paired}
 \end{figure}
 
@@ -389,13 +384,9 @@ from 14.5\% to 15.6\%, which is flat. The classical baseline degrades instead,
 from 1.7\% to 13.9\%, because ten seconds no longer suffice for it to converge
 once the instance is large. Both methods are then far from the lower bound, and
 they are far from it for different reasons: one has run out of time and the
-other has made a single move.
-
-We draw no advantage from this. A gate processor that needs 1.48 seconds per
+other has made a single move. We draw no advantage from this. A gate processor that needs 1.48 seconds per
 circuit cannot compete with a loop that completes thousands of iterations in
-the same budget. It does say where a future device would have to improve to matter. Solution
-quality per move is already within a factor of about two of the classical loop;
-the number of moves a second is not.
+the same budget.
 
 \begin{table}[!t]
 \caption{Mean PRD [\%] over the four neighborhoods under iterated local search
@@ -427,8 +418,8 @@ mean & & & 11.02 & 23.95 & 2.2 \\
 
 \subsection{Comparison with earlier quantum back-ends}
 Table~\ref{tab:prev} places the gate pipeline next to the earlier measurements
-of the same four neighborhoods, the classical loop and the D-Wave annealer
-without and with windowing~\cite{wojewodzki2026windowed}. It uses the scaling
+of the same four neighborhoods, the classical loop and the D-Wave annealer in its original and enhanced
+variants~\cite{wojewodzki2026windowed}. It uses the scaling
 columns of that study, $m = 10$ up to $n = 200$ and $m = 20$ at $n = 500$,
 under a five-second budget. The gate values at five seconds are read from the
 move log of the ten-second runs, which records the makespan after every move.
@@ -436,17 +427,18 @@ The rows of the earlier back-ends are recomputed from their raw runs on
 instances 0--3, five seeds each, so that every row averages over the same
 instances, and they therefore differ from the ten-instance values published
 in~\cite{wojewodzki2026windowed}. As in the annealing study, a move started
-within the budget is completed and counted, so the quantum rows overrun it: the
-windowed annealer needed a median of 541 seconds for one dense move at
+within the budget is completed and counted, so the quantum rows overrun it: the enhanced annealer needed a median of 541 seconds for one dense move at
 $n = 50$, and the gate processor 29. Our earlier gate-model
 study~\cite{wojewodzki2026gcmm} measured the undecomposed pipeline at
 $20 \times 5$ only, a configuration outside these columns.
 
-The gate rows are the only quantum rows without a gap. The unwindowed annealer
-stops at $n = 20$, and windowing carries it to $n = 200$ for Adjacent and to
-$n = 500$ for Fibonacci, while its dense neighborhoods stop at $n = 50$. The
+The gate rows are the only quantum rows without a gap. The original annealer
+stops at $n = 20$, and the enhanced variants carry it to $n = 200$ for Adjacent and to
+$n = 500$ for Fibonacci, while its windowed dense neighborhoods stop at
+$n = 50$. The
 gate pipeline fills all twenty cells, the dense neighborhoods at $n = 500$
-included. Where both windowed back-ends have a value they split the thirteen
+included. Where the gate pipeline and the enhanced
+annealer both have a value they split the thirteen
 cells seven to six, and the split follows the neighborhood class. The annealer
 wins every Fibonacci cell, where it completes three iterations in five seconds
 against the single move of the gate processor. The gate processor wins every
@@ -454,11 +446,9 @@ dense cell, by 2.3 to 5.3 points, where both make a single move, and takes
 Adjacent from $n = 50$ on. The classical loop stays ahead of both everywhere.
 
 \begin{table}[!t]
-\caption{Mean PRD $\pm$ standard deviation [\%] of the four neighborhoods on
-four back-ends under iterated local search with a five-second budget, in the
-columns of the windowed annealing study. Instances 0--3 throughout; the earlier rows are recomputed from
-their raw runs, five seeds each. Best per column and back-end in bold; n/a
-marks a cell the back-end does not reach.}
+\caption{Mean PRD $\pm$ standard deviation [\%] on four back-ends under
+iterated local search, five-second budget, instances 0--3. Best per column and
+back-end in bold; n/a marks a cell the back-end does not reach.}
 \label{tab:prev}
 \centering
 \scriptsize
@@ -484,7 +474,7 @@ $m =$ & 10 & 10 & 10 & 10 & 20 & \emph{Mean} \\
 \cmidrule(l){2-7}
 \quad \emph{mean} & \emph{29.69} & n/a & n/a & n/a & n/a & \emph{29.69} \\
 \midrule
-\multicolumn{7}{@{}l}{\emph{Annealer, windowed}} \\
+\multicolumn{7}{@{}l}{\emph{Annealer, enhanced}} \\
 \quad Adjacent & $29.38\pm4.1$ & $27.37\pm2.8$ & $22.41\pm3.3$ & $15.87\pm4.2$ & n/a & \emph{23.76} \\
 \quad Fibonacci & $\mathbf{26.30\pm2.8}$ & $\mathbf{24.64\pm3.8}$ & $\mathbf{20.54\pm3.5}$ & $\mathbf{14.29\pm3.7}$ & $\mathbf{15.57\pm1.2}$ & \emph{20.27} \\
 \quad Dynasearch & $33.32\pm4.2$ & $27.31\pm2.6$ & n/a & n/a & n/a & \emph{30.31} \\
@@ -503,54 +493,15 @@ $m =$ & 10 & 10 & 10 & 10 & 20 & \emph{Mean} \\
 \end{tabular*}
 \end{table}
 
-\subsection{Collapse of the time-budget axis}
-One move takes between four seconds and four and a half minutes of wall-clock
-time, depending on $n$ and on the neighborhood class, so the ten-second budget
-admits two or three moves at $n = 20$ and one from $n = 50$ upward. From
-$n = 50$ on, every shorter budget of the protocol therefore describes the same
-computation, which is why we report the comparison per move.
 
 
 % =====================================================================
-\section{Discussion}
-\label{sec:discussion}
-
-\subsection{The first move agrees across coupling maps}
-Adjacent returns a makespan of 1390 on instance 0 of \texttt{tai20\_5} on
-\texttt{garnet}, \texttt{emerald} and \texttt{sirius} alike, three different
-coupling maps. The processors differ only in how many moves fit the budget, so a
-cross-architecture comparison that does not hold the move count fixed measures
-queue latency rather than fidelity.
-
-\subsection{Non-additive deltas in the dense neighborhoods}
-Fourteen of the 225 hardware runs returned the starting makespan, every one of
-them in a dense neighborhood, and six of the eight Motzkin runs on
-\texttt{tai20\_20} did so. The deltas entering the
-QUBO are computed independently, while the pairwise penalties do not capture how
-several swaps compose, so a set of individually improving swaps can worsen the
-schedule; this limits the formulation rather than the device, and it applies to
-the annealing line as well.
-
-% =====================================================================
-\section{Reproducibility}
-\label{sec:repro}
-A job may carry at most a hundred circuits, a limit the provider documents only
-on submission. The dense decomposition at $n = 500$ produces 166 windows, so its
-moves must be split across jobs, and a framework that batches windows without
-checking the count has its job declined. A declined job returns an empty list of histograms without raising, and each
-neighborhood then falls back to a classical greedy swap, so the run completes
-and is stored as a hardware measurement while being entirely classical. We
-detected this on the Motzkin rows of \texttt{tai50\_10}, whose moves took 2.5
-seconds against the 28 seconds of the valid rows, and the guard now compares the number of returned
-histograms against the number of submitted circuits.
-
-% =====================================================================
-\section{Conclusions}
+\section{Discussion and Conclusions}
 \label{sec:conclusions}
 A windowed decomposition carries all four swap-selection neighborhoods to the
 full Taillard benchmark on a sixteen-qubit processor, and the 225 runs reported
-here extend gate-model neighborhood measurements past twenty jobs. The
-decomposition leaves the formulation intact: a window of the tridiagonal matrix
+here extend gate-model neighborhood measurements past twenty jobs. For the linear neighborhoods the decomposition leaves the
+formulation intact: a window of the tridiagonal matrix
 is the global matrix restricted to that window, and the one-hot case reduces to
 the same argument of the minimum through a second selection over window
 proposals. The measurements do settle the ordering. Instance difficulty
@@ -559,11 +510,21 @@ instances, so a paired comparison removes it and places Dynasearch 1.84 points
 ahead of Adjacent on 42 of 48 pairs, with the dense pair ahead of the linear
 pair on 38.
 
-Whether any of this is worth doing on present hardware remains open. One move takes between four seconds and four and a half
-minutes, so a single evaluation outlasts the longest budget under which the
-classical baselines were measured. The margin against a classical loop
-narrows from 8.7 to 1.1 as instances grow, but it narrows because the classical
-search exhausts its budget, not because the quantum one improves. The gap to close is throughput, since a single move already comes within a
+Adjacent returns a makespan of 1390 on instance 0 of \texttt{tai20\_5} on
+\texttt{garnet}, \texttt{emerald} and \texttt{sirius} alike, three different
+coupling maps. The processors differ only in how many moves fit the budget, so a
+cross-architecture comparison that does not hold the move count fixed measures
+queue latency rather than fidelity.
+
+Fourteen of the 225 hardware runs returned the starting makespan, every one of
+them in a dense neighborhood, and six of the eight Motzkin runs on
+\texttt{tai20\_20} did so. The deltas entering the
+QUBO are computed independently, while the pairwise penalties do not capture how
+several swaps compose, so a set of individually improving swaps can worsen the
+schedule; this limits the formulation rather than the device, and it applies to
+the annealing line as well.
+
+Whether any of this is worth doing on present hardware remains open. The gap to close is throughput, since a single move already comes within a
 factor of about two of the classical loop, and a device that
 delivered moves at classical rates would make the comparison worth repeating.
 
@@ -578,11 +539,11 @@ large-scale neighborhood search techniques. Discrete Appl. Math.
 Aigner, M.: Motzkin numbers. Eur. J. Comb. \textbf{19}(6), 663--675 (1998).
 \url{https://doi.org/10.1006/eujc.1998.0235}
 
-\bibitem{bozejko2021}
-Bo\.{z}ejko, W., Smutnicki, C., Uchro\'{n}ski, M., Wodecki, M.: Quantum
-annealing for the flow shop scheduling problem. In: ICAISC 2021, LNAI,
-pp.\ 35--46. Springer (2021).
-\url{https://doi.org/10.1007/978-3-030-87986-0_4}
+\bibitem{bozejko2026new}
+Bo\.{z}ejko, W., Uchro\'{n}ski, M., Wodecki, M.: The new exponential Fibonacci
+neighborhood as QUBO generated on a D-Wave quantum computing environment for the
+permutational scheduling problem. Sci. Rep. (2026).
+\url{https://doi.org/10.1038/s41598-026-66284-9}
 
 \bibitem{congram2002}
 Congram, R.K., Potts, C.N., van de Velde, S.L.: An iterated dynasearch
@@ -639,7 +600,7 @@ permutation flowshop heuristics. Eur. J. Oper. Res. \textbf{165}(2),
 \bibitem{smutnicki1998}
 Smutnicki, C.: Some results of the worst-case analysis for flow shop
 scheduling. Eur. J. Oper. Res. \textbf{109}(1), 66--87 (1998).
-\url{https://doi.org/10.1016/S0377-2217(97)00139-X}
+\url{https://doi.org/10.1016/S0377-2217(97)00139-2}
 
 \bibitem{taillard1993}
 Taillard, \'{E}.: Benchmarks for basic scheduling problems. Eur. J. Oper.
@@ -654,7 +615,7 @@ implementation of job-shop scheduling. arXiv:1506.08479 (2015).
 \bibitem{wodecki04}
 Wodecki, M., Bo\.{z}ejko, W.: Solving the flow shop problem by parallel
 simulated annealing. In: Parallel Processing and Applied Mathematics, LNCS,
-vol.\ 2328, pp.\ 236--244. Springer (2004).
+vol.\ 2328, pp.\ 236--244. Springer (2002).
 \url{https://doi.org/10.1007/3-540-48086-2_26}
 
 \bibitem{wurtz2021fixed}

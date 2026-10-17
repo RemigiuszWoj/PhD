@@ -17,6 +17,9 @@ from pathlib import Path
 
 import matplotlib
 matplotlib.use("Agg")
+# TrueType zamiast Type 3: kontrola PDF Springera odrzuca fonty Type 3.
+matplotlib.rcParams["pdf.fonttype"] = 42
+matplotlib.rcParams["ps.fonttype"] = 42
 import matplotlib.pyplot as plt
 
 KORZEN = Path(__file__).resolve().parents[3]

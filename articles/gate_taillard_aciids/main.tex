@@ -277,9 +277,12 @@ circuit.
 
 We depart from the annealing protocol in three places. We run only iterated
 local search, since with one to three moves per run from the identity permutation it would
-barely differ from simulated annealing. One run replaces five seeds, because repeated
-runs only resample shot noise: the measured spread is 0.00 points for Adjacent
-and 0.03 for Fibonacci. Four instances replace ten, because the processor time
+barely differ from simulated annealing. One run replaces five seeds. For the linear neighborhoods repeated runs only
+resample shot noise, with a measured spread of 0.00 points for Adjacent and 0.03
+for Fibonacci; the dense neighborhoods spread more, by 1.5 points on average over
+five repetitions on instance 0 and by up to 4.1 on \texttt{tai20\_10}, which is
+why their ordering rests on the paired comparison of
+Section~\ref{subsec:paired} rather than on any single cell. Four instances replace ten, because the processor time
 available to us covered four.
 
 % =====================================================================
@@ -296,7 +299,7 @@ $20\times20$, where even the best neighborhood leaves 42.8\%, and the easiest
 is $100\times5$ at 11.2\%; holding $m = 20$ and raising $n$ walks
 monotonically down from 42.8 to 15.2. The rows follow the ratio $m/n$, which correlates with the best value of each
 column at $0.89$, against $-0.45$ for $n$ alone and $0.55$ for $m$ alone
-(Fig.~\ref{fig:ratio} separates the two). The lower bound explains the direction:
+(Fig.~\ref{fig:ratio} separates the two). One reading of the direction is that
 machines per job measures how much idle time a schedule carries, and one move
 recovers a fixed amount of it, so the same move is worth less where there is
 more to recover.
@@ -354,6 +357,7 @@ is above the mean in 42 of the 48 pairs.}
 \end{figure}
 
 \subsection{Which neighborhood wins, instance by instance}
+\label{subsec:paired}
 Absolute deviation varies far more between instances than between
 neighborhoods: on \texttt{tai50\_5} the four instances span 12.7 points
 while the four neighborhoods sit within 0.6 of each other, so

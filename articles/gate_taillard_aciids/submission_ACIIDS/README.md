@@ -7,10 +7,9 @@
 Przycisk **Submit** jest na samym dole formularza — kliknąć **raz** (wgrywanie trwa).
 
 ## Krok 1 — ścieżka (Track)
-**Rekomendacja: ACIIDS 2027 – Doctoral Track** (do potwierdzenia z promotorem).
-Main i Doctoral: te same terminy, ten sam poziom („same scientific quality standards”), ta sama publikacja
-(Springer LNAI). Doctoral Track ma dodatkową meta-recenzję, osobną sesję doktorancką, organizatorzy
-M. Krótkiewicz (PWr) i L. T. T. Nguyen. Wybór: Main track = ogólna pula, Doctoral = doktoranci.
+**USTALONE 23.10.2026: ACIIDS 2027 – Main track.**
+(Doctoral Track miałby te same terminy, publikację w Springer LNAI i te same punkty MNiSW — 70 pkt dla
+konferencji; różnił się tylko dodatkową meta-recenzją i osobną sesją.)
 
 ## Krok 2 — autorzy
 

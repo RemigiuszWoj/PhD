@@ -54,14 +54,18 @@ def _load_instances(specs: List[Tuple[str, int]]):
     return out
 
 
-def _windows(n: int, w: int, step: int):
+def _windows(n: int, w: int, step: int, runtime: bool = False):
+    """Position windows. ``runtime=True`` mirrors gate_qaoa/windowed.py: the
+    sweep stops at the first window that reaches the end of the permutation."""
     for s in range(0, max(1, n - 1), step):
         e = min(s + w, n)
         if e - s >= 2:
             yield s, e
+        if runtime and e == n:
+            return
 
 
-def _window_qubo(neighborhood: str, pi, pt, s: int, e: int):
+def _window_qubo(neighborhood: str, pi, pt, s: int, e: int, filter_delta: bool = True):
     """Build the small windowed QUBO for one neighborhood over positions [s, e)."""
     if neighborhood in ("adjacent", "fibonacci"):
         deltas = compute_deltas(pi, pt)
@@ -71,13 +75,14 @@ def _window_qubo(neighborhood: str, pi, pt, s: int, e: int):
         return (assemble_onehot_qubo(cands) if neighborhood == "adjacent"
                 else assemble_tridiagonal_qubo(cands))
     # interval neighborhoods: filter_delta=True keeps K small on the simulator
-    cands = enumerate_interval_candidates(pi, pt, window=(s, e), filter_delta=True)
+    cands = enumerate_interval_candidates(pi, pt, window=(s, e), filter_delta=filter_delta)
     conflict = intervals_overlap if neighborhood == "dynasearch" else motzkin_conflict
     return assemble_pairwise_qubo(cands, conflict)
 
 
 def build_training(neighborhood: str, instances, *, window: int, step: int,
-                   perms: int, seed: int = 0) -> List[Dict]:
+                   perms: int, seed: int = 0, runtime_windows: bool = False,
+                   filter_delta: bool = True) -> List[Dict]:
     """Collect windowed QUBOs for one neighborhood across instances and a few
     seeded random permutations (for diversity)."""
     rng = np.random.default_rng(seed)
@@ -85,20 +90,25 @@ def build_training(neighborhood: str, instances, *, window: int, step: int,
     for n, pt in instances:
         base_perms = [list(range(n))] + [list(rng.permutation(n)) for _ in range(max(0, perms - 1))]
         for pi in base_perms:
-            for s, e in _windows(n, window, step):
-                Q = _window_qubo(neighborhood, pi, pt, s, e)
+            for s, e in _windows(n, window, step, runtime=runtime_windows):
+                Q = _window_qubo(neighborhood, pi, pt, s, e, filter_delta=filter_delta)
                 if Q:
                     qubos.append(Q)
     return qubos
 
 
 def calibrate(instances, *, p_max: int, window: int, step: int, perms: int,
-              n_gamma: int, n_beta: int, maxiter: int) -> Dict[str, Dict]:
+              n_gamma: int, n_beta: int, maxiter: int,
+              maxiter_per_param: int | None = None,
+              neighborhoods=NEIGHBORHOODS, runtime_windows: bool = False,
+              filter_delta: bool = True) -> Dict[str, Dict]:
     table: Dict[str, Dict] = {}
-    for nb in NEIGHBORHOODS:
-        training = build_training(nb, instances, window=window, step=step, perms=perms)
+    for nb in neighborhoods:
+        training = build_training(nb, instances, window=window, step=step, perms=perms,
+                                  runtime_windows=runtime_windows, filter_delta=filter_delta)
         res = optimize_neighborhood(training, p_max=p_max, n_gamma=n_gamma,
-                                    n_beta=n_beta, maxiter=maxiter)
+                                    n_beta=n_beta, maxiter=maxiter,
+                                    maxiter_per_param=maxiter_per_param)
         # store as {str(p): {"gamma":[...], "beta":[...], "objective": float}}
         table[nb] = {str(p): res[p] for p in res}
         best = min(res, key=lambda p: res[p]["objective"])
@@ -116,6 +126,11 @@ def main():
     ap.add_argument("--n-gamma", type=int, default=25)
     ap.add_argument("--n-beta", type=int, default=13)
     ap.add_argument("--maxiter", type=int, default=300)
+    ap.add_argument("--maxiter-per-param", type=int, default=None)
+    ap.add_argument("--neighborhoods", type=str, default=",".join(NEIGHBORHOODS))
+    # Training windows exactly as ILS builds them at runtime (windowed.py):
+    ap.add_argument("--runtime-windows", action="store_true")
+    ap.add_argument("--no-filter-delta", action="store_true")
     ap.add_argument("--out", type=str, default="data/qaoa_angles.json")
     args = ap.parse_args()
 
@@ -123,7 +138,10 @@ def main():
     print(f"calibrating on {len(instances)} Taillard instances, p=1..{args.p_max}")
     table = calibrate(instances, p_max=args.p_max, window=args.window, step=args.step,
                       perms=args.perms, n_gamma=args.n_gamma, n_beta=args.n_beta,
-                      maxiter=args.maxiter)
+                      maxiter=args.maxiter, maxiter_per_param=args.maxiter_per_param,
+                      neighborhoods=tuple(args.neighborhoods.split(",")),
+                      runtime_windows=args.runtime_windows,
+                      filter_delta=not args.no_filter_delta)
     out_path = REPO / args.out
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(table, indent=1, sort_keys=True))

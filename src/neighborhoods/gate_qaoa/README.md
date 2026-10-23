@@ -32,11 +32,11 @@ runner.py → ils/sa → base.get_neighbor("gate_*")          # warstwa 3: wpię
 
 ```yaml
 quantum:
-  qaoa_backend: ibm           # ibm | aer_noisy  (brak backendu symulatorowego)
+  qaoa_backend: ibm           # ibm | iqm | ideal (bez szumu) | aer_noisy (szum fałszywego IQM, QAOA_NOISE_BACKEND)
   qaoa_p: 1                   # głębokość QAOA
   qaoa_window_size: 6         # gate_dynasearch/motzkin: rozmiar okna (pełne n); None = pojedyncza Q
   qaoa_overlap_ratio: 0.5     # nakładanie okien
-  qaoa_shots: 4096            # tylko aer_noisy / ibm
+  qaoa_shots: 4096            # wszystkie backendy
   L_max_dynasearch: null      # cap długości interwału (ścieżka bez okien)
   L_max_motzkin: null
 experiment:

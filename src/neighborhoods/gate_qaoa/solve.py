@@ -7,11 +7,14 @@ execution per move. Backends:
 
   * ``"ibm"``       : real IBM Heron QPU via Qiskit Runtime (default).
   * ``"iqm"``       : real IQM QPU on Resonance (Crystal 20/54, Star 16).
-  * ``"aer_noisy"`` : noisy simulation (requires ``qiskit-aer``).
+  * ``"ideal"``     : noiseless shot sampling from the exact statevector.
+  * ``"aer_noisy"`` : noisy simulation -- the circuit is transpiled to a fake
+    IQM backend and sampled under that backend's noise model (requires
+    ``iqm-client`` and ``qiskit-aer``; fake chosen by ``QAOA_NOISE_BACKEND``).
 
-Experiments run on hardware only; there is no noiseless-simulator backend.
-Offline angle calibration (``angles.py``) is a separate, one-off step and is
-the only place a statevector is evaluated.
+The two simulators exist for the circuit-depth study (articles/
+qaoa_depth_icaisc); hardware results never pass through them. Offline angle
+calibration (``angles.py``) is a separate, one-off step.
 
 Readout (standard QAOA): the circuit prepares a distribution over bitstrings;
 we draw ``shots`` samples and return the sample with the lowest *original*
@@ -21,7 +24,8 @@ or a high-energy, many-bit state, neither of which is the QUBO optimum the
 distribution actually concentrates on.
 
 Angles come from the frozen calibration table ``data/qaoa_angles.json`` keyed
-by ``(neighborhood, p)``, or may be passed explicitly as ``(gammas, betas)``.
+by ``(neighborhood, p)`` (another table via ``QAOA_ANGLES``), or may be passed
+explicitly as ``(gammas, betas)``.
 """
 import json
 import os
@@ -37,7 +41,8 @@ from .circuit import (
     qubo_to_ising,
 )
 
-_ANGLES_PATH = Path(__file__).resolve().parents[3] / "data" / "qaoa_angles.json"
+_ANGLES_PATH = Path(os.environ.get(
+    "QAOA_ANGLES", Path(__file__).resolve().parents[3] / "data" / "qaoa_angles.json"))
 _ANGLES_CACHE: Optional[dict] = None
 
 # Default IBM Heron r2 target (see project notes).
@@ -112,6 +117,24 @@ def _get_iqm():
     return _IQM_CACHE
 
 
+_NOISE_BACKENDS = {"apollo": "IQMFakeApollo", "aphrodite": "IQMFakeAphrodite",
+                   "adonis": "IQMFakeAdonis", "deneb": "IQMFakeDeneb"}
+_NOISE_CACHE = None
+
+
+def _get_noise_backend():
+    """Cached fake IQM backend whose noise model ``aer_noisy`` samples under."""
+    global _NOISE_CACHE
+    if _NOISE_CACHE is None:
+        from iqm.qiskit_iqm import fake_backends
+
+        name = os.environ.get("QAOA_NOISE_BACKEND", "apollo")
+        if name not in _NOISE_BACKENDS:
+            raise ValueError(f"QAOA_NOISE_BACKEND={name!r} (one of {sorted(_NOISE_BACKENDS)}).")
+        _NOISE_CACHE = getattr(fake_backends, _NOISE_BACKENDS[name])()
+    return _NOISE_CACHE
+
+
 def _assert_real_counts(counts, shots: int, backend: str, expected: int) -> None:
     """Refuse histograms that no device actually produced.
 
@@ -148,17 +171,23 @@ def _device_counts_batch(circuits, backend: str, shots: int) -> List[Dict[str, i
     as a single ``backend.run`` job, so the queue is paid once per batch rather
     than once per circuit.
     """
+    if backend == "ideal":
+        from qiskit.primitives import StatevectorSampler
+
+        result = StatevectorSampler().run(circuits, shots=shots).result()
+        return [result[i].data.meas.get_counts() for i in range(len(circuits))]
+
     if backend == "aer_noisy":
-        try:
-            from qiskit_aer import AerSimulator
-        except ImportError as exc:  # aer is optional
-            raise ImportError(
-                "backend='aer_noisy' requires qiskit-aer (pip install qiskit-aer)."
-            ) from exc
-        from qiskit import transpile
-        sim = AerSimulator()
-        res = sim.run(transpile(circuits, sim), shots=shots).result()
-        return [res.get_counts(i) for i in range(len(circuits))]
+        # A bare AerSimulator() carries no noise model and samples the ideal
+        # distribution; the noise comes only from the fake backend's model.
+        from iqm.qiskit_iqm import transpile_to_IQM
+
+        fake = _get_noise_backend()
+        tc = [transpile_to_IQM(c, fake, optimization_level=1) for c in circuits]
+        got = fake.run(tc, shots=shots).result().get_counts()
+        counts = got if isinstance(got, list) else [got]
+        _assert_real_counts(counts, shots, backend, len(circuits))
+        return counts
 
     if backend == "iqm":
         # transpile_to_IQM takes one circuit at a time (it calls .count_ops on the
@@ -229,8 +258,8 @@ def solve_qaoa_batch(
     out: List[Dict[str, int]] = [{} for _ in Qs]
     prepared = {i: _prepare(Q, neighborhood, p, angles) for i, Q in enumerate(Qs) if Q}
 
-    if backend not in ("aer_noisy", "ibm", "iqm"):
-        raise ValueError(f"unknown backend {backend!r} (ibm|iqm|aer_noisy).")
+    if backend not in ("ideal", "aer_noisy", "ibm", "iqm"):
+        raise ValueError(f"unknown backend {backend!r} (ibm|iqm|ideal|aer_noisy).")
 
     idx = list(prepared)
     circuits = [

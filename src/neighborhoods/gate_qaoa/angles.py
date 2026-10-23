@@ -13,7 +13,7 @@ Depth strategy:
     optimal p-1 schedule, linearly resampled to length p (Zhou et al. 2020),
     which keeps higher-depth optimization cheap and stable.
 """
-from typing import Dict, List, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 from qiskit.quantum_info import Statevector
@@ -113,12 +113,15 @@ def _optimize_p(prepared, prev_g: Sequence[float], prev_b: Sequence[float],
 
 def optimize_neighborhood(training: Sequence[QUBO], p_max: int = 5,
                           n_gamma: int = 25, n_beta: int = 13,
-                          maxiter: int = 300, seed: int = 0) -> Dict[int, Dict]:
+                          maxiter: int = 300, seed: int = 0,
+                          maxiter_per_param: Optional[int] = None) -> Dict[int, Dict]:
     """Calibrate fixed angles for p = 1..p_max on one neighborhood's training set.
 
     Returns ``{p: {"gamma": [...], "beta": [...], "objective": float}}``. p=1 is
     a grid search; each deeper p is a multi-start Nelder-Mead seeded from the
     depth p-1 result, so the objective is non-increasing in p by construction.
+    ``maxiter_per_param`` scales the Nelder-Mead budget with the 2p angles
+    (``maxiter_per_param * 2p``); a fixed ``maxiter`` under-converges at high p.
     """
     prepared = _prepare(training)
     rng = np.random.default_rng(seed)
@@ -129,7 +132,8 @@ def optimize_neighborhood(training: Sequence[QUBO], p_max: int = 5,
         if p == 1:
             obj, g, b = _grid_p1(prepared, n_gamma, n_beta)
         else:
-            obj, g, b = _optimize_p(prepared, prev_g, prev_b, maxiter, rng)
+            it = maxiter if maxiter_per_param is None else maxiter_per_param * 2 * p
+            obj, g, b = _optimize_p(prepared, prev_g, prev_b, it, rng)
         out[p] = {"gamma": [float(x) for x in g],
                   "beta": [float(x) for x in b],
                   "objective": float(obj)}

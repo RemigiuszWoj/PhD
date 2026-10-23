@@ -36,7 +36,7 @@ Drugiego autora dodaje się linkiem „Click here to add more authors”.
 | Student involvement* | **„This is a student paper, possibly prepared with the help of supervisor.”** |
 | Attendance* | **„I will attend onsite.”** |
 | Submission type | **„experimental paper”** |
-| AI tools | **„AI tools were used for proofreading”** — zgodnie z sekcją Acknowledgements w artykule |
+| AI tools | **2 i 3:** „AI tools were used for proofreading” + „AI tools might have been used for partial text generation…” (jeśli można wybrać tylko jedną — opcja 3); zgodnie z Acknowledgements |
 
 ## Krok 5 — plik
 **Paper:** `Wojewodzki_Bozejko_ACIIDS2027.pdf` (PDF, 13 stron, LNCS) — w tym folderze.
@@ -48,6 +48,6 @@ Przed wysłaniem sprawdzić, czy PDF jest aktualny (kompilacja z ostatniej wersj
 - abstrakt ≤ 250 słów — 249 ✔; 5 słów kluczowych ✔
 - fonty osadzone, brak Type 3 ✔
 - recenzja **jawna** — CFP w EasyChair i strona ACIIDS nie przewidują anonimizacji; wysyłamy wersję z nazwiskami ✔
-- sekcja Acknowledgements z informacją o użyciu modelu językowego (redakcja, LaTeX) ✔
+- sekcja Acknowledgements: model językowy pomagał redagować i poprawiać fragmenty tekstu oraz w LaTeX-u ✔
 - kontrola podobieństwa (autoplagiat = odrzucenie): 0 wspólnych fraz 8-wyrazowych z 6 wcześniejszymi pracami ✔
 - po przyjęciu: co najmniej jeden autor musi się zarejestrować i wygłosić referat

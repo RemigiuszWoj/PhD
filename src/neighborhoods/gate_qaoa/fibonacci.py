@@ -13,6 +13,7 @@ from src.neighborhoods.common_qubo import (
     selected_positions,
 )
 from src.neighborhoods.gate_qaoa.solve import solve_qaoa
+from src.neighborhoods.gate_qaoa.windowed import windowed_tridiagonal_swaps
 from src.permutation_procesing import c_max
 
 
@@ -24,6 +25,8 @@ def gate_fibonacci_neighborhood(
     angles: Optional[Tuple[Sequence[float], Sequence[float]]] = None,
     shots: int = 4096,
     use_block_accelerator: bool = True,
+    window_size: Optional[int] = None,
+    overlap_ratio: float = 0.5,
 ) -> Tuple[List[int], int, List[int]]:
     """Select non-overlapping adjacent swaps via a fixed-angle QAOA circuit.
 
@@ -32,6 +35,18 @@ def gate_fibonacci_neighborhood(
     n = len(pi)
     if n < 2:
         return pi.copy(), c_max(pi, processing_times), []
+
+    if window_size is not None:
+        # Windowed path for large n: one QUBO per position window, all windows in
+        # a single job. Needed because the full tridiagonal QUBO has K = n-1
+        # variables and gate devices hold 16-54 qubits, not the ~190 of D-Wave.
+        raw = windowed_tridiagonal_swaps(
+            pi, processing_times, "fibonacci", p=p, backend=backend, angles=angles,
+            shots=shots, window_size=window_size, overlap_ratio=overlap_ratio,
+            use_block_accelerator=use_block_accelerator)
+        valid_swaps = validate_no_overlap(raw)
+        new_pi = apply_swaps(pi, valid_swaps)
+        return new_pi, c_max(new_pi, processing_times), valid_swaps
 
     candidates = enumerate_adjacent_candidates(
         pi, processing_times, use_block_accelerator=use_block_accelerator)

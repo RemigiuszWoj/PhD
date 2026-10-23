@@ -13,6 +13,7 @@ from src.neighborhoods.common_qubo import (
     selected_indices,
 )
 from src.neighborhoods.gate_qaoa.solve import solve_qaoa
+from src.neighborhoods.gate_qaoa.windowed import windowed_onehot_swap
 from src.permutation_procesing import c_max
 
 
@@ -23,6 +24,8 @@ def gate_adjacent_neighborhood(
     backend: str = "ibm",
     angles: Optional[Tuple[Sequence[float], Sequence[float]]] = None,
     shots: int = 4096,
+    window_size: Optional[int] = None,
+    overlap_ratio: float = 0.5,
 ) -> Tuple[List[int], int, Tuple[int, int]]:
     """Select exactly one adjacent swap via a fixed-angle QAOA circuit.
 
@@ -31,6 +34,18 @@ def gate_adjacent_neighborhood(
     n = len(pi)
     if n < 2:
         return pi.copy(), c_max(pi, processing_times), (-1, -1)
+
+    if window_size is not None:
+        # Windowed path for large n: the full one-hot QUBO has K = n-1 variables,
+        # beyond any gate device, so each position window proposes its best swap in
+        # one shared job and the best proposal wins -- the same argmin, one swap.
+        idx = windowed_onehot_swap(
+            pi, processing_times, "adjacent", p=p, backend=backend, angles=angles,
+            shots=shots, window_size=window_size, overlap_ratio=overlap_ratio)
+        if idx is None:
+            return pi.copy(), c_max(pi, processing_times), (-1, -1)
+        new_pi = apply_swaps(pi, [idx])
+        return new_pi, c_max(new_pi, processing_times), (idx, idx + 1)
 
     candidates = enumerate_adjacent_candidates(pi, processing_times)
     num_vars = len(candidates)

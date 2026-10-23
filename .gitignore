@@ -153,3 +153,6 @@ articles/*/main.PREV_*.tex
 
 # skrypt celujacy w usuniety backend 'statevector' (odrzucone podejscie)
 articles/gate_qaoa/scripts/gate_m5_budgets.py
+
+# Pakiet do wgrania na strone katedry (PDF-y duplikaty, README odtwarzalny)
+publikacje_kam/

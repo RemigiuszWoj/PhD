@@ -36,6 +36,11 @@ jako obwody QAOA.
   samych QUBO (cel 2 wprost); (3) mały bieg sprzętowy.
 
 ### C. Nowe otoczenia — CZTERY osobne implementacje (Gantt 4 — do przodu planu)
+> **Aktualizacja 19.10.2026:** pełny katalog, hierarchia (Fibonacci ⊂ k-bonacci ⊂ Dynasearch ⊂ Motzkin ⊂
+> inwolucje), plan badań i przydział do konferencji: [`articles/katalog_sasiedztw.md`](articles/katalog_sasiedztw.md).
+> Definicja tribonacciego poniżej (3-cykle) różni się od tej z 19.10 (zamiana końców, środek zablokowany) —
+> decyzja do podjęcia z promotorem, opisana w katalogu.
+
 Pełny reuse pipeline'u; równolegle z A, bo nie dotyka QPU (symulator +
 klasyka). W projekcie doktorskim wymienione: Hamming i de Montmort;
 użytkownik dokłada rodzinę k-bonacci z tribonaccim na czele.

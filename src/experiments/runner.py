@@ -90,6 +90,7 @@ class RunResult:
     overrun_ms: int = 0                 # max(0, total_time_ms - time_limit_ms)
     avg_iter_ms: float | None = None    # total_time_ms / iterations
     neigh_time_ms: int | None = None    # cumulative wall time inside get_neighbor()
+    move_log: List[List[int]] | None = None  # [[czas_ms, best_cmax], ...] po kazdym ruchu
 
     def gap_percent(self) -> float | None:
         if self.lower_bound is None:
@@ -270,6 +271,7 @@ class ExperimentRunner:
             overrun_ms=overrun_ms,
             avg_iter_ms=avg_iter_ms,
             neigh_time_ms=neigh_time_ms,
+            move_log=[[t, c] for t, c in (algo_stats.get("move_log") or [])],
         )
 
     def _run_dir_name(self, cfg: RunConfig, jobs: int | None = None, machines: int | None = None) -> str:

@@ -1,0 +1,5 @@
+Permutation flow shop
+QAOA
+Huge neighborhoods
+Quantum optimization
+Task scheduling

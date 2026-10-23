@@ -89,6 +89,9 @@ def _get_ibm():
 _IQM_SERVER = "https://resonance.iqm.tech"
 _IQM_COMPUTER = "garnet"  # garnet (Crystal 20) | emerald (Crystal 54) | sirius (Star 16)
 _IQM_CACHE = None
+# Maksymalna liczba obwodow w jednym zadaniu IQM Resonance (zmierzone 10.10.2026:
+# zadanie na 166 obwodow odrzucone z "exceeds the maximum allowed value: 100").
+IQM_MAX_CIRCUITS = 100
 
 
 def _get_iqm():
@@ -107,6 +110,35 @@ def _get_iqm():
             quantum_computer=os.environ.get("IQM_COMPUTER", _IQM_COMPUTER),
         ).get_backend()
     return _IQM_CACHE
+
+
+def _assert_real_counts(counts, shots: int, backend: str, expected: int) -> None:
+    """Refuse histograms that no device actually produced.
+
+    A declined or failed job (out of credits, device offline, invalid circuit)
+    comes back from the client as empty histograms without raising. The
+    neighborhood would then select no swaps and fall back to a classical greedy
+    swap, so the run would be silently CLASSICAL while still being labelled a
+    hardware result. Fail loudly instead.
+
+    The count of histograms is checked first: a declined job returns an EMPTY
+    LIST, and a per-histogram loop over an empty list checks nothing at all.
+    That hole let a whole campaign record classical fallbacks as hardware.
+    """
+    if len(counts) != expected:
+        raise RuntimeError(
+            f"backend {backend!r}: got {len(counts)} histograms for {expected} "
+            f"circuits -- the job was declined or failed. Refusing to continue: a "
+            f"classical fallback here would be reported as a quantum result."
+        )
+    for i, c in enumerate(counts):
+        total = sum(c.values()) if c else 0
+        if total < shots // 2:
+            raise RuntimeError(
+                f"backend {backend!r}: circuit {i} came back with {total} of {shots} "
+                f"shots -- the job was declined or failed. Refusing to continue: a "
+                f"classical fallback here would be reported as a quantum result."
+            )
 
 
 def _device_counts_batch(circuits, backend: str, shots: int) -> List[Dict[str, int]]:
@@ -132,19 +164,34 @@ def _device_counts_batch(circuits, backend: str, shots: int) -> List[Dict[str, i
         # transpile_to_IQM takes one circuit at a time (it calls .count_ops on the
         # argument), but backend.run takes the whole list as a single job, so the
         # queue is still paid once per batch.
+        #
+        # IQM Resonance refuses a job of more than IQM_MAX_CIRCUITS circuits
+        # ("Job circuit count exceeds the maximum allowed value: 100"), which the
+        # dense neighborhoods reach at n=500, where the decomposition produces 166
+        # windows. Oversized batches are split across jobs. Billing follows QPU
+        # time and therefore circuit count, so splitting costs no more than the
+        # single job would have.
         from iqm.qiskit_iqm import transpile_to_IQM
 
         hw = _get_iqm()
         tc = [transpile_to_IQM(c, hw, optimization_level=1) for c in circuits]
-        counts = hw.run(tc, shots=shots).result().get_counts()
-        return counts if isinstance(counts, list) else [counts]
+        counts: List[Dict[str, int]] = []
+        for i in range(0, len(tc), IQM_MAX_CIRCUITS):
+            part = tc[i:i + IQM_MAX_CIRCUITS]
+            got = hw.run(part, shots=shots).result().get_counts()
+            got = got if isinstance(got, list) else [got]
+            _assert_real_counts(got, shots, backend, len(part))
+            counts.extend(got)
+        return counts
 
     # backend == "ibm": real IBM Heron QPU
     from qiskit_ibm_runtime import SamplerV2
 
     hw, pm = _get_ibm()
     result = SamplerV2(mode=hw).run(pm.run(circuits), shots=shots).result()
-    return [result[i].data.meas.get_counts() for i in range(len(circuits))]
+    counts = [result[i].data.meas.get_counts() for i in range(len(circuits))]
+    _assert_real_counts(counts, shots, backend, len(circuits))
+    return counts
 
 
 def _prepare(Q: QUBO, neighborhood: str, p: int, angles):

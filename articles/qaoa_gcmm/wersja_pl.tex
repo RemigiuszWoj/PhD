@@ -42,7 +42,7 @@ Permutacyjny problem przepływowy (PFSP) to kanoniczny problem szeregowania
 klasy NP-trudnej, w którym solvery oparte na przeszukiwaniu lokalnym zużywają
 większość wysiłku na ocenianie ruchów sąsiedztwa. Niedawne prace przeniosły tę
 ocenę na kwantowe annealery, odwzorowując sąsiedztwa jako problemy QUBO, lecz
-paradygmat bramkowy -- przy całej swojej elastycznej łączności -- pozostaje
+paradygmat bramkowy, przy całej swojej elastycznej łączności, pozostaje
 w szeregowaniu w znacznej mierze niezbadany. Niniejszy artykuł wprowadza
 framework bramkowy, który ocenia sąsiedztwa PFSP za pomocą kwantowego
 przybliżonego algorytmu optymalizacyjnego (QAOA) wbudowanego w klasyczne
@@ -50,10 +50,11 @@ metaheurystyki iterowanego przeszukiwania lokalnego i symulowanego wyżarzania.
 Reużywamy kodowania QUBO typu swap-selection z linii annealingowej, tak że
 jedna macierz problemu napędza albo annealer, albo obwód QAOA, i przyjmujemy
 QAOA o ustalonych kątach, których parametry wariacyjne są preoptymalizowane
-offline; na sprzęcie każdy ruch kosztuje wówczas jedno wykonanie obwodu, co
-utrzymuje metodę w granicach ograniczeń NISQ. Formułujemy wszystkie cztery
-struktury sąsiedztw (Adjacent, Fibonacci, Dynasearch, Motzkin) i analizujemy,
-jak gęstość ich grafów konfliktów rządzi głębokością obwodu po skompilowaniu
+offline; na sprzęcie każdy ruch kosztuje wówczas jedno zgłoszenie do
+urządzenia, co utrzymuje metodę w granicach ograniczeń NISQ. Formułujemy
+wszystkie cztery struktury sąsiedztw (Adjacent, Fibonacci, Dynasearch,
+Motzkin) i analizujemy, jak gęstość ich grafów konfliktów rządzi
+głębokością obwodu po skompilowaniu
 QUBO na sprzęt nadprzewodnikowy -- od kraty heavy-hex do gwiazdy sprzężonej
 rezonatorem. Głębokość przyjmuje rolę, jaką na annealerach odgrywa pojemność
 embeddingu i daje to samo uszeregowanie wykonalności z innego, zakorzenionego
@@ -106,7 +107,8 @@ QAOA, a oba paradygmaty są porównywane na identycznych instancjach. Aby
 utrzymać metodę w granicach wykonalności na zaszumionym sprzęcie średniej
 skali, przyjmujemy QAOA o ustalonych kątach, w którym parametry wariacyjne są
 preoptymalizowane offline i następnie zamrożone, co redukuje koszt online do
-jednego wykonania obwodu na ruch -- tego samego budżetu, jaki zużywa annealer.
+jednego zgłoszenia do urządzenia na ruch, czyli tego samego budżetu, jaki
+zużywa annealer.
 Formułujemy wszystkie cztery struktury sąsiedztw używane przez linię
 annealingową i analizujemy, jak gęstość ich grafów konfliktów rządzi
 głębokością obwodu po skompilowaniu QUBO na sprzęt nadprzewodnikowy, na mapach
@@ -318,16 +320,18 @@ doprecyzowaniem, przez minimalizację oczekiwanego kosztu
 uśrednionego po małym zbiorze trenującym reprezentatywnych instancji QUBO tego
 sąsiedztwa. Kąty są następnie zamrażane i reużywane dla każdego ruchu tego
 sąsiedztwa w czasie działania, więc koszt offline amortyzuje się na całym
-przeszukiwaniu, a koszt online na ruch pozostaje jednym wykonaniem obwodu.
+przeszukiwaniu, a koszt online na ruch pozostaje jednym zgłoszeniem.
 Strategia ta opiera się na przenaszalności kątów: dla ustalonego sąsiedztwa
 optymalne kąty przy $p=1$ są niemal stałe między instancjami, i na tej
 własności projekt się opiera. Jako punkt odniesienia niewymagający trenowania
 raportujemy również niezależne od instancji kąty dla $p=1$ dane przez hipotezy
 o ustalonych kątach Wurtza i Lykova. Na sprzęcie każdy ruch kosztuje zatem
-jedno wykonanie obwodu, co jest bezpośrednim bramkowym odpowiednikiem jednego
+jedno zgłoszenie, co jest bezpośrednim bramkowym odpowiednikiem jednego
 wywołania annealera na ruch i stanowi podstawę uczciwego porównania czasu
-zegarowego. Pracujemy wszędzie przy $p=1$, czyli na głębokości, którą obecny
-sprzęt NISQ wspiera wiarygodnie. Czy większe głębokości się opłacają na
+zegarowego. Dla Adjacenta i Fibonacciego zgłoszenie to zawiera jeden obwód;
+dla sąsiedztw okienkowanych zawiera po jednym obwodzie na okno. Pracujemy
+wszędzie przy $p=1$, czyli na głębokości, którą obecny sprzęt NISQ wspiera
+wiarygodnie. Czy większe głębokości się opłacają na
 sprzęcie, jest pytaniem na przyszłość: wymaga wielokrotnie więcej wykonań
 obwodu, niż pozwala kolejkowane konto z limitem, a zatem lepszego dostępu do
 urządzenia, niż mieliśmy tutaj.
@@ -678,7 +682,7 @@ Przenieśliśmy pomysł sąsiedztwa-jako-QUBO z kwantowego annealera na model
 bramkowy. Jedna macierz swap-selection napędza dowolne z obu urządzeń, więc
 cztery struktury sąsiedztw, ich kary i odwzorowanie z powrotem na permutację
 są wspólne, a zmienia się tylko solver; zamrożenie kątów QAOA offline redukuje
-koszt online do jednego wykonania obwodu na ruch, czyli budżetu, jaki zużywa
+koszt online do jednego zgłoszenia na ruch, czyli budżetu, jaki zużywa
 wywołanie annealera. Analiza wskazuje głębokość obwodu po kompilacji jako
 bramkowy odpowiednik pojemności embeddingu: graf konfliktów przekraczający
 łączność annealera trasuje się także w głęboki, zaszumiony obwód, więc oba

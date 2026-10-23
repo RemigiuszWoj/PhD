@@ -1,0 +1,122 @@
+{
+ "_meta": {
+  "backend": "emerald",
+  "qubits": 54,
+  "algo": "ils",
+  "instancja": "tai20_5#0",
+  "lb": 1232,
+  "cmax_start": 1448,
+  "budzet_ms": 10000,
+  "shots": 4096,
+  "p": 1,
+  "okno_geste": 10,
+  "overlap": 0.5,
+  "seed": 0
+ },
+ "gate_adjacent": {
+  "neigh": "gate_adjacent",
+  "cmax": 1390,
+  "prd": 12.824675324675324,
+  "iteracji": 1,
+  "wall_s": 242.54535508155823,
+  "neigh_time_ms": 242545,
+  "move_log": [
+   [
+    242545,
+    1390
+   ]
+  ],
+  "kolumny_budzetow": {
+   "100": 1390,
+   "500": 1390,
+   "1000": 1390,
+   "2000": 1390,
+   "5000": 1390,
+   "10000": 1390
+  },
+  "obwodow_na_ruch_DEKLAROWANE": 1
+ },
+ "gate_fibonacci": {
+  "neigh": "gate_fibonacci",
+  "cmax": 1384,
+  "prd": 12.337662337662337,
+  "iteracji": 1,
+  "wall_s": 303.3455259799957,
+  "neigh_time_ms": 303345,
+  "move_log": [
+   [
+    303345,
+    1384
+   ]
+  ],
+  "kolumny_budzetow": {
+   "100": 1384,
+   "500": 1384,
+   "1000": 1384,
+   "2000": 1384,
+   "5000": 1384,
+   "10000": 1384
+  },
+  "obwodow_na_ruch_DEKLAROWANE": 1
+ },
+ "gate_dynasearch": {
+  "neigh": "gate_dynasearch",
+  "cmax": 1391,
+  "prd": 12.905844155844155,
+  "iteracji": 1,
+  "wall_s": 424.60444498062134,
+  "neigh_time_ms": 424604,
+  "move_log": [
+   [
+    424604,
+    1391
+   ]
+  ],
+  "kolumny_budzetow": {
+   "100": 1391,
+   "500": 1391,
+   "1000": 1391,
+   "2000": 1391,
+   "5000": 1391,
+   "10000": 1391
+  },
+  "obwodow_na_ruch_DEKLAROWANE": 4
+ },
+ "gate_motzkin": {
+  "neigh": "gate_motzkin",
+  "obwodow_na_ruch": 4,
+  "cmax": 1322,
+  "prd": 7.305194805194805,
+  "iteracji": 3,
+  "wall_s": 10.577979326248169,
+  "neigh_time_ms": 10577,
+  "move_log": [
+   [
+    5437,
+    1379
+   ],
+   [
+    7960,
+    1345
+   ],
+   [
+    10577,
+    1322
+   ]
+  ],
+  "kolumny_budzetow": {
+   "100": 1379,
+   "500": 1379,
+   "1000": 1379,
+   "2000": 1379,
+   "5000": 1379,
+   "10000": 1322
+  },
+  "obwodow_oplaconych": 0,
+  "NIEWAZNY": "wszystkie 3 wywolania QPU odrzucone: 'Not enough credits'; sasiedztwo spadlo na klasyczny fallback, wiec 7.31% to wynik CPU, nie emeralda"
+ },
+ "_koszt": {
+  "zadan_udanych": 3,
+  "uwaga": "adjacent 1 obw, fibonacci 1 obw, dynasearch 4 obw; motzkin odrzucony. Saldo przed przebiegiem 12.90 po obciazeniu adjacent."
+ }
+}

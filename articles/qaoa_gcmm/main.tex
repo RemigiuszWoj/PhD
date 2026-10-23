@@ -47,16 +47,16 @@ The permutation flow shop problem (PFSP) is a canonical NP-hard
 scheduling problem whose local-search solvers spend most of their
 effort evaluating neighborhood moves. Recent work has offloaded this
 evaluation to quantum annealers by casting neighborhoods as QUBO
-problems, yet the gate-model paradigm -- despite its flexible
-connectivity -- remains largely unexplored for scheduling. This paper
+problems, yet the gate-model paradigm, despite its flexible
+connectivity, remains largely unexplored for scheduling. This paper
 introduces a gate-model framework that evaluates PFSP neighborhoods with
 the Quantum Approximate Optimization Algorithm (QAOA) embedded in
 classical Iterated Local Search and Simulated Annealing metaheuristics.
 We reuse the swap-selection QUBO encoding from the annealing
 line, so a single problem matrix drives either an annealer or a QAOA
 circuit, and we adopt a fixed-angle QAOA whose variational angles are
-pre-optimized offline; on hardware each move then costs a single circuit
-execution, which keeps the method viable under NISQ constraints. We
+pre-optimized offline; on hardware each move then costs a single device
+submission, which keeps the method viable under NISQ constraints. We
 formulate all four neighborhood structures (Adjacent, Fibonacci,
 Dynasearch, Motzkin) and analyze how their conflict-graph density
 governs circuit depth once the QUBO is compiled onto superconducting
@@ -114,7 +114,7 @@ either an annealer or a QAOA circuit and the two paradigms are compared
 on identical instances. To keep the method viable on noisy
 intermediate-scale hardware, we adopt a fixed-angle QAOA whose
 variational angles are pre-optimized offline and then frozen, which reduces
-the online cost to one circuit execution per move, the same budget the
+the online cost to one device submission per move, the same budget the
 annealer spends. We formulate all four neighborhood structures used by
 the annealing line and analyze how the density of their conflict graphs
 governs circuit depth once the QUBO is compiled onto superconducting
@@ -343,15 +343,17 @@ range followed by local refinement, by minimizing the expected cost
 averaged over a small training set of representative QUBO instances of
 that neighborhood. The angles are then frozen and reused for every move
 of that neighborhood at run time, so the offline cost is amortized over
-the whole search and the online cost per move stays at a single circuit
-execution. This strategy relies on angle transferability: for a fixed
+the whole search and the online cost per move stays at a single
+submission. This strategy relies on angle transferability: for a fixed
 neighborhood the optimal $p=1$ angles are near-constant across instances,
 a property this design relies on. As a
 training-free baseline we also report the instance-independent $p=1$
 angles given by the fixed-angle conjectures of Wurtz and
 Lykov~\cite{wurtz2021fixed}. On hardware each move therefore costs one
-circuit execution, the direct gate-model analog of the annealer's single
-call per move, which is the basis for a fair wall-clock comparison. We
+submission, the direct gate-model analog of the annealer's single
+call per move, which is the basis for a fair wall-clock comparison. For
+Adjacent and Fibonacci that submission holds a single circuit; for the
+windowed neighborhoods it holds one circuit per window. We
 work throughout at $p=1$, the depth that current NISQ hardware supports
 reliably. Whether greater depths pay off on hardware is a question for future
 work: it requires many more circuit executions than a queued, quota-limited
@@ -693,7 +695,7 @@ We have carried the neighborhood-as-QUBO idea from the quantum annealer to the
 gate model. A single swap-selection matrix drives either device, so the four
 neighborhood structures, their penalties and their map-back to a permutation
 are shared and only the solver changes, while freezing the QAOA angles offline
-reduces the online cost to one circuit execution per move, the budget an
+reduces the online cost to one submission per move, the budget an
 annealer call consumes. The analysis identifies compiled circuit depth as the
 gate-model counterpart of embedding capacity: a conflict graph that exceeds an
 annealer's connectivity also routes into a deep, noisy circuit, so the two

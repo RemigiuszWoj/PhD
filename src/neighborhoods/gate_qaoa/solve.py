@@ -10,7 +10,8 @@ execution per move. Backends:
   * ``"ideal"``     : noiseless shot sampling from the exact statevector.
   * ``"aer_noisy"`` : noisy simulation -- the circuit is transpiled to a fake
     IQM backend and sampled under that backend's noise model (requires
-    ``iqm-client`` and ``qiskit-aer``; fake chosen by ``QAOA_NOISE_BACKEND``).
+    ``iqm-client`` and ``qiskit-aer``; fake chosen by ``QAOA_NOISE_BACKEND``:
+    apollo (default), aphrodite, adonis, deneb, sirius, sirius_thermal).
 
 The two simulators exist for the circuit-depth study (articles/
 qaoa_depth_icaisc); hardware results never pass through them. Offline angle
@@ -129,8 +130,15 @@ def _get_noise_backend():
         from iqm.qiskit_iqm import fake_backends
 
         name = os.environ.get("QAOA_NOISE_BACKEND", "apollo")
+        if name in ("sirius", "sirius_thermal"):
+            # 16-qubit star built from a calibration snapshot (fake_sirius.py).
+            from .fake_sirius import fake_sirius
+
+            _NOISE_CACHE = fake_sirius(mode="thermal" if name == "sirius_thermal" else "calibrated")
+            return _NOISE_CACHE
         if name not in _NOISE_BACKENDS:
-            raise ValueError(f"QAOA_NOISE_BACKEND={name!r} (one of {sorted(_NOISE_BACKENDS)}).")
+            raise ValueError(f"QAOA_NOISE_BACKEND={name!r} (one of "
+                             f"{sorted(_NOISE_BACKENDS) + ['sirius', 'sirius_thermal']}).")
         _NOISE_CACHE = getattr(fake_backends, _NOISE_BACKENDS[name])()
     return _NOISE_CACHE
 

@@ -1,0 +1,424 @@
+{
+ "calibration_set_id": "b46eed6f-fec2-4474-be32-bf720a96d015",
+ "computational_resonators": [
+  "COMPR1"
+ ],
+ "computer": "sirius",
+ "cz": {
+  "QB10|COMPR1": {
+   "default": false,
+   "duration": 8e-08,
+   "fidelity": 0.9840548847979498,
+   "impl": "tgss"
+  },
+  "QB11|COMPR1": {
+   "default": true,
+   "duration": 1.04e-07,
+   "fidelity": 0.9711028202735926,
+   "impl": "crf_crf"
+  },
+  "QB13|COMPR1": {
+   "default": true,
+   "duration": 1.04e-07,
+   "fidelity": 0.9868465745546744,
+   "impl": "crf_crf"
+  },
+  "QB15|COMPR1": {
+   "default": true,
+   "duration": 1.12e-07,
+   "fidelity": 0.9818286777363542,
+   "impl": "crf_crf"
+  },
+  "QB17|COMPR1": {
+   "default": true,
+   "duration": 1.04e-07,
+   "fidelity": 0.9840601794896192,
+   "impl": "crf_crf"
+  },
+  "QB19|COMPR1": {
+   "default": true,
+   "duration": 1.04e-07,
+   "fidelity": 0.9818921063540598,
+   "impl": "crf_crf"
+  },
+  "QB1|COMPR1": {
+   "default": true,
+   "duration": 1.04e-07,
+   "fidelity": 0.9791692927019202,
+   "impl": "crf_crf"
+  },
+  "QB20|COMPR1": {
+   "default": true,
+   "duration": 1.04e-07,
+   "fidelity": 0.988138789195294,
+   "impl": "crf_crf"
+  },
+  "QB21|COMPR1": {
+   "default": true,
+   "duration": 1.36e-07,
+   "fidelity": 0.9749029433263202,
+   "impl": "crf_crf"
+  },
+  "QB23|COMPR1": {
+   "default": true,
+   "duration": 1.12e-07,
+   "fidelity": 0.9780914679765348,
+   "impl": "crf_crf"
+  },
+  "QB2|COMPR1": {
+   "default": false,
+   "duration": 8.000000000000001e-08,
+   "fidelity": 0.97915388986686,
+   "impl": "tgss"
+  },
+  "QB3|COMPR1": {
+   "default": true,
+   "duration": 1.04e-07,
+   "fidelity": 0.9826284379073535,
+   "impl": "crf_crf"
+  },
+  "QB4|COMPR1": {
+   "default": true,
+   "duration": 1.04e-07,
+   "fidelity": 0.9856608981813229,
+   "impl": "crf_crf"
+  },
+  "QB5|COMPR1": {
+   "default": true,
+   "duration": 1.04e-07,
+   "fidelity": 0.985789648403961,
+   "impl": "crf_crf"
+  },
+  "QB8|COMPR1": {
+   "default": true,
+   "duration": 1.04e-07,
+   "fidelity": 0.9929088860050912,
+   "impl": "crf_crf"
+  },
+  "QB9|COMPR1": {
+   "default": true,
+   "duration": 1.04e-07,
+   "fidelity": 0.9877319374936236,
+   "impl": "crf_crf"
+  }
+ },
+ "fetched_utc": "2026-10-23T20:42:39+00:00",
+ "move": {
+  "QB10|COMPR1": {
+   "default": true,
+   "duration": 6.4e-08,
+   "fidelity": 0.9930178160116856,
+   "impl": "crf_crf"
+  },
+  "QB11|COMPR1": {
+   "default": true,
+   "duration": 6.4e-08,
+   "fidelity": 0.9882441208312234,
+   "impl": "crf_crf"
+  },
+  "QB13|COMPR1": {
+   "default": true,
+   "duration": 6.4e-08,
+   "fidelity": 0.9903270592677618,
+   "impl": "crf_crf"
+  },
+  "QB15|COMPR1": {
+   "default": true,
+   "duration": 6.4e-08,
+   "fidelity": 0.9907739887645984,
+   "impl": "crf_crf"
+  },
+  "QB17|COMPR1": {
+   "default": true,
+   "duration": 6.4e-08,
+   "fidelity": 0.990155913223548,
+   "impl": "crf_crf"
+  },
+  "QB19|COMPR1": {
+   "default": true,
+   "duration": 6.4e-08,
+   "fidelity": 0.9901914758407164,
+   "impl": "crf_crf"
+  },
+  "QB1|COMPR1": {
+   "default": true,
+   "duration": 6.4e-08,
+   "fidelity": 0.984966975232382,
+   "impl": "crf_crf"
+  },
+  "QB20|COMPR1": {
+   "default": true,
+   "duration": 6.4e-08,
+   "fidelity": 0.9925266013312724,
+   "impl": "crf_crf"
+  },
+  "QB21|COMPR1": {
+   "default": true,
+   "duration": 8.8e-08,
+   "fidelity": 0.9815338119206524,
+   "impl": "crf_crf"
+  },
+  "QB23|COMPR1": {
+   "default": true,
+   "duration": 6.4e-08,
+   "fidelity": 0.9882555824275354,
+   "impl": "crf_crf"
+  },
+  "QB2|COMPR1": {
+   "default": true,
+   "duration": 6.4e-08,
+   "fidelity": 0.988575377782964,
+   "impl": "crf_crf"
+  },
+  "QB3|COMPR1": {
+   "default": true,
+   "duration": 6.4e-08,
+   "fidelity": 0.9849546702391414,
+   "impl": "crf_crf"
+  },
+  "QB4|COMPR1": {
+   "default": true,
+   "duration": 6.4e-08,
+   "fidelity": 0.9924954368611736,
+   "impl": "crf_crf"
+  },
+  "QB5|COMPR1": {
+   "default": true,
+   "duration": 6.4e-08,
+   "fidelity": 0.9921526743403536,
+   "impl": "crf_crf"
+  },
+  "QB8|COMPR1": {
+   "default": true,
+   "duration": 6.4e-08,
+   "fidelity": 0.993918908118971,
+   "impl": "crf_crf"
+  },
+  "QB9|COMPR1": {
+   "default": true,
+   "duration": 6.4e-08,
+   "fidelity": 0.9912048735746904,
+   "impl": "crf_crf"
+  }
+ },
+ "prx": {
+  "QB1": {
+   "default": true,
+   "duration": 4e-08,
+   "fidelity": 0.9970447783438448,
+   "impl": "drag_crf"
+  },
+  "QB10": {
+   "default": true,
+   "duration": 4e-08,
+   "fidelity": 0.998665516077742,
+   "impl": "drag_crf"
+  },
+  "QB11": {
+   "default": true,
+   "duration": 4e-08,
+   "fidelity": 0.9990576053737126,
+   "impl": "drag_crf"
+  },
+  "QB13": {
+   "default": true,
+   "duration": 4e-08,
+   "fidelity": 0.99880172806607,
+   "impl": "drag_crf"
+  },
+  "QB15": {
+   "default": true,
+   "duration": 4e-08,
+   "fidelity": 0.9990630961470424,
+   "impl": "drag_crf"
+  },
+  "QB17": {
+   "default": true,
+   "duration": 4e-08,
+   "fidelity": 0.9988394616978612,
+   "impl": "drag_crf"
+  },
+  "QB19": {
+   "default": true,
+   "duration": 4e-08,
+   "fidelity": 0.9990376711622304,
+   "impl": "drag_crf"
+  },
+  "QB2": {
+   "default": true,
+   "duration": 4e-08,
+   "fidelity": 0.9974064370170488,
+   "impl": "drag_crf"
+  },
+  "QB20": {
+   "default": true,
+   "duration": 4e-08,
+   "fidelity": 0.9991924493242323,
+   "impl": "drag_crf"
+  },
+  "QB21": {
+   "default": true,
+   "duration": 4e-08,
+   "fidelity": 0.9987412730307248,
+   "impl": "drag_crf"
+  },
+  "QB23": {
+   "default": true,
+   "duration": 4e-08,
+   "fidelity": 0.9992174690657012,
+   "impl": "drag_crf"
+  },
+  "QB3": {
+   "default": true,
+   "duration": 4e-08,
+   "fidelity": 0.9989251858585898,
+   "impl": "drag_crf"
+  },
+  "QB4": {
+   "default": true,
+   "duration": 4e-08,
+   "fidelity": 0.9994257825158764,
+   "impl": "drag_crf"
+  },
+  "QB5": {
+   "default": true,
+   "duration": 4e-08,
+   "fidelity": 0.9992044080476816,
+   "impl": "drag_crf"
+  },
+  "QB8": {
+   "default": true,
+   "duration": 4e-08,
+   "fidelity": 0.9987526498093842,
+   "impl": "drag_crf"
+  },
+  "QB9": {
+   "default": true,
+   "duration": 4e-08,
+   "fidelity": 0.9989069041731496,
+   "impl": "drag_crf"
+  }
+ },
+ "qubits": [
+  "QB1",
+  "QB2",
+  "QB3",
+  "QB4",
+  "QB5",
+  "QB8",
+  "QB9",
+  "QB10",
+  "QB11",
+  "QB13",
+  "QB15",
+  "QB17",
+  "QB19",
+  "QB20",
+  "QB21",
+  "QB23"
+ ],
+ "readout": {
+  "QB1": {
+   "0": 0.0116,
+   "1": 0.0352
+  },
+  "QB10": {
+   "0": 0.0052,
+   "1": 0.0198
+  },
+  "QB11": {
+   "0": 0.0056,
+   "1": 0.0278
+  },
+  "QB13": {
+   "0": 0.0138,
+   "1": 0.0274
+  },
+  "QB15": {
+   "0": 0.0046,
+   "1": 0.0282
+  },
+  "QB17": {
+   "0": 0.0142,
+   "1": 0.0216
+  },
+  "QB19": {
+   "0": 0.008,
+   "1": 0.0308
+  },
+  "QB2": {
+   "0": 0.0018,
+   "1": 0.0326
+  },
+  "QB20": {
+   "0": 0.0152,
+   "1": 0.033
+  },
+  "QB21": {
+   "0": 0.012,
+   "1": 0.0264
+  },
+  "QB23": {
+   "0": 0.0046,
+   "1": 0.0194
+  },
+  "QB3": {
+   "0": 0.007,
+   "1": 0.019
+  },
+  "QB4": {
+   "0": 0.0142,
+   "1": 0.0226
+  },
+  "QB5": {
+   "0": 0.01,
+   "1": 0.0238
+  },
+  "QB8": {
+   "0": 0.0092,
+   "1": 0.0276
+  },
+  "QB9": {
+   "0": 0.0074,
+   "1": 0.0212
+  }
+ },
+ "t1": {
+  "COMPR1": 7.473108322089143e-06,
+  "QB1": 2.4482161763745852e-05,
+  "QB10": 1.6618782730041216e-05,
+  "QB11": 3.2644186794068475e-05,
+  "QB13": 3.701447793426665e-05,
+  "QB15": 2.9909403535952376e-05,
+  "QB17": 3.7136525401763943e-05,
+  "QB19": 3.0536374297293674e-05,
+  "QB2": 1.3795228488453106e-05,
+  "QB20": 2.8734462254692843e-05,
+  "QB21": 2.940474369097318e-05,
+  "QB23": 2.0519905901121307e-05,
+  "QB3": 3.048026504949498e-05,
+  "QB4": 3.003177435724455e-05,
+  "QB5": 3.094269516660176e-05,
+  "QB8": 3.443141571768959e-05,
+  "QB9": 2.481991794855071e-05
+ },
+ "t2": {
+  "COMPR1": 3.053000766664829e-06,
+  "QB1": 1.551224189808132e-05,
+  "QB10": 7.479859902131048e-06,
+  "QB11": 1.8697925261498313e-05,
+  "QB13": 3.561724596104406e-06,
+  "QB15": 1.9966524941742905e-05,
+  "QB17": 4.085133702036481e-06,
+  "QB19": 8.185335702235962e-06,
+  "QB2": 1.847010245595632e-05,
+  "QB20": 2.459445815005939e-05,
+  "QB21": 9.97305932428903e-06,
+  "QB23": 1.955632132671766e-05,
+  "QB3": 5.860887177192072e-06,
+  "QB4": 1.6312751368992885e-05,
+  "QB5": 1.1769867557219424e-05,
+  "QB8": 9.028747608301431e-06,
+  "QB9": 4.458187189684094e-06
+ }
+}

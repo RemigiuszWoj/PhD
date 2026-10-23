@@ -26,12 +26,12 @@ qubits. We remove that ceiling with a windowed decomposition that applies to
 all four neighborhoods used by the annealing line. For the one-hot Adjacent
 encoding, solving one window per position and keeping the best proposal
 returns the same argument of the minimum as the undecomposed problem. Every window of a move is submitted as one job, subject to a hundred-circuit cap that the provider reveals only on submission.
-The method reaches the entire Taillard benchmark on sixteen qubits, and we
-report 225 runs covering all twelve configurations from twenty jobs to five
-hundred, to our knowledge the first measurement of gate-model neighborhoods
+The method reaches the entire Taillard benchmark on the sixteen physical qubits
+of the IQM \texttt{sirius} processor, and we
+report 225 runs covering all twelve configurations from twenty to five hundred jobs, to our knowledge the first measurement of gate-model neighborhoods
 beyond twenty. Deviation
 from the lower bound follows the ratio of machines to jobs more closely than
-either count alone, and a paired comparison over 48 instances places the dense
+either alone, and a paired comparison over 48 instances places the dense
 neighborhoods ahead of the linear ones in 38 of them. Against a classical loop
 on the same instances the margin falls from 8.7 to 1.1 as instances grow,
 because the classical search runs out of budget while the gate pipeline stays
@@ -53,7 +53,8 @@ for the linear neighborhoods and $O(n^2)$ for the dense ones, while current
 devices hold sixteen to fifty-four qubits.
 
 This paper removes that ceiling. A windowed decomposition carries all four
-neighborhoods to the entire Taillard range on a sixteen-qubit processor, and the
+neighborhoods to the entire Taillard range on a physical sixteen-qubit IQM
+processor, and the
 measurements that follow extend gate-model neighborhoods beyond $n = 20$. The results also show where the comparison protocol inherited from the
 annealing line breaks down, since from fifty jobs on one neighborhood evaluation already costs more
 wall-clock time than the longest budget under which the classical baselines were
@@ -107,7 +108,9 @@ detail~\cite{zhou2020}. Tuning its angles per instance makes the algorithm expen
 metaheuristic, and two results remove that cost:
 Galda and colleagues showed the optimal angles transfer between instances of
 one problem family~\cite{galda2021}, and Wurtz and Lykov gave angles that need
-no training at all~\cite{wurtz2021fixed}. That leaves the hardware, whose
+no training at all~\cite{wurtz2021fixed}. Within our department, Bo\.{z}ejko
+and colleagues already applied hybrid QAOA to the flow shop itself on an IBM
+processor~\cite{bozejko2024cinti}. That leaves the hardware, whose
 limits Preskill set out for this era~\cite{preskill2018} and which we met in a
 form rarely reported: a cap on circuits per job and a move that outlasts the
 budget it was measured under. The gate-model study closest to this one is our
@@ -191,17 +194,18 @@ is sampled and reduced independently and the winner is the assignment its own ma
 The width of the linear QUBO is instance-dependent, because the block property removes candidates outside the critical block. Table~\ref{tab:cap}
 reports it across all 120 Taillard instances against the capacity of the three
 IQM processors, and shows that without decomposition the linear neighborhoods
-reach 24 of 120 instances on sixteen qubits and 79 on fifty-four.
+reach 24 of 120 instances on sixteen qubits and 79 on fifty-four. Here embedding only means that the $K$ variables fit the qubit count of the
+device; routing them on its coupling map is a separate step.
 
 \begin{table}[!t]
 \caption{Width of the undecomposed linear QUBO at the starting permutation over
-the ten instances of each configuration, and the number of instances that fit
-each device.}
+the ten instances of each configuration, and the number of instances whose QUBO
+can be embedded on each device.}
 \label{tab:cap}
 \centering
 \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrrrrrrrr@{}}
 \toprule
-& & & \multicolumn{3}{c}{variables} & \multicolumn{3}{c}{instances fitting} \\
+& & & \multicolumn{3}{c}{variables} & \multicolumn{3}{c}{embeddable instances} \\
 \cmidrule(lr){4-6}\cmidrule(lr){7-9}
 file & $n$ & $m$ & min & med & max & 16q & 20q & 54q \\
 \midrule
@@ -271,9 +275,10 @@ protocol: the Taillard instances with $n \in \{20, 50, 100, 200, 500\}$
 jobs and $m \in \{5, 10, 20\}$ machines, the percentage relative deviation
 (PRD) from Taillard's lower bound, and ten seconds of wall-clock time per run.
 Each neighborhood drives iterated local search~\cite{lourenco2003}, which
-perturbs and re-optimizes a single incumbent. All runs use the \texttt{sirius}
-processor, sixteen qubits in a star topology, with $p = 1$ and 4096 shots per
-circuit.
+perturbs and re-optimizes a single incumbent. All runs use the physical IQM \texttt{sirius} processor, reached through the IQM
+Resonance cloud, with $p = 1$ and 4096 shots per circuit. The processor has
+sixteen qubits in a star topology, an architecture for which Gnatowski and
+colleagues give an exact circuit-routing algorithm~\cite{gnatowski2026routing}.
 
 We depart from the annealing protocol in three places. We run only iterated
 local search, since with one to three moves per run from the identity permutation it would
@@ -288,7 +293,9 @@ available to us covered four.
 % =====================================================================
 \section{Results}
 \label{sec:results}
-Table~\ref{tab:rpd} reports every configuration of the benchmark, from twenty
+All gate results in this section come from runs on the physical IQM
+\texttt{sirius} processor; none of them is simulated. Table~\ref{tab:rpd}
+reports every configuration of the benchmark, from twenty
 jobs on five machines to five hundred on twenty. A dense
 neighborhood takes ten of the twelve columns and Fibonacci the other two, while
 Adjacent takes none and has the worst mean. That ordering follows from what a move is allowed to do:
@@ -313,9 +320,11 @@ $n = 50$ on, every shorter budget of the protocol therefore describes the same
 computation, which is why we report the comparison per move.
 
 \begin{table}[!t]
-\caption{Mean PRD [\%] on \texttt{sirius} under iterated local search with a
-ten-second budget and four instances per configuration. Best per column in bold; the mean column is italicized. The moves row
-gives the most moves a run made within the budget.}
+\caption{Mean PRD [\%] measured on the physical IQM \texttt{sirius} processor
+under iterated local search with a ten-second budget and four instances per
+configuration. Best per column in bold; the last column averages each row over
+the twelve configurations. The moves row gives the most moves a run made within
+the budget.}
 \label{tab:rpd}
 \centering
 \scriptsize
@@ -340,8 +349,8 @@ moves & 2 & 3 & 2 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & \\
 \begin{figure}[!t]
 \centering
 \includegraphics[width=0.78\textwidth]{figures/prd_vs_ratio.pdf}
-\caption{Best PRD among the four neighborhoods on each configuration against
-the number of jobs; the three curves are the machine counts, not the
+\caption{Best PRD among the four neighborhoods on each configuration, measured
+on the physical IQM \texttt{sirius} processor, against the number of jobs; the three curves are the machine counts, not the
 neighborhoods. Taillard has no $m = 5$ instances beyond $n = 100$ and no
 $m = 10$ beyond $n = 200$, where those curves end.}
 \label{fig:ratio}
@@ -350,8 +359,9 @@ $m = 10$ beyond $n = 200$, where those curves end.}
 \begin{figure}[!t]
 \centering
 \includegraphics[width=0.78\textwidth]{figures/paired_diff.pdf}
-\caption{How far each neighborhood falls from the mean of its own pair, one
-point per combination of file and instance, with the median marked. Adjacent
+\caption{How far each neighborhood falls from the mean of its own pair on the
+physical IQM \texttt{sirius} processor, one point per combination of file and
+instance, with the median marked. Adjacent
 is above the mean in 42 of the 48 pairs.}
 \label{fig:paired}
 \end{figure}
@@ -395,13 +405,14 @@ the same budget.
 
 \begin{table}[!t]
 \caption{Mean PRD [\%] over the four neighborhoods under iterated local search
-with a ten-second budget: the classical loop against the gate pipeline, on the
-same instances. The last column is gate over classical.}
+with a ten-second budget: the classical loop against the gate pipeline run on
+the physical IQM \texttt{sirius} processor, on the same instances. The last
+column is quantum-gate over classical.}
 \label{tab:cls}
 \centering
 \begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lrrrrr@{}}
 \toprule
-file & $n$ & $m$ & classical & gate & ratio \\
+file & $n$ & $m$ & classical & quantum-gate & ratio \\
 \midrule
 tai20\_5 & 20 & 5 & 3.64 & 24.31 & 6.7 \\
 tai20\_10 & 20 & 10 & 9.48 & 29.05 & 3.1 \\
@@ -452,8 +463,10 @@ Adjacent from $n = 50$ on. The classical loop stays ahead of both everywhere.
 
 \begin{table}[!t]
 \caption{Mean PRD $\pm$ standard deviation [\%] on four back-ends under
-iterated local search, five-second budget, instances 0--3. Best per column and
-back-end in bold; n/a marks a cell the back-end does not reach.}
+iterated local search, five-second budget, instances 0--3. The gate rows were
+measured on the physical IQM \texttt{sirius} processor and the annealer rows on
+D-Wave hardware. Best per column and back-end in bold; n/a marks a cell the
+back-end does not reach.}
 \label{tab:prev}
 \centering
 \scriptsize
@@ -501,38 +514,38 @@ $m =$ & 10 & 10 & 10 & 10 & 20 & \emph{Mean} \\
 
 
 % =====================================================================
-\section{Discussion and Conclusions}
-\label{sec:conclusions}
-A windowed decomposition carries all four swap-selection neighborhoods to the
-full Taillard benchmark on a sixteen-qubit processor, and the 225 runs reported
-here extend gate-model neighborhood measurements past twenty jobs. For the linear neighborhoods the decomposition leaves the
-formulation intact: a window of the tridiagonal matrix
-is the global matrix restricted to that window, and the one-hot case reduces to
-the same argument of the minimum through a second selection over window
-proposals. The measurements do settle the ordering. Instance difficulty
-swamps the differences between neighborhoods, but the four run on the same
-instances, so a paired comparison removes it and places Dynasearch 1.84 points
-ahead of Adjacent on 42 of 48 pairs, with the dense pair ahead of the linear
-pair on 38.
-
+\section{Discussion}
+\label{sec:discussion}
 Adjacent returns a makespan of 1390 on instance 0 of \texttt{tai20\_5} on
 \texttt{garnet}, \texttt{emerald} and \texttt{sirius} alike, three different
 coupling maps. The processors differ only in how many moves fit the budget, so a
 cross-architecture comparison that does not hold the move count fixed measures
-queue latency rather than fidelity.
+queue latency rather than fidelity. Gnatowski and Ni\.{z}y\'{n}ski survey how compilation for superconducting
+processors depends on the coupling map~\cite{gnatowski2026mapping}.
 
 Fourteen of the 225 hardware runs returned the starting makespan, every one of
 them in a dense neighborhood, and six of the eight Motzkin runs on
-\texttt{tai20\_20} did so. The deltas entering the
-QUBO are computed independently, while the pairwise penalties do not capture how
-several swaps compose, so a set of individually improving swaps can worsen the schedule. The limitation lies in the formulation rather than the
-device, and it applies to the annealing line as well.
+\texttt{tai20\_20} did so. The deltas entering the QUBO are computed
+independently, while the pairwise penalties do not capture how several swaps
+compose, so a set of individually improving swaps can worsen the schedule. The
+limitation lies in the formulation rather than the device, and it applies to the
+annealing line as well.
 
-Whether any of this is worth doing on present hardware remains open. The gap to close is throughput, since a single move already comes within a
-factor of about two of the classical loop, and a device that
-delivered moves at classical rates would make the comparison worth repeating.
+% =====================================================================
+\section{Conclusions}
+\label{sec:conclusions}
+A windowed decomposition carries all four swap-selection neighborhoods to the
+full Taillard benchmark on a physical sixteen-qubit IQM processor, and the 225
+runs reported here extend gate-model neighborhood measurements past twenty jobs.
+For the linear neighborhoods the decomposition leaves the formulation intact,
+and a paired comparison over the same instances places Dynasearch 1.84 points
+ahead of Adjacent on 42 of 48 pairs, with the dense pair ahead of the linear
+pair on 38. Whether any of this is worth doing on present hardware remains open:
+a single move already comes within a factor of about two of the classical loop,
+so the gap to close is throughput, and a device that delivered moves at
+classical rates would make the comparison worth repeating.
 
-\begin{thebibliography}{25}
+\begin{thebibliography}{28}
 \bibitem{ahuja2002}
 Ahuja, R.K., Ergun, \"{O}., Orlin, J.B., Punnen, A.P.: A survey of very
 large-scale neighborhood search techniques. Discrete Appl. Math.
@@ -548,6 +561,14 @@ Bo\.{z}ejko, W., Uchro\'{n}ski, M., Wodecki, M.: The new exponential Fibonacci
 neighborhood as QUBO generated on a D-Wave quantum computing environment for the
 permutational scheduling problem. Sci. Rep. (2026).
 \url{https://doi.org/10.1038/s41598-026-66284-9}
+
+\bibitem{bozejko2024cinti}
+Bo\.{z}ejko, W., Idzikowski, R., Jagielski, D., Klempous, R., Trotskyi, S.,
+Tykierko, M., Uchro\'{n}ski, M., Wodecki, M.: Hybrid quantum approximate
+algorithms for solving flow shop scheduling problem. In: 2024 IEEE 24th
+International Symposium on Computational Intelligence and Informatics (CINTI),
+pp.\ 117--122. IEEE (2024).
+\url{https://doi.org/10.1109/CINTI63048.2024.10830818}
 
 \bibitem{congram2002}
 Congram, R.K., Potts, C.N., van de Velde, S.L.: An iterated dynasearch
@@ -571,6 +592,20 @@ pp.\ 171--180. IEEE (2021).
 Garey, M.R., Johnson, D.S., Sethi, R.: The complexity of flowshop and
 jobshop scheduling. Math. Oper. Res. \textbf{1}(2), 117--129 (1976).
 \url{https://doi.org/10.1287/moor.1.2.117}
+
+\bibitem{gnatowski2026mapping}
+Gnatowski, A., Ni\.{z}y\'{n}ski, T.: Quantum circuits compilation for
+superconducting quantum processing units: a systematic mapping study. In:
+Proceedings of the Fifth International Conference on Intelligent Systems in
+Production Engineering and Maintenance (ISPEM 2025), LNNS, pp.\ 269--284.
+Springer (2026). \url{https://doi.org/10.1007/978-3-032-14163-7_19}
+
+\bibitem{gnatowski2026routing}
+Gnatowski, A., Rudy, J., Ni\.{z}y\'{n}ski, T., \'{S}wi\k{e}cicki, K.: Exact
+routing algorithm for quantum circuit compilation for star architectures. In:
+Advances in Computational Collective Intelligence (ICCCI 2026), CCIS,
+pp.\ 215--229. Springer (2026).
+\url{https://doi.org/10.1007/978-3-032-37936-8_15}
 
 \bibitem{kadowaki1998}
 Kadowaki, T., Nishimori, H.: Quantum annealing in the transverse Ising

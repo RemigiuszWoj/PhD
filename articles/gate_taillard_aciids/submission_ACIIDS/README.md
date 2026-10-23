@@ -2,7 +2,7 @@
 
 **Gdzie:** https://easychair.org/conferences/?conf=aciids2027 → „make a new submission”
 **Termin:** 31.10.2026, 23:59 AoE = **niedziela 1.11.2026, 12:59 czasu polskiego**
-**Formularz obejrzany 23.10.2026** (nic nie zostało wysłane).
+**WYSŁANE 23.10.2026 — Main track.** Decyzja: styczeń 2027.
 
 Przycisk **Submit** jest na samym dole formularza — kliknąć **raz** (wgrywanie trwa).
 

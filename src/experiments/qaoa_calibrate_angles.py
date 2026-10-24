@@ -82,7 +82,7 @@ def _window_qubo(neighborhood: str, pi, pt, s: int, e: int, filter_delta: bool =
 
 def build_training(neighborhood: str, instances, *, window: int, step: int,
                    perms: int, seed: int = 0, runtime_windows: bool = False,
-                   filter_delta: bool = True) -> List[Dict]:
+                   filter_delta: bool = True, stop_at_end: bool = False) -> List[Dict]:
     """Collect windowed QUBOs for one neighborhood across instances and a few
     seeded random permutations (for diversity)."""
     rng = np.random.default_rng(seed)
@@ -90,7 +90,14 @@ def build_training(neighborhood: str, instances, *, window: int, step: int,
     for n, pt in instances:
         base_perms = [list(range(n))] + [list(rng.permutation(n)) for _ in range(max(0, perms - 1))]
         for pi in base_perms:
-            for s, e in _windows(n, window, step, runtime=runtime_windows):
+            if runtime_windows:
+                # Exactly the QUBOs ILS submits (block-accelerated candidates for the
+                # linear neighborhoods), captured from the neighborhood itself.
+                from src.experiments.qaoa_depth_study import capture_windows
+
+                qubos.extend(capture_windows(neighborhood, pi, pt))
+                continue
+            for s, e in _windows(n, window, step, runtime=stop_at_end):
                 Q = _window_qubo(neighborhood, pi, pt, s, e, filter_delta=filter_delta)
                 if Q:
                     qubos.append(Q)
@@ -101,11 +108,12 @@ def calibrate(instances, *, p_max: int, window: int, step: int, perms: int,
               n_gamma: int, n_beta: int, maxiter: int,
               maxiter_per_param: int | None = None,
               neighborhoods=NEIGHBORHOODS, runtime_windows: bool = False,
-              filter_delta: bool = True) -> Dict[str, Dict]:
+              filter_delta: bool = True, stop_at_end: bool = False) -> Dict[str, Dict]:
     table: Dict[str, Dict] = {}
     for nb in neighborhoods:
         training = build_training(nb, instances, window=window, step=step, perms=perms,
-                                  runtime_windows=runtime_windows, filter_delta=filter_delta)
+                                  runtime_windows=runtime_windows, filter_delta=filter_delta,
+                                  stop_at_end=stop_at_end)
         res = optimize_neighborhood(training, p_max=p_max, n_gamma=n_gamma,
                                     n_beta=n_beta, maxiter=maxiter,
                                     maxiter_per_param=maxiter_per_param)
@@ -128,9 +136,13 @@ def main():
     ap.add_argument("--maxiter", type=int, default=300)
     ap.add_argument("--maxiter-per-param", type=int, default=None)
     ap.add_argument("--neighborhoods", type=str, default=",".join(NEIGHBORHOODS))
-    # Training windows exactly as ILS builds them at runtime (windowed.py):
+    # Training windows captured from the ILS neighborhoods (w=17 linear, w=6 dense,
+    # overlap 0.5); --window/--step/--no-filter-delta are then not used:
     ap.add_argument("--runtime-windows", action="store_true")
     ap.add_argument("--no-filter-delta", action="store_true")
+    # Position windows that stop at the end of the permutation, as windowed.py, but
+    # built without the block accelerator (larger linear windows than ILS uses):
+    ap.add_argument("--stop-at-end", action="store_true")
     ap.add_argument("--out", type=str, default="data/qaoa_angles.json")
     args = ap.parse_args()
 
@@ -141,7 +153,8 @@ def main():
                       maxiter=args.maxiter, maxiter_per_param=args.maxiter_per_param,
                       neighborhoods=tuple(args.neighborhoods.split(",")),
                       runtime_windows=args.runtime_windows,
-                      filter_delta=not args.no_filter_delta)
+                      filter_delta=not args.no_filter_delta,
+                      stop_at_end=args.stop_at_end)
     out_path = REPO / args.out
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(table, indent=1, sort_keys=True))

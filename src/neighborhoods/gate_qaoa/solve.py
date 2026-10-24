@@ -45,12 +45,12 @@ from .circuit import (
 _ANGLES_PATH = Path(os.environ.get(
     "QAOA_ANGLES", Path(__file__).resolve().parents[3] / "data" / "qaoa_angles.json"))
 _ANGLES_CACHE: Optional[dict] = None
-# Seed source of the "ideal" sampler; set_sampler_seed() makes a run reproducible.
+# Seed source of the simulators (ideal, aer_noisy); set_sampler_seed() makes a run reproducible.
 _SAMPLER_RNG = None
 
 
 def set_sampler_seed(seed: Optional[int]) -> None:
-    """Reseed the shot sampling of the ``ideal`` backend (None = unseeded)."""
+    """Reseed the shot sampling of ``ideal`` and ``aer_noisy`` (None = unseeded)."""
     global _SAMPLER_RNG
     import numpy as np
 
@@ -202,7 +202,8 @@ def _device_counts_batch(circuits, backend: str, shots: int) -> List[Dict[str, i
 
         fake = _get_noise_backend()
         tc = [transpile_to_IQM(c, fake, optimization_level=1) for c in circuits]
-        got = fake.run(tc, shots=shots).result().get_counts()
+        seed = None if _SAMPLER_RNG is None else int(_SAMPLER_RNG.integers(2 ** 31))
+        got = fake.run(tc, shots=shots, seed_simulator=seed).result().get_counts()
         counts = got if isinstance(got, list) else [got]
         _assert_real_counts(counts, shots, backend, len(circuits))
         return counts

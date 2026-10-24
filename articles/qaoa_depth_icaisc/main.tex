@@ -1,0 +1,299 @@
+\documentclass[runningheads]{llncs}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage[hidelinks,pdfauthor={},pdftitle={}]{hyperref}
+
+\begin{document}
+
+\title{Depth or Shots? The Number of QAOA Layers in Quantum Neighborhood
+Search for the Permutation Flow Shop Problem}
+\titlerunning{Depth or Shots?}
+\author{Anonymous}
+\institute{Anonymous}
+\maketitle
+
+\begin{abstract}
+Draft: the abstract is written after the results.
+\keywords{QAOA \and circuit depth \and flow shop \and neighborhood search \and fixed angles}
+\end{abstract}
+
+\section{Introduction}
+
+\emph{Draft: the introduction is written after the results.}
+
+\section{Related Work}
+
+Farhi et al.~\cite{farhi2014qaoa} introduced the quantum approximate
+optimization algorithm (QAOA), which alternates $p$ layers of a cost and a
+mixer Hamiltonian and approaches adiabatic evolution as $p$ grows. Zhou et
+al.~\cite{zhou2020} showed that optimal angles change smoothly with $p$ and
+proposed the INTERP rule, which builds a depth-$(p+1)$ schedule by
+interpolating the depth-$p$ one. Basso et al.~\cite{basso2022} evaluated
+QAOA at depths far beyond $p = 1$ on large-girth regular graphs, and Wurtz
+and Lykov~\cite{wurtz2021fixed} proposed fixed angles for regular MaxCut
+graphs that need no optimization per instance. All of these results concern
+MaxCut or the Sherrington--Kirkpatrick model and read the expected cost of the
+QAOA state, not the best of a finite number of samples.
+
+Noise limits how deep a useful circuit can be. Stilck Fran\c{c}a and
+Garc\'{i}a-Patr\'{o}n~\cite{franca2021} showed that on noisy devices the
+output of variational algorithms approaches a state that efficient classical
+methods can match once the circuit is deep enough. Harrigan et
+al.~\cite{harrigan2021} ran QAOA on a superconducting processor and found
+that for problems whose graph does not match the chip, routing adds gates and
+the performance drops with problem size.
+
+Several works map neighborhood search for scheduling onto quantum hardware.
+Bo\.{z}ejko et al.~\cite{bozejko2026new} formulated the exponential Fibonacci
+neighborhood as a QUBO on a quantum annealer, and Wojew\'{o}dzki and
+Bo\.{z}ejko introduced the Motzkin
+neighborhood~\cite{wojewodzki2026soco,wojewodzki2025exit}, hybrid neighborhood
+evaluation~\cite{wojewodzki2026icaisc} and a windowed QUBO decomposition that
+reaches 500 jobs on an annealer~\cite{wojewodzki2026windowed}. On gate-based
+devices, Bo\.{z}ejko et al.~\cite{bozejko2024cinti} applied hybrid quantum
+approximate algorithms to the flow shop problem, and Wojew\'{o}dzki and
+Bo\.{z}ejko ran fixed-angle QAOA with windowed neighborhoods on IBM and IQM
+processors at $p = 1$~\cite{wojewodzki2026gcmm,wojewodzki2026aciids}.
+Dudkiewicz~\cite{dudkiewicz2026depth} studied circuit depth and penalty
+weights in QAOA for the multidimensional knapsack problem with COBYLA, and
+Gnatowski et al.~\cite{gnatowski2026routing} gave an exact routing algorithm
+for star architectures, the topology of the processor used here. To our
+knowledge, no study has varied $p$ for neighborhood moves whose result is
+read out as the lowest-energy sample.
+
+\section{Quantum Neighborhood Search}
+
+In the permutation flow shop problem (PFSP), $n$ jobs pass through $m$
+machines in the same order, and a permutation $\pi$ fixes the order of the
+jobs on every machine. The goal is to minimize the makespan
+$C_{\max}(\pi)$, the completion time of the last job on the last machine.
+Iterated local search (ILS)~\cite{lourenco2003} moves from $\pi$ to the best
+permutation in a neighborhood $N(\pi)$ and perturbs $\pi$ when it stops
+improving.
+
+A move in the neighborhoods studied here is a set of disjoint swaps. Each
+candidate swap $k$ has a precomputed makespan change $\Delta_k$, and a binary
+variable $x_k$ selects it. The swap-selection QUBO~\cite{lucas2014ising}
+\begin{equation}
+  E(x) = \sum_k \Delta_k x_k + P \sum_{(k,l) \in \mathcal{C}} x_k x_l ,
+  \qquad P = 1 + \sum_k |\Delta_k| ,
+\end{equation}
+sums the changes of the selected swaps and penalizes every pair in the
+conflict set $\mathcal{C}$, so any assignment that breaks a constraint costs
+more than doing nothing. Table~\ref{tab:neigh} lists the four neighborhoods.
+Adjacent selects exactly one swap of neighbours and uses a one-hot QUBO with
+$Q_{ii} = \Delta_i - P$, $Q_{ij} = 2P$ and $P = 2\max_i|\Delta_i| + 1$.
+Fibonacci~\cite{bozejko2026new} allows any set of disjoint adjacent swaps,
+which gives a tridiagonal QUBO. Dynasearch and
+Motzkin~\cite{wojewodzki2026soco} swap the end points of intervals; Dynasearch
+forbids intervals to overlap, while Motzkin also allows nesting, and both
+give a QUBO with pairwise conflicts.
+
+\begin{table}[t]
+\caption{The four neighborhoods ($F_{n+1}$: Fibonacci number, $M_n$:
+Motzkin number). Last column: QUBO variables per window in ILS, $n = 20$.}
+\label{tab:neigh}
+\centering
+\begin{tabular}{lllll}
+\toprule
+Neighborhood & Move & Moves & QUBO & Variables per window \\
+\midrule
+Adjacent   & one adjacent swap              & $n - 1$    & one-hot     & 1--16 (median 10) \\
+Fibonacci  & disjoint adjacent swaps        & $F_{n+1}$  & tridiagonal & 1--16 (median 10) \\
+Dynasearch & disjoint interval end swaps    & $2^{n-1}$  & pairwise    & 4--15 (median 14) \\
+Motzkin    & non-crossing interval end swaps & $M_n$     & pairwise    & 4--15 (median 14) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A whole permutation of $n = 20$ jobs gives more variables than a 16-qubit
+processor can hold, so ILS splits the permutation into overlapping windows of
+$w$ positions with overlap $0.5$ and solves one QUBO per
+window~\cite{wojewodzki2026windowed,wojewodzki2026aciids}. The window has
+$w = 17$ positions for the linear neighborhoods and $w = 6$ for the dense ones.
+For the linear neighborhoods ILS keeps only candidates that a block
+accelerator marks as able to improve $C_{\max}$, so their windows hold 1 to 16
+variables on the Taillard instances with $n = 20$ (median 10), whereas the
+dense windows hold 4 to 15 (median 14).
+
+\section{QAOA at Depth $p$}
+
+Substituting $x_k = (1 - Z_k)/2$ turns $E(x)$ into the Ising Hamiltonian
+$H_C = \sum_k h_k Z_k + \sum_{k<l} J_{kl} Z_k Z_l$, which we scale so that its
+largest coefficient has magnitude one. The depth-$p$ QAOA state is
+\begin{equation}
+  |\gamma,\beta\rangle = \prod_{\ell=1}^{p}
+  e^{-i\beta_\ell H_M} e^{-i\gamma_\ell H_C} \, |{+}\rangle^{\otimes K},
+  \qquad H_M = \sum_k X_k ,
+\end{equation}
+and each layer costs one $R_{ZZ}$ gate per coupling and one $R_Z$ and one
+$R_X$ gate per qubit.
+
+The angles are fixed in advance, so every move costs a single circuit
+execution. For each neighborhood we calibrate one schedule
+$(\gamma_1, \dots, \gamma_p, \beta_1, \dots, \beta_p)$ per depth by minimizing
+the mean of $\langle H_C \rangle / (\sum_k |h_k| + \sum_{k<l} |J_{kl}|)$ over a
+training set of windows from three Taillard instances~\cite{taillard1993}.
+At $p = 1$ a $25 \times 13$ grid over $\gamma \in [0, \pi]$ and
+$\beta \in [0, \pi/2]$ finds the minimum. For $p \ge 2$ Nelder--Mead starts
+from four schedules: the depth-$(p-1)$ schedule with an empty last layer,
+which keeps the objective from rising, its INTERP resample~\cite{zhou2020}
+and two perturbed copies of it, with a budget of $400p$ iterations. The
+objective therefore does not increase with $p$ on the training set, which
+says nothing about unseen windows. We build three tables that differ only in
+the training windows: \emph{small} windows of $w = 6$ positions ($p \le 10$),
+\emph{big} windows of the ILS sizes without the block accelerator
+($p \le 5$), and windows captured from ILS itself ($p \le 5$). For the dense
+neighborhoods the last two coincide.
+
+ILS samples the circuit $S$ times and selects the sample with the lowest
+original QUBO energy. Taking the most frequent bitstring instead would often
+return the empty move. If $P_{\mathrm{opt}}$ is the probability of an optimal
+assignment, the best of $S$ samples is optimal with probability
+$1 - (1 - P_{\mathrm{opt}})^S$, so more shots can make up for a weaker
+distribution.
+
+On the star-shaped processor every qubit couples only to a central
+resonator, and a two-qubit interaction first moves one qubit's state into the
+resonator. One $R_{ZZ}$ gate then compiles to two CZ and about two MOVE
+gates~\cite{gnatowski2026routing}, so a dense window of 15 variables needs 150
+CZ gates per layer, five times as many as a linear window with 15 couplings,
+and the cost grows linearly in $p$.
+
+\section{Experimental Setup}
+
+All experiments use the Taillard instances with $n = 20$ jobs and
+$m \in \{5, 10, 20\}$ machines, ten instances per class~\cite{taillard1993},
+and ILS starts from the identity permutation, as in the earlier
+campaign~\cite{wojewodzki2026aciids}. We evaluate QAOA at three levels. On the
+noiseless level the circuit is sampled from its exact statevector. On the
+noisy level a simulated 16-qubit star processor reproduces the gate
+fidelities and readout errors that IQM reported for the Sirius device on
+23~October~2026; in its default mode every gate has exactly the measured
+fidelity, and a second mode adds $T_1$/$T_2$ relaxation, which alone exceeds
+the measured error of most gates and therefore bounds the noise from above.
+On the hardware level the circuits run on Sirius itself.
+
+The window study reads the QAOA distribution of single windows. We capture
+the windows of the first ILS move from the identity and from two random
+permutations of every instance, 1440 windows in total, of which 1195 contain
+an improving move, and compute their optimum by enumeration. The noiseless
+level gives $P_{\mathrm{opt}}$ exactly for $p = 0, \dots, 10$; the noisy
+level samples the windows of instances 0--3 with 4096 shots for
+$p = 0, \dots, 6$.
+
+The ILS study measures the makespan. Without noise, ILS runs for 10~s in
+four variants: QAOA with the small-window table for $p = 1, \dots, 10$, QAOA
+with the best table from the window study for the linear neighborhoods
+($p \le 5$), $p = 0$, which samples uniformly and keeps the same
+lowest-energy readout, and the classical neighborhood search that evaluates
+every move exactly. The QAOA variants use $S = 256$ and $S = 4096$ shots.
+Linear neighborhoods run once per instance and dense ones five times. A noisy
+simulator needs minutes per circuit, so its wall time says nothing about the
+device; each noisy run therefore makes exactly as many moves as Sirius made
+in 10~s on the same instance at $p = 1$~\cite{wojewodzki2026aciids}. On the
+hardware ILS repeats that campaign at $p = 2$ and $p = 3$.
+
+We report the percentage relative deviation
+$\mathrm{PRD} = 100\,(C_{\max} - LB)/LB$ from the Taillard lower bound $LB$,
+average it over the runs of an instance, take the median over instances and
+compare two settings with a paired sign test over instances. Every run has a
+seed derived from its configuration, which fixes both the ILS perturbations
+and the shot sampling.
+
+\section{Results}
+
+\emph{[Draft: the text of this section is written once the noisy and
+hardware runs finish.]}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig1_e1_en.pdf}
+\caption{Probability of sampling an optimal assignment relative to uniform
+sampling (median over windows with an improving move), versus $p$, for the
+three angle tables. Noiseless, exact.}
+\label{fig:e1}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig2_hits_en.pdf}
+\caption{Probability that the best of $S$ samples is optimal (mean over
+windows), for uniform sampling and $p = 1, 2, 3, 5$. Angle table: big
+windows for Adjacent, small windows for the others. Noiseless.}
+\label{fig:hits}
+\end{figure}
+
+\begin{table}[t]
+\caption{CZ gates per window after compilation (median over 192 ILS
+windows), on the star processor (Sirius) and on a square lattice (Apollo).}
+\label{tab:e3}
+\centering
+\begin{tabular}{lrrrrrrrr}
+\toprule
+ & \multicolumn{2}{c}{$p = 1$} & \multicolumn{2}{c}{$p = 3$} & \multicolumn{2}{c}{$p = 6$} & \multicolumn{2}{c}{$p = 10$} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(lr){6-7}\cmidrule(lr){8-9}
+Neighborhood & star & lattice & star & lattice & star & lattice & star & lattice \\
+\midrule
+\csname @@input\endcsname tables/tab1_e3.tex 
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\fbox{\parbox[c][3cm][c]{0.9\textwidth}{\centering
+\emph{[Placeholder: $P_{\mathrm{opt}}$ versus $p$ without noise, with the
+calibrated noise model and with the thermal noise model; data still
+running.]}}}
+\caption{Window quality under noise versus $p$ (simulated Sirius).}
+\label{fig:e4}
+\end{figure}
+
+\begin{table}[t]
+\caption{ILS without noise, 10~s budget: median PRD [\%] over 30 instances
+for uniform sampling ($p = 0$) and QAOA with the small-window table, at
+$S = 256$ and $4096$ shots; last column: classical exact neighborhood
+search.}
+\label{tab:e5}
+\centering
+\begin{tabular}{llrrrrrrr}
+\toprule
+Neighborhood & $S$ & $p=0$ & $p=1$ & $p=2$ & $p=3$ & $p=6$ & $p=10$ & classical \\
+\midrule
+\csname @@input\endcsname tables/tab2_prd.tex 
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\caption{Instances 0--3 of each class (12 instances), $S = 4096$: median PRD
+[\%] after as many moves as Sirius made in 10~s. \textbf{?}: still running;
+--: not run.}
+\label{tab:hw}
+\centering
+\begin{tabular}{llrrrrr}
+\toprule
+Neighborhood & level & $p=0$ & $p=1$ & $p=2$ & $p=3$ & $p=6$ \\
+\midrule
+\csname @@input\endcsname tables/tab3_hw_en.tex 
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig4_moves_en.pdf}
+\caption{Moves made within the 10~s budget and time per move versus $p$,
+noiseless simulator ($p = 0$: uniform sampling).}
+\label{fig:moves}
+\end{figure}
+
+\bibliographystyle{splncs04}
+\bibliography{references}
+
+\end{document}

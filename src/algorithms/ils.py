@@ -80,6 +80,7 @@ def iterated_local_search(
     quantum_config: dict | None = None,
     mushroom_k: int = 10,
     diversification: str = "mushroom",
+    max_moves: int | None = None,
 ) -> Tuple[List[int], int, List[int], List[int], dict]:
     """Iterated Local Search for flow shop scheduling problem.
 
@@ -93,6 +94,10 @@ def iterated_local_search(
         mushroom_k: elite pool size for diversification (MushroomList)
         diversification: "mushroom" (elite-pool double-bridge kick) or
             "random_restart" (uniform restart; ablation baseline)
+        max_moves: optional cap on loop passes (moves), on top of the time
+            limit. Used where wall time does not mean device time (a noisy
+            simulator is minutes per move): the run gets as many moves as the
+            device made within its budget.
 
     Returns:
         (best_pi, best_cmax, iteration_history, cmax_history, stats)
@@ -124,7 +129,8 @@ def iterated_local_search(
     move_log: List[Tuple[int, int]] = []   # (czas konca ruchu w ms, best_cmax po ruchu)
 
     with open_log_file(iter_log_path, "iterated_local_search") as log_file:
-        while time.time() - state.start_time < max_time_seconds:
+        while (time.time() - state.start_time < max_time_seconds
+               and (max_moves is None or state.iteration < max_moves)):
             # Find the best neighbor of the current solution.
             _t0 = time.time()
             new_pi, new_c, move_id, _ = get_neighbor(

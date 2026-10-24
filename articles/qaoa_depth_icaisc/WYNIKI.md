@@ -134,3 +134,75 @@ gęste 14.
    treningowych vs 0,938 na 152 pozostałych).
 7. Tabele big i ils mają **identyczne kąty p = 1** dla Adjacent i Fibonacci (ten sam punkt siatki 25 × 13),
    stąd identyczne wiersze p = 1.
+
+## W6. E5 — ILS na Taillardzie bez szumu (backend `ideal`, budżet 10 s)
+
+Źródło: `measurements/e5_ils_ideal.jsonl` (8880 przebiegów, 24.10.2026 11:44–14:52, 8 procesów).
+30 instancji tai20_5/10/20; PRD od dolnego ograniczenia Taillarda, uśredniony po powtórzeniach w obrębie
+instancji, potem mediana po 30 instancjach; w nawiasach średnia liczba ruchów w 10 s. Test znaków par po
+instancjach (wygrane/przegrane, p dwustronne).
+
+**Klasyczne DP (ten sam ILS, dokładne sąsiedztwo):** Adjacent 10,57 (27 332 ruchy), Fibonacci 10,14
+(87 904), Dynasearch 8,88 (5059), Motzkin 8,95 (6687).
+
+| Sąsiedztwo | S | p=0 | p=1 | p=2 | p=3 | p=4 | p=5 | p=6 | p=8 | p=10 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Adjacent | 256 | 16,09 (1464) | 17,42 (1001) | 19,26 | 16,25 | 19,24 | 20,39 | 19,93 | 20,77 | 20,82 (289) |
+| | 4096 | 19,67 (354) | 18,06 (363) | 20,73 | 20,47 | 21,71 | 20,38 | 21,38 | 22,11 | 22,92 (183) |
+| Fibonacci | 256 | 15,49 (1799) | 13,65 (1294) | 14,85 | 15,48 | 14,79 | 16,01 | 20,21 | 17,16 | 18,20 (560) |
+| | 4096 | 17,20 (481) | 17,96 (502) | 17,34 | 18,11 | 19,86 | 18,59 | 19,39 | 17,11 | 21,28 (320) |
+| Dynasearch | 256 | 24,22 (47) | 26,20 (39) | **14,99** | 15,58 | 15,49 | 16,14 | 15,44 | 16,06 | 17,99 (18) |
+| | 4096 | 20,04 (28) | 22,65 (26) | **15,19** | 16,52 | 15,63 | 16,37 | 16,49 | 17,06 | 20,87 (17) |
+| Motzkin | 256 | 23,81 (48) | 25,27 (41) | 14,32 | **14,00** | 15,74 | 14,37 | 14,71 | 16,37 | 17,55 (20) |
+| | 4096 | 20,83 (30) | 21,84 (28) | 16,92 | 16,54 | 16,23 | **15,86** | 16,07 | 16,09 | 18,68 (18) |
+
+(tabela „small”; p = 7, 9 w jsonl.) Tabela „big” (Adjacent) i „ils” (Fibonacci) nie poprawiają wyników
+liniowych (np. Adjacent big p = 3: 17,89 / 21,51; Fibonacci ils p = 3: 15,60 / 18,13 dla S = 256 / 4096).
+
+**Testy znaków (tabela small):**
+- Dynasearch: p = 1 vs p = 0 przegrywa 4/26 (S = 256, p < 0,001) i 3/27 (S = 4096, p < 0,001); p = 3 vs p = 1
+  wygrywa 30/0 i 29/1; najlepsze p = 2 vs p = 0: 30/0 i 27/3 (p < 0,001).
+- Motzkin: p = 1 vs p = 0: 11/19 (p = 0,20) i 8/22 (p = 0,016); p = 3 vs p = 1: 30/0 i 27/3; najlepsze p
+  (3 / 5) vs p = 0: 30/0 i 29/1.
+- Adjacent, Fibonacci: brak istotnej poprawy z p; p = 10 vs p = 1 przegrywa (Adjacent 4/25 przy S = 256,
+  p < 0,001; Fibonacci 7/22, p = 0,008).
+
+**PRD po tej samej liczbie ruchów (15 ruchów, gęste; prefiks `move_log`), S = 256 / 4096:**
+Dynasearch p = 0: 29,07 / 22,73; p = 1: 29,17 / 25,43; p = 2: 20,03 / 20,24; p = 3: 19,16 / 19,90; p = 6:
+18,00 / 20,12; p = 8: 18,87 / 18,10. Motzkin p = 0: 27,65 / 23,57; p = 1: 29,47 / 24,72; p = 2: 19,02 / 19,20;
+p = 6: 19,51 / 17,98. (Liniowe: część przebiegów przy wysokim p ma < 150 ruchów — próg do dobrania.)
+
+**Wnioski z E5:**
+1. **Sąsiedztwa gęste: głębokość pomaga, i to mocno.** p = 1 jest gorsze od losowania (Dynasearch
+   istotnie), a już p = 2 obniża PRD z ~24 do ~15 % (S = 256) — wynik zgodny z E1. Najlepsze p = 2–5;
+   powyżej PRD znowu rośnie, bo przy budżecie 10 s głębszy obwód to mniej ruchów (47 → 18).
+2. **Przy równej liczbie ruchów zysk z p ≥ 2 zostaje** (Dynasearch 15 ruchów: 29 → 18–20 %), więc nie jest
+   artefaktem liczby ruchów; spadek przy dużym p w 10 s to koszt czasu, nie jakości.
+3. **Sąsiedztwa liniowe: p nie pomaga; losowanie (p = 0) jest tak samo dobre.** Okna liniowe mają medianę
+   10 zmiennych (2¹⁰ = 1024 stany), więc 256–4096 losowych próbek z odczytem energetycznym prawie
+   przeszukuje okno w całości; rozkład QAOA nie ma tu czego poprawić. Wyższe p tylko spowalnia ruch.
+4. **Więcej shotów na symulatorze to mniej ruchów**: w sąsiedztwach liniowych S = 4096 daje gorsze PRD niż
+   S = 256 (Adjacent p = 0: 19,67 vs 16,09), bo losowanie 4096 próbek kosztuje czas (354 vs 1464 ruchy).
+5. **Klasyczne DP jest wyraźnie lepsze** (PRD 8,9–10,6 % przy tysiącach ruchów) — w artykule bez tezy
+   o przewadze; wartość wyniku leży w tym, kiedy i ile warstw QAOA się opłaca.
+
+## W7. E3 — koszt obwodu w funkcji p (gwiazda vs krata)
+
+Źródło: `measurements/e3_circuit_cost.jsonl` (192 okna z ILS: tai20 × instancje 0–3 × tożsamość × 4 sąsiedztwa;
+kompilacja `transpile_to_IQM`, optimization_level 1; kąty z tabeli „small”). Mediany liczby bramek CZ:
+
+| Sąsiedztwo | topologia | p = 1 | p = 3 | p = 6 | p = 10 |
+|---|---|---|---|---|---|
+| Adjacent | gwiazda (sirius) | 72 | 216 | 432 | 720 |
+| | krata (Apollo) | 118 | 396 | 800 | 1356 |
+| Fibonacci | gwiazda | 15 | 45 | 90 | 150 |
+| | krata | 15 | 45 | 90 | 150 |
+| Dynasearch | gwiazda | 164 | 492 | 984 | 1640 |
+| | krata | 306 | 990 | 2036 | 3443 |
+| Motzkin | gwiazda | 134 | 402 | 804 | 1340 |
+| | krata | 256 | 832 | 1712 | 2886 |
+
+Koszt rośnie dokładnie liniowo z p. Fibonacci (QUBO trójdiagonalne = łańcuch) mapuje się na kratę bez SWAP-ów,
+więc obie topologie dają to samo. Dla QUBO gęstych (Adjacent one-hot, Dynasearch, Motzkin) gwiazda potrzebuje
+~1,6–2,1× mniej CZ niż krata (krata dokłada SWAP-y); gwiazda płaci za to bramkami MOVE (~tyle samo co CZ).
+Gęste okno przy p = 6 to ~800–1000 CZ na gwieździe — na tym tle E4 pokaże, ile z tego zostaje po szumie.

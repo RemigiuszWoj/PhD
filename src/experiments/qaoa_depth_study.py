@@ -24,8 +24,24 @@ Angle tables (provenance in each file's "_meta"):
 Output: articles/qaoa_depth_icaisc/measurements/e1_window_quality.jsonl, one
 line per (window, table, p); reruns skip what is already there.
 
+Subcommand ``e5`` -- ILS on Taillard, noiseless (backend "ideal"), with the
+protocol of the Sirius campaign (articles/gate_qaoa/scripts/sirius_full_taillard.py):
+ILS, 10 s wall budget, identity start, w = 17 / w = 6 windows, overlap 0.5, PRD
+against the Taillard lower bound. Variants:
+
+  A  table small, all four neighborhoods, p = 1..10
+  B  best table from E1 for the linear ones: Adjacent "big", Fibonacci "ils", p = 1..5
+  C  p = 0 (uniform sampling with energy readout), all four
+  D  classical exact neighborhood (same ILS, no QAOA), all four
+
+A-C at 256 and 4096 shots. Linear neighborhoods 1 run, dense 5 runs. Each run is
+seeded (ILS kicks and shot sampling), so a rerun of a key reproduces it up to
+the number of moves that fit in the wall budget. Output:
+articles/qaoa_depth_icaisc/measurements/e5_ils_ideal.jsonl, one line per run.
+
 Usage:
     PYTHONPATH=. .venv311/bin/python3 -m src.experiments.qaoa_depth_study e1 [--workers 4]
+    PYTHONPATH=. .venv311/bin/python3 -m src.experiments.qaoa_depth_study e5 [--workers 8] [--smoke]
 """
 from __future__ import annotations
 
@@ -179,14 +195,132 @@ def run_e1(workers: int):
             print(f"[{k}/{len(tasks)}] +{len(rows)} rows", flush=True)
 
 
+OUT_E5 = REPO / "articles" / "qaoa_depth_icaisc" / "measurements" / "e5_ils_ideal.jsonl"
+BUDGET_MS = 10_000
+BUDGETS = [100, 500, 1000, 2000, 5000, 10000]
+REPS = {"adjacent": 1, "fibonacci": 1, "dynasearch": 5, "motzkin": 5}
+
+
+def budget_columns(move_log, budgets=BUDGETS):
+    """Best Cmax for each budget, replaying the ILS stop rule: move k counts when
+    its START (the end of move k-1) was before the budget (as in the Sirius campaign)."""
+    out = {}
+    for b in budgets:
+        k = 0
+        while k < len(move_log) and (0 if k == 0 else move_log[k - 1][0]) < b:
+            k += 1
+        out[str(b)] = move_log[k - 1][1] if k else None
+    return out
+
+
+def e5_tasks():
+    """(variant, file, inst, neigh, table, p, shots, rep), runs of one rep level first."""
+    tasks = []
+    for rep in range(max(REPS.values())):
+        for f in FILES:
+            for i in INSTANCES:
+                for nb in NEIGHBORHOODS:
+                    if rep >= REPS[nb]:
+                        continue
+                    for shots in SHOTS:
+                        tasks += [("A", f, i, nb, "small", p, shots, rep) for p in range(1, 11)]
+                        if nb == "adjacent":
+                            tasks += [("B", f, i, nb, "big", p, shots, rep) for p in range(1, 6)]
+                        if nb == "fibonacci":
+                            tasks += [("B", f, i, nb, "ils", p, shots, rep) for p in range(1, 6)]
+                        tasks.append(("C", f, i, nb, "uniform", 0, shots, rep))
+                    tasks.append(("D", f, i, nb, "classical", None, None, rep))
+    return tasks
+
+
+def e5_key(task):
+    v, f, i, nb, table, p, shots, rep = task
+    return f"{f}|{i}|{nb}|{table}|{p}|{shots}|{rep}"
+
+
+def e5_task(args):
+    task, budget_ms = args
+    v, f, i, nb, table, p, shots, rep = task
+    import random
+    import time
+    from src.algorithms.ils import iterated_local_search
+    from src.neighborhoods.gate_qaoa import solve as S
+    from src.parser import parser
+    from src.permutation_procesing import c_max
+
+    key = e5_key(task)
+    seed = abs(hash(key)) % (2 ** 31)   # PYTHONHASHSEED is fixed below for stable seeds
+    random.seed(seed)
+    S.set_sampler_seed(seed)
+    if table in TABLES:
+        path = REPO / "data" / TABLES[table]
+        if S._ANGLES_PATH != path:
+            S._ANGLES_PATH, S._ANGLES_CACHE = path, None
+    inst = parser(str(REPO / "data" / f"{f}.txt"), i)
+    pt, lb = inst["processing_times"], inst["info"]["lower_bound"]
+    qc = None
+    mode = nb
+    if v != "D":
+        mode = f"gate_{nb}"
+        qc = {"qaoa_backend": "ideal", "qaoa_p": p, "qaoa_shots": shots,
+              "qaoa_window_size_linear": W_LIN, "qaoa_window_size": W_GEST,
+              "qaoa_overlap_ratio": OVERLAP}
+    t0 = time.time()
+    _, cmax, _, _, st = iterated_local_search(pt, max_time_ms=budget_ms, tabu_tenure=10,
+                                              neigh_mode=mode, quantum_config=qc)
+    wall = time.time() - t0
+    ml = [list(x) for x in st["move_log"]]
+    return {"key": key, "variant": v, "file": f, "inst": i, "neigh": nb, "table": table,
+            "p": p, "shots": shots, "rep": rep, "seed": seed, "lb": lb,
+            "cmax_start": c_max(list(range(len(pt[0]))), pt), "cmax": cmax,
+            "prd": 100.0 * (cmax - lb) / lb, "moves": st["iterations"],
+            "neigh_time_ms": st["neigh_time_ms"], "wall_s": wall,
+            "ms_per_move": st["neigh_time_ms"] / max(1, st["iterations"]),
+            "move_log": ml, "budget_columns": budget_columns(ml)}
+
+
+def run_e5(workers: int, smoke: bool):
+    import os
+
+    if os.environ.get("PYTHONHASHSEED") != "0":
+        raise SystemExit("run e5 with PYTHONHASHSEED=0 (stable per-run seeds).")
+    out_path = OUT_E5.with_name("e5_smoke.jsonl") if smoke else OUT_E5
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    done = set()
+    if out_path.exists():
+        done = {json.loads(line)["key"] for line in out_path.read_text().splitlines() if line}
+    tasks = e5_tasks()
+    budget = BUDGET_MS
+    if smoke:   # one instance, a few configurations of every variant, 1 s budget
+        pick = {("A", 1), ("A", 10), ("B", 3), ("C", 0), ("D", None)}
+        tasks = [t for t in tasks if t[1] == "tai20_5" and t[2] == 0 and t[7] == 0
+                 and (t[0], t[5]) in pick and t[6] in (4096, None)]
+        budget = 1000
+    todo = [(t, budget) for t in tasks if e5_key(t) not in done]
+    print(f"{len(tasks)} runs planned, {len(tasks) - len(todo)} done, {len(todo)} to go, "
+          f"budget {budget} ms, {workers} workers", flush=True)
+    with Pool(workers) as pool, out_path.open("a") as out:
+        for k, row in enumerate(pool.imap_unordered(e5_task, todo), 1):
+            out.write(json.dumps(row) + "\n")
+            out.flush()
+            if k % 20 == 0 or smoke:
+                print(f"[{k}/{len(todo)}] {row['key']}: PRD {row['prd']:.2f}% "
+                      f"moves {row['moves']} ({row['ms_per_move']:.0f} ms/move)", flush=True)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
     e1 = sub.add_parser("e1", help="window quality vs p (noiseless, exact)")
     e1.add_argument("--workers", type=int, default=4)
+    e5 = sub.add_parser("e5", help="ILS on Taillard, noiseless, all variants")
+    e5.add_argument("--workers", type=int, default=8)
+    e5.add_argument("--smoke", action="store_true", help="tiny test into e5_smoke.jsonl")
     args = ap.parse_args()
     if args.cmd == "e1":
         run_e1(args.workers)
+    elif args.cmd == "e5":
+        run_e5(args.workers, args.smoke)
 
 
 if __name__ == "__main__":

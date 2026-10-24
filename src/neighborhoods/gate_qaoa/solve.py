@@ -45,6 +45,16 @@ from .circuit import (
 _ANGLES_PATH = Path(os.environ.get(
     "QAOA_ANGLES", Path(__file__).resolve().parents[3] / "data" / "qaoa_angles.json"))
 _ANGLES_CACHE: Optional[dict] = None
+# Seed source of the "ideal" sampler; set_sampler_seed() makes a run reproducible.
+_SAMPLER_RNG = None
+
+
+def set_sampler_seed(seed: Optional[int]) -> None:
+    """Reseed the shot sampling of the ``ideal`` backend (None = unseeded)."""
+    global _SAMPLER_RNG
+    import numpy as np
+
+    _SAMPLER_RNG = None if seed is None else np.random.default_rng(seed)
 
 # Default IBM Heron r2 target (see project notes).
 _IBM_BACKEND = "ibm_fez"
@@ -182,7 +192,7 @@ def _device_counts_batch(circuits, backend: str, shots: int) -> List[Dict[str, i
     if backend == "ideal":
         from qiskit.primitives import StatevectorSampler
 
-        result = StatevectorSampler().run(circuits, shots=shots).result()
+        result = StatevectorSampler(seed=_SAMPLER_RNG).run(circuits, shots=shots).result()
         return [result[i].data.meas.get_counts() for i in range(len(circuits))]
 
     if backend == "aer_noisy":
@@ -235,7 +245,12 @@ def _prepare(Q: QUBO, neighborhood: str, p: int, angles):
     """Shared setup: Ising mapping, normalization and the angle schedule."""
     variables, h, J, _ = qubo_to_ising(Q)
     hn, Jn, _ = normalize_ising(h, J)
-    gammas, betas = angles if angles is not None else _load_angles(neighborhood, p)
+    if angles is not None:
+        gammas, betas = angles
+    elif p == 0:
+        gammas, betas = [], []          # Hadamards only: uniform sampling baseline
+    else:
+        gammas, betas = _load_angles(neighborhood, p)
     if len(gammas) != p or len(betas) != p:
         raise ValueError(
             f"angle schedule length {len(gammas)}/{len(betas)} does not match p={p}."

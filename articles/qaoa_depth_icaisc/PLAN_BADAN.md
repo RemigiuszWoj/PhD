@@ -139,6 +139,12 @@ przy p = 1. Na sprzęcie czas ruchu to głównie latencja zadania, ale transpila
 rosną z p — mierzymy, ile. Raportować zawsze liczbę ruchów obok PRD i czas ruchu w funkcji p (osobna
 mała figura lub kolumna tabeli); krzywe PRD od liczby ruchów pokazują potencjał bez tego efektu.
 
+### ILS z szumem — budżet w ruchach (decyzja 24.10.2026)
+Na fałszywym siriusie jeden obwód liczy się 34–275 s, więc zegar laptopa nie odpowiada zegarowi siriusa
+(10 s na sprzęcie = Adjacent 2 ruchy, Fibonacci ~2, gęste 1; na laptopie zawsze 1). **ILS z szumem dostaje
+budżet w ruchach: tyle, ile sirius wykonał w 10 s w odpowiadającym przebiegu** (z `move_log` kampanii ACIIDS
+dla p = 1; dla p = 2, 3 z H2). Wtedy różnica PRD symulator vs sprzęt pochodzi tylko z modelu szumu.
+
 ### H1 — sirius, jakość okna, p = 1, 2, 3 · 3–5.11
 Okna z E1 dla instancji 0–3 (12 instancji × 4 sąsiedztwa), 4096 shotów. Empiryczne `P_opt` i trafienie
 optimum przez odczyt energetyczny; porównanie z E1 (bez szumu) i E4 (szum) przy tym samym p.

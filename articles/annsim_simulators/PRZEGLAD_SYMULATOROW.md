@@ -28,3 +28,5 @@ Licencje: wszystkie open source i darmowe (z pamięci, potwierdzić przy instala
 ## Do sprawdzenia przy instalacji (po ICAISC)
 Trajektorie w Qibo i CUDA-Q na CPU; star/MOVE w kompilatorach Cirq i TKET dla Siriusa; Python API szumu w DDSIM;
 konflikty wersji (osobne venv); licencje.
+
+Symulatory wyżarzania: przeniesione do `articles/annealing_simulators/PLAN.md` (osobny artykuł).

@@ -1,0 +1,338 @@
+% ANNSIM 2027 draft (gate-model simulators vs IQM Sirius). Anonymous for double-blind review.
+% Final version: SCS template (scspaperproc, 5-12 pages); this draft uses plain article for portability.
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage[hidelinks,pdfauthor={},pdftitle={}]{hyperref}
+\newcommand{\tofill}[1]{\textbf{[#1]}}
+
+\title{How Faithful Are Quantum Circuit Simulators? Nine Simulators and Three
+Noise Scenarios against a 16-Qubit Star Processor}
+\author{Anonymous}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\tofill{Draft: the abstract is written after the results.}
+\end{abstract}
+
+\section{Introduction}
+
+Simulators carry most of the work on noisy intermediate-scale quantum
+devices~\cite{preskill2018}: processor time is scarce and expensive, so
+algorithms are designed, tuned and often evaluated in software, and the device
+runs only the final experiment. A simulator is useful only to the extent that
+it predicts what the device does, yet its fidelity is usually checked on
+synthetic benchmarks~\cite{li2023qasmbench} or on its speed~\cite{jamadagni2024bench},
+not on the outcome of the task the simulation stands for. A second gap is the
+hardware itself: star-shaped processors, in which every qubit couples to a
+central resonator through a dedicated MOVE operation, are recent, and the
+software ecosystems support them unevenly~\cite{gnatowski2026routing}.
+
+This paper compares nine freely available circuit simulators against a
+16-qubit star processor, IQM Sirius, on a workload whose outcome we can
+score: fixed-angle QAOA~\cite{farhi2014qaoa} selecting moves in iterated local
+search for the permutation flow shop
+problem~\cite{wojewodzki2026gcmm,wojewodzki2026aciids,wojewodzki2027icaisc}.
+All simulators receive the same calibration data and three noise scenarios of
+increasing detail. We separate the effect of the simulation engine from that
+of the compiler, compare simulated and measured outcomes both at the level of
+single circuits and at the level of the final schedule, and bound every
+comparison by the agreement of the hardware with itself. We also report what
+each simulator costs and where it stops working. \tofill{One sentence with the
+main finding once the results are in.}
+
+\section{Background}
+
+\paragraph{Workload.}
+The workload is quantum neighborhood search for the permutation flow shop
+problem on the Taillard instances~\cite{taillard1993}. Iterated local
+search~\cite{lourenco2003} moves from a permutation to the best one in an
+exponential neighborhood. Choosing that move is a quadratic unconstrained
+binary optimization (QUBO) problem~\cite{lucas2014ising} over candidate swaps:
+the diagonal holds the makespan change of each swap and a penalty forbids
+conflicting pairs. A 20-job permutation needs more variables than the device
+holds, so the search splits it into overlapping windows and solves one QUBO per
+window with fixed-angle QAOA at depth $p$; the lowest-energy sample of 4096
+shots selects the move~\cite{wojewodzki2026aciids,wojewodzki2027icaisc}. Linear
+neighborhoods (Adjacent, Fibonacci) give windows of 1 to 16 variables, dense
+ones (Dynasearch, Motzkin) up to 15.
+
+\paragraph{Star processor.}
+IQM Sirius couples its qubits to a computational resonator. A two-qubit
+interaction moves the state of one qubit into the resonator, applies a CZ gate
+with the other qubit and moves the state back, so one $R_{ZZ}$ interaction of
+QAOA compiles to two CZ and about two MOVE gates. Table~\ref{tab:calib} lists
+the calibration that defines the noise models; the compiled circuit holds one
+qubit more than the window, the resonator.
+
+\begin{table}[t]
+\caption{IQM Sirius calibration snapshot of 23 October 2026 (16 operational
+qubits of 24; medians over qubits or loci).}
+\label{tab:calib}
+\centering
+\begin{tabular}{lr}
+\toprule
+Quantity & Value \\
+\midrule
+PRX (single-qubit) average gate fidelity & 0.9989 \\
+CZ fidelity (qubit--resonator) & 0.9833 \\
+MOVE fidelity & 0.9903 \\
+Readout error (mean of $0\!\to\!1$ and $1\!\to\!0$) & 0.0175 \\
+$T_1$ / $T_2$ of the qubits & 30.0 / 10.9 $\mu$s \\
+$T_1$ / $T_2$ of the resonator & 7.5 / 3.1 $\mu$s \\
+Gate durations PRX / CZ / MOVE & 40 / 104 / 64 ns \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Noise channels.}
+A depolarizing channel with parameter $\lambda$ replaces the state with the
+maximally mixed one with weight $\lambda$; a gate of average fidelity $F$ on
+$d$-dimensional systems gives $\lambda = d(1 - F)/(d - 1)$. Amplitude and phase
+damping model energy relaxation ($T_1$) and dephasing ($T_2$) during a gate, and
+a confusion matrix per qubit models readout errors. A simulator can apply the
+channels exactly on a density matrix or sample one Kraus branch per run of the
+circuit, which turns a noisy simulation into an average over
+trajectories~\cite{dalibard1992mcwf}. The second route costs one statevector
+simulation per shot but keeps the memory of a pure state.
+
+\section{Simulators}
+
+Table~\ref{tab:sims} summarizes the programs; the paragraphs below describe
+each one and what it offers for noisy simulation at 12 to 17 qubits.
+
+\paragraph{Qiskit Aer.}
+Aer is the simulation layer of Qiskit~\cite{javadi2024}. It offers dense
+statevector and density-matrix methods, matrix product states and stabilizer
+methods, and attaches noise to individual instructions through a noise model.
+With a statevector, Aer samples one noisy realization of the circuit per shot,
+so it reaches the full 17 qubits of a compiled Sirius circuit. The IQM adapter
+for Qiskit~\cite{iqmclient} compiles circuits to the native PRX, CZ and MOVE
+gates and builds fake backends from an architecture and an error profile,
+which we use to obtain a Sirius model from the calibration snapshot.
+
+\paragraph{Cirq with qsim.}
+Cirq~\cite{cirq} is Google's framework for writing and compiling circuits;
+qsim is its high-performance C++ statevector simulator. Isakov et
+al.~\cite{isakov2021qsim} describe how qsim simulates noisy circuits as quantum
+trajectories, choosing the outcome of every channel at random during each run,
+and how a delayed inner product cuts the cost of low-noise simulation. Each
+repetition re-runs the circuit, so the cost grows with the number of shots.
+IQM's Cirq adapter, now part of the IQM client, maps circuits to IQM
+architectures.
+
+\paragraph{Qulacs.}
+Qulacs~\cite{suzuki2021qulacs} is a C++ simulator with a Python interface built
+for speed on small and medium circuits. It models noise as probabilistic gates
+(single- and two-qubit depolarizing, dephasing and bit-flip noise) and as
+general completely positive maps given by Kraus operators, which covers
+amplitude damping, and it also holds density matrices. We reach it through
+TKET~\cite{sivarajah2020tket}, whose IQM extension provides a third compiler
+for the star topology.
+
+\paragraph{MQT DDSIM.}
+DDSIM represents states and operations as decision diagrams, which compress
+the redundancy of many circuits~\cite{zulehner2019ddsim}. Its noise-aware mode
+simulates decoherence and gate errors either stochastically or
+deterministically on decision diagrams for density matrices~\cite{grurl2020noise}.
+The documented interface applies amplitude damping, depolarization and phase
+flips with one global probability, so per-gate calibrated rates can enter only
+as an average.
+
+\paragraph{Qibo.}
+Qibo~\cite{efthymiou2022qibo} is a framework for simulation with hardware
+acceleration on CPUs and GPUs. In its original description, a circuit that
+contains noise channels switches the simulation to density matrices, whose memory grows as $4^n$; with noise it
+therefore handles the smaller windows of our workload.
+
+\paragraph{CUDA-Q.}
+CUDA-Q~\cite{kim2023cudaq} is NVIDIA's platform for hybrid quantum--classical
+programs. Its documentation applies noise models on a density-matrix target on
+the CPU; on a machine without an NVIDIA GPU this limits noisy runs to small
+windows.
+
+\paragraph{PennyLane.}
+PennyLane~\cite{bergholm2018pennylane} centers on differentiable hybrid
+programs. Its mixed-state device simulates noise channels on density matrices
+and is recommended for small systems; noise models written for Qiskit can be
+imported, which eases a like-for-like comparison.
+
+\paragraph{Amazon Braket.}
+The Braket SDK~\cite{braket} includes local statevector and density-matrix
+simulators; the local density-matrix simulator handles noisy circuits of about
+twelve qubits, and larger ones run in a paid cloud service that we do not use.
+
+\paragraph{QuTiP.}
+QuTiP~\cite{johansson2013qutip,lambert2024qutip5} simulates open quantum
+systems through master equations. Its circuit package simulates circuits at
+the level of control pulses with noise~\cite{li2022qutipqip}, a description
+below the gate level used by the other programs; we use it on a single small
+window as a reference for that level of detail.
+
+\paragraph{Stim, and why it is excluded.}
+Stim~\cite{gidney2021stim} simulates stabilizer circuits very fast and is the
+standard tool for error-correction studies. QAOA circuits contain arbitrary
+rotations and are not Clifford circuits, so Stim cannot run the workload.
+
+\paragraph{Related comparisons.}
+Benchmarks of simulation packages measure speed on noiseless
+statevectors~\cite{jamadagni2024bench} or provide benchmark
+circuits~\cite{li2023qasmbench}. Georgopoulos et al.~\cite{georgopoulos2021noise}
+built a noise model from device parameters and compared it with hardware runs.
+We add three things: many simulators fed with the same calibration, a star
+processor, and a comparison on the outcome of an optimization task.
+
+\begin{table}[t]
+\caption{Simulators. Noisy method from the documentation; the last two
+columns come from our measurements (stage 1).}
+\label{tab:sims}
+\centering
+\small
+\begin{tabular}{llllcc}
+\toprule
+Simulator & Noisy method & IQM compiler & License & max qubits, noisy & s / circuit \\
+\midrule
+Qiskit Aer & trajectories, density matrix & qiskit-iqm & Apache-2.0 & \tofill{?} & \tofill{?} \\
+Cirq + qsim & trajectories & IQM client (Cirq) & Apache-2.0 & \tofill{?} & \tofill{?} \\
+Qulacs & probabilistic gates, Kraus & via TKET & MIT & \tofill{?} & \tofill{?} \\
+MQT DDSIM & decision diagrams & --- & MIT & \tofill{?} & \tofill{?} \\
+Qibo & density matrix & --- & Apache-2.0 & \tofill{?} & \tofill{?} \\
+CUDA-Q (CPU) & density matrix & --- & Apache-2.0 & \tofill{?} & \tofill{?} \\
+PennyLane & density matrix & --- & Apache-2.0 & \tofill{?} & \tofill{?} \\
+Braket (local) & density matrix & --- & Apache-2.0 & \tofill{?} & \tofill{?} \\
+QuTiP & master equation (pulses) & --- & BSD-3 & \tofill{?} & \tofill{?} \\
+Stim & stabilizer only & --- & Apache-2.0 & n/a & n/a \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Methodology}
+
+\paragraph{Noise scenarios.}
+All simulators use the same calibration snapshot and three scenarios. In S1
+the circuit runs without noise. In S2 every gate carries a depolarizing
+channel matched to its measured fidelity and every qubit a readout confusion
+matrix. S3 adds amplitude and phase damping during each gate. On Sirius,
+relaxation alone exceeds the measured error of most gates (median CZ error
+0.0167 measured against 0.0205 implied by $T_1$ and $T_2$), so S3 bounds the
+noise from above. Neither scenario models idle qubits; every simulator applies
+noise during gates only. DDSIM receives S2 and S3 with averaged rates.
+
+\paragraph{Two tracks.}
+In track A every simulator runs the same compiled circuit, exported as
+OpenQASM with MOVE written as a swap between a qubit and the resonator, so any
+difference comes from the engine and its channels. In track B the same logical
+circuit passes through three compilers (the IQM adapters for Qiskit and Cirq
+and TKET) and runs in one engine, so differences come from compilation.
+
+\paragraph{Hardware references.}
+Table~\ref{tab:hw} lists the device data. Run-level comparisons use iterated
+local search on Sirius at $p = 1$ from an earlier campaign~\cite{wojewodzki2026aciids}
+and at $p = 2, 3$ \tofill{H2}. Circuit-level comparisons need histograms of
+single windows; a small run on two different days \tofill{H3} gives them and
+measures how well the device agrees with itself.
+
+\paragraph{Metrics.}
+For single windows we compare output distributions by total variation distance
+and Hellinger distance and report the probability of sampling the optimal move
+and whether the lowest-energy of 4096 samples is optimal. Two independent
+4096-shot samples of one distribution never agree exactly; we estimate that
+floor by bootstrap and the hardware floor from the two days of H3. For whole
+runs we compare the relative deviation of the makespan from the Taillard lower
+bound after the same number of moves as the device made, with a paired sign
+test and Kendall's $\tau$ over instances. Cost is wall time per circuit and
+peak memory.
+
+\section{Experimental Setup}
+
+The study runs in three stages. First, every simulator is installed and
+tested on one window. Second, all simulators that can run a scenario do so on
+the windows of instances 0--3 of the Taillard classes with $n = 20$ jobs: 161
+windows with an improving move, of which 71 hold at most 11 variables and fit
+the density-matrix simulators. Third, the two or three simulators that best
+predict the device at acceptable cost run the full Taillard set ($n = 20$ to
+$500$), against the $p = 1$ hardware data available for all twelve classes. We
+fix the selection criteria before the second stage.
+
+\begin{table}[t]
+\caption{Hardware data used as reference.}
+\label{tab:hw}
+\centering
+\small
+\begin{tabular}{llll}
+\toprule
+Device & Experiment & Scope & Status \\
+\midrule
+IQM Sirius & ILS, $p = 1$, 10 s, 4096 shots & 12 classes ($n = 20$--$500$), inst.\ 0--3; 225 runs & done (7--14 Oct 2026) \\
+IQM Sirius & ILS, $p = 2, 3$ (H2) & $n = 20$, inst.\ 0--3; 96 runs & \tofill{planned} \\
+IQM Sirius & window histograms (H3), two days & tai20, inst.\ 0, $p = 1, 2$ & \tofill{optional} \\
+IBM Heron (ibm\_fez) & one move per run, $p = 1$ & tai20\_5, inst.\ 0--9 & done (Aug 2026) \\
+IQM Garnet, Emerald & one move per run, $p = 1$ & tai20\_5, inst.\ 0 & done (Sept--Oct 2026) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Results}
+
+\tofill{Draft: written after stages 1--3.}
+
+\begin{table}[t]
+\caption{Track B: gates per window after compilation (median), $p = 1$.}
+\label{tab:compilers}
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+Neighborhood & qiskit-iqm (CZ / MOVE) & IQM Cirq (CZ / MOVE) & TKET (CZ / MOVE) \\
+\midrule
+Adjacent & 72 / \tofill{?} & \tofill{?} & \tofill{?} \\
+Fibonacci & 15 / \tofill{?} & \tofill{?} & \tofill{?} \\
+Dynasearch & 164 / \tofill{?} & \tofill{?} & \tofill{?} \\
+Motzkin & 134 / \tofill{?} & \tofill{?} & \tofill{?} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\fbox{\parbox[c][3.5cm][c]{0.9\textwidth}{\centering \tofill{Figure: total
+variation distance to Sirius, simulator $\times$ scenario (heat map), with the
+shot-noise floor and the hardware day-to-day floor.}}}
+\caption{Agreement of each simulator and scenario with the device on single windows.}
+\label{fig:heat}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\fbox{\parbox[c][3.5cm][c]{0.9\textwidth}{\centering \tofill{Figure: relative
+deviation of the makespan, simulator versus Sirius, one point per instance, $p = 1, 2, 3$.}}}
+\caption{Run-level agreement with the device.}
+\label{fig:prd}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\fbox{\parbox[c][3.5cm][c]{0.9\textwidth}{\centering \tofill{Figure: wall time per
+circuit and peak memory versus number of qubits, all simulators (log scale).}}}
+\caption{Cost of noisy simulation.}
+\label{fig:cost}
+\end{figure}
+
+\section{Discussion}
+\tofill{Draft: which simulator for which purpose; limitations: resonator modeled
+as a qubit, no idle noise, one calibration snapshot, $n = 20$ core.}
+
+\section{Conclusions}
+\tofill{Draft.}
+
+\bibliographystyle{plain}
+\bibliography{references}
+\end{document}

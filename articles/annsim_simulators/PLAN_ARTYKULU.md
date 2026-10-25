@@ -34,7 +34,7 @@ humanizer; formatowanie na końcu.
 | — | Abstract | 0,3 | ≤ 250 słów |
 | 1 | Introduction | 1,0 | rola symulatorów w NISQ, luka: brak walidacji na realnym zadaniu i topologii gwiazdy |
 | 2 | Background | 1,2 | zadanie (QAOA w oknach PFSP, krótko z cytatem ICAISC/ACIIDS), procesor gwiazdy i MOVE, kanały szumu |
-| 3 | Simulators | 1,5 | 10 programów: metoda, szum, kompilator IQM, licencja (Tabela 1); dlaczego Stim odpada |
+| 3 | Simulators | 1,5 | 10 programów bramkowych: metoda, szum, kompilator IQM, licencja (Tabela 1, z pomiarów etapu 1); dlaczego Stim odpada |
 | 4 | Methodology | 1,8 | scenariusze S1–S3 z jednej migawki, tory A i B, dane ze sprzętu (ACIIDS, H2, H3), miary, podłogi zgodności |
 | 5 | Experimental Setup | 0,8 | okna (71 z K ≤ 11; 40 do 16 zmiennych), p, shoty, sprzęt obliczeniowy, wersje |
 | 6 | Results | 3,5 | 5 figur/tabel |
@@ -99,7 +99,10 @@ tekst metody od nowa; kontrola wspólnych 8-wyrazowych fraz przed wysyłką.
 humanizer → spójność liczb z danymi → Crossref → wytyczne SCS 2027 (porównać z 2026: 5–12 s., double-blind,
 biogramy) → anonimizacja → `pdffonts`.
 
-## Dziennik poprawek (10 rund)
+## Dziennik poprawek (10 rund + uzupełnienie)
+
+11. (25.10) Tor wyżarzaczy przeniesiony do osobnego artykułu; ANNSIM tylko symulatory bramkowe.
+
 
 1. Struktura z ICAISC przeniesiona na temat symulatorów.
 2. Tytuł zmieniony z opisowego na pytanie z liczbami (9 programów, 3 scenariusze, 16 kubitów).

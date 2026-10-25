@@ -1,0 +1,350 @@
+% ANNSIM 2027 — szkic po polsku (symulatory bramkowe a IQM Sirius). Wersja anonimowa.
+% Wersja końcowa: szablon SCS (scspaperproc, 5–12 stron); szkic w klasie article.
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[polish]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage[hidelinks,pdfauthor={},pdftitle={}]{hyperref}
+\newcommand{\tofill}[1]{\textbf{[#1]}}
+
+\title{Na ile wiernie symulatory obwodów kwantowych przewidują sprzęt? Dziewięć
+symulatorów i trzy scenariusze szumu wobec 16-kubitowego procesora o topologii
+gwiazdy}
+\author{Anonim}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\tofill{Szkic: streszczenie powstanie po wynikach.}
+\end{abstract}
+
+\section{Wstęp}
+
+Symulatory wykonują większość pracy przy urządzeniach kwantowych ery
+NISQ~\cite{preskill2018}: czas procesora jest rzadki i drogi, więc algorytmy
+projektuje się, stroi i często ocenia programowo, a urządzenie wykonuje tylko
+końcowy eksperyment. Symulator jest przydatny o tyle, o ile przewiduje
+zachowanie urządzenia, a jego wierność sprawdza się zwykle na syntetycznych
+zestawach testowych~\cite{li2023qasmbench} albo mierzy się jego
+szybkość~\cite{jamadagni2024bench}, a nie wynik zadania, które symulacja
+zastępuje. Druga luka dotyczy samego sprzętu: procesory o topologii gwiazdy,
+w których każdy kubit sprzęga się z centralnym rezonatorem przez osobną
+operację MOVE, są nowe, a ekosystemy oprogramowania wspierają je
+nierówno~\cite{gnatowski2026routing}.
+
+Porównujemy dziewięć darmowych symulatorów obwodów z 16-kubitowym procesorem
+o topologii gwiazdy, IQM Sirius, na zadaniu, którego wynik da się ocenić:
+QAOA o stałych kątach~\cite{farhi2014qaoa} wybiera ruchy w iteracyjnym
+przeszukiwaniu lokalnym dla permutacyjnego problemu
+przepływowego~\cite{wojewodzki2026gcmm,wojewodzki2026aciids,wojewodzki2027icaisc}.
+Wszystkie symulatory dostają te same dane kalibracyjne i trzy scenariusze
+szumu o rosnącej szczegółowości. Oddzielamy wpływ silnika symulacji od wpływu
+kompilatora, porównujemy wyniki symulowane z mierzonymi zarówno dla
+pojedynczych obwodów, jak i dla końcowego harmonogramu, a każde porównanie
+ograniczamy zgodnością sprzętu z samym sobą. Podajemy też koszt każdego
+symulatora i miejsce, w którym przestaje działać. \tofill{Jedno zdanie
+z głównym wynikiem po zakończeniu badań.}
+
+\section{Tło}
+
+\paragraph{Zadanie.}
+Zadaniem jest kwantowe przeszukiwanie sąsiedztwa w permutacyjnym problemie
+przepływowym na instancjach Taillarda~\cite{taillard1993}. Iteracyjne
+przeszukiwanie lokalne~\cite{lourenco2003} przechodzi od permutacji do
+najlepszej permutacji w wykładniczym sąsiedztwie. Wybór tego ruchu to problem
+kwadratowej optymalizacji binarnej bez ograniczeń (QUBO)~\cite{lucas2014ising}
+nad kandydującymi zamianami: przekątna zawiera zmianę długości uszeregowania
+każdej zamiany, a kara zabrania par konfliktowych. Permutacja 20 zadań wymaga
+więcej zmiennych, niż mieści urządzenie, więc przeszukiwanie dzieli ją na
+nakładające się okna i rozwiązuje jedno QUBO na okno algorytmem QAOA o stałych
+kątach i głębokości $p$; ruch wybiera próbka o najniższej energii spośród 4096
+shotów~\cite{wojewodzki2026aciids,wojewodzki2027icaisc}. Sąsiedztwa liniowe
+(Adjacent, Fibonacci) dają okna od 1 do 16 zmiennych, a gęste (Dynasearch,
+Motzkin) do 15.
+
+\paragraph{Procesor o topologii gwiazdy.}
+IQM Sirius sprzęga kubity z rezonatorem obliczeniowym. Oddziaływanie
+dwukubitowe przenosi stan jednego kubitu do rezonatora, wykonuje bramkę CZ
+z drugim kubitem i przenosi stan z powrotem, więc jedno oddziaływanie
+$R_{ZZ}$ z QAOA kompiluje się do dwóch bramek CZ i około dwóch bramek MOVE.
+Tabela~\ref{tab:calib} podaje kalibrację, która definiuje modele szumu;
+skompilowany obwód ma o jeden kubit więcej niż okno, czyli rezonator.
+
+\begin{table}[t]
+\caption{Migawka kalibracji IQM Sirius z 23 października 2026 (16 działających
+kubitów z 24; mediany po kubitach lub parach).}
+\label{tab:calib}
+\centering
+\begin{tabular}{lr}
+\toprule
+Wielkość & Wartość \\
+\midrule
+Średnia wierność bramki PRX (jednokubitowej) & 0,9989 \\
+Wierność CZ (kubit--rezonator) & 0,9833 \\
+Wierność MOVE & 0,9903 \\
+Błąd odczytu (średnia z $0\!\to\!1$ i $1\!\to\!0$) & 0,0175 \\
+$T_1$ / $T_2$ kubitów & 30,0 / 10,9 $\mu$s \\
+$T_1$ / $T_2$ rezonatora & 7,5 / 3,1 $\mu$s \\
+Czasy bramek PRX / CZ / MOVE & 40 / 104 / 64 ns \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Kanały szumu.}
+Kanał depolaryzujący o parametrze $\lambda$ zastępuje stan stanem maksymalnie
+mieszanym z wagą $\lambda$; bramka o średniej wierności $F$ na układzie
+o wymiarze $d$ daje $\lambda = d(1 - F)/(d - 1)$. Tłumienie amplitudy i fazy
+modeluje relaksację energii ($T_1$) i dekoherencję fazy ($T_2$) w czasie
+bramki, a macierz pomyłek dla każdego kubitu modeluje błędy odczytu. Symulator
+może stosować kanały dokładnie na macierzy gęstości albo losować jedną gałąź
+Krausa w każdym wykonaniu obwodu, co zamienia symulację z szumem w średnią po
+trajektoriach~\cite{dalibard1992mcwf}. Druga droga kosztuje jedną symulację
+wektora stanu na shot, ale zachowuje pamięć stanu czystego.
+
+\section{Symulatory}
+
+Tabela~\ref{tab:sims} zestawia programy; poniższe akapity opisują każdy z nich
+i to, co oferuje dla symulacji z szumem przy 12--17 kubitach.
+
+\paragraph{Qiskit Aer.}
+Aer to warstwa symulacji Qiskita~\cite{javadi2024}. Oferuje gęsty wektor
+stanu i macierz gęstości, stany iloczynowe macierzy oraz metody
+stabilizatorowe, a szum przypina do pojedynczych instrukcji przez model
+szumu. Z wektorem stanu Aer losuje jedną zaszumioną realizację obwodu na
+shot, więc obsługuje pełne 17 kubitów skompilowanego obwodu dla Siriusa.
+Adapter IQM dla Qiskita~\cite{iqmclient} kompiluje obwody do natywnych bramek
+PRX, CZ i MOVE i buduje fałszywe backendy z architektury i profilu błędów,
+z czego korzystamy, aby otrzymać model Siriusa z migawki kalibracji.
+
+\paragraph{Cirq z qsim.}
+Cirq~\cite{cirq} to framework Google do zapisu i kompilacji obwodów; qsim to
+jego wydajny symulator wektora stanu w C++. Isakov i in.~\cite{isakov2021qsim}
+opisują, jak qsim symuluje obwody z szumem jako trajektorie kwantowe,
+losując wynik każdego kanału w czasie każdego wykonania, oraz jak opóźniony
+iloczyn skalarny obniża koszt symulacji przy słabym szumie. Każde powtórzenie
+wykonuje obwód od nowa, więc koszt rośnie z liczbą shotów. Adapter IQM dla
+Cirqa, dziś część klienta IQM, odwzorowuje obwody na architektury IQM.
+
+\paragraph{Qulacs.}
+Qulacs~\cite{suzuki2021qulacs} to symulator w C++ z interfejsem w Pythonie,
+zbudowany z myślą o szybkości dla małych i średnich obwodów. Modeluje szum
+jako bramki probabilistyczne (depolaryzację jedno- i dwukubitową, dekoherencję
+fazy i przerzut bitu) oraz jako ogólne odwzorowania całkowicie dodatnie
+zadane operatorami Krausa, co obejmuje tłumienie amplitudy; przechowuje też
+macierze gęstości. Docieramy do niego przez TKET~\cite{sivarajah2020tket},
+którego rozszerzenie IQM daje trzeci kompilator dla topologii gwiazdy.
+
+\paragraph{MQT DDSIM.}
+DDSIM reprezentuje stany i operacje jako diagramy decyzyjne, które kompresują
+redundancję wielu obwodów~\cite{zulehner2019ddsim}. Jego tryb z szumem
+symuluje dekoherencję i błędy bramek stochastycznie albo deterministycznie, na
+diagramach decyzyjnych dla macierzy gęstości~\cite{grurl2020noise}.
+Udokumentowany interfejs stosuje tłumienie amplitudy, depolaryzację i przerzut
+fazy z jednym globalnym prawdopodobieństwem, więc skalibrowane wartości dla
+poszczególnych bramek mogą wejść tylko jako średnia.
+
+\paragraph{Qibo.}
+Qibo~\cite{efthymiou2022qibo} to framework do symulacji z akceleracją
+sprzętową na CPU i GPU. W pierwotnym opisie obwód z kanałami szumu przełącza
+symulację na macierze gęstości, których pamięć rośnie jak $4^n$; z szumem
+obsługuje więc mniejsze okna naszego zadania.
+
+\paragraph{CUDA-Q.}
+CUDA-Q~\cite{kim2023cudaq} to platforma NVIDIA dla programów
+hybrydowych kwantowo-klasycznych. Jej dokumentacja stosuje modele szumu na
+backendzie macierzy gęstości na CPU; na komputerze bez GPU NVIDIA ogranicza
+to przebiegi z szumem do małych okien.
+
+\paragraph{PennyLane.}
+PennyLane~\cite{bergholm2018pennylane} skupia się na różniczkowalnych
+programach hybrydowych. Jego urządzenie dla stanów mieszanych symuluje kanały
+szumu na macierzach gęstości i jest zalecane dla małych układów; modele szumu
+zapisane dla Qiskita można zaimportować, co ułatwia porównanie jeden do
+jednego.
+
+\paragraph{Amazon Braket.}
+SDK Braket~\cite{braket} zawiera lokalne symulatory wektora stanu i macierzy
+gęstości; lokalny symulator macierzy gęstości obsługuje obwody z szumem
+o około dwunastu kubitach, a większe działają w płatnej usłudze chmurowej,
+z której nie korzystamy.
+
+\paragraph{QuTiP.}
+QuTiP~\cite{johansson2013qutip,lambert2024qutip5} symuluje otwarte układy
+kwantowe przez równania master. Jego pakiet obwodów symuluje obwody na poziomie
+impulsów sterujących z szumem~\cite{li2022qutipqip}, czyli opisem poniżej
+poziomu bramek, którego używają pozostałe programy; stosujemy go na jednym
+małym oknie jako odniesienie dla tego poziomu szczegółowości.
+
+\paragraph{Stim i powód jego wykluczenia.}
+Stim~\cite{gidney2021stim} bardzo szybko symuluje obwody stabilizatorowe i jest
+standardowym narzędziem w badaniach korekcji błędów. Obwody QAOA zawierają
+dowolne obroty i nie są obwodami Clifforda, więc Stim nie wykona naszego
+zadania.
+
+\paragraph{Pokrewne porównania.}
+Testy pakietów symulacyjnych mierzą szybkość na wektorze stanu bez
+szumu~\cite{jamadagni2024bench} albo dostarczają obwodów
+testowych~\cite{li2023qasmbench}. Georgopoulos i in.~\cite{georgopoulos2021noise}
+zbudowali model szumu z parametrów urządzenia i porównali go z przebiegami na
+sprzęcie. Dokładamy trzy rzeczy: wiele symulatorów zasilanych tą samą
+kalibracją, procesor o topologii gwiazdy i porównanie na wyniku zadania
+optymalizacyjnego.
+
+\begin{table}[t]
+\caption{Symulatory. Metoda z szumem według dokumentacji; dwie ostatnie
+kolumny pochodzą z naszych pomiarów (etap 1).}
+\label{tab:sims}
+\centering
+\small
+\begin{tabular}{llllcc}
+\toprule
+Symulator & Metoda z szumem & Kompilator IQM & Licencja & maks.\ kubitów z szumem & s / obwód \\
+\midrule
+Qiskit Aer & trajektorie, macierz gęstości & qiskit-iqm & Apache-2.0 & \tofill{?} & \tofill{?} \\
+Cirq + qsim & trajektorie & klient IQM (Cirq) & Apache-2.0 & \tofill{?} & \tofill{?} \\
+Qulacs & bramki probab., Kraus & przez TKET & MIT & \tofill{?} & \tofill{?} \\
+MQT DDSIM & diagramy decyzyjne & --- & MIT & \tofill{?} & \tofill{?} \\
+Qibo & macierz gęstości & --- & Apache-2.0 & \tofill{?} & \tofill{?} \\
+CUDA-Q (CPU) & macierz gęstości & --- & Apache-2.0 & \tofill{?} & \tofill{?} \\
+PennyLane & macierz gęstości & --- & Apache-2.0 & \tofill{?} & \tofill{?} \\
+Braket (lokalnie) & macierz gęstości & --- & Apache-2.0 & \tofill{?} & \tofill{?} \\
+QuTiP & równania master (impulsy) & --- & BSD-3 & \tofill{?} & \tofill{?} \\
+Stim & tylko stabilizatory & --- & Apache-2.0 & nd. & nd. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Metodyka}
+
+\paragraph{Scenariusze szumu.}
+Wszystkie symulatory korzystają z tej samej migawki kalibracji i trzech
+scenariuszy. W S1 obwód działa bez szumu. W S2 każda bramka ma kanał
+depolaryzujący dopasowany do zmierzonej wierności, a każdy kubit macierz
+pomyłek odczytu. S3 dodaje tłumienie amplitudy i fazy w czasie każdej bramki.
+Na Siriusie sama relaksacja przekracza zmierzony błąd większości bramek
+(mediana błędu CZ: zmierzona 0,0167 wobec 0,0205 wynikającej z $T_1$ i $T_2$),
+więc S3 ogranicza szum od góry. Żaden scenariusz nie modeluje bezczynnych
+kubitów; każdy symulator stosuje szum tylko w czasie bramek. DDSIM dostaje S2
+i S3 z uśrednionymi wartościami.
+
+\paragraph{Dwa tory.}
+W torze A każdy symulator wykonuje ten sam skompilowany obwód, wyeksportowany
+do OpenQASM z bramką MOVE zapisaną jako zamiana między kubitem a rezonatorem,
+więc każda różnica pochodzi z silnika i jego kanałów. W torze B ten sam obwód
+logiczny przechodzi przez trzy kompilatory (adaptery IQM dla Qiskita i Cirqa
+oraz TKET) i wykonuje się w jednym silniku, więc różnice pochodzą z kompilacji.
+
+\paragraph{Odniesienie sprzętowe.}
+Tabela~\ref{tab:hw} wymienia dane z urządzeń. Porównania na poziomie
+przebiegów korzystają z iteracyjnego przeszukiwania lokalnego na Siriusie przy
+$p = 1$ z wcześniejszej kampanii~\cite{wojewodzki2026aciids} oraz przy
+$p = 2, 3$ \tofill{H2}. Porównania na poziomie obwodów wymagają histogramów
+pojedynczych okien; daje je mały bieg w dwa różne dni \tofill{H3}, który
+mierzy też zgodność urządzenia z samym sobą.
+
+\paragraph{Miary.}
+Dla pojedynczych okien porównujemy rozkłady wyników odległością całkowitej
+zmienności i odległością Hellingera oraz podajemy prawdopodobieństwo
+wylosowania ruchu optymalnego i to, czy najlepsza z 4096 próbek jest
+optymalna. Dwie niezależne próby po 4096 shotów z tego samego rozkładu nigdy
+nie zgadzają się dokładnie; tę podłogę szacujemy metodą bootstrap, a podłogę
+sprzętową z dwóch dni biegu H3. Dla całych przebiegów porównujemy względne
+odchylenie długości uszeregowania od dolnego ograniczenia Taillarda po tej
+samej liczbie ruchów, jaką wykonało urządzenie, testem znaków par i $\tau$
+Kendalla po instancjach. Koszt to czas na obwód i szczytowa pamięć.
+
+\section{Plan eksperymentów}
+
+Badanie przebiega w trzech etapach. Najpierw każdy symulator jest instalowany
+i sprawdzany na jednym oknie. Następnie wszystkie symulatory, które mogą
+wykonać dany scenariusz, liczą okna instancji 0--3 klas Taillarda
+z $n = 20$ zadaniami: 161 okien z ruchem poprawiającym, z których 71 ma co
+najwyżej 11 zmiennych i mieści się w symulatorach macierzy gęstości. Na końcu
+dwa lub trzy symulatory, które najlepiej przewidują urządzenie przy
+akceptowalnym koszcie, liczą pełny zbiór Taillarda ($n = 20$ do $500$) wobec
+danych sprzętowych dla $p = 1$, dostępnych dla wszystkich dwunastu klas.
+Kryteria wyboru ustalamy przed drugim etapem.
+
+\begin{table}[t]
+\caption{Dane sprzętowe użyte jako odniesienie.}
+\label{tab:hw}
+\centering
+\small
+\begin{tabular}{llll}
+\toprule
+Urządzenie & Eksperyment & Zakres & Stan \\
+\midrule
+IQM Sirius & ILS, $p = 1$, 10 s, 4096 shotów & 12 klas ($n = 20$--$500$), inst.\ 0--3; 225 przebiegów & zrobione (7--14.10.2026) \\
+IQM Sirius & ILS, $p = 2, 3$ (H2) & $n = 20$, inst.\ 0--3; 96 przebiegów & \tofill{planowane} \\
+IQM Sirius & histogramy okien (H3), dwa dni & tai20, inst.\ 0, $p = 1, 2$ & \tofill{opcjonalne} \\
+IBM Heron (ibm\_fez) & jeden ruch na przebieg, $p = 1$ & tai20\_5, inst.\ 0--9 & zrobione (VIII 2026) \\
+IQM Garnet, Emerald & jeden ruch na przebieg, $p = 1$ & tai20\_5, inst.\ 0 & zrobione (IX--X 2026) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Wyniki}
+
+\tofill{Szkic: powstanie po etapach 1--3.}
+
+\begin{table}[t]
+\caption{Tor B: bramki na okno po kompilacji (mediana), $p = 1$.}
+\label{tab:compilers}
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+Sąsiedztwo & qiskit-iqm (CZ / MOVE) & IQM Cirq (CZ / MOVE) & TKET (CZ / MOVE) \\
+\midrule
+Adjacent & 72 / \tofill{?} & \tofill{?} & \tofill{?} \\
+Fibonacci & 15 / \tofill{?} & \tofill{?} & \tofill{?} \\
+Dynasearch & 164 / \tofill{?} & \tofill{?} & \tofill{?} \\
+Motzkin & 134 / \tofill{?} & \tofill{?} & \tofill{?} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\fbox{\parbox[c][3.5cm][c]{0.9\textwidth}{\centering \tofill{Figura: odległość
+całkowitej zmienności do Siriusa, symulator $\times$ scenariusz (mapa
+ciepła), z podłogą szumu shotów i podłogą sprzętową dzień do dnia.}}}
+\caption{Zgodność każdego symulatora i scenariusza z urządzeniem dla pojedynczych okien.}
+\label{fig:heat}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\fbox{\parbox[c][3.5cm][c]{0.9\textwidth}{\centering \tofill{Figura: względne
+odchylenie długości uszeregowania, symulator wobec Siriusa, jeden punkt na
+instancję, $p = 1, 2, 3$.}}}
+\caption{Zgodność z urządzeniem na poziomie przebiegów.}
+\label{fig:prd}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\fbox{\parbox[c][3.5cm][c]{0.9\textwidth}{\centering \tofill{Figura: czas na
+obwód i szczytowa pamięć w funkcji liczby kubitów, wszystkie symulatory
+(skala logarytmiczna).}}}
+\caption{Koszt symulacji z szumem.}
+\label{fig:cost}
+\end{figure}
+
+\section{Dyskusja}
+\tofill{Szkic: który symulator do czego; ograniczenia: rezonator jako kubit,
+brak szumu bezczynności, jedna migawka kalibracji, rdzeń $n = 20$.}
+
+\section{Wnioski}
+\tofill{Szkic.}
+
+\bibliographystyle{plain}
+\bibliography{references}
+\end{document}

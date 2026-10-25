@@ -4,6 +4,20 @@ Wersja po 10 rundach poprawek (25.10.2026). Termin: **18.12.2026** (ścieżka Qu
 artykuł; Scopus/DBLP/ACM). Realizacja **po wysłaniu ICAISC (13.11)**. Przegląd programów:
 `PRZEGLAD_SYMULATOROW.md`. Nacisk na symulacje; sprzęt minimalnie.
 
+## 0. Etapy (decyzja użytkownika 25.10.2026)
+
+1. **Przegląd wszystkich** — każdy program bramkowy zainstalowany i sprawdzony w praktyce
+   na jednym oknie: działa / nie działa, jakie scenariusze szumu obsługuje, czas, pamięć, maks. rozmiar.
+   Wynik: Tabela 1 artykułu oparta na pomiarach, nie na dokumentacji (T0, T6).
+2. **Podstawowy Taillard (n = 20) na wszystkich, na których się da** — tai20_5/10/20, rdzeń porównania ze
+   sprzętem (Sirius: ACIIDS p = 1 + H2), wszystkie scenariusze wykonalne dla danego programu (T1–T5). Programy z macierzą gęstości — na oknach K ≤ 11.
+3. **Pełny Taillard (n = 20…500) na najbardziej obiecujących** — 2–3 programy wybrane po etapie 2 według
+   zgodności ze sprzętem i kosztu (kandydaci: szybkie trajektorie — qsim / Qulacs); porównanie z pełnymi
+   danymi sprzętowymi (Sirius p = 1 dla 12 klas).
+
+Kryteria wyboru do etapu 3 ustalić przed etapem 2 (np. TVD/|ΔPRD| do sprzętu w S2/A3 i czas na obwód), żeby
+wybór nie był dopasowany do wyników post hoc.
+
 ## 1. Pytanie i hipotezy
 
 **Pytanie główne:** na ile różne programy do symulacji obwodów kwantowych, przy tych samych danych
@@ -119,7 +133,11 @@ jednej kampanii z budżetem czasowym.
 Wersje pakietów zamrożone w `requirements-<program>.txt`; ziarna z klucza przebiegu; migawki kalibracji
 w repo; wyniki w `measurements/*.jsonl(.gz)`; figury i tabele generowane skryptem z danych (jak w ICAISC).
 
-## Dziennik poprawek (10 rund)
+## Dziennik poprawek (10 rund + uzupełnienie)
+
+11. (25.10) Tor wyżarzaczy dodany, a potem — decyzją użytkownika — przeniesiony do osobnego artykułu
+    (`articles/annealing_simulators/PLAN.md`); ANNSIM zostaje przy symulatorach bramkowych.
+
 
 1. Szkic: 3 programy × 3 scenariusze, porównanie PRD z ACIIDS.
 2. Rozszerzenie na wszystkie przejrzane programy (decyzja użytkownika); podział na grupy wykonalności.

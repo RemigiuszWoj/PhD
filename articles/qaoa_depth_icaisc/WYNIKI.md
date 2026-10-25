@@ -206,3 +206,34 @@ Koszt rośnie dokładnie liniowo z p. Fibonacci (QUBO trójdiagonalne = łańcuc
 więc obie topologie dają to samo. Dla QUBO gęstych (Adjacent one-hot, Dynasearch, Motzkin) gwiazda potrzebuje
 ~1,6–2,1× mniej CZ niż krata (krata dokłada SWAP-y); gwiazda płaci za to bramkami MOVE (~tyle samo co CZ).
 Gęste okno przy p = 6 to ~800–1000 CZ na gwieździe — na tym tle E4 pokaże, ile z tego zostaje po szumie.
+
+## W8. E4 — jakość okien z szumem (fałszywy Sirius)
+
+Źródło: `measurements/e4_window_noise.jsonl` (1482 obwody, 24.10 15:12 – 25.10 11:19, z przerwą 4:27–10:03 po
+błędzie zakresu p w trybie thermal). Okna pierwszego ruchu z ruchem poprawiającym, instancje 0–3 (161 okien),
+4096 shotów, tryb `calibrated`; `thermal` tylko instancja 0, p ∈ {1, 3, 6} (Adjacent „big”: 1, 3). Miara główna:
+odsetek okien, w których odczyt energetyczny (najlepsza z 4096 próbek) trafia optimum; bez szumu = średnie
+hit_4096 z E1 na tych samych oknach. Figura: `figures/fig3_noise_*.pdf`.
+
+| Sąsiedztwo (tabela) | p=0 | p=1 | p=2 | p=3 | p=4 | p=5 | p=6 |
+|---|---|---|---|---|---|---|---|
+| Adjacent (big), szum | 0,88 | 0,88 | **1,00** | **1,00** | 0,83 | 0,88 | — |
+| Fibonacci (small), szum | 0,96 | 0,74 | 0,91 | **1,00** | 0,87 | 0,96 | 0,91 |
+| Dynasearch (small), szum | 0,54 | 0,47 | **0,75** | 0,72 | 0,70 | 0,61 | 0,58 |
+| Motzkin (small), szum | 0,53 | 0,53 | **0,91** | 0,79 | 0,72 | 0,60 | 0,56 |
+
+Bez szumu (te same okna) gęste mają 1,00 dla każdego p ≥ 2. P_opt z szumem w gęstych oknach spada o rząd
+wielkości i więcej (Dynasearch p = 3: 7,3·10⁻⁴ z szumem wobec 2,6·10⁻² bez), często do rozdzielczości
+1/4096 = 2,4·10⁻⁴.
+
+**Wnioski z E4:**
+1. **Z szumem optimum głębokości to p* = 2 dla sąsiedztw gęstych** (Dynasearch 0,75, Motzkin 0,91); powyżej
+   każda warstwa (~150–180 CZ + MOVE na gęste okno) obniża trafienie i przy p = 6 wraca ono do poziomu
+   losowania (0,54–0,58). Bez szumu zysk utrzymywał się do p = 10.
+2. **Sąsiedztwa liniowe znoszą szum dobrze** — okna są małe (mediana 10 zm.), obwody płytkie (15–72 CZ przy
+   p = 1), a losowanie i tak trafia optimum w 88–96 % okien; najlepsze p = 2–3 (trafienie 1,00).
+3. **p = 1 jest równie słabe z szumem jak bez** (gęste ≈ losowanie) — szum nie zmienia oceny p = 1.
+4. **Tryb thermal** na instancji 0 daje podobny obraz jak calibrated (mała próba; czasem lepiej, czasem gorzej),
+   więc wniosek o p* nie zależy od wyboru modelu szumu.
+5. W Fibonaccim szum bywa „pomocny” (p = 2, 5, 6: wyżej niż bez szumu) — zbliża rozkład do jednostajnego,
+   a ten przy małych oknach trafia optimum często (spójne z W5/W6).

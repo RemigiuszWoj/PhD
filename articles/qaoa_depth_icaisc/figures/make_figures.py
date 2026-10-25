@@ -129,6 +129,54 @@ def fig2(e1, lang):
     plt.close(fig)
 
 
+def fig3(e1_all, lang):
+    """E4: share of windows where the lowest-energy of 4096 samples is optimal, versus p:
+    noiseless (exact, from E1), noisy simulated Sirius (calibrated) and thermal (instance 0 only)."""
+    t = TXT[lang]
+    best = {"adjacent": "big", "fibonacci": "small", "dynasearch": "small", "motzkin": "small"}
+    e4 = defaultdict(list)
+    for r in rows("e4_window_noise.jsonl"):
+        e4[(r["neigh"], r["table"], r["p"], r["mode"])].append(r)
+    lab = {"en": ("noiseless", "noisy (calibrated)", "noisy (thermal, inst. 0)", "best of 4096 optimal"),
+           "pl": ("bez szumu", "z szumem (skalibrowany)", "z szumem (termiczny, inst. 0)", "najlepsza z 4096 optymalna")}[lang]
+    fig, axes = plt.subplots(1, 4, figsize=(WIDTH, 1.8), sharey=True)
+    for ax, nb in zip(axes, NB):
+        tb = best[nb]
+        ps = [0] + [p for p in range(1, 7) if (nb, tb, p, "calibrated") in e4]
+        def key(p, mode):
+            return (nb, "uniform", 0, mode) if p == 0 else (nb, tb, p, mode)
+        noisy = [np.mean([r["pick_is_opt"] for r in e4[key(p, "calibrated")]]) for p in ps]
+        ideal = []
+        for p in ps:
+            rs = e4[key(p, "calibrated")]
+            ideal.append(np.mean([e1_all[(r["file"], r["inst"], nb, r["window"], "uniform" if p == 0 else tb, p)]["hit_4096"]
+                                  for r in rs]))
+        ax.plot(ps, ideal, ls="--", color="#777777", marker=MARK[nb], ms=2.3, lw=0.9, label=lab[0])
+        ax.plot(ps, noisy, ls="-", color=INK, marker=MARK[nb], ms=2.3, lw=0.9, label=lab[1])
+        th = [(p, e4[key(p, "thermal")]) for p in (1, 3, 6) if e4.get(key(p, "thermal"))]
+        if th:
+            ax.plot([p for p, _ in th], [np.mean([r["pick_is_opt"] for r in rs]) for _, rs in th],
+                    ls="none", color=INK, marker="x", ms=3.5, label=lab[2])
+        ax.set_title(NAME[nb], fontsize=7.5)
+        ax.set_xticks(range(0, 7))
+        ax.set_xlabel(t["p"])
+        ax.set_ylim(0, 1.05)
+    axes[0].set_ylabel(lab[3])
+    h, l = axes[0].get_legend_handles_labels()
+    fig.legend(h, l, fontsize=6, frameon=False, ncol=3, loc="upper center")
+    fig.tight_layout(pad=0.3, rect=(0, 0, 1, 0.9))
+    fig.savefig(HERE / f"fig3_noise_{lang}.pdf")
+    plt.close(fig)
+
+
+def load_e1_all():
+    out = {}
+    for r in rows("e1_window_quality.jsonl"):
+        if r["perm"] == "identity" and r["inst"] <= 3:
+            out[(r["file"], r["inst"], r["neigh"], r["window"], r["table"], r["p"])] = r
+    return out
+
+
 def load_e5():
     """{(neigh, table, p, shots): {(file, inst): (prd, moves, ms_per_move)}} averaged over repeats."""
     acc = defaultdict(lambda: defaultdict(list))
@@ -270,7 +318,10 @@ if __name__ == "__main__":
     TAB.mkdir(exist_ok=True)
     e1 = load_e1()
     e5 = load_e5()
+    e1_all = load_e1_all() if (MEAS / "e4_window_noise.jsonl").exists() else None
     for lang in ("en", "pl"):
+        if e1_all:
+            fig3(e1_all, lang)
         fig1(e1, lang)
         fig2(e1, lang)
         fig4(e5, lang)

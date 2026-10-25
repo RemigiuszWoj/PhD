@@ -476,7 +476,7 @@ def run_e4(workers: int, smoke: bool):
         for table in BEST_TABLES[nb]:
             tasks += [(w, table, p, "calibrated") for p in _depths(table, nb)]
             if w[1] == 0 and table == BEST_TABLES[nb][0]:
-                tasks += [(w, table, p, "thermal") for p in (1, 3, 6)]
+                tasks += [(w, table, p, "thermal") for p in (1, 3, 6) if p in _depths(table, nb)]
     out = OUT_E4.with_name("e4_smoke.jsonl") if smoke else OUT_E4
     done = _done(out)
     key = lambda t: f"{t[0][0]}|{t[0][1]}|{t[0][2]}|{t[0][3]}|{t[1]}|{t[2]}|{t[3]}"
@@ -666,7 +666,8 @@ def main():
     h2 = sub.add_parser("h2", help="ILS on the real Sirius, p = 2 and 3 (uses credits)")
     h2.add_argument("--dry-run", action="store_true", help="count circuits and credits, submit nothing")
     h2.add_argument("--max-credits", type=float, default=230.0)
-    h2.add_argument("--rate", type=float, default=0.75, help="credits per circuit (NOTES.md: 0.75)")
+    h2.add_argument("--rate", type=float, default=0.445,
+                    help="credits per circuit (0.445 measured over the ACIIDS campaign)")
     args = ap.parse_args()
     if args.cmd == "h2":
         run_h2(args.dry_run, args.max_credits, args.rate)

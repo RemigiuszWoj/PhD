@@ -416,6 +416,47 @@ $p = 0$: losowanie jednostajne).}
 \label{fig:moves}
 \end{figure}
 
+\section{Dyskusja}
+
+Badanie ma kilka ograniczeń. Używa tylko instancji z 20 zadaniami, bo większe
+okna nie zmieściłyby się na 16-kubitowym urządzeniu, a symulacja z szumem
+jednego gęstego obwodu trwa już kilka minut. Kąty są stałe dla danej
+głębokości, więc harmonogram dostrajany do każdego okna mógłby zmienić
+obraz, zwłaszcza przy dużym $p$. Energia okna sumuje zmiany długości
+uszeregowania pojedynczych zamian, co jest dokładne tylko wtedy, gdy zamiany
+na siebie nie wpływają, więc nawet optymalna próbka nie zawsze jest
+najlepszym ruchem dla całej permutacji. W sąsiedztwach liniowych akcelerator
+bloków usuwa wielu kandydatów, zanim powstanie QUBO, przez co okna są małe,
+a to sprzyja losowaniu jednostajnemu. Symulowane urządzenie nie ma też szumu
+na bezczynnych kubitach, a migawkę jego kalibracji zrobiono kilka dni po
+przebiegach sprzętowych przy $p = 1$. Oba fakty mogą tłumaczyć, dlaczego
+prawdziwe urządzenie wyglądało na bardziej zaszumione niż symulator.
+
+Nie twierdzimy, że obliczenia kwantowe mają tu przewagę nad klasycznymi.
+Klasyczne przeszukiwanie, które ocenia każdy ruch dokładnie, osiąga wyraźnie
+krótsze uszeregowania niż każdy wariant QAOA, a na urządzeniu ILS wykonuje
+w 10~s tylko jeden lub dwa ruchy. Wartość badania leży gdzie indziej:
+pokazuje, kiedy dodatkowa warstwa QAOA opłaca się w przeszukiwaniu
+sąsiedztwa i jak szybko szum ten zysk odbiera.
+
+\section{Wnioski}
+
+Jedna warstwa QAOA jest za słaba dla przeszukiwania sąsiedztwa w problemie
+przepływowym: w sąsiedztwach gęstych wypada gorzej niż losowanie
+jednostajne. Dwie warstwy wystarczają, by znaleźć ruch optymalny prawie
+w każdym oknie, a z szumem $p = 2$ jest też najlepszą głębokością, bo każda
+kolejna warstwa kosztuje około 150 bramek dwukubitowych i zbliża obwód
+z powrotem do losowania jednostajnego. W sąsiedztwach liniowych okna są tak
+małe, że losowanie jednostajne z odpowiednią liczbą shotów radzi sobie tak
+samo dobrze jak QAOA. Dla sąsiedztw gęstych zalecamy więc dwie warstwy
+i przeznaczenie reszty budżetu na shoty.
+% H2: zalecenie "dwie warstwy" opiera się na symulatorze; złagodzić, jeśli Sirius przy p = 2 nie pokaże zysku
+Kąty ważą więcej niż głębokość, a kalibracja na średnią energię nie nagradza
+tego, czego potrzebuje przeszukiwanie lokalne. W dalszych pracach kąty będą
+kalibrowane na prawdopodobieństwo, że najlepsza próbka jest optymalna,
+głębokość będzie dobierana dla każdego okna, a badanie obejmie inne
+topologie procesorów.
+
 \bibliographystyle{splncs04}
 \bibliography{references}
 

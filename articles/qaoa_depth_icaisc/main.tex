@@ -405,6 +405,44 @@ uniform sampling).}
 \label{fig:moves}
 \end{figure}
 
+\section{Discussion}
+
+The study has several limits. It uses only instances with 20 jobs, because
+larger windows would not fit on the 16-qubit device and the noisy simulation
+of a single dense circuit already takes minutes. The angles are fixed per
+depth, so a schedule tuned to each window could change the picture,
+especially at large $p$. The energy of a window adds up the makespan changes
+of its swaps, which is exact only when the swaps do not interact, so even an
+optimal sample is not always the best move for the whole permutation. In the
+linear neighborhoods the block accelerator removes many candidates before
+the QUBO is built, which keeps the windows small and favours uniform
+sampling. The simulated device also has no noise on idle qubits, and its
+calibration snapshot was taken a few days after the hardware runs at
+$p = 1$. Both may explain why the real device looked noisier than the
+simulator.
+
+We do not claim an advantage over classical computing. The classical search
+that evaluates every move exactly reaches clearly better makespans than any
+QAOA variant, and on the device ILS makes only one or two moves in 10~s. The
+value of the study lies elsewhere: it shows when an additional QAOA layer
+pays off in neighborhood search, and how quickly noise takes that gain away.
+
+\section{Conclusions}
+
+A single QAOA layer is too weak for neighborhood search in the flow shop
+problem, and in the dense neighborhoods it does worse than uniform sampling.
+Two layers are enough to find the optimal move in almost every window. With
+noise, $p = 2$ is also the best depth, because every further layer costs
+about 150 two-qubit gates and brings the circuit back towards uniform
+sampling. In the linear neighborhoods the windows are so small that uniform
+sampling with enough shots does as well as QAOA. For dense neighborhoods we
+therefore recommend two layers and spending the rest of the budget on shots.
+% H2: zalecenie "dwie warstwy" opiera się na symulatorze; złagodzić, jeśli Sirius przy p = 2 nie pokaże zysku
+The angles matter more than the depth, and calibrating them for the mean
+energy does not reward what local search needs. Future work will calibrate
+the angles for the chance that the best sample is optimal, choose the depth
+per window, and test other processor topologies.
+
 \bibliographystyle{splncs04}
 \bibliography{references}
 

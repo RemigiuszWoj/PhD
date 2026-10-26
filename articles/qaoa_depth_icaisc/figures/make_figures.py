@@ -256,7 +256,7 @@ def tab3(e5):
     simulator (E5n, same moves as Sirius) and Sirius itself. Missing data is marked."""
     sirius = json.loads((HERE.parents[1] / "gate_qaoa/measurements/sirius_full_taillard_ils.json").read_text())
     e5n = defaultdict(list)
-    if (MEAS / "e5n_ils_noisy.jsonl").exists():
+    if any((MEAS / n).exists() for n in ("e5n_ils_noisy.jsonl", "e5n_ils_noisy.jsonl.gz")):
         for r in rows("e5n_ils_noisy.jsonl"):
             e5n[(r["neigh"], r["p"])].append(r)
     h2 = defaultdict(list)
@@ -287,8 +287,11 @@ def tab3(e5):
         ideal = [med([np.mean(v) for v in pref[(nb, p)].values()]) for p in ps]
         noisy = []
         for p in ps:                               # one table per neighborhood: small
-            rs = [r for r in e5n[(nb, p)] if r["table"] in ("small", "uniform")]
-            noisy.append(med([r["prd"] for r in rs]) if len(rs) >= 12 else fill)
+            per = defaultdict(list)                # mean over reps within an instance, as in "noiseless"
+            for r in e5n[(nb, p)]:
+                if r["table"] in ("small", "uniform"):
+                    per[(r["file"], r["inst"])].append(r["prd"])
+            noisy.append(med([np.mean(v) for v in per.values()]) if len(per) >= 12 else fill)
         hw = []
         for p in ps:
             if p == 1:

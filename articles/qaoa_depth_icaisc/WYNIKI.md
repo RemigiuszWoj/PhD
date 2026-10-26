@@ -237,3 +237,48 @@ wielkości i więcej (Dynasearch p = 3: 7,3·10⁻⁴ z szumem wobec 2,6·10⁻�
    więc wniosek o p* nie zależy od wyboru modelu szumu.
 5. W Fibonaccim szum bywa „pomocny” (p = 2, 5, 6: wyżej niż bez szumu) — zbliża rozkład do jednostajnego,
    a ten przy małych oknach trafia optimum często (spójne z W5/W6).
+
+## W9. E5n — ILS z szumem (fałszywy Sirius) przy liczbie ruchów Siriusa
+
+Źródło: `measurements/e5n_ils_noisy.jsonl.gz` (624 przebiegi, 25.10 11:19 – 26.10 19:57, 8 procesów). Każdy z 72
+przebiegów Siriusa p = 1 (tai20_5/10/20, inst. 0–3; w gęstych instancja 0 każdego pliku ma 5 powtórzeń, pozostałe po 1)
+powtórzony w symulatorze z szumem (`calibrated`, 4096 shotów) z budżetem w ruchach równym liczbie ruchów Siriusa:
+1 ruch (gęste), 2 ruchy (Adjacent, Fibonacci; Fibonacci raz 3). p = 0 (losowanie) … 6, tabela „small”; dodatkowo
+Adjacent „big” (p ≤ 5) i Fibonacci „ils” (p ≤ 5). Start ILS jest deterministyczny (permutacja tożsamościowa),
+więc porównania w parach mierzą wyłącznie jakość 1–2 ruchów. PRD: średnia po powtórzeniach w instancji, potem
+mediana po 12 instancjach; testy znaków po instancjach (wygrane/przegrane, p dwustronne).
+
+| Sąsiedztwo | p=0 | p=1 | p=2 | p=3 | p=4 | p=5 | p=6 | Sirius p=1 |
+|---|---|---|---|---|---|---|---|---|
+| Adjacent (small) | 34,91 | 34,49 | 34,49 | 34,91 | 34,91 | 34,49 | 34,49 | 34,91 |
+| Adjacent (big) | | 34,49 | 34,49 | 34,49 | 34,49 | 34,49 | | |
+| Fibonacci (small) | 29,31 | 30,71 | 29,80 | 28,77 | 30,05 | 30,04 | 31,46 | 29,85 |
+| Fibonacci (ils) | | 31,22 | 30,47 | 30,42 | 29,00 | 30,84 | | |
+| Dynasearch (small) | 32,99 | 35,05 | 30,74 | **29,45** | 31,44 | 32,21 | 36,15 | 31,77 |
+| Motzkin (small) | 33,59 | 35,67 | 34,40 | 35,10 | 33,36 | **33,25** | 34,62 | 32,07 |
+
+Bez szumu przy tej samej liczbie ruchów (prefiks `move_log` z E5, S = 4096): Dynasearch 33,53 / 35,23 / 32,43 /
+33,23 / 30,78 / 32,40 / 32,37 (p = 0…6), Motzkin 34,96 / 34,98 / 31,78 / 32,30 / 32,78 / 31,87 / 31,96.
+
+**Testy znaków (small):**
+- Dynasearch: p = 1 vs p = 0 przegrywa 2/10 (p = 0,039); p = 2 vs p = 1 wygrywa 11/1 (p = 0,006); p = 3, 5 vs
+  p = 1: 9/3 (p = 0,15); p = 4: 9/2 (p = 0,065); p = 6: 6/4 (p = 0,75).
+- Motzkin: p = 4 i p = 6 vs p = 1: 9/2 (p = 0,065); pozostałe p ≥ 0,23; p = 1 vs p = 0: 3/7 (p = 0,34).
+- Adjacent, Fibonacci: brak istotnych różnic (Adjacent: różnice ≤ 0,4 pp, przeważają remisy).
+- Symulator z szumem vs Sirius, p = 1: Adjacent 4/0 (p = 0,125), Fibonacci 2/4 (0,69), Dynasearch **2/9**
+  (p = 0,065; po przebiegach 4/19, p = 0,003), Motzkin 3/7 (0,34) — symulator jest dla p = 1 gorszy od sprzętu.
+- Sirius p = 1 vs losowanie z szumem (p = 0): Dynasearch 6/5, Motzkin 6/4, Fibonacci 3/5 (wszystkie p ≥ 0,73).
+- Szum vs brak szumu przy tej samej liczbie ruchów: żadna różnica nieistotna (wszystkie p ≥ 0,13).
+
+**Wnioski z E5n:**
+1. **Dynasearch potwierdza p* = 2–3 także w ILS z szumem**: p = 1 jest gorsze od losowania, p = 2 wyraźnie
+   lepsze od p = 1, a przy p = 6 PRD wraca do poziomu p = 1 — ten sam obraz co w E4 (okna) i E5 (bez szumu).
+2. **Przy 1–2 ruchach na 12 instancjach test ma małą moc**: poza Dynasearch różnice mieszczą się w kilku pp
+   i nie są istotne. Tabelę 3 opisujemy jako „ten sam kierunek, małe różnice”, bez tezy o istotności poza
+   Dynasearch.
+3. **Model `calibrated` jest dla p = 1 bardziej pesymistyczny niż sprzęt, a Sirius przy p = 1 zachowuje się
+   jak losowanie** (gęste: 6/5 i 6/4 wobec p = 0). Najprostsze wyjaśnienie: prawdziwy szum jest silniejszy
+   i spłaszcza rozkład do jednostajnego, a ten w gęstych sąsiedztwach jest lepszy od p = 1 (spójne z W8.5).
+   Dla H2: zysk z p = 2 na sprzęcie może być mniejszy, niż pokazuje symulator.
+4. Uwaga techniczna: ziarno w `e5n_task` to `abs(hash(key))`, a `hash` napisów zależy od `PYTHONHASHSEED`;
+   ziarna są zapisane w wynikach, ale ponowne uruchomienie nie odtworzy ich samo.

@@ -18,13 +18,86 @@ sąsiedztwa dla permutacyjnego problemu przepływowego}
 \maketitle
 
 \begin{abstract}
-Szkic: streszczenie powstanie po wynikach.
+Kwantowe przeszukiwanie sąsiedztwa wybiera ruch w szeregowaniu, próbkując
+obwód QAOA i zachowując próbkę o najniższej energii. Dotychczasowe prace nad
+permutacyjnym problemem przepływowym na komputerach bramkowych używały jednej
+warstwy QAOA i nie wiadomo, ilu warstw takie sąsiedztwo potrzebuje.
+Zmieniamy głębokość $p$ od 1 do 10 w czterech sąsiedztwach (Adjacent,
+Fibonacci, Dynasearch i Motzkin) przy kątach stałych skalibrowanych na
+trzech rodzajach okien treningowych. Mierzymy jej wpływ na
+prawdopodobieństwo wylosowania ruchu optymalnego, na koszt obwodu i na
+długość uszeregowania, którą osiąga iteracyjne przeszukiwanie lokalne na
+instancjach Taillarda z 20 zadaniami. Bez szumu $p = 1$ jest w dwóch
+sąsiedztwach gorsze od losowania jednostajnego. Już przy $p = 2$ najlepsza
+z 4096 próbek jest optymalna prawie w każdym oknie sąsiedztw gęstych,
+a mediana odchylenia od dolnego ograniczenia spada z około 24\% do 15\%.
+W sąsiedztwach liniowych losowanie jednostajne jest tak samo dobre jak każda
+głębokość. Na symulowanym 16-kubitowym procesorze o topologii gwiazdy ze
+skalibrowanym szumem najlepsza głębokość to $p = 2$, a każda kolejna
+warstwa, licząca około 150 bramek dwukubitowych, zbliża trafienia
+z powrotem do poziomu losowania jednostajnego. Na samym urządzeniu $p = 1$
+zachowuje się jak losowanie jednostajne.
+% H2: tu zdanie o p = 2 i 3 na Siriusie
+Pochodzenie kątów waży więcej niż głębokość, a średnia energia, którą
+minimalizuje kalibracja, słabo przewiduje trafianie optimum.
 \keywords{QAOA \and głębokość obwodu \and problem przepływowy \and przeszukiwanie sąsiedztwa \and kąty stałe}
 \end{abstract}
 
 \section{Wstęp}
 
-\emph{Szkic: wstęp powstanie po wynikach.}
+Permutacyjny problem przepływowy (PFSP) polega na wyznaczeniu kolejności
+$n$ zadań przechodzących przez $m$ maszyn tak, aby ostatnie zadanie
+zakończyło się jak najwcześniej. Standardowym zbiorem testowym pozostają
+instancje Taillarda~\cite{taillard1993}. Iteracyjne przeszukiwanie
+lokalne~\cite{lourenco2003} radzi sobie z tym problemem dobrze, gdy
+sąsiedztwo jest bogate. Sąsiedztwa wykładnicze, takie jak sąsiedztwo
+Fibonacciego Bożejki i in.~\cite{bozejko2026new} i sąsiedztwo Motzkina
+Wojewódzkiego i Bożejki~\cite{wojewodzki2026soco,wojewodzki2025exit},
+zawierają znacznie więcej ruchów, niż da się wypisać. Najlepszy ruch trzeba
+więc znaleźć, rozwiązując problem optymalizacyjny, programowaniem
+dynamicznym albo przez ocenę hybrydową~\cite{wojewodzki2026icaisc}.
+
+Wybór najlepszej kombinacji zamian można zapisać jako
+QUBO~\cite{lucas2014ising}, więc wybór ruchu jest naturalnym zadaniem dla
+sprzętu kwantowego. Na wyżarzaczach kwantowych te sąsiedztwa oceniano
+w iteracyjnym przeszukiwaniu lokalnym i w symulowanym
+wyżarzaniu~\cite{wojewodzki2026bpasts}, a okienkowa dekompozycja QUBO
+rozszerza to podejście na instancje do 500 zadań~\cite{wojewodzki2026windowed}.
+Na procesorach bramkowych to samo QUBO próbkuje się algorytmem
+QAOA~\cite{farhi2014qaoa}. Bożejko i in.~\cite{bozejko2024cinti}
+zastosowali hybrydowe kwantowe algorytmy aproksymacyjne do problemu
+przepływowego, a QAOA o stałych kątach z sąsiedztwami okienkowymi
+uruchomiono na procesorach IBM i IQM~\cite{wojewodzki2026gcmm,wojewodzki2026aciids}.
+W tym zastosowaniu przeszukiwanie lokalne nie potrzebuje oczekiwanej energii
+stanu QAOA. Potrzebuje jednej dobrej próbki, czyli przypisania o najniższej
+energii spośród $S$ shotów.
+
+Wszystkie dotychczasowe prace o sąsiedztwach na komputerach bramkowych
+używały jednej warstwy QAOA. Literatura o głębokości dotyczy problemu MaxCut
+i modelu Sherringtona--Kirkpatricka~\cite{zhou2020,basso2022,wurtz2021fixed}
+i mierzy koszt oczekiwany, a nie najlepszą ze skończonej liczby próbek
+w pętli przeszukiwania. Dudkiewicz~\cite{dudkiewicz2026depth} zmieniał
+głębokość w wielowymiarowym problemie plecakowym, z kątami optymalizowanymi
+przez COBYLA i inną miarą jakości. Otwarte pozostaje więc pytanie, czy
+sąsiedztwo w szeregowaniu zyskuje na głębszych obwodach i czy szum zostawia
+na nie miejsce.
+
+Niniejsza praca bada głębokość $p$ QAOA o stałych kątach w czterech
+sąsiedztwach PFSP. Kalibrujemy kąty dla $p = 1, \dots, 10$ na trzech
+rodzajach okien treningowych i mierzymy bez szumu, jak często obwód losuje
+ruch optymalny w oknach, które buduje przeszukiwanie lokalne. Następnie
+sprawdzamy, czy stały budżet lepiej wydać na więcej warstw, czy na więcej
+shotów, i wyznaczamy najlepszą głębokość przy skalibrowanym szumie
+16-kubitowego procesora o topologii gwiazdy. Na koniec przenosimy wyniki
+z okien na długość uszeregowania w iteracyjnym przeszukiwaniu lokalnym na
+instancjach Taillarda z 20 zadaniami. Punktami odniesienia są losowanie
+jednostajne ($p = 0$) i dokładne klasyczne przeszukiwanie sąsiedztwa.
+% H2: tu zdanie o p = 2 i 3 na Siriusie
+Przebiegi sprzętowe przy $p = 1$ pochodzą z wcześniejszej kampanii na
+procesorze IQM Sirius~\cite{wojewodzki2026aciids}. Sekcja~2 omawia
+literaturę, sekcje~3 i~4 opisują sąsiedztwa i obwody, sekcja~5 przedstawia
+plan eksperymentów, a sekcja~6 wyniki. Sekcje~7 i~8 zawierają dyskusję
+i wnioski.
 
 \section{Przegląd literatury}
 
@@ -97,8 +170,8 @@ Dynasearch zabrania nakładania się przedziałów, Motzkin dopuszcza też ich
 zagnieżdżanie, a oba dają QUBO z konfliktami parami.
 
 \begin{table}[t]
-\caption{Cztery sąsiedztwa ($F_{n+1}$: liczba Fibonacciego, $M_n$: liczba
-Motzkina). Ostatnia kolumna: zmienne QUBO na okno w ILS, $n = 20$.}
+\caption{Cztery sąsiedztwa ($F_{n+1}$, $M_n$: liczby Fibonacciego
+i Motzkina; ostatnia kolumna: zmienne na okno w ILS, $n = 20$).}
 \label{tab:neigh}
 \centering
 \begin{tabular}{lllll}
@@ -213,30 +286,78 @@ zarówno zaburzenia ILS, jak i losowanie shotów.
 
 \section{Wyniki}
 
-\emph{[Szkic: tekst tej sekcji powstanie po zakończeniu przebiegów z szumem
-i na sprzęcie.]}
+Bez szumu jedna warstwa nie wystarcza. Rysunek~\ref{fig:e1} pokazuje, że przy
+$p = 1$ QAOA znajduje ruch optymalny okna niewiele częściej niż losowanie
+jednostajne, a w sąsiedztwach Fibonacciego i Dynasearch nawet rzadziej.
+W sąsiedztwach gęstych płytki obwód faworyzuje przypisania łamiące warunek
+rozłączności, więc jego najlepsza próbka bywa gorsza niż brak ruchu. Druga
+warstwa to zmienia: od $p = 2$ sąsiedztwa gęste losują optimum mniej więcej
+sto razy częściej niż losowanie jednostajne. Zysk nie jest jednak
+monotoniczny. Na oknach spoza zbioru treningowego głębszy obwód bywa gorszy
+od płytszego, a najlepsza tabela kątów zależy od sąsiedztwa. Kąty, które
+osiągają niższą średnią energię na oknach treningowych, nie muszą częściej
+losować optimum, bo średnia energia nagradza unikanie kary, a nie
+znajdowanie najlepszego ruchu.
+
+Rysunek~\ref{fig:hits} odpowiada na pytanie z tytułu. Przy 4096 shotach
+i $p \ge 2$ najlepsza próbka jest prawie zawsze optymalna, więc kolejne
+warstwy niewiele dodają, a ich miejsce mogą zająć shoty. W sąsiedztwach
+liniowych blisko optimum jest nawet losowanie jednostajne, bo ich okna są na
+tyle małe, że kilka tysięcy losowych próbek prawie je wyczerpuje. Każda
+warstwa ma stałą cenę (tabela~\ref{tab:e3}): liczba bramek dwukubitowych
+rośnie liniowo z $p$, od 15 na warstwę w łańcuchowych oknach Fibonacciego do
+około 150 w oknach Dynasearch i Motzkina, a krata kwadratowa potrzebuje do
+dwóch razy więcej bramek niż procesor o topologii gwiazdy.
+
+Szum zmienia ten obraz (rys.~\ref{fig:e4}). W sąsiedztwach gęstych odsetek
+okien, w których najlepsza próbka jest optymalna, jest największy przy
+$p = 2$ i spada z każdą kolejną warstwą, aż przy $p = 6$ obwód nie jest
+lepszy od losowania jednostajnego. Sąsiedztwa liniowe szum prawie omija: ich
+obwody są płytkie, a losowanie jednostajne i tak znajduje większość optimów.
+Bardziej pesymistyczny model szumu daje tę samą najlepszą głębokość.
+
+Wyniki z okien przenoszą się na długość uszeregowania w ILS
+(tabela~\ref{tab:e5}). W sąsiedztwach gęstych $p = 2$ obniża medianę
+odchylenia od dolnego ograniczenia z około 24\% do 15\%, a najlepsza
+głębokość wygrywa z losowaniem jednostajnym na wszystkich 30 instancjach,
+podczas gdy $p = 1$ znów jest od niego gorsze. Obwody głębsze niż
+$p \approx 5$ wypadają gorzej w budżecie 10~s tylko dlatego, że każdy ruch
+trwa dłużej (rys.~\ref{fig:moves}). Przy równej liczbie ruchów przewaga
+$p \ge 2$ zostaje. W sąsiedztwach liniowych głębokość nic nie daje, a więcej
+shotów tylko kosztuje czas. Klasyczne przeszukiwanie sąsiedztwa, które ocenia
+każdy ruch dokładnie, pozostaje wyraźnie lepsze od wszystkich wariantów QAOA.
+
+Tabela~\ref{tab:hw} porównuje symulator bez szumu, symulator z szumem
+i Siriusa po jednym do trzech ruchach, które Sirius wykonuje w 10~s. Przy tak
+małej liczbie ruchów większość różnic jest niewielka. Dynasearch pokazuje ten
+sam wzorzec co wcześniej: na symulatorze z szumem $p = 2$ jest wyraźnie
+lepsze od $p = 1$ (na 11 z 12 instancji), a $p = 6$ znów wypada słabiej. Przy
+$p = 1$ urządzenie radzi sobie w Dynasearch lepiej niż symulator z szumem,
+a w obu sąsiedztwach gęstych mniej więcej tak samo jak losowanie
+jednostajne. Sugeruje to, że prawdziwy szum jest silniejszy niż skalibrowany
+model i przesuwa rozkład w stronę jednostajnego. \emph{[H2: czy zysk
+z $p = 2$ utrzymuje się na Siriusie.]}
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\textwidth]{figures/fig1_e1_pl.pdf}
-\caption{Prawdopodobieństwo wylosowania przypisania optymalnego względem
-losowania jednostajnego (mediana po oknach z ruchem poprawiającym)
-w funkcji $p$, dla trzech tabel kątów. Bez szumu, dokładnie.}
+\caption{$P_{\mathrm{opt}}$ względem losowania jednostajnego w funkcji $p$
+dla trzech tabel kątów (mediana po oknach z ruchem poprawiającym; bez
+szumu).}
 \label{fig:e1}
 \end{figure}
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\textwidth]{figures/fig2_hits_pl.pdf}
-\caption{Prawdopodobieństwo, że najlepsza z $S$ próbek jest optymalna
-(średnia po oknach), dla losowania jednostajnego i $p = 1, 2, 3, 5$. Tabela
-kątów: duże okna dla Adjacent, małe okna dla pozostałych. Bez szumu.}
+\caption{Prawdopodobieństwo, że najlepsza z $S$ próbek jest optymalna,
+w funkcji $S$ (bez szumu; Adjacent: tabela z dużych okien, pozostałe:
+z małych okien).}
 \label{fig:hits}
 \end{figure}
 
 \begin{table}[t]
-\caption{Bramki CZ na okno po kompilacji (mediana po 192 oknach z ILS) na
-procesorze o topologii gwiazdy (Sirius) i na kracie kwadratowej (Apollo).}
+\caption{Bramki CZ na okno po kompilacji (mediana po 192 oknach z ILS).}
 \label{tab:e3}
 \centering
 \begin{tabular}{lrrrrrrrr}
@@ -254,17 +375,14 @@ Sąsiedztwo & gwiazda & krata & gwiazda & krata & gwiazda & krata & gwiazda & kr
 \centering
 \includegraphics[width=\textwidth]{figures/fig3_noise_pl.pdf}
 \caption{Odsetek okien, w których najlepsza z 4096 próbek jest optymalna,
-w funkcji $p$, na oknach instancji 0--3: bez szumu (dokładnie), symulowany
-Sirius z szumem skalibrowanym oraz z szumem termicznym (tylko instancja 0).
-Tabela kątów: duże okna dla Adjacent, małe okna dla pozostałych.}
+w funkcji $p$ (instancje 0--3; szum termiczny: instancja 0; tabele kątów
+jak na rys.~\ref{fig:hits}).}
 \label{fig:e4}
 \end{figure}
 
 \begin{table}[t]
-\caption{ILS bez szumu, budżet 10~s: mediana PRD [\%] po 30 instancjach dla
-losowania jednostajnego ($p = 0$) i QAOA z tabelą z małych okien, przy
-$S = 256$ i $4096$ shotach; ostatnia kolumna: klasyczne dokładne
-przeszukiwanie sąsiedztwa.}
+\caption{ILS bez szumu, 10~s: mediana PRD [\%] po 30 instancjach (tabela
+z małych okien; klasyczne: dokładne przeszukiwanie sąsiedztwa).}
 \label{tab:e5}
 \centering
 \begin{tabular}{llrrrrrrr}
@@ -277,9 +395,8 @@ Sąsiedztwo & $S$ & $p=0$ & $p=1$ & $p=2$ & $p=3$ & $p=6$ & $p=10$ & klasyczne \
 \end{table}
 
 \begin{table}[t]
-\caption{Instancje 0--3 każdej klasy (12 instancji), $S = 4096$: mediana PRD
-[\%] po tylu ruchach, ile Sirius wykonał w 10~s. \textbf{?}: jeszcze się
-liczy; --: nie uruchamiano.}
+\caption{Mediana PRD [\%] na instancjach 0--3 po tylu ruchach, ile Sirius
+wykonał w 10~s ($S = 4096$; \textbf{?}: w toku; --: nie uruchamiano).}
 \label{tab:hw}
 \centering
 \begin{tabular}{llrrrrr}
@@ -294,8 +411,8 @@ Sąsiedztwo & poziom & $p=0$ & $p=1$ & $p=2$ & $p=3$ & $p=6$ \\
 \begin{figure}[t]
 \centering
 \includegraphics[width=\textwidth]{figures/fig4_moves_pl.pdf}
-\caption{Liczba ruchów w budżecie 10~s i czas ruchu w funkcji $p$, symulator
-bez szumu ($p = 0$: losowanie jednostajne).}
+\caption{Liczba ruchów w 10~s i czas ruchu w funkcji $p$ (bez szumu;
+$p = 0$: losowanie jednostajne).}
 \label{fig:moves}
 \end{figure}
 

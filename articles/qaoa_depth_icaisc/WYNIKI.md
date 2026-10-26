@@ -280,5 +280,5 @@ Bez szumu przy tej samej liczbie ruchów (prefiks `move_log` z E5, S = 4096): Dy
    jak losowanie** (gęste: 6/5 i 6/4 wobec p = 0). Najprostsze wyjaśnienie: prawdziwy szum jest silniejszy
    i spłaszcza rozkład do jednostajnego, a ten w gęstych sąsiedztwach jest lepszy od p = 1 (spójne z W8.5).
    Dla H2: zysk z p = 2 na sprzęcie może być mniejszy, niż pokazuje symulator.
-4. Uwaga techniczna: ziarno w `e5n_task` to `abs(hash(key))`, a `hash` napisów zależy od `PYTHONHASHSEED`;
-   ziarna są zapisane w wynikach, ale ponowne uruchomienie nie odtworzy ich samo.
+4. Ziarna są odtwarzalne: łańcuch uruchamiał E5n z `PYTHONHASHSEED=0` (kod bez tego się nie uruchomi),
+   a `abs(hash(key))` w Pythonie 3.11 z `.venv-iqm` daje dokładnie zapisane ziarna (sprawdzone 26.10).

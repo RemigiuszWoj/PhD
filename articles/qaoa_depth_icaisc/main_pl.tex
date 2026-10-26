@@ -50,7 +50,7 @@ $n$ zadań przechodzących przez $m$ maszyn tak, aby ostatnie zadanie
 zakończyło się jak najwcześniej. Standardowym zbiorem testowym pozostają
 instancje Taillarda~\cite{taillard1993}. Iteracyjne przeszukiwanie
 lokalne~\cite{lourenco2003} radzi sobie z tym problemem dobrze, gdy
-sąsiedztwo jest bogate. Sąsiedztwa wykładnicze, takie jak sąsiedztwo
+sąsiedztwo jest duże. Sąsiedztwa wykładnicze, takie jak sąsiedztwo
 Fibonacciego Bożejki i in.~\cite{bozejko2026new} i sąsiedztwo Motzkina
 Wojewódzkiego i Bożejki~\cite{wojewodzki2026soco,wojewodzki2025exit},
 zawierają znacznie więcej ruchów, niż da się wypisać. Najlepszy ruch trzeba
@@ -94,10 +94,7 @@ instancjach Taillarda z 20 zadaniami. Punktami odniesienia są losowanie
 jednostajne ($p = 0$) i dokładne klasyczne przeszukiwanie sąsiedztwa.
 % H2: tu zdanie o p = 2 i 3 na Siriusie
 Przebiegi sprzętowe przy $p = 1$ pochodzą z wcześniejszej kampanii na
-procesorze IQM Sirius~\cite{wojewodzki2026aciids}. Sekcja~2 omawia
-literaturę, sekcje~3 i~4 opisują sąsiedztwa i obwody, sekcja~5 przedstawia
-plan eksperymentów, a sekcja~6 wyniki. Sekcje~7 i~8 zawierają dyskusję
-i wnioski.
+procesorze IQM Sirius~\cite{wojewodzki2026aciids}.
 
 \section{Przegląd literatury}
 
@@ -121,25 +118,9 @@ urządzeniach wynik algorytmów wariacyjnych przy dostatecznie głębokim obwodz
 zbliża się do stanu, któremu dorównują wydajne metody klasyczne. Harrigan
 i in.~\cite{harrigan2021} uruchomili QAOA na procesorze nadprzewodzącym
 i stwierdzili, że dla problemów, których graf nie pasuje do układu, routing
-dokłada bramki, a jakość spada wraz z rozmiarem problemu.
-
-Kilka prac przenosi przeszukiwanie sąsiedztw w szeregowaniu na sprzęt
-kwantowy. Bożejko i in.~\cite{bozejko2026new} zapisali wykładnicze sąsiedztwo
-Fibonacciego jako QUBO na wyżarzaczu kwantowym, a Wojewódzki i Bożejko
-wprowadzili sąsiedztwo Motzkina~\cite{wojewodzki2026soco,wojewodzki2025exit},
-hybrydową ocenę sąsiedztw~\cite{wojewodzki2026icaisc} oraz okienkową
-dekompozycję QUBO, która na wyżarzaczu sięga 500
-zadań~\cite{wojewodzki2026windowed}. Na komputerach bramkowych Bożejko
-i in.~\cite{bozejko2024cinti} zastosowali hybrydowe kwantowe algorytmy
-aproksymacyjne do problemu przepływowego, a Wojewódzki i Bożejko uruchomili
-QAOA o stałych kątach z sąsiedztwami okienkowymi na procesorach IBM i IQM przy
-$p = 1$~\cite{wojewodzki2026gcmm,wojewodzki2026aciids}.
-Dudkiewicz~\cite{dudkiewicz2026depth} badał głębokość obwodu i wagi kar
-w QAOA dla wielowymiarowego problemu plecakowego z optymalizatorem COBYLA,
-a Gnatowski i in.~\cite{gnatowski2026routing} podali dokładny algorytm
-routingu dla architektur gwiaździstych, czyli topologii procesora użytego
-w tej pracy. Według naszej wiedzy nikt nie badał wpływu $p$ na ruchy
-w sąsiedztwie, których wynik odczytuje się jako próbkę o najniższej energii.
+dokłada bramki, a jakość spada wraz z rozmiarem problemu. Gnatowski
+i in.~\cite{gnatowski2026routing} podali dokładny algorytm routingu dla
+architektur gwiaździstych, czyli topologii procesora użytego w tej pracy.
 
 \section{Kwantowe przeszukiwanie sąsiedztwa}
 
@@ -276,6 +257,7 @@ potrzebuje minut na obwód, więc jego czas nie mówi nic o urządzeniu; każdy
 przebieg z szumem wykonuje więc dokładnie tyle ruchów, ile Sirius wykonał
 w 10~s na tej samej instancji przy $p = 1$~\cite{wojewodzki2026aciids}. Na
 sprzęcie ILS powtarza tamtą kampanię dla $p = 2$ i $p = 3$.
+% H2: zdanie prawdziwe dopiero po biegach na Siriusie (p = 2, 3)
 
 Podajemy procentowe odchylenie względne
 $\mathrm{PRD} = 100\,(C_{\max} - LB)/LB$ od dolnego ograniczenia Taillarda
@@ -286,57 +268,40 @@ zarówno zaburzenia ILS, jak i losowanie shotów.
 
 \section{Wyniki}
 
-Bez szumu jedna warstwa nie wystarcza. Rysunek~\ref{fig:e1} pokazuje, że przy
-$p = 1$ QAOA znajduje ruch optymalny okna niewiele częściej niż losowanie
-jednostajne, a w sąsiedztwach Fibonacciego i Dynasearch nawet rzadziej.
-W sąsiedztwach gęstych płytki obwód faworyzuje przypisania łamiące warunek
-rozłączności, więc jego najlepsza próbka bywa gorsza niż brak ruchu. Druga
-warstwa to zmienia: od $p = 2$ sąsiedztwa gęste losują optimum mniej więcej
-sto razy częściej niż losowanie jednostajne. Zysk nie jest jednak
-monotoniczny. Na oknach spoza zbioru treningowego głębszy obwód bywa gorszy
-od płytszego, a najlepsza tabela kątów zależy od sąsiedztwa. Kąty, które
-osiągają niższą średnią energię na oknach treningowych, nie muszą częściej
-losować optimum, bo średnia energia nagradza unikanie kary, a nie
-znajdowanie najlepszego ruchu.
+Bez szumu jedna warstwa nie wystarcza (rys.~\ref{fig:e1}). Przy $p = 1$ QAOA
+losuje ruch optymalny niewiele częściej niż losowanie jednostajne,
+a w sąsiedztwach Fibonacciego i Dynasearch nawet rzadziej. W sąsiedztwach
+gęstych płytki obwód faworyzuje przypisania łamiące warunek rozłączności. Od
+$p = 2$ sąsiedztwa gęste losują optimum mniej więcej sto razy częściej niż
+losowanie jednostajne, a przy 4096 shotach najlepsza próbka jest wtedy
+prawie zawsze optymalna (rys.~\ref{fig:hits}). Kolejne warstwy niewiele więc
+dodają, a ich miejsce mogą zająć shoty. Zysk nie rośnie jednak monotonicznie
+z $p$, a najlepsza tabela kątów zależy od sąsiedztwa: kąty o niższej średniej
+energii na oknach treningowych nie muszą częściej znajdować optimum.
 
-Rysunek~\ref{fig:hits} odpowiada na pytanie z tytułu. Przy 4096 shotach
-i $p \ge 2$ najlepsza próbka jest prawie zawsze optymalna, więc kolejne
-warstwy niewiele dodają, a ich miejsce mogą zająć shoty. W sąsiedztwach
-liniowych blisko optimum jest nawet losowanie jednostajne, bo ich okna są na
-tyle małe, że kilka tysięcy losowych próbek prawie je wyczerpuje. Każda
-warstwa ma stałą cenę (tabela~\ref{tab:e3}): liczba bramek dwukubitowych
-rośnie liniowo z $p$, od 15 na warstwę w łańcuchowych oknach Fibonacciego do
-około 150 w oknach Dynasearch i Motzkina, a krata kwadratowa potrzebuje do
-dwóch razy więcej bramek niż procesor o topologii gwiazdy.
+Każda warstwa dokłada tyle samo bramek dwukubitowych (tabela~\ref{tab:e3}),
+w oknie gęstym mniej więcej dziesięć razy więcej niż w oknie Fibonacciego.
+Z szumem ten koszt wyznacza najlepszą głębokość (rys.~\ref{fig:e4}).
+W sąsiedztwach gęstych najlepsza próbka jest optymalna najczęściej przy
+$p = 2$, a przy $p = 6$ obwód nie jest lepszy od losowania jednostajnego.
+Sąsiedztwa liniowe prawie nie odczuwają szumu, bo ich obwody są płytkie,
+a losowanie jednostajne i tak znajduje większość optimów.
 
-Szum zmienia ten obraz (rys.~\ref{fig:e4}). W sąsiedztwach gęstych odsetek
-okien, w których najlepsza próbka jest optymalna, jest największy przy
-$p = 2$ i spada z każdą kolejną warstwą, aż przy $p = 6$ obwód nie jest
-lepszy od losowania jednostajnego. Sąsiedztwa liniowe szum prawie omija: ich
-obwody są płytkie, a losowanie jednostajne i tak znajduje większość optimów.
-Bardziej pesymistyczny model szumu daje tę samą najlepszą głębokość.
+Ten sam obraz widać w długości uszeregowania w ILS (tabela~\ref{tab:e5}).
+W sąsiedztwach gęstych $p = 2$ obniża medianę odchylenia od dolnego
+ograniczenia z około 24\% do 15\%, a najlepsza głębokość wygrywa
+z losowaniem jednostajnym na wszystkich 30 instancjach. Głębsze obwody
+przegrywają tylko dlatego, że każdy ruch trwa dłużej i w 10~s mieści się
+mniej ruchów (rys.~\ref{fig:moves}). W sąsiedztwach liniowych głębokość nic
+nie daje, a klasyczne przeszukiwanie, które ocenia każdy ruch dokładnie,
+pozostaje lepsze od wszystkich wariantów QAOA.
 
-Wyniki z okien przenoszą się na długość uszeregowania w ILS
-(tabela~\ref{tab:e5}). W sąsiedztwach gęstych $p = 2$ obniża medianę
-odchylenia od dolnego ograniczenia z około 24\% do 15\%, a najlepsza
-głębokość wygrywa z losowaniem jednostajnym na wszystkich 30 instancjach,
-podczas gdy $p = 1$ znów jest od niego gorsze. Obwody głębsze niż
-$p \approx 5$ wypadają gorzej w budżecie 10~s tylko dlatego, że każdy ruch
-trwa dłużej (rys.~\ref{fig:moves}). Przy równej liczbie ruchów przewaga
-$p \ge 2$ zostaje. W sąsiedztwach liniowych głębokość nic nie daje, a więcej
-shotów tylko kosztuje czas. Klasyczne przeszukiwanie sąsiedztwa, które ocenia
-każdy ruch dokładnie, pozostaje wyraźnie lepsze od wszystkich wariantów QAOA.
-
-Tabela~\ref{tab:hw} porównuje symulator bez szumu, symulator z szumem
-i Siriusa po jednym do trzech ruchach, które Sirius wykonuje w 10~s. Przy tak
-małej liczbie ruchów większość różnic jest niewielka. Dynasearch pokazuje ten
-sam wzorzec co wcześniej: na symulatorze z szumem $p = 2$ jest wyraźnie
-lepsze od $p = 1$ (na 11 z 12 instancji), a $p = 6$ znów wypada słabiej. Przy
-$p = 1$ urządzenie radzi sobie w Dynasearch lepiej niż symulator z szumem,
-a w obu sąsiedztwach gęstych mniej więcej tak samo jak losowanie
-jednostajne. Sugeruje to, że prawdziwy szum jest silniejszy niż skalibrowany
-model i przesuwa rozkład w stronę jednostajnego. \emph{[H2: czy zysk
-z $p = 2$ utrzymuje się na Siriusie.]}
+Po jednym do trzech ruchach, które Sirius wykonuje w 10~s, większość różnic
+w tabeli~\ref{tab:hw} jest niewielka. Na symulatorze z szumem Dynasearch znów
+zyskuje na $p = 2$ (11 z 12 instancji). W Dynasearch przy $p = 1$ urządzenie
+radzi sobie lepiej niż symulator i mniej więcej tak samo jak losowanie
+jednostajne, co sugeruje, że prawdziwy szum jest silniejszy niż skalibrowany
+model. \emph{[H2: czy zysk z $p = 2$ utrzymuje się na Siriusie.]}
 
 \begin{figure}[t]
 \centering
@@ -416,46 +381,28 @@ $p = 0$: losowanie jednostajne).}
 \label{fig:moves}
 \end{figure}
 
-\section{Dyskusja}
-
-Badanie ma kilka ograniczeń. Używa tylko instancji z 20 zadaniami, bo większe
-okna nie zmieściłyby się na 16-kubitowym urządzeniu, a symulacja z szumem
-jednego gęstego obwodu trwa już kilka minut. Kąty są stałe dla danej
-głębokości, więc harmonogram dostrajany do każdego okna mógłby zmienić
-obraz, zwłaszcza przy dużym $p$. Energia okna sumuje zmiany długości
-uszeregowania pojedynczych zamian, co jest dokładne tylko wtedy, gdy zamiany
-na siebie nie wpływają, więc nawet optymalna próbka nie zawsze jest
-najlepszym ruchem dla całej permutacji. W sąsiedztwach liniowych akcelerator
-bloków usuwa wielu kandydatów, zanim powstanie QUBO, przez co okna są małe,
-a to sprzyja losowaniu jednostajnemu. Symulowane urządzenie nie ma też szumu
-na bezczynnych kubitach, a migawkę jego kalibracji zrobiono kilka dni po
-przebiegach sprzętowych przy $p = 1$. Oba fakty mogą tłumaczyć, dlaczego
-prawdziwe urządzenie wyglądało na bardziej zaszumione niż symulator.
-
-Nie twierdzimy, że obliczenia kwantowe mają tu przewagę nad klasycznymi.
-Klasyczne przeszukiwanie, które ocenia każdy ruch dokładnie, osiąga wyraźnie
-krótsze uszeregowania niż każdy wariant QAOA, a na urządzeniu ILS wykonuje
-w 10~s tylko jeden lub dwa ruchy. Wartość badania leży gdzie indziej:
-pokazuje, kiedy dodatkowa warstwa QAOA opłaca się w przeszukiwaniu
-sąsiedztwa i jak szybko szum ten zysk odbiera.
-
-\section{Wnioski}
+\section{Dyskusja i wnioski}
 
 Jedna warstwa QAOA jest za słaba dla przeszukiwania sąsiedztwa w problemie
-przepływowym: w sąsiedztwach gęstych wypada gorzej niż losowanie
-jednostajne. Dwie warstwy wystarczają, by znaleźć ruch optymalny prawie
-w każdym oknie, a z szumem $p = 2$ jest też najlepszą głębokością, bo każda
-kolejna warstwa kosztuje około 150 bramek dwukubitowych i zbliża obwód
-z powrotem do losowania jednostajnego. W sąsiedztwach liniowych okna są tak
-małe, że losowanie jednostajne z odpowiednią liczbą shotów radzi sobie tak
-samo dobrze jak QAOA. Dla sąsiedztw gęstych zalecamy więc dwie warstwy
+przepływowym. Bez szumu dwie warstwy znajdują ruch optymalny prawie w każdym
+oknie gęstym, a z szumem $p = 2$ jest też najlepszą głębokością, bo każda
+kolejna warstwa kosztuje około 150 bramek dwukubitowych. W sąsiedztwach
+liniowych okna są tak małe, że losowanie jednostajne radzi sobie tak samo
+dobrze jak QAOA. Dla sąsiedztw gęstych zalecamy więc dwie warstwy
 i przeznaczenie reszty budżetu na shoty.
 % H2: zalecenie "dwie warstwy" opiera się na symulatorze; złagodzić, jeśli Sirius przy p = 2 nie pokaże zysku
 Kąty ważą więcej niż głębokość, a kalibracja na średnią energię nie nagradza
-tego, czego potrzebuje przeszukiwanie lokalne. W dalszych pracach kąty będą
-kalibrowane na prawdopodobieństwo, że najlepsza próbka jest optymalna,
-głębokość będzie dobierana dla każdego okna, a badanie obejmie inne
-topologie procesorów.
+tego, czego potrzebuje przeszukiwanie lokalne.
+
+Nie twierdzimy, że obliczenia kwantowe mają tu przewagę nad klasycznymi:
+dokładne przeszukiwanie klasyczne pozostaje wyraźnie lepsze, a na urządzeniu
+ILS wykonuje w 10~s tylko jeden lub dwa ruchy. Badanie obejmuje tylko 20
+zadań i kąty stałe, a energia okna jest dokładna tylko wtedy, gdy zamiany na
+siebie nie wpływają. Symulowane urządzenie nie ma szumu na bezczynnych
+kubitach, co może tłumaczyć, dlaczego Sirius wyglądał na bardziej
+zaszumionego niż symulator. W dalszych pracach kąty będą kalibrowane na
+prawdopodobieństwo, że najlepsza próbka jest optymalna, a głębokość będzie
+dobierana dla każdego okna.
 
 \bibliographystyle{splncs04}
 \bibliography{references}

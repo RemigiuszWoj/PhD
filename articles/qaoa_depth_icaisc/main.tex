@@ -36,7 +36,7 @@ towards uniform sampling. On the device itself, $p = 1$ behaves like uniform
 sampling.
 % H2: tu zdanie o p = 2 i 3 na Siriusie
 The source of the angles matters more than the depth, and the mean energy
-minimised in calibration is a poor proxy for hitting the optimum.
+minimized in calibration is a poor proxy for hitting the optimum.
 \keywords{QAOA \and circuit depth \and flow shop \and neighborhood search \and fixed angles}
 \end{abstract}
 
@@ -46,7 +46,7 @@ The permutation flow shop problem (PFSP) asks for an order of $n$ jobs that
 pass through $m$ machines so that the last job finishes as early as possible,
 and the Taillard instances~\cite{taillard1993} remain its standard benchmark.
 Iterated local search~\cite{lourenco2003} solves it well when the
-neighborhood is rich. Exponential neighborhoods, such as the Fibonacci
+neighborhood is large. Exponential neighborhoods, such as the Fibonacci
 neighborhood of Bo\.{z}ejko et al.~\cite{bozejko2026new} and the Motzkin
 neighborhood of Wojew\'{o}dzki and
 Bo\.{z}ejko~\cite{wojewodzki2026soco,wojewodzki2025exit}, contain far more
@@ -89,10 +89,7 @@ search on Taillard instances with 20 jobs, with uniform sampling ($p = 0$)
 and the exact classical neighborhood search as references.
 % H2: tu zdanie o p = 2 i 3 na Siriusie
 The hardware runs at $p = 1$ come from an earlier campaign on the IQM Sirius
-processor~\cite{wojewodzki2026aciids}. Section~2 reviews related work,
-Sections~3 and~4 describe the neighborhoods and the circuits, Section~5 gives
-the setup, Section~6 reports the results, and Sections~7 and~8 discuss them
-and conclude.
+processor~\cite{wojewodzki2026aciids}.
 
 \section{Related Work}
 
@@ -114,25 +111,9 @@ output of variational algorithms approaches a state that efficient classical
 methods can match once the circuit is deep enough. Harrigan et
 al.~\cite{harrigan2021} ran QAOA on a superconducting processor and found
 that for problems whose graph does not match the chip, routing adds gates and
-the performance drops with problem size.
-
-Several works map neighborhood search for scheduling onto quantum hardware.
-Bo\.{z}ejko et al.~\cite{bozejko2026new} formulated the exponential Fibonacci
-neighborhood as a QUBO on a quantum annealer, and Wojew\'{o}dzki and
-Bo\.{z}ejko introduced the Motzkin
-neighborhood~\cite{wojewodzki2026soco,wojewodzki2025exit}, hybrid neighborhood
-evaluation~\cite{wojewodzki2026icaisc} and a windowed QUBO decomposition that
-reaches 500 jobs on an annealer~\cite{wojewodzki2026windowed}. On gate-based
-devices, Bo\.{z}ejko et al.~\cite{bozejko2024cinti} applied hybrid quantum
-approximate algorithms to the flow shop problem, and Wojew\'{o}dzki and
-Bo\.{z}ejko ran fixed-angle QAOA with windowed neighborhoods on IBM and IQM
-processors at $p = 1$~\cite{wojewodzki2026gcmm,wojewodzki2026aciids}.
-Dudkiewicz~\cite{dudkiewicz2026depth} studied circuit depth and penalty
-weights in QAOA for the multidimensional knapsack problem with COBYLA, and
-Gnatowski et al.~\cite{gnatowski2026routing} gave an exact routing algorithm
-for star architectures, the topology of the processor used here. To our
-knowledge, no study has varied $p$ for neighborhood moves whose result is
-read out as the lowest-energy sample.
+the performance drops with problem size. Gnatowski et
+al.~\cite{gnatowski2026routing} gave an exact routing algorithm for star
+architectures, the topology of the processor used here.
 
 \section{Quantum Neighborhood Search}
 
@@ -154,7 +135,7 @@ variable $x_k$ selects it. The swap-selection QUBO~\cite{lucas2014ising}
 sums the changes of the selected swaps and penalizes every pair in the
 conflict set $\mathcal{C}$, so any assignment that breaks a constraint costs
 more than doing nothing. Table~\ref{tab:neigh} lists the four neighborhoods.
-Adjacent selects exactly one swap of neighbours and uses a one-hot QUBO with
+Adjacent selects exactly one swap of neighbors and uses a one-hot QUBO with
 $Q_{ii} = \Delta_i - P$, $Q_{ij} = 2P$ and $P = 2\max_i|\Delta_i| + 1$.
 Fibonacci~\cite{bozejko2026new} allows any set of disjoint adjacent swaps,
 which gives a tridiagonal QUBO. Dynasearch and
@@ -266,6 +247,7 @@ simulator needs minutes per circuit, so its wall time says nothing about the
 device; each noisy run therefore makes exactly as many moves as Sirius made
 in 10~s on the same instance at $p = 1$~\cite{wojewodzki2026aciids}. On the
 hardware ILS repeats that campaign at $p = 2$ and $p = 3$.
+% H2: zdanie prawdziwe dopiero po biegach na Siriusie (p = 2, 3)
 
 We report the percentage relative deviation
 $\mathrm{PRD} = 100\,(C_{\max} - LB)/LB$ from the Taillard lower bound $LB$,
@@ -276,57 +258,40 @@ and the shot sampling.
 
 \section{Results}
 
-Without noise, a single layer is not enough. Figure~\ref{fig:e1} shows that
-at $p = 1$ QAOA finds the optimal move of a window hardly more often than
-uniform sampling, and in the Fibonacci and Dynasearch neighborhoods even less
-often. In the dense neighborhoods the shallow circuit favours assignments that
-break the disjointness constraint, so its best sample is often worse than
-making no move. A second layer changes this: from $p = 2$ the dense
-neighborhoods sample the optimum roughly a hundred times more often than
-uniform sampling. The gain is not monotone, however. On windows outside the
-training set a deeper circuit can be worse than a shallower one, and the best
-angle table differs between neighborhoods. Angles that reach a lower mean
-energy on the training windows do not necessarily sample the optimum more
-often, because the mean energy rewards avoiding the penalty rather than
-finding the best move.
+Without noise one layer is not enough (Fig.~\ref{fig:e1}). At $p = 1$ QAOA
+samples the optimal move hardly more often than uniform sampling, and in the
+Fibonacci and Dynasearch neighborhoods even less often. In the dense
+neighborhoods the shallow circuit favors assignments that break the
+disjointness constraint. From $p = 2$ the dense neighborhoods sample the
+optimum about a hundred times more often than uniform sampling, and with 4096
+shots the best sample is then almost always optimal (Fig.~\ref{fig:hits}).
+Further layers therefore add little, and shots can take their place. The gain
+is not monotone in $p$, and the best angle table depends on the neighborhood:
+angles with a lower mean energy on the training windows do not necessarily
+find the optimum more often.
 
-Figure~\ref{fig:hits} answers the question in the title. With 4096 shots and
-$p \ge 2$ the best sample is almost always optimal, so further layers add
-little and shots can take their place. In the linear neighborhoods even
-uniform sampling comes close, because their windows are small enough for a
-few thousand random samples to cover them almost completely. Each layer has a
-fixed price (Table~\ref{tab:e3}): the number of two-qubit gates grows
-linearly with $p$, from 15 per layer in the chain-like Fibonacci windows to
-about 150 in the Dynasearch and Motzkin windows, and a square lattice needs
-up to twice as many gates as the star processor.
+Every layer adds the same number of two-qubit gates (Table~\ref{tab:e3}),
+about ten times more in a dense window than in a Fibonacci window. With noise
+this cost decides the best depth (Fig.~\ref{fig:e4}). In the dense
+neighborhoods the best sample is optimal most often at $p = 2$, and at
+$p = 6$ the circuit is no better than uniform sampling. The linear
+neighborhoods hardly notice the noise, because their circuits are shallow and
+uniform sampling already finds most optima.
 
-Noise changes the picture (Fig.~\ref{fig:e4}). In the dense neighborhoods the
-share of windows in which the best sample is optimal is highest at $p = 2$
-and falls with every further layer, until at $p = 6$ the circuit is no better
-than uniform sampling. The linear neighborhoods are hardly affected, since
-their circuits are shallow and uniform sampling already finds most optima. A
-more pessimistic noise model gives the same best depth.
+The same picture appears in the makespan of ILS (Table~\ref{tab:e5}). In the
+dense neighborhoods $p = 2$ lowers the median deviation from the lower bound
+from about 24\% to 15\%, and the best depth beats uniform sampling on all 30
+instances. Deeper circuits lose only because each move takes longer and fewer
+moves fit into 10~s (Fig.~\ref{fig:moves}). In the linear neighborhoods depth
+brings nothing, and the classical search that evaluates every move exactly
+stays better than all QAOA variants.
 
-The window results carry over to the makespan of ILS (Table~\ref{tab:e5}). In
-the dense neighborhoods $p = 2$ lowers the median deviation from the lower
-bound from about 24\% to 15\%, and the best depth beats uniform sampling on
-all 30 instances, while $p = 1$ is again worse than uniform sampling.
-Circuits deeper than $p \approx 5$ do worse within the 10~s budget only
-because each move takes longer (Fig.~\ref{fig:moves}); at an equal number of
-moves the advantage of $p \ge 2$ remains. In the linear neighborhoods depth
-brings no gain, and more shots only cost time. The classical neighborhood
-search, which evaluates every move exactly, stays clearly better than all
-QAOA variants.
-
-Table~\ref{tab:hw} compares the noiseless simulator, the noisy simulator and
-Sirius after the one to three moves that Sirius makes in 10~s. With so few
-moves most differences are small. Dynasearch shows the same pattern as
-before: on the noisy simulator $p = 2$ is clearly better than $p = 1$ (on 11
-of 12 instances), and $p = 6$ falls back again. At $p = 1$ the device does
-better than the noisy simulator in Dynasearch and is about as good as
-uniform sampling in both dense neighborhoods. This suggests that the real
-noise is stronger than the calibrated model and pushes the distribution
-towards uniform. \emph{[H2: whether the gain of $p = 2$ survives on Sirius.]}
+After the one to three moves that Sirius makes in 10~s, most differences in
+Table~\ref{tab:hw} are small. On the noisy simulator Dynasearch again gains
+from $p = 2$ (11 of 12 instances). In Dynasearch at $p = 1$ the device does
+better than the simulator and about as well as uniform sampling, which
+suggests that the real noise is stronger than the calibrated model.
+\emph{[H2: whether the gain of $p = 2$ survives on Sirius.]}
 
 \begin{figure}[t]
 \centering
@@ -405,43 +370,26 @@ uniform sampling).}
 \label{fig:moves}
 \end{figure}
 
-\section{Discussion}
-
-The study has several limits. It uses only instances with 20 jobs, because
-larger windows would not fit on the 16-qubit device and the noisy simulation
-of a single dense circuit already takes minutes. The angles are fixed per
-depth, so a schedule tuned to each window could change the picture,
-especially at large $p$. The energy of a window adds up the makespan changes
-of its swaps, which is exact only when the swaps do not interact, so even an
-optimal sample is not always the best move for the whole permutation. In the
-linear neighborhoods the block accelerator removes many candidates before
-the QUBO is built, which keeps the windows small and favours uniform
-sampling. The simulated device also has no noise on idle qubits, and its
-calibration snapshot was taken a few days after the hardware runs at
-$p = 1$. Both may explain why the real device looked noisier than the
-simulator.
-
-We do not claim an advantage over classical computing. The classical search
-that evaluates every move exactly reaches clearly better makespans than any
-QAOA variant, and on the device ILS makes only one or two moves in 10~s. The
-value of the study lies elsewhere: it shows when an additional QAOA layer
-pays off in neighborhood search, and how quickly noise takes that gain away.
-
-\section{Conclusions}
+\section{Discussion and Conclusions}
 
 A single QAOA layer is too weak for neighborhood search in the flow shop
-problem, and in the dense neighborhoods it does worse than uniform sampling.
-Two layers are enough to find the optimal move in almost every window. With
-noise, $p = 2$ is also the best depth, because every further layer costs
-about 150 two-qubit gates and brings the circuit back towards uniform
-sampling. In the linear neighborhoods the windows are so small that uniform
-sampling with enough shots does as well as QAOA. For dense neighborhoods we
-therefore recommend two layers and spending the rest of the budget on shots.
+problem. Without noise, two layers find the optimal move in almost every
+dense window, and with noise $p = 2$ is also the best depth, because every
+further layer costs about 150 two-qubit gates. In the linear neighborhoods
+the windows are so small that uniform sampling does as well as QAOA. For
+dense neighborhoods we therefore recommend two layers and spending the rest
+of the budget on shots.
 % H2: zalecenie "dwie warstwy" opiera się na symulatorze; złagodzić, jeśli Sirius przy p = 2 nie pokaże zysku
 The angles matter more than the depth, and calibrating them for the mean
-energy does not reward what local search needs. Future work will calibrate
-the angles for the chance that the best sample is optimal, choose the depth
-per window, and test other processor topologies.
+energy does not reward what local search needs.
+
+We do not claim an advantage over classical computing: the exact classical
+search stays clearly better, and on the device ILS makes only one or two
+moves in 10~s. The study covers only 20 jobs and fixed angles, and the window
+energy is exact only when the swaps do not interact. The simulated device has
+no noise on idle qubits, which may explain why Sirius looked noisier than the
+simulator. Future work will calibrate the angles for the chance that the best
+sample is optimal and choose the depth per window.
 
 \bibliographystyle{splncs04}
 \bibliography{references}

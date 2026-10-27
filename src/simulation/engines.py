@@ -26,12 +26,15 @@ depolarizing channel of that gate and locus.
 """
 from __future__ import annotations
 
+import os
 import time
 
 import numpy as np
 
 from .noise import NoiseParams
 
+# Threads per simulation (cell.py pins OpenMP/BLAS to the same number); 1 unless T6 asks for more.
+THREADS = int(os.environ.get("ANNSIM_THREADS", "1"))
 ENGINES = ("aer_sv", "aer_dm", "qsim", "cirq_dm", "qulacs", "qulacs_loop", "qulacs_dm", "ddsim", "ddsim_dm",
            "qibo", "qibo_dm", "cudaq", "pennylane", "braket", "qutip", "stim")
 
@@ -209,7 +212,7 @@ def run_aer(circ, noise, shots, seed, method):
         qc.save_probabilities(qubits=[q for q, _ in sorted(circ["measure"], key=lambda m: m[1])])
     else:
         qc = _qiskit_circuit(circ, noise)
-    sim = AerSimulator(method=method, noise_model=nm, max_parallel_threads=1, seed_simulator=seed)
+    sim = AerSimulator(method=method, noise_model=nm, max_parallel_threads=THREADS, seed_simulator=seed)
     t1 = time.time()
     res = sim.run(qc, shots=None if method == "density_matrix" else shots).result()
     if method == "density_matrix":
@@ -267,7 +270,7 @@ def run_qsim(circ, noise, shots, seed):
 
     t0 = time.time()
     c, q, meas_q = _cirq_circuit(circ, noise)
-    opts = qsimcirq.QSimOptions(cpu_threads=1)
+    opts = qsimcirq.QSimOptions(cpu_threads=THREADS)
     sim = qsimcirq.QSimSimulator(qsim_options=opts, seed=seed)
     t1 = time.time()
     if not noise.noisy:
@@ -471,7 +474,7 @@ def run_qibo(circ, noise, shots, seed, density):
     import qibo
 
     qibo.set_backend("qibojit", platform="numba")
-    qibo.set_threads(1)
+    qibo.set_threads(THREADS)
     qibo.get_backend().set_seed(seed)
     if noise.scenario == "S3" and not density:
         raise NotImplementedError("qibo: amplitude damping needs a density matrix (repeated execution "

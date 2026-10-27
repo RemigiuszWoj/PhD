@@ -29,8 +29,8 @@ from .export import OUT as CIRCUITS
 from .stage1 import DM_ALWAYS, DM_ENGINES, DM_MAX_QUBITS, MEAS, OUT as OUT1, cell_key, circuits, ref_dir_for
 
 OUT = MEAS / "stage2_n20.jsonl"
-def select(cs, kmax, ps):
-    keys = [k for k, c in cs.items() if c["K"] <= kmax and c["p"] in ps]
+def select(cs, kmax, ps, kmin=0):
+    keys = [k for k, c in cs.items() if kmin <= c["K"] <= kmax and c["p"] in ps]
     return sorted(keys, key=lambda k: (cs[k]["p"], cs[k]["K"], k))
 
 
@@ -195,6 +195,7 @@ def summary(path: Path):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--kmax", type=int, default=11)
+    ap.add_argument("--kmin", type=int, default=0, help="skip smaller windows (e.g. those already run)")
     ap.add_argument("--p", nargs="*", type=int, default=[1, 2, 3])
     ap.add_argument("--engines", nargs="*", default=list(ENGINES))
     ap.add_argument("--scenarios", nargs="*", default=["S1", "S2", "S3"])
@@ -211,8 +212,8 @@ def main():
         summary(args.out)
         return
     cs = circuits(args.circuits)
-    keys = select(cs, args.kmax, set(args.p))
-    print(f"{len(keys)} circuits (K <= {args.kmax}, p in {sorted(set(args.p))})", flush=True)
+    keys = select(cs, args.kmax, set(args.p), args.kmin)
+    print(f"{len(keys)} circuits ({args.kmin} <= K <= {args.kmax}, p in {sorted(set(args.p))})", flush=True)
     if args.estimate:
         estimate(cs, keys, OUT1)
         return

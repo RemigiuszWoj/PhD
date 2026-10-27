@@ -57,11 +57,10 @@ def _gate_list(qc, keep=None):
     return ops, meas
 
 
-def compile_window(Q, table: str, nb: str, p: int, fake):
+def compile_qc(qc, fake) -> dict:
+    """Logical + compiled gate lists of one measured logical circuit (the compiler of track A)."""
     from iqm.qiskit_iqm import transpile_to_IQM
-    from src.experiments.qaoa_depth_study import _circuit
 
-    variables, qc = _circuit(Q, table, nb, p)
     t0 = time.time()
     tc = transpile_to_IQM(qc, fake, optimization_level=1, seed_transpiler=0)
     compile_s = time.time() - t0
@@ -72,12 +71,19 @@ def compile_window(Q, table: str, nb: str, p: int, fake):
     l_ops, l_meas = _gate_list(qc)
     c_ops, c_meas = _gate_list(tc, keep)
     ops = dict(tc.count_ops())
-    return variables, {
+    return {
         "logical": {"n": qc.num_qubits, "ops": l_ops, "measure": l_meas},
         "compiled": {"n": len(used), "names": names, "ops": c_ops, "measure": c_meas,
                      "cz": ops.get("cz", 0), "move": ops.get("move", 0), "r": ops.get("r", 0),
                      "depth": tc.depth(), "compile_s": compile_s},
     }
+
+
+def compile_window(Q, table: str, nb: str, p: int, fake):
+    from src.experiments.qaoa_depth_study import _circuit
+
+    variables, qc = _circuit(Q, table, nb, p)
+    return variables, compile_qc(qc, fake)
 
 
 def main():

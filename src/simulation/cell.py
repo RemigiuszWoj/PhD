@@ -36,10 +36,10 @@ import traceback
 import zlib
 from pathlib import Path
 
-# One thread everywhere. NUMBA_NUM_THREADS stays unset: qibojit asks numba for one thread per
+# One thread everywhere (ANNSIM_THREADS for T6). NUMBA_NUM_THREADS stays unset: qibojit asks numba for one thread per
 # physical core at start-up and fails under NUMBA_NUM_THREADS=1; the qibo adapter pins it to 1.
 for _v in ("OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS", "VECLIB_MAXIMUM_THREADS"):
-    os.environ.setdefault(_v, "1")
+    os.environ.setdefault(_v, os.environ.get("ANNSIM_THREADS", "1"))
 
 import numpy as np  # noqa: E402
 

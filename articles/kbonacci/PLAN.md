@@ -1,23 +1,493 @@
-# Artykuł: sąsiedztwa tribonacci / k-bonacci ze studium parametru k
+# Plan artykułu i badań: rodzina sąsiedztw k-bonacci (Fibonacci → tribonacci → … → Dynasearch) ze studium parametru k
 
-Stan: 01.11.2026. Plan + research przed implementacją. Kontekst: `articles/katalog_sasiedztw.md`, `ROADMAP.md` (front C).
+Wersja 2, 01.11.2026, gałąź `kbonacci-icaps`. Zastępuje plan v1 (historia w gicie).
+Powiązane: `articles/katalog_sasiedztw.md`, `ROADMAP.md` (front C), szkice `main.tex` (EN) i `wersja_pl.tex` (PL).
 
-## 0. Status (01.11.2026, gałąź `kbonacci-icaps`)
+---
 
-- ✅ Moduł `src/neighborhoods/classical/kbonacci.py`: delty Head/Tail, filtr blokowy, pozycyjne DP O(n·k), statystyki addytywności.
-  Tryby w `get_neighbor`: `tribonacci`, `tetranacci`, `kbonacci_k<K>`, `kbonacci_kn`.
-- ✅ Testy `tests/test_kbonacci.py` (96 przypadków): liczność = brute force (n ≤ 9), DP = brute force,
-  k = 2 ≡ DP Fibonacciego, k = n ≡ Dynasearch, delty dokładne. Cały zestaw: 121/121.
-- ✅ Dane Taillard PFSP (12 plików × 10 instancji) pobrane do `data/` (gitignored) i **zweryfikowane generatorem Taillarda**
-  (0 rozbieżności). Źródło: aosabook/500lines. UB pochodzą z 1993 roku, więc do artykułu trzeba aktualnych best-known UB.
-- ✅ Pilot `scripts/run_kbonacci_pilot.py`, wyniki w `articles/kbonacci/pilot/`.
-- ✅ Szkice `main.tex` (EN) i `wersja_pl.tex` (PL). Nie były kompilowane, bo w sesji nie ma LaTeX-a.
-- ❌ Prace promotora (Sci Rep 2026, IFAC 2025): nie udało się ich przeczytać, bo doi.org i nature.com są zablokowane w sieci sesji,
-  a wyszukiwarka nie znalazła IFAC. **Potrzebne PDF-y od promotora.**
+## 0. Skrót
 
-### Wyniki pilota (ILS, 1000 ms, 4 inst. × 3 ziarna)
+- **Pytanie główne** (tytuł roboczy EN: *How far should a swap reach?*): jak daleko powinny sięgać zamiany w złożonym ruchu dla PFSP,
+  skoro koszt rośnie z zasięgiem, a korzyść, jak zakładamy, się nasyca?
+- **Teza (do potwierdzenia):**
+  - Parametr k wyznacza ciągły kompromis między Fibonaccim (k = 2) a Dynasearch (k = n).
+  - Pierwsze poziomy hierarchii są prawie darmowe: z dokładnym filtrem blokowym ocena kosztuje O(mn + m²k³), czyli niewiele więcej niż samo policzenie C_max.
+  - Korzyść z k nasyca się w skali długości bloku ścieżki krytycznej.
+  - Wniosek: przy realnym budżecie czasu optymalne k jest umiarkowane i da się je wyznaczyć prostą regułą albo adaptacyjnie.
+- **Cel:** ICAPS 2027 (termin ~14.12.2026, niepotwierdzony). Zapas: IJCAI 2027 (~11–15.01.2027). Decyzja w punkcie kontrolnym 22.11.
+- **Co już mamy:**
+  - moduł `kbonacci.py` + 96 testów;
+  - dane Taillarda zweryfikowane generatorem;
+  - pilot (PRD maleje z k; przy n ≤ 50 i 1 s wygrywa k = n);
+  - szkice EN i PL.
+- **Nowe ustalenie (01.11):** obecny test granic bloków (`compute_block_boundaries`) **odrzuca 2–7% zamian poprawiających**.
+  Filtr oparty na prawdziwej ścieżce krytycznej nie odrzuca żadnej i zostawia 2–5× mniej kandydatów. Szczegóły w §14.
+  **Pilot trzeba powtórzyć po poprawce.**
 
-| | tai20_5 | tai20_10 | tai50_10 |
+---
+
+## 1. Kontekst i luka badawcza
+
+**Co wiadomo:**
+1. Dynasearch (Congram, Potts, van de Velde 2002) pokazał, że wykładniczo duże sąsiedztwo niezależnych zamian przeszukuje się dokładnie
+   metodą DP. Ergun i Orlin (2006) zeszli z przeszukaniem do O(n²), a Grosso i in. (2004) dodali wstawienia. To wszystko dotyczy jednej maszyny
+   (1||ΣwT), gdzie zmiany kosztu niezależnych zamian **sumują się**.
+2. Dla PFSP mamy rodzinę sąsiedztw liczonych ciągami: Adjacent, Fibonacci (rozłączne zamiany sąsiednie), Dynasearch i Motzkin
+   (prace własne oraz Bożejko, Uchroński, Wodecki, Sci. Rep. 2026).
+3. Własności blokowe ścieżki krytycznej (Nowicki i Smutnicki 1996, Grabowski i Wodecki 2004) wskazują ruchy, które nie mogą poprawić C_max.
+4. W innych dziedzinach ograniczanie zasięgu ruchu to standardowe narzędzie: Or-opt z segmentami ≤ 3, granular tabu search
+   (Toth i Vigo 2003), listy sąsiadów w TSP. VNS (Mladenović i Hansen 1997) systematycznie zmienia rozmiar sąsiedztwa.
+
+**Luka:**
+- Sąsiedztwa złożone dla PFSP porównuje się jako **odosobnione punkty** (Fib vs Dyn vs Motzkin). Nikt nie zbadał ciągłej osi między nimi.
+- Nie wiadomo, **które zamiany wybiera Dynasearch**: długie czy krótkie.
+- Nie wiadomo, **ile kosztuje i ile daje każdy kolejny poziom zasięgu**.
+- Nikt nie zmierzył, **jak bardzo założenie addytywności zawodzi w PFSP**.
+
+---
+
+## 2. Definicje (ustalone 01.11.2026)
+
+**Ruch elementarny:** zamiana końców (i, j) przy odległości d = j − i ∈ {1, …, k−1}. Zadania wewnątrz przedziału zostają na miejscu.
+**Ruch złożony:** zbiór takich zamian na parami rozłącznych przedziałach [i, j]. N_k(π) to wszystkie permutacje osiągalne jednym ruchem złożonym.
+
+| Sąsiedztwo | Odległości zamian | k | Liczność | Wzrost λ_k |
+|---|---|---|---|---|
+| Fibonacci | 1 | 2 | F(n+1) | 1,618 |
+| tribonacci | 1, 2 | 3 | T(n); n = 10: 274 | 1,839 |
+| tetranacci | 1, 2, 3 | 4 | n = 10: 401 | 1,928 |
+| k-bonacci | 1, …, k−1 | k | a_n = a_{n−1} + … + a_{n−k} | → 2 |
+| Dynasearch | 1, …, n−1 | n | 2^{n−1} | 2 |
+
+Część całego Dynasearch, którą pokrywa N_k, czyli |N_k| / 2^{n−1} (policzone 01.11):
+
+| n | k = 2 | k = 3 | k = 4 | k = 6 | k = 8 | k = ⌊log₂n⌋ | k = ⌊log₂n⌋ + 2 |
+|---|---|---|---|---|---|---|---|
+| 20 | 2·10⁻² | 0,23 | 0,54 | 0,89 | 0,98 | 0,54 | 0,89 |
+| 100 | 9·10⁻¹⁰ | 3·10⁻⁴ | 0,03 | 0,46 | 0,83 | 0,46 | 0,83 |
+| 500 | 10⁻⁴⁶ | 8·10⁻¹⁹ | 10⁻⁸ | 0,02 | 0,38 | 0,38 | 0,79 |
+
+Wniosek: **przy k ≈ log₂n + 2 sąsiedztwo N_k zawiera ~80% wszystkich ruchów Dynasearch**. Jest to prawo Erdősa–Rényiego o najdłuższej
+serii: najdłuższa część losowej kompozycji n ma długość ~log₂n. Przy stałym k jest to natomiast wykładniczo znikoma część.
+
+---
+
+## 3. Wkład artykułu (C1–C6) i dowody
+
+| # | Wkład | Czym udowodniony |
+|---|---|---|
+| C1 | Rodzina N_k: łańcuch Adj ⊂ N_2 = Fib ⊂ N_3 ⊂ … ⊂ N_n = Dyn, liczność, stała wzrostu, pokrycie Dynasearch | T1–T4 (dowody) |
+| C2 | Efektywna ocena: **bezstratny** filtr ścieżki krytycznej, koszt O(mn + m²k³), pozycyjne DP O(n + mk²) | T5–T7 + E0 |
+| C3 | Anatomia: jak sięgają zamiany wybierane przez Dynasearch i gdzie korzyść z k się nasyca (skala bloku) | H1, H2 (E1, E2) |
+| C4 | Kompromis przy budżecie czasu i model koszt–zysk wyznaczający k* | H3, H4 (E0, E3) |
+| C5 | Praktyka: reguła/adaptacja k oraz wariant świadomy addytywności | H5, H6 (E1, E4, E5) |
+| C6 | Pozycja względem metod referencyjnych (ILS-Insert, IG Ruiza i Stützlego) | H7 (E6) |
+
+**Element podsumowujący** (z tabeli konferencji: „artykuł podsumowujący + tribonacci/k-bonacci”):
+- Tabela-taksonomia wszystkich sąsiedztw (Adjacent, Insert, Fib, k-bonacci, Dyn, Motzkin): liczność, wzrost, koszt oceny, DP,
+  zgodność z filtrem, struktura QUBO.
+- Oś k jako brakujące ogniwo hierarchii. Motzkin (c = 0 krzyżowań) to kolejny poziom.
+- Własne prace cytujemy oszczędnie i w trzeciej osobie (double-blind).
+
+---
+
+## 4. Część teoretyczna: twierdzenia do udowodnienia
+
+| # | Treść | Status |
+|---|---|---|
+| T1 | **Liczność:** \|N_k\| = a_n, gdzie a_0 = 1 i a_p = Σ_{L=1}^{min(k,p)} a_{p−L}. Dowód: pokrycie kafelkami 1…k | szkic gotowy, testy brute force n ≤ 9 ✅ |
+| T2 | **Różnowartościowość:** różne pokrycia dają różne permutacje. Kafelek [i, j] to najmniejszy przedział od i, który przesunięcie pozycji przeprowadza na siebie | do spisania (krótki) |
+| T3 | **Łańcuch zawierań:** N_k ⊊ N_{k+1} dla k < n; N_k = N_n dla k ≥ n; Adj ⊂ N_2 | trywialny |
+| T4 | **Wzrost:** λ_k to największy pierwiastek x^k = x^{k−1} + … + 1. Zachodzi 2 − λ_k = λ_k^{−k} (sprawdzone numerycznie), więc λ_k = 2 − Θ(2^{−k}). **Pokrycie:** \|N_k\|/\|N_n\| to P(najdłuższa część losowej kompozycji ≤ k); dla k = log₂n + O(1) jest to stała, dla stałego k Θ((λ_k/2)^n) | do spisania; dobrać źródło dla prawa najdłuższej serii |
+| T5 | **Bezstratny filtr:** niech U to kolumny zmiany maszyny dowolnej jednej ścieżki krytycznej (\|U\| ≤ m−1). Jeśli [i, j] ∩ U = ∅, to δ_ij ≥ 0 (ścieżka przechodzi te same komórki w jednym wierszu, a suma się nie zmienia). Wniosek: **DP na przefiltrowanych kandydatach ma tę samą wartość optymalną** co bez filtra | dowód krótki; empirycznie 0 utraconych z ~87,5 tys. poprawiających ✅ |
+| T6 | **Koszt:** kandydatów jest ≤ \|U\|·(k−1)(k+2)/2 ≤ (m−1)(k−1)(k+2)/2, każda delta kosztuje O(mk). Ocena: O(mn) Head/Tail + O(n+m) ścieżka + O(m²k³) delty + O(n + mk²) DP. Dla k = n: O(mn³), jak w Dynasearch | do spisania; zweryfikować w E0 |
+| T7 | **DP pozycyjne:** B[p] = min(B[p−1], min_d B[p−d−1] + δ_{p−d,p}), poprawność i złożoność; wariant top-t w O(ntk) | poprawność ✅ (testy); top-t do implementacji |
+| T8 | **Addytywność:** w ujęciu ścieżek kratowych (max-plus) C' = max_P[ℓ(P) + Σ_s Δ_s(P)]. Kontrprzykłady w obie strony, warunek wystarczający (wspólna ścieżka krytyczna przed i po), wyjaśnienie, dlaczego dominuje zawyżanie (przejmuje „druga” ścieżka) | do spisania; minimalne kontrprzykłady brute force (E0) |
+| T9 (opc.) | **Delty max-plus dla długich zamian:** macierz segmentu (m×m) rozszerzana przyrostowo daje wszystkie delty w O(m²nk), a Dynasearch w O(m²n²) zamiast O(mn³). Opłaca się dla k > m | pomysł; sprawdzić literaturę i zaimplementować tylko przy zapasie czasu |
+
+---
+
+## 5. Hipotezy badawcze
+
+### 5.1 Zestawienie
+
+| ID | Hipoteza (skrót) | Eksperyment | Test | Kryterium potwierdzenia | Dane wstępne |
+|---|---|---|---|---|---|
+| H0 | Implementacja poprawna (liczność, DP, równoważności, filtr) | testy, E0 | brute force | 100% zgodności | ✅ (bez nowego filtra) |
+| H1 | Przy równej liczbie kroków jakość rośnie monotonicznie z k | E2, E1 | test trendu Page’a | trend istotny w ≥ 10/12 klas | pilot: zysk/krok rośnie z k ✅ |
+| H2 | Korzyść z k nasyca się w skali bloku: k_sat ∝ L̄ ≈ n/(\|U\|+1), a nie ∝ n | E1 | regresja log k_sat ~ log n + log m, Spearman | współczynnik przy log m < 0 (CI bez 0), ρ(k_sat, L̄) ≥ 0,5 | słabe: średnia odległość rośnie z n/m |
+| H3 | Przy budżecie T = t·n·m/2 istnieje k* wewnętrzne (2 < k* < n) dla n ≥ 100, a k* rośnie z t | E3 | Friedman + Holm, Page dla k*(t) | k = 2 i k = n istotnie gorsze od k* w ≥ 4/6 klas n ≥ 100 | pilot: n ≤ 50 → k* = n |
+| H4 | Model koszt–zysk przewiduje k* | E0 + E1 → E3 | R², trafność | R² ≥ 0,95; k̂ w plateau w ≥ 70% komórek | — |
+| H5a | Błąd addytywności rośnie z k i m; dominuje zawyżanie poprawy | E1 | Page, Spearman | trend istotny; pred < real w > 50% ocen dla k ≥ 4 | pilot ✅ (losowe permutacje) |
+| H5b | Wybór top-t z dokładną oceną poprawia ARPD dla dużych k, a dla k = 2 nie | E5 | Wilcoxon + Holm | istotna poprawa dla k ≥ k_sat | — |
+| H6 | Adaptacyjne k ≈ wyrocznia i > najlepsze globalne stałe k | E4 | Wilcoxon + Holm (zbiór testowy) | nieistotnie gorsze od wyroczni; istotnie lepsze od globalnego k | — |
+| H7 | ILS(k*) > Adj/Fib/Dyn/Motzkin w ILS; IG_ins + k-bonacci > IG_ins | E6 | Friedman + Nemenyi (CD), Wilcoxon + Holm | jak w hipotezie | — (ryzyko: IG) |
+
+### 5.2 Karty hipotez
+
+**H1. Moc sąsiedztwa rośnie z k (przy równej liczbie kroków)**
+- *Treść:* zejście do optimum lokalnego z tych samych startów daje optima tym lepsze, im większe k. Średni rzeczywisty zysk jednego kroku
+  (na tym samym stanie) rośnie z k.
+- *Uzasadnienie:* N_k ⊂ N_{k+1}, więc przewidywany zysk jest monotoniczny z definicji. Pilot (losowe permutacje): rzeczywisty zysk
+  rośnie od −42,5 (k = 2) do −96,3 (k = n) przy 20×5 oraz od −84,3 do −196,2 przy 50×10.
+- *Dlaczego może nie wyjść:* błąd addytywności rośnie z k (H5a), a większe ruchy mogą prowadzić do gorszych atraktorów.
+- *Pomiar:* ARPD optimum lokalnego, liczba kroków i czas zejścia (E2); sparowany zysk/krok na stanach z E1.
+- *Analiza:* test trendu Page’a (bloki = instancje, kolejność k); między sąsiednimi k Wilcoxon + Holm.
+- *Jeśli odrzucona:* wzmacnia to wątek addytywności (H5b) jako warunek korzystania z dużego k.
+- *Teza w artykule (EN):* “Larger k yields better local optima per step.”
+
+**H2. Nasycenie w skali bloku ścieżki krytycznej**
+- *Treść:* korzyść z k nasyca się przy k_sat proporcjonalnym do średniej długości bloku L̄ = n/(|U|+1), a nie do n.
+- *Uzasadnienie:*
+  - poprawiająca zamiana musi obejmować granicę bloku (T5);
+  - realny zysk daje przeniesienie zadania przez granicę do sąsiedniego bloku, czyli na odległość rzędu L̄;
+  - pilot (losowe permutacje, słaba przesłanka): średnia odległość zamian przy k = n wynosi 4,6–5,3 przy n/m = 2 (20×10),
+    6,4–7,7 przy n/m = 4 (20×5) i 7,9–8,9 przy n/m = 5 (50×10).
+- *Pomiar (E1):*
+  - k_sat(stan) = min k, przy którym zysk(k) ≥ 95% zysku(k_max);
+  - kwantyle q50 i q90 odległości zamian wybranych przy k_max;
+  - |U| i długości bloków.
+- *Test rozstrzygający:* siatka Taillarda rozdziela n i m (20×{5, 10, 20}, 50×{5, 10, 20}, …). Regresja
+  log k_sat = a + b·log n + c·log m. Skala bloku przewiduje b ≈ 1 i c ≈ −1, skala globalna c ≈ 0. Dodatkowo Spearman ρ(k_sat, L̄) i bootstrap CI.
+- *Konsekwencja praktyczna:* reguła k = ⌈c·L̄⌉ (E4).
+- *Teza w artykule (EN):* “How far a swap should reach is set by the block length of the critical path, not by n.”
+
+**H3. Wewnętrzne optimum przy budżecie czasu**
+- *Treść:* przy budżecie T = t·n·m/2 ms (protokół Ruiza i Stützlego) krzywa ARPD(k) ma minimum wewnętrzne 2 < k* < n dla n ≥ 100,
+  a k* rośnie z t. Dla n ≤ 50 dopuszczamy k* = n, jak w pilocie.
+- *Uzasadnienie:*
+  - zysk się nasyca (H2), a koszt rośnie (T6);
+  - ekstrapolacja z pilota (do potwierdzenia w E0): ocena k = n kosztuje ~0,15 s przy 100×10, ~2,3 s przy 200×20 i ~36 s przy 500×20;
+  - dla n = 500 optimum wewnętrzne jest więc trywialne, a **klasy informatywne to n = 100 i 200**.
+- *Pomiar:* ARPD względem BKS dla każdej kombinacji (klasa, t, k). k* = argmin. Plateau P = zbiór k nieistotnie gorszych od k*.
+- *Analiza:* Friedman w każdej klasie (bloki = 10 instancji, średnia z ziaren), Holm względem k*, test Page’a dla k*(t). Mapa ciepła ARPD (klasa × k).
+- *Jeśli odrzucona* (k = n najlepsze wszędzie, gdzie wykonalne): przekaz brzmi „duże k, ograniczone kosztem”, a H2 i tak daje regułę.
+- *Teza w artykule (EN):* “Under realistic budgets the best k is moderate.”
+
+**H4. Model koszt–zysk przewiduje k\***
+- *Treść:*
+  - (a) t_eval(k) ≈ α·mn + β·m²k³ (małe k) z R² ≥ 0,95;
+  - (b) k̂ = argmax_k zysk(k)/t_eval(k), wyznaczony na stanach z E1, trafia w plateau P z E3 w ≥ 70% komórek (klasa, t).
+- *Dlaczego może nie wyjść:* zysk/czas opisuje fazę zejścia, a ignoruje jakość atraktorów i dynamikę ILS (kick, tabu).
+- *Wartość:* jeśli wyjdzie, k da się wybrać bez kampanii strojenia. Jeśli nie, to też uczciwy wynik o granicach modeli „lokalnych”.
+
+**H5a. Addytywność zawodzi tym bardziej, im większe k**
+- *Treść:* błąd |Σδ − ΔC_max| (bezwzględny i względny) rośnie z k i z m. Przeważnie suma delt zawyża poprawę.
+- *Dane:* pilot na losowych permutacjach: trafienie dokładne w 42% ocen (k = 2), 16–20% (k = 3, 4) i 10–12% (k ≥ 6).
+  Zawyżenie wynosi 10% (k = 2), 26% (k = 3, 4), 41% (k = 6) i ~50% (k ≥ 8). Do potwierdzenia na stanach z trajektorii ILS, czyli blisko optimów.
+- *Teoria:* T8.
+
+**H5b. Wybór świadomy addytywności pomaga przy dużym k**
+- *Treść:* dokładna ocena t najlepszych ruchów DP (t ∈ {3, 5}) oraz najlepszej pojedynczej zamiany i wybór najlepszego rzeczywiście
+  poprawia ARPD przy równym czasie dla k ≥ k_sat. Dla k = 2 nie ma efektu.
+- *Koszt:* t dodatkowych ocen O(mn) na iterację, co jest małe wobec delt przy dużym k.
+- *Wariant opcjonalny:* DP z wiązką (beam) i dokładną oceną prefiksu.
+
+**H6. Adaptacyjny wybór k**
+- *Treść:* wybór k online nie jest istotnie gorszy od wyroczni (najlepsze stałe k w klasie) i jest istotnie lepszy od najlepszego
+  jednego k wspólnego dla wszystkich klas. Kandydaci na mechanizm wyboru:
+  - reguła blokowa k_t = ⌈c·L̄_t⌉;
+  - eskalacja VND po K;
+  - bandyta (sliding-window UCB, nagroda = zysk/czas).
+- *Ochrona przed przeuczeniem:* c i hiperparametry bandyty stroimy na instancjach 1–5, oceniamy na 6–10.
+- *Rola:* w ICAPS sekcja krótka, w IJCAI centralna („wersja AI-owa”).
+
+**H7. Pozycja względem metod referencyjnych**
+- *Treść:*
+  - (a) ILS z k* (albo z adaptacją) jest lepsze od ILS z Adjacent, Fib (k = 2), Dyn (k = n) i Motzkinem (gdzie wykonalny)
+    i nie gorsze od ILS-Insert;
+  - (b) IG_ins z k-bonaccim jako drugim etapem lokalnego przeszukiwania jest lepsze od samego IG_ins.
+- *Ryzyko:* IG_ins najpewniej wygra z samym ILS. Wtedy uczciwie przedstawiamy wkład jako projekt sąsiedztwa, a (b) jako test komplementarności.
+
+---
+
+## 6. Eksperymenty
+
+K, czyli zbiór badanych wartości k: {2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64} ∩ [2, n], plus n, jeśli wykonalne (n ≤ 200).
+Budżet: T = t·n·m/2 ms. Σ n·m/2 po 12 klasach wynosi 10 975, więc jeden przebieg (instancja, ziarno, wariant) przez wszystkie klasy
+trwa 329 s przy t = 30. Pełny Taillard (10 instancji × 5 ziaren) to **4,6 h CPU na wariant** przy t = 30.
+
+### E0. Walidacja i model kosztu (H0, H4a; T5–T6, T8) — tydzień 1, ~1 h CPU
+- Poprawka filtra (§14) i testy:
+  - bezstratność: brute force dla n ≤ 12 oraz losowe instancje n = 50;
+  - niezmienniczość wyniku DP.
+- Mikro-benchmark t_eval(k) dla 12 klas × K × 30 stanów (NEH i optima lokalne), z rozbiciem na Head/Tail, ścieżkę krytyczną,
+  delty i DP. Liczba kandydatów a ograniczenie (m−1)(k−1)(k+2)/2.
+- Minimalne kontrprzykłady addytywności (brute force n ≤ 6, m ≤ 3) dla T8.
+- Decyzja numba (D5).
+- **Do artykułu:** rysunek kosztu (log-log t_eval vs k dla kilku n) i parametry modelu.
+
+### E1. Anatomia sąsiedztwa na stanach z trajektorii (H1, H2, H5a) — tydzień 2, ~4 h CPU
+- Stany: 12 klas × 10 instancji × 20 stanów, losowane momenty ILS z k_ref = 8 przy t = 30 plus optima lokalne ze startu NEH.
+- Na każdym stanie, dla każdego k ∈ K (sparowanie):
+  - zysk przewidywany i rzeczywisty;
+  - liczba zamian i histogram odległości;
+  - |U| i długości bloków;
+  - liczba kandydatów i czas.
+- Analiza: krzywe nasycenia zysk(k)/zysk(k_max), rozkład k_sat, regresja z H2, błąd addytywności w funkcji k i m.
+- **Do artykułu:** rysunek nasycenia, rysunek k_sat vs L̄ (log-log, kolor = m), rysunek addytywności.
+
+### E2. Zejście do optimum lokalnego (H1) — tydzień 2, ~3 h CPU
+- Starty: NEH i 10 losowych na instancję. Zejście best-improvement z każdym k aż do braku rzeczywistej poprawy.
+  Przy n = 500 ograniczamy się do k ≤ 64 i 3 instancji.
+- Metryki: ARPD optimum, liczba kroków, czas. Test trendu Page’a.
+
+### E3. Studium k przy budżecie czasu (H3, H4b) — tydzień 3, ~61 h CPU (~8 h na 8 rdzeniach)
+- ILS ze startu NEH, k ∈ K, 12 klas × 10 instancji × 3 ziarna:
+
+| Budżet | Zakres | CPU |
+|---|---|---|
+| t = 10 | pełna siatka k | 9 h |
+| t = 30 | pełna siatka k | 27 h |
+| t = 90 | n ≥ 100, 5 wartości k wokół plateau, 2 ziarna | 24 h |
+
+- Metryki: ARPD względem BKS, iteracje, krzywe anytime (najlepsze dotąd rozwiązanie w funkcji czasu).
+- Analiza: Friedman + Holm w każdej klasie, plateau, k*(t), porównanie z predykcją H4.
+- **Do artykułu:** mapa ciepła ARPD (klasa × k) przy t = 30 i tabela k* z plateau.
+
+### E4. Wybór k (H6) — tydzień 4, ~12 h CPU
+- Warianty:
+  - reguła blokowa;
+  - eskalacja VND;
+  - bandyta;
+  - wyrocznia (k* z E3);
+  - najlepsze globalne k.
+- Strojenie na instancjach 1–5, ocena na 6–10, t = 30, 5 ziaren.
+- **Do artykułu:** tabela porównania.
+
+### E5. Addytywność w praktyce (H5b) — tydzień 3–4, ~8 h CPU
+- k ∈ {4, k*, 2k*} × {zwykły, top-5 z dokładną oceną + najlepsza pojedyncza zamiana}.
+- Klasy n ∈ {50, 100, 200}, 10 instancji × 3 ziarna, t = 30.
+
+### E6. Porównanie końcowe (H7) — tydzień 5, ~67 h CPU (~9 h na 8 rdzeniach)
+- Warianty (wszystkie ze startu NEH, ten sam ILS):
+  - sąsiedztwa: Adjacent, Insert, k = 2, k = 3, k*, najlepszy wariant adaptacyjny z E4, k = n (n ≤ 200), Motzkin (n ≤ 200);
+  - IG: IG_ins, IG_ins + kb, IG_kb.
+- 12 klas × 10 instancji × 5 ziaren; t = 30 (50 h) i t = 10 (17 h).
+- Analiza: Friedman + Nemenyi (diagram CD) globalnie i dla każdego n; Wilcoxon + Holm dla kluczowych par; efekt A12 Varghi i Delaneya.
+- **Do artykułu:** tabela główna i diagram CD.
+
+**Łącznie ~157 h CPU, czyli ~20 h na 8 rdzeniach wydajnościowych M4 Pro.**
+Budżety czasowe są stałe, więc numba nie skraca E3, E4 ani E6. Zwiększa tylko liczbę iteracji (realizm), a skraca E0–E2.
+
+### Mapa: hipoteza → eksperyment → materiał w artykule
+
+| H | E | Materiał | Sekcja |
+|---|---|---|---|
+| H1 | E2, E1 | rysunek nasycenia, liczby z E2 | 6.3 |
+| H2 | E1 | rysunek k_sat vs L̄ | 6.3 |
+| H3 | E3 | mapa ciepła, tabela k* | 6.4 |
+| H4 | E0, E1, E3 | rysunek kosztu, kolumna „predykcja” w tabeli k* | 6.2, 6.4 |
+| H5 | E1, E5 | rysunek addytywności, tekst | 5, 6.5 |
+| H6 | E4 | tabela wyboru k | 6.6 |
+| H7 | E6 | tabela główna, diagram CD | 6.7 |
+
+---
+
+## 7. Protokół i trafność wyników
+
+**7.1 Uczciwość porównań**
+- Wszystkie k idą **tą samą ścieżką kodu** (`kbonacci.py`). Fibonacci to `kbonacci_k2`, Dynasearch to `kbonacci_kn`.
+- Stary `dynasearch_full` (rekurencyjne DP, 2–3× wolniejsze) **nie jest baseline’em**, bo recenzent słusznie uznałby go za słomianą kukłę.
+- Stary tryb `fibonacci` różni się w ILS obsługą optimum lokalnego: zwraca „brak ruchu”, co wyzwala kick, zamiast wymuszonej zamiany.
+  Dlatego w pilocie wyszło 1,61 vs 1,31.
+- Ten sam start (NEH), te same tabu i kick, ten sam filtr (dokładny) dla wszystkich wariantów, jeden język i jedna implementacja.
+
+**7.2 Pomiar czasu**
+- Liczba workerów = liczba rdzeni wydajnościowych (`sysctl -n hw.perflevel0.physicalcpu`), bez przeciążania.
+- Kolejność przebiegów losowana, żeby ewentualny dryf maszyny rozłożył się na warianty.
+- Zawsze zapisujemy liczbę iteracji, co pozwala na analizę przy równej liczbie iteracji.
+- **Jedna tabela = jedna maszyna.** Kontenery chmurowe tylko do developmentu, nie do pomiarów czasowych.
+
+**7.3 Dane i wartości odniesienia**
+- Taillard 120 instancji, zweryfikowane generatorem ✅.
+- **Aktualne BKS:** UB w plikach pochodzą z 1993 roku, więc trzeba zdobyć bieżące (od promotora albo z literatury, np. przeglądu
+  Fernandez-Viagasa, Ruiza i Framinana 2017).
+- RPD względem LB raportujemy dodatkowo dla ciągłości z wcześniejszymi pracami.
+- Opcjonalnie dla IJCAI: benchmark VRF (Vallada, Ruiz, Framinan 2015).
+
+**7.4 Statystyka**
+- α = 0,05, korekta Holma.
+- Bloki = instancje, wartości uśrednione po ziarnach, bez pseudoreplikacji.
+- **Uwaga:** przy 5 instancjach dokładny Wilcoxon nie zejdzie poniżej p = 0,0625, dlatego testy w klasach robimy zawsze na 10 instancjach,
+  a testy na zbiorze testowym (6–10) łączymy po klasach (60 bloków).
+- Test Page’a dla hipotez o monotoniczności (H1, H5a, k*(t)).
+- Friedman + Nemenyi z diagramem CD (Demšar 2006), efekt A12, bootstrap CI dla k* i współczynników regresji.
+
+**7.5 Reprodukowalność**
+- Każdy wynik JSON zawiera commit, maszynę, wersję Pythona, ziarno i konfigurację.
+- Skrypty E0–E6 i analizy w repo.
+- Anonimowe repozytorium dla recenzentów (np. anonymous.4open.science), bo repo na GitHubie jest publiczne i podpisane.
+
+**7.6 Zagrożenia trafności**
+- *Wewnętrzne:* stałe implementacyjne Pythona przesuwają k*, bo numba przyspieszy delty bardziej niż narzut pętli.
+  → raportujemy model kosztu, a wnioski formułujemy względem niego. Opcjonalnie jedna klasa z numbą dla porównania.
+- *Zewnętrzne:* tylko Taillard i tylko C_max. → VRF w wersji IJCAI; w dyskusji przenośność na ΣC_j (tam też brak addytywności).
+- *Konstrukcyjne:* ARPD do BKS zależy od jakości BKS. → podać źródło i datę BKS.
+
+---
+
+## 8. Struktura artykułu (ICAPS: zwykle 8 stron + referencje, do potwierdzenia w CFP)
+
+| § | Sekcja | Strony | Zawartość | Rysunki/tabele | Zależy od |
+|---|---|---|---|---|---|
+| 1 | Introduction | 0,9 | PFSP, ruchy złożone, luka „odosobnionych punktów”, pytanie „how far should a swap reach?”, wkład C1–C6, główne wyniki | — | całość |
+| 2 | Background & Related Work | 0,7 | PFSP i bloki; Dynasearch/VLSN; sąsiedztwa liczone ciągami; ograniczone/granularne sąsiedztwa; VNS/ALNS | — | lektura §13 |
+| 3 | The k-bonacci Family | 1,2 | definicja, T1–T4, łańcuch, pokrycie Dynasearch (log₂n) | rys. 1 (kafelki + hierarchia), tab. 1 (taksonomia, element podsumowujący) | teoria |
+| 4 | Efficient Evaluation | 1,0 | Head/Tail, bezstratny filtr T5, koszt T6, DP T7, algorytm 1 | alg. 1 | E0 |
+| 5 | Additivity | 0,5 | T8 (ścieżki kratowe, kontrprzykłady), wariant top-t | — | E0, E1 |
+| 6 | Experimental Study | 3,2 | 6.1 setup; 6.2 koszt; 6.3 nasycenie i skala bloku; 6.4 budżet czasu; 6.5 addytywność; 6.6 wybór k; 6.7 porównanie | rys. 2–5, tab. 2–4 | E0–E6 |
+| 7 | Discussion & Limitations | 0,3 | Python, addytywność, inne kryteria, pasmowe QUBO (1 zdanie, pomost do prac kwantowych) | — | — |
+| 8 | Conclusions | 0,2 | rekomendacja k, reguła | — | — |
+| — | Supplement | — | dowody, pełne tabele, artefakt | — | — |
+
+**Rysunki:**
+- Must-have: rys. 1 (kafelki + hierarchia), rys. 3+4 (nasycenie i k_sat vs L̄, połączone), rys. 5 (mapa ciepła), diagram CD.
+- Nice-to-have: rys. 2 (koszt), rys. addytywności. Mogą zastąpić je liczby w tekście.
+
+**Szkice `main.tex` i `wersja_pl.tex` wymagają po Fazie 0:** zmiany opisu filtra (T5–T6), nowych liczb z pilota,
+przebudowy pod strukturę z tej tabeli i oficjalnego szablonu.
+
+---
+
+## 9. Prace implementacyjne
+
+| P | Zadanie | Dni | Do |
+|---|---|---|---|
+| P0 | `compute_critical_path_boundaries` (backtracking po Head, O(n+m)) + przełączenie filtra w `kbonacci.py` + testy bezstratności i niezmienniczości DP | 0,5 | 4.11 |
+| P0 | NEH z akceleracją Taillarda (start dla wszystkich; potrzebne też w IG) | 0,5 | 5.11 |
+| P0 | ILS: opcja startu NEH; logowanie statystyk iteracji (jsonl, próbkowane) | 0,5 | 5.11 |
+| P0 | Plik BKS + ARPD do BKS w skryptach | 0,5 | 6.11 |
+| P0 | Runner E0–E6 (konfiguracja, losowa kolejność, pula workerów = rdzenie P, metadane) | 1 | 7.11 |
+| P0 | Biblioteka analiz (Friedman, Nemenyi, Holm, Wilcoxon, Page, A12, bootstrap) + skrypty rysunków i tabel LaTeX | 1 | 8.11 |
+| P1 | Insert best-improvement z akceleracją Taillarda (baseline ILS i LS w IG) | 0,5 | 11.11 |
+| P1 | IG Ruiza i Stützlego (d = 4, T = 0,4·Σp/(10nm), LS: ins / kb / ins + kb) | 1–1,5 | 14.11 |
+| P1 | DP top-t + dokładna ocena (H5b) | 0,5 | 18.11 |
+| P1 | Adaptacja k: reguła blokowa, VND, bandyta | 1 | 25.11 |
+| P2 | numba dla Head/Tail, delt zamian, delt wstawień i C_max (go/no-go po E0) | 1–2 | opc. |
+| P2 | Delty max-plus (T9) | 1 | opc. |
+| P2 | Analiza pasma QUBO k-bonacciego (bez QPU) | 0,5 | opc. |
+
+---
+
+## 10. Harmonogram (wariant ICAPS) i punkty kontrolne
+
+| Tydzień | Zadania | Wynik |
+|---|---|---|
+| 1 (2–8.11) | P0; E0; powtórka pilota z dokładnym filtrem; sprawdzenie CFP; PDF-y prac promotora; spotkanie: decyzje D1–D9 | infrastruktura gotowa |
+| 2 (9–15.11) | E1, E2; Insert, IG; pisanie §3–5 (teoria nie zależy od wyników). ⚠️ 15.11 to też termin ICAISC (Hamming) | H1, H2, H5a rozstrzygnięte |
+| 3 (16–22.11) | E3 (~8 h zegarowo), E5; analiza | **punkt kontrolny 22.11** |
+| 4 (23–29.11) | E4; pisanie §1–2; rysunki 1–5 | pełna treść bez E6 |
+| 5 (30.11–6.12) | E6 (~9 h zegarowo); analiza H6, H7; pełny szkic; **abstrakt do 7.12** | kompletny draft |
+| 6 (7–14.12) | draft do promotora do 9.12; poprawki; anonimowy artefakt; **zgłoszenie 14.12** | submisja |
+
+**Punkt kontrolny 22.11. Idziemy na ICAPS, jeśli spełnione są wszystkie warunki:**
+1. Dokładny filtr, E0–E2 zrobione, a H1 i H2 rozstrzygnięte (w którąkolwiek stronę).
+2. E3 dla t ∈ {10, 30} zrobione.
+3. IG zaimplementowany i przetestowany.
+4. Szkic §3–5 gotowy.
+
+**Jeśli nie, przechodzimy na IJCAI.** Zyskujemy +4 tygodnie na E4 jako oś „AI” (adaptacyjne k), VRF i dłuższe budżety.
+Abstrakt ~4.01, artykuł ~11–15.01 (do potwierdzenia). Limit to zwykle 7 stron + 2 strony referencji.
+
+---
+
+## 11. Ryzyka i plan B
+
+| Ryzyko | P-stwo | Skutek | Środek zaradczy |
+|---|---|---|---|
+| Recenzent: „to tylko Dynasearch z limitem odległości” | wysokie | odrzucenie | teoria C1–C2 (pokrycie log₂n, bezstratny filtr, O(mn + m²k³)), prawo nasycenia H2, studium k; dokładny przegląd literatury (§13) |
+| Brak wewnętrznego k* poza trywialnym n = 500 | średnie | słabszy przekaz H3 | przekaz „duże k ograniczone skalą bloku” (H2) + model kosztu; H3 zostaje dla n = 200 |
+| IG wyraźnie lepszy | wysokie | słabsza pozycja SOTA | uczciwe pozycjonowanie; test komplementarności IG_ins + kb (H7b) |
+| Python psuje pomiary czasu | średnie | zarzut metodologiczny | §7.2, analiza przy równej liczbie iteracji, model kosztu; opcjonalnie numba |
+| Filtr blokowy (§14) a wcześniejsze prace | pewne | korekta opisu | decyzja z promotorem; w tym artykule mała ablacja: test ostatniej maszyny vs dokładne granice |
+| Brak aktualnych BKS (sieć sesji blokuje strony) | średnie | ARPD tylko do LB i UB-1993 | BKS od promotora albo z literatury |
+| Niepotwierdzone terminy | średnie | przesunięcie | sprawdzić CFP w tygodniu 1 |
+| Kolizja z ICAISC (15.11) i ANNSIM (18.12) | wysokie | brak czasu | zdecydować priorytety (D9) |
+| Prace promotora (Sci Rep 2026, IFAC 2025) zawierają już tę hierarchię | niskie/średnie | utrata nowości | przeczytać w tygodniu 1; w razie czego przesunąć akcent na C2–C5 |
+
+---
+
+## 12. Decyzje do podjęcia (z promotorem)
+
+| # | Decyzja | Rekomendacja |
+|---|---|---|
+| D1 | Konferencja | ICAPS; punkt kontrolny 22.11 |
+| D2 | Rozwiązanie startowe | NEH dla wszystkich (obecny ILS startuje z permutacji identycznościowej) |
+| D3 | Budżety | t·n·m/2 ms, t ∈ {10, 30, (90)}; stałe ms tylko w suplemencie, dla ciągłości |
+| D4 | Metaheurystyki | ILS + IG w tekście głównym; obecne SA („best-neighbor SA”) poza artykułem, bo jest niestandardowe |
+| D5 | numba | go/no-go po E0, jeśli ≥ 10× w jeden dzień pracy |
+| D6 | Filtr blokowy | dokładne granice ścieżki krytycznej + omówienie skutków dla wcześniejszych prac (§14) |
+| D7 | Zakres „podsumowania” | tabela-taksonomia + akapit; bez osobnej sekcji o pracach kwantowych |
+| D8 | Adaptacyjne k w ICAPS | krótko (reguła + bandyta); pełnie w IJCAI |
+| D9 | Priorytety vs ICAISC 15.11 i ANNSIM 18.12 | do ustalenia |
+
+---
+
+## 13. Literatura do przeczytania lub sprawdzenia
+
+- **Pilne:** Bożejko, Uchroński, Wodecki, Sci. Rep. 2026 (doi 10.1038/s41598-026-66284-9) i praca IFAC 2025 o nieprzecinających się
+  przedziałach. Pytanie: czy zawierają hierarchię k / ograniczony zasięg? (sieć sesji blokuje doi.org i nature.com, potrzebne PDF-y)
+- Ergun i Orlin 2006 (ORL 34(1)); Grosso, Della Croce, Tadei 2004 (ORL 32(1)): dokładne wyniki dla Dynasearch.
+- Bożejko i Wodecki 2007 (multimoves, ORL): czy analizują ograniczony zasięg.
+- Toth i Vigo 2003 (granular TS, INFORMS JoC); listy sąsiadów i Or-opt: analogia ograniczonego zasięgu.
+- Mladenović i Hansen 1997 (VNS); Ropke i Pisinger 2006 (ALNS): baseline’y dla adaptacji k.
+- Ruiz i Stützle 2007 (IG); Fernandez-Viagas, Ruiz, Framinan 2017 (przegląd SOTA PFSP); Taillard 1990 (akceleracja wstawień).
+- Vallada, Ruiz, Framinan 2015 (benchmark VRF).
+- Balzereit i in., arXiv 2409.00771 (parametryzowane lokalne przeszukiwanie; zweryfikować autorów).
+- Statystyka: Demšar 2006 (CD), Page 1963 (test trendu), Vargha i Delaney 2000 (A12).
+- Kombinatoryka: prawo najdłuższej serii (Erdős–Rényi) i źródło dla λ_k (liczby k-bonacciego, OEIS A000073 / A000078).
+
+---
+
+## 14. Ważne ustalenie poboczne: test granic bloków w dotychczasowym kodzie
+
+`compute_block_boundaries` (`src/neighborhoods/accelerator.py`) uznaje pozycję j za granicę, gdy ostatnia maszyna zaczyna zadanie zaraz
+po przedostatniej. Patrzy więc **tylko na dwie ostatnie maszyny**, a nie na ścieżkę krytyczną. Tymczasem twierdzenie (T5) wymaga granic
+zmiany maszyny na ścieżce krytycznej. Sprawdziłem to 01.11 na losowych instancjach: 40 instancji na klasę, permutacje losowe
+i optima lokalne tribonacciego.
+
+| Klasa | Stan | Zamian poprawiających | Odrzuconych przez obecny test | Odrzuconych przez ścieżkę krytyczną |
+|---|---|---|---|---|
+| 20×5 | losowe / opt. lok. | 2 888 / 657 | 3,1% / 5,9% | 0 / 0 |
+| 20×20 | losowe / opt. lok. | 3 791 / 1 134 | 2,1% / 2,7% | 0 / 0 |
+| 50×5 | losowe / opt. lok. | 17 809 / 4 967 | 7,2% / 2,3% | 0 / 0 |
+| 50×10 | losowe / opt. lok. | 20 626 / 5 722 | 3,8% / 4,9% | 0 / 0 |
+| 50×20 | losowe / opt. lok. | 22 339 / 7 615 | 4,0% / 3,6% | 0 / 0 |
+
+Odsetek kandydatów, które przechodzą filtr (optima lokalne tribonacciego):
+
+| Klasa | k = 4: obecny / ścieżka kr. | k = n: obecny / ścieżka kr. | Liczba granic: obecny / ścieżka kr. |
+|---|---|---|---|
+| 20×5 | 57% / 27% | 81% / 47% | 7,5 / 2,5 |
+| 50×5 | 52% / 11% | 79% / 46% | 15,5 / 2,6 |
+| 50×20 | 69% / 44% | 92% / 85% | 22,4 / 10,5 |
+| 100×10 | 44% / 15% | 82% / 61% | 26,3 / 6,2 |
+
+**Wnioski:**
+1. Dokładny filtr jest **jednocześnie poprawny i silniejszy**: zostawia 2–5× mniej kandydatów przy małym k. To podstawa wyniku O(mn + m²k³) (T6).
+2. Ten sam test był używany w Adjacent, Fibonaccim, Dynasearch i Motzkinie oraz w QUBO we wcześniejszych pracach. W `windowed_qubo`
+   (sekcja accelerators) jest opisany jako twierdzenie o granicach „H[m][u] = H[m−1][u] + p”.
+   Tamte wyniki nie są błędne: to przebiegi z nieco mniejszym, heurystycznie przyciętym sąsiedztwem. **Opis „nie może poprawić, więc pomijamy”
+   jest jednak nieścisły.** Co z tym zrobić w pracach w recenzji i w przygotowaniu, to decyzja z promotorem.
+3. W tym artykule: dokładne granice dla wszystkich wariantów. Opcjonalnie krótka ablacja „przybliżony test ostatniej maszyny vs dokładne granice”.
+
+Odtworzenie: `python scripts/check_block_filter.py` (obie tabele, ~5 min). Przy P0 dodać test bezstratności do `tests/`.
+
+---
+
+## 15. Status szczegółowy (01.11.2026)
+
+- ✅ `src/neighborhoods/classical/kbonacci.py`: tryby `tribonacci`, `tetranacci`, `kbonacci_k<K>` i `kbonacci_kn`; statystyki addytywności.
+- ✅ `tests/test_kbonacci.py`: 96 przypadków; cały zestaw 121/121.
+- ✅ Dane Taillard (12 × 10) w `data/` (gitignored), zgodne z generatorem Taillarda. Źródło: aosabook/500lines.
+- ✅ Pilot `scripts/run_kbonacci_pilot.py`, wyniki w `articles/kbonacci/pilot/`. ⚠️ Liczony ze starym filtrem, do powtórzenia.
+- ✅ Szkice `main.tex` i `wersja_pl.tex` (niekompilowane, brak LaTeX-a w sesji).
+- ⏳ P0 (§9), prace promotora, CFP, BKS.
+
+**Wyniki pilota (ILS, 1000 ms, 4 instancje × 3 ziarna, RPD [%] do UB z 1993 r., stary filtr):**
+
+| | 20×5 | 20×10 | 50×10 |
 |---|---|---|---|
 | Adjacent | 1,59 | 3,26 | 11,73 |
 | k = 2 (Fib) | 1,31 | 2,46 | 8,37 |
@@ -26,156 +496,4 @@ Stan: 01.11.2026. Plan + research przed implementacją. Kontekst: `articles/kata
 | k = 6 | 0,74 | 1,09 | 4,85 |
 | k = 8 | 0,72 | 1,35 | 4,66 |
 | k = n | **0,55** | **0,99** | **3,62** |
-| Dynasearch (stary, rekurencyjny) | 0,94 | 1,49 | 5,30 |
-
-(RPD [%] do UB.)
-- **Przy 1000 ms i n ≤ 50 wygrywa k = n.** Wewnętrzne k\* trzeba szukać przy n ≥ 100 i krótszych budżetach (Faza 1).
-  Jeśli go nie będzie, wkładem jest krzywa kompromisu i szybkie DP, a nie „magiczne k”.
-- **Nowe DP robi z Dynasearch 2–3× więcej iteracji** (63 vs 23 przy n = 50) i daje lepsze RPD (3,62 vs 5,30).
-  Uwaga: stary `dynasearch_full` przy n = 50 przekracza domyślny limit rekurencji Pythona (main.py podnosi go do 2·10⁶).
-- **Addytywność:** predykcja jest dokładna w 42% ocen dla k = 2 i w 10–12% dla k ≥ 6. Zawyżenie poprawy rośnie od 10% (k = 2) do ~50% (k ≥ 8).
-- **Liczba zamian w ruchu (2–5) prawie nie zależy od k.** Rośnie natomiast średnia odległość zamiany (1 → ~4,5 przy k = 8).
-
-## 1. Wybór konferencji
-
-| | ICAPS 2027 (Columbia SC, 27.06–2.07.2027) | IJCAI 2027 (Kioto 7–13.08.2027) |
-|---|---|---|
-| Termin (NIEPOTWIERDZONY, trackery) | abstrakt ~7.12.2026, artykuł ~14.12.2026 | abstrakt ~4.01.2027, artykuł ~11–15.01.2027 |
-| Czasu od dziś | ~6 tygodni | ~10 tygodni |
-| Dopasowanie tematu | **bardzo dobre** (scheduling, local search) | dobre, ale recenzent „szerokie AI” może uznać PFSP za wąskie → potrzebny wątek AI (adaptacyjne k) |
-| Format (z poprzednich edycji, do sprawdzenia w CFP) | AAAI style, 8 stron + referencje, double-blind | IJCAI style, 7 stron + 2 str. referencji, double-blind |
-
-Oficjalne strony (`icaps27.icaps-conference.org`, `ijcai.org`) są zablokowane w sieci tej sesji, więc daty trzeba sprawdzić ręcznie.
-**Nie wolno wysłać tego samego tekstu na obie naraz**: notyfikacja ICAPS (~koniec lutego) przychodzi po terminie IJCAI.
-
-**Rekomendacja:** celujemy w **ICAPS**, zgodnie z katalogiem. Decyzja zapada w **punkcie kontrolnym ~22.11**. Jeśli pilot (Faza 1) da czytelną krzywą
-jakość(k) i k-bonacci jest konkurencyjny z Insert/IG, piszemy na ICAPS. Jeśli nie, przesuwamy się na IJCAI i
-zyskujemy ~4 tygodnie na pełny Taillard, porównanie z IG i wątek adaptacyjnego k.
-
-## 2. Co już jest w repo (kluczowe znalezisko)
-
-- `src/neighborhoods/classical/dynasearch.py` ma już parametr **`L_max`** (długość przedziału j−i+1 ≤ L_max).
-  Wariant (a) k-bonacciego, czyli zamiana końców przedziału o długości ≤ k ze środkiem zablokowanym, to **dokładnie Dynasearch z L_max = k**.
-  k = 2 daje Fibonacciego, k = n daje Dynasearch. Prototyp jest więc prawie za darmo.
-- Mamy Head/Tail (`compute_endpoint_swap_delta`), akcelerator blokowy NPI, ILS (BackTrackJumpList) i SA z reheatem,
-  runner eksperymentów, Wilcoxona (`tools/wilcoxon_analysis.py`) i dane porównawcze dla Adj/Fib/Dyn/Motz.
-- **Brakuje danych Taillard PFSP**: `data/` jest w `.gitignore`, a w klonie jest tylko `qaoa_angles.json`. Trzeba je pobrać
-  (np. `tai20_5.txt` … `tai500_20.txt`) razem z **górnymi ograniczeniami (best-known UB)**.
-- DP w `dynasearch_full` przy L_max = k skanuje kandydatów liniowo (`while next_pos`). Dla k-bonacciego potrzebne jest DP pozycyjne O(n·k).
-
-## 3. Definicja rodziny (USTALONA 01.11.2026)
-
-**Ruch elementarny = zamiana końców (i, j), odległość d = j − i ∈ {1, …, k−1}, środek przedziału stoi.**
-Ruch złożony to zbiór takich zamian na rozłącznych przedziałach [i, j].
-
-| Sąsiedztwo | dopuszczalne odległości zamian | k | liczność (n pozycji) | wzrost |
-|---|---|---|---|---|
-| Fibonacci | 1 (sąsiednie) | 2 | F(n+1) | 1,618 |
-| tribonacci | 1, 2 | 3 | T(n) (n = 10: 274) | 1,839 |
-| tetranacci | 1, 2, 3 | 4 | (n = 10: 401) | 1,928 |
-| k-bonacci | 1, …, k−1 | k | a_n = a_{n−1} + … + a_{n−k} | → 2 |
-| Dynasearch | 1, …, n−1 | n | 2^{n−1} | 2 |
-
-Liczność: permutację dzielimy na kafelki długości 1 (pozycja bez ruchu) albo L = d + 1 ∈ {2, …, k} (zamiana końców kafelka),
-co daje dokładnie rekurencję k-bonacciego. Implementacyjnie to Dynasearch z `L_max = k`. Wkładem jest więc **rodzina sparametryzowana k
-i studium k**, a nie pojedynczy nowy ruch: szybkie DP O(n·k) zamiast O(n³), koszt delt O(m·n·k²) zamiast O(m·n³),
-ciągły suwak między Fibonaccim a Dynasearchem. To trzeba wyraźnie zaznaczyć w tekście, bo recenzent zauważy związek z Dynasearchem.
-
-### Możliwe rozszerzenie (nie w tym artykule, ewentualnie future work)
-
-Inne jądra ruchu w kafelku dają ważoną rekurencję a_n = Σ w_L a_{n−L}:
-a w każdym bloku stosujemy jeden ruch z **jądra** W_L. Liczność to ważona rekurencja k-bonacciego
-a_n = Σ_{L=1..k} w_L · a_{n−L}, gdzie w_L = |W_L|. Ruchy w bloku są nierozkładalne, więc różne podziały dają różne permutacje.
-Sprawdziłem to policzeniem (n = 10, zgodne z katalogiem: 274 dla tribonacciego).
-
-| Jądro W_L (L ≥ 3) | w_L | n = 10, k = 3 | wzrost k = 3 | wzrost k → ∞ | interpretacja |
-|---|---|---|---|---|---|
-| (a) zamiana końców, środek stoi | 1 | 274 | 1,8393 | 2 | Fib → Dynasearch (oś łuków) |
-| (b) obie rotacje (= wstawienie o L−1 pozycji w lewo/prawo) | 2 | 585 | **2,0000** | ~2,20 | Fib → **złożone wstawienia** |
-| (c) zamiana końców + obie rotacje | 3 | 1046 | 2,1304 | ~2,36 | (a) ∪ (b) |
-
-Wzrost dla k = 4, 5, 6, 8: (a) 1,928 / 1,966 / 1,984 / 1,996; (b) 2,123 / 2,171 / 2,190 / 2,203.
-
-Rotacja kafelka to ograniczone wstawienie (Insert), czyli ruch najsilniejszy dla PFSP, więc (b) to naturalny kolejny artykuł
-(„złożone krótkie wstawienia”). Moduł warto napisać z parametrem jądra, ale w tym artykule używamy tylko (a).
-
-## 4. Pytania badawcze (studium k)
-
-- **RQ1. Jakość vs k:** czy PRD maleje monotonicznie z k, czy się nasyca? Czy istnieje k\*, i czy zależy od n, m i budżetu czasu?
-- **RQ2. Koszt vs k:** koszt jednej oceny to delty O(m·n·k) z Head/Tail (dla zamiany odległej o L koszt ~m·L) plus DP O(n·k).
-  Mierzymy czas na iterację i liczbę iteracji w budżecie. Kompromis „bogactwo ruchu vs liczba iteracji” jest sednem artykułu.
-- **RQ3. Addytywność:** DP sumuje delty niezależnych ruchów, a w PFSP Cmax **nie jest addytywny** (problem widoczny już w ACIIDS).
-  Mierzymy błąd |Σδ − ΔCmax_rzecz| w funkcji k. To uczciwy wynik, który recenzent A* doceni.
-- **RQ4. Struktura ruchu:** rozkład liczby elementarnych ruchów w wybranym ruchu złożonym oraz rozkład wybranych długości L.
-  Pokazuje, czy duże k jest w ogóle używane.
-- **RQ5 (wątek AI, głównie dla IJCAI):** adaptacyjne k online (bandyta UCB/ALNS nad k ∈ {2, 3, 4, 6, 8}) vs najlepsze stałe k.
-  Daje odpowiedź na pytanie „jak dobrać k bez strojenia”.
-- **RQ6 (opcjonalnie, krótka sekcja):** QUBO k-bonacciego jest pasmowe (szerokość ~k−1, ~(k−1)n zmiennych).
-  Pokazujemy tylko szerokość pasma i długość łańcuchów embeddingu w funkcji k, bez QPU, jako pomost do wcześniejszych prac.
-
-## 5. Plan eksperymentów
-
-**Faza 0: implementacja i walidacja (do ~12.11)**
-1. Pobrać Taillard PFSP i best-known UB (format jak `src/parser.py`).
-2. Moduł `src/neighborhoods/classical/kbonacci.py`: delty Head/Tail dla zamian końców o odległości ≤ k−1, DP pozycyjne O(n·k) (opcjonalnie top-k jak w Fibonaccim),
-   akcelerator blokowy (warunek ∩ granic bloków z [i, j]). Wpięcie w `CLASSICAL_MODES` i runner (`kbonacci_k3_rot` itp.).
-3. Testy: liczność = rekurencja (brute force n ≤ 10); DP = brute force najlepszego ruchu na małych n; k = 2 ≡ Fibonacci;
-   wariant (a) z k = n ≡ Dynasearch.
-4. Wydajność: czysty Python może być wąskim gardłem. Rozważyć numpy/numba dla delt, ale **jednakowo dla wszystkich sąsiedztw**
-   (uczciwe porównanie przy budżecie czasu).
-
-**Faza 1: pilot (do ~22.11, punkt kontrolny)**
-- tai20_5, tai20_10, tai20_20, tai50_10, tai50_20, tai100_10; 4 instancje × 5 ziaren; ILS (+ SA); budżety 100, 1000, 5000 ms.
-- k ∈ {2, 3, 4, 5, 6, 8, 12, n}; punkty odniesienia: Adjacent, Insert (pojedynczy, z akceleracją Taillarda), Dynasearch, Motzkin.
-- Wynik: krzywe PRD(k), czas/iteracja(k), błąd addytywności(k). Na tej podstawie wybór 3–4 wartości k i decyzja ICAPS/IJCAI.
-
-**Faza 2: pełny Taillard (ICAPS: ~23.11–3.12; IJCAI: do ~20.12)**
-- 12 plików × 10 instancji (n = 20…500), 5 ziaren, budżety jak w `windowed_qubo` (porównywalność z poprzednimi pracami).
-- **RPD względem best-known UB** (A* tego oczekuje). Dodatkowo RPD do LB dla zgodności z naszymi wcześniejszymi tabelami.
-- Silny baseline: **Iterated Greedy (Ruiz & Stützle 2007)** z lokalnym przeszukiwaniem Insert oraz IG, w którym LS = k-bonacci.
-  Bez IG recenzent A* najpewniej odrzuci pracę jako „słabe baseline’y”.
-- Statystyka: Wilcoxon + Friedman z post-hoc Nemenyi / Holm i wykres critical-difference.
-
-**Faza 3: tylko IJCAI**: adaptacyjne k (RQ5) + ewentualnie sekcja QUBO (RQ6).
-
-**Zasoby:** kampania w pełni klasyczna, więc bez quoty D-Wave. Pełny Taillard to ~120 instancji × 5 ziaren × kilka budżetów × ~10 wariantów,
-czyli rzędu dni CPU. Liczyć na M4 Pro lub w kilku sesjach chmurowych równolegle.
-
-## 6. Szkic artykułu (8 stron)
-
-1. **Wstęp:** sąsiedztwa złożone / VLSN, luka między Fibonaccim (ubogi, O(n)) a Dynasearch/Motzkinem (bogate, O(n²–n³)).
-   k-bonacci jako ciągły suwak między nimi.
-2. **Pokrewne prace:** Dynasearch (Congram/Potts/van de Velde 2002; Ergun & Orlin 2006; Grosso i in. 2004), VLSN (Ahuja i in. 2002),
-   multimoves (Bożejko & Wodecki 2007), własności blokowe (Nowicki & Smutnicki 1996, Grabowski & Wodecki 2004),
-   PFSP IG (Ruiz & Stützle 2007), parametryzowane lokalne przeszukiwanie (Balzereit i in., arXiv 2409.00771),
-   prace promotora: Sci Rep 2026 (wykładnicze sąsiedztwo Fibonacciego), IFAC 2025.
-   **Przed submisją sprawdzić, że nie zawierają już tej hierarchii** (sprawa otwarta z katalogu).
-3. **Rodzina k-bonacci:** definicja z jądrem, twierdzenie o liczności (ważona rekurencja, stała wzrostu jako pierwiastek
-   1 = Σ w_L x^{−L}), hierarchia Adj ⊂ Fib ⊂ trib ⊂ … ⊂ Dyn, poprawność DP, złożoność O(m·n·k + n·k), akcelerator blokowy.
-4. **Studium k:** RQ1–RQ4 (+ RQ5).
-5. **Wyniki na pełnym Taillardzie** i porównanie z IG/Insert.
-6. **Wnioski:** rekomendacja k\* oraz ograniczenia (addytywność).
-
-Double-blind: własne prace (Fibonacci, Motzkin, windowed QUBO) cytujemy w trzeciej osobie. Repo musi być anonimowe
-(anonymous.4open.science), bo repo na GitHubie jest publiczne i ma imię i nazwisko.
-
-## 7. Harmonogram (wariant ICAPS)
-
-| Do | Zadanie |
-|---|---|
-| 5.11 | dane Taillard + UB; sprawdzenie CFP; przegląd prac promotora (Sci Rep 2026, IFAC 2025) |
-| 12.11 | moduł kbonacci + testy (Faza 0) |
-| 22.11 | pilot + **punkt kontrolny ICAPS vs IJCAI** |
-| 3.12 | pełny Taillard + IG |
-| 7.12 | abstrakt w systemie |
-| 14.12 | artykuł (pisanie równolegle od ~25.11) |
-
-## 8. Sprawy otwarte
-
-1. ~~Jądro (a)/(b)/(c)~~: ustalone, (a) zamiany końców o odległości ≤ k−1.
-2. Prace promotora (Sci Rep 2026, IFAC 2025): czy pokrywają tę hierarchię?
-3. Daty i limity stron z oficjalnych CFP.
-4. Implementacja IG: czy jest gdzieś w historii repo, czy piszemy od zera (~1–2 dni)?
-5. Kolizja tematyczna z ICAISC 2027 (Hamming z zamian, 15.11) i ANNSIM (18.12): kto ma czas na co.
-6. Uwaga z `windowed_qubo`: Fibonacci w SA wypada słabo (15% vs Adjacent 11% przy n = 20). Warto sprawdzić, czy przyczyną nie jest
-   brak ruchu wymuszonego / top-k, zanim zbudujemy na nim rodzinę.
+| stary Dynasearch (rekurencyjny) | 0,94 | 1,49 | 5,30 |

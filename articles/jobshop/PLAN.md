@@ -1,6 +1,6 @@
 # Plan badań i artykułu: przejście z flow shopu (PFSP) na job shop (J||C_max) — rodzina otoczeń liczonych ciągami na ścieżce krytycznej
 
-Wersja 1, 01.11.2026, gałąź `claude/jobshop-plan`. Format jak w `articles/kbonacci/PLAN.md`.
+Wersja 2, 01.11.2026 (po trzech rundach przeglądu krytycznego, A.6), gałąź `claude/jobshop-plan`. Format jak w `articles/kbonacci/PLAN.md`.
 Powiązane:
 - `articles/kbonacci/PLAN.md`: oś k, czyli zasięg zamiany;
 - `articles/krzyzowania/PLAN.md`: oś c (Motzkin → ≤ c krzyżowań → inwolucje); w przygotowaniu w sesji „involution”, jeszcze nie wypchnięty;
@@ -11,6 +11,22 @@ Prototyp i pilot z tej sesji: `scripts/jobshop_proto.py`, wyniki w `articles/job
 
 Terminologia: „otoczenie” (Smutnicki) i „sąsiedztwo” (dotychczasowe teksty w repo) to to samo. W planie używam „sąsiedztwo”, jak w katalogu.
 
+> **Streszczenie dla promotora (1 minuta)**
+> - **Co:** przeniesienie naszej rodziny sąsiedztw z PFSP na job shop. Ścieżka krytyczna pełni rolę permutacji.
+>   Proponowana konstrukcja to **rodzina ruchów granicznych** (typ × zasięg × złożenie, §2.4). Zawiera N5, N6, N7, Fib, k-bonacci i Dyn jako punkty jednej przestrzeni.
+> - **Teoria:** T2 to dokładny warunek wykonalności dowolnego przestawienia wewnątrz bloków. Wnioski:
+>   - rodziny bez krzyżowań nie wymagają testów kombinacji;
+>   - krzyżowania dają ograniczenia dwuciałowe;
+>   - flow shop jest wolny od ograniczeń;
+>   - pod filtrem rodziny zamian spłaszczają się do ≤ 2 ruchów na blok (T10).
+> - **Pilot (chmura, Python):**
+>   - T2 bez wyjątku na ~184 tys. przypadków;
+>   - ILS 1 s: ruchy złożone (k = 3, c6, c7, bm3) 7,4–7,5% RPD vs N5 10,6% i N6 8,4%;
+>   - w dobrych rozwiązaniach 45–67% dalekich zamian (k = ∞) jest niewykonalnych (klasy n/m ≥ 2);
+>   - przewaga ruchów złożonych zależy od nieporządku marszrut ρ: brak przy flow shopie, największa przy pośrednim ρ.
+> - **Koszt:** ~6,5 dnia pracy Claude’a w chmurze + ~34 h Maca (opcja OPT). Bez kolizji z ICAPS/ANNSIM (harmonogram z bramkami, §10).
+> - **Potrzebne decyzje:** D1 (czy JSSP w doktoracie); czy prace o „ruchach złożonych” (Bożejko–Wodecki) lub Gröflin–Klinkert nie zawierają T2; D15 (czasopismo czy GECCO).
+
 ---
 
 ## A. PROPOZYCJE USTALEŃ I PLAN WYKONAWCZY (01.11.2026)
@@ -19,18 +35,19 @@ Terminologia: „otoczenie” (Smutnicki) i „sąsiedztwo” (dotychczasowe tek
 > i sposób budowania sąsiedztw. Druga zasada dla JSSP: **jeden kod tam, gdzie się da** (DP, QUBO, analiza statystyczna). Wtedy różnice w wynikach
 > wynikają z problemu, a nie z implementacji.
 
-### A.0 Co już zrobiono w tej sesji (prototyp + pilot, chmura, ~2 h CPU)
+### A.0 Co już zrobiono w tej sesji (prototyp + pilot, chmura, ~5 h CPU łącznie z rundami krytyki)
 
 | Element | Wynik |
 |---|---|
 | `scripts/jobshop_proto.py` | samodzielny prototyp (bez importów z `src/`): graf dysjunktywny, głowy i ogony, ścieżka krytyczna, bloki, rodziny N1/N5/Fib/k-bonacci/Dyn (+ testy Motzkina i inwolucji), estymata blokowa, test wykonalności z twierdzenia, DP z PFSP, ILS z adapterem JSSP |
 | Benchmarki | JSPLIB: 162 instancje (abz, ft, la, orb, swv, ta01–80, yn). `data/` jest w `.gitignore`, więc pobieranie skryptem (P0) |
 | Generator Taillarda dla JSSP | odtworzony; ta01 z ziaren 840612802 / 398197754 daje **identyczne** czasy i marszruty jak w JSPLIB. Pozwala zweryfikować ta01–ta80 jak `verify_taillard.py` dla PFSP |
-| **Twierdzenie o przestawieniach bloków** (§4, T2) | sformułowane i udowodnione (szkic). Brute force: **0 rozbieżności** na 62 600 losowych przestawieniach wewnątrz bloków i 51 181 ruchach-inwolucjach |
+| **Twierdzenie o przestawieniach bloków** (§4, T2) | sformułowane i udowodnione (szkic). Brute force: **0 rozbieżności** na 62 600 tasowaniach fragmentów bloków, 51 181 ruchach-inwolucjach i 70 680 pełnych tasowaniach bloków (wersja ścisła, po rundzie krytyki 1) |
 | Lematy L1–L5 (§4) | 0 naruszeń: 84 203 zamiany sąsiednie, 169 118 ruchów złożonych z rozłącznych przedziałów, 2,55 mln par zagnieżdżonych, 40 702 zamiany poprawiające (filtr), 6 400 testów DP |
-| Anatomia na Taillardzie (8 klas) | długości ścieżek i bloków, liczba kandydatów, odsetek niewykonalnych; §14.2 |
-| Kontinuum flow shop → job shop (ρ) | 4 rozmiary × 5 wartości ρ; §14.3 |
+| Anatomia na Taillardzie (8 klas) | w optimach N5 (§14.2) i w dobrych rozwiązaniach po ILS (§14.2b): długości ścieżek i bloków, kandydaci, odsetek niewykonalnych |
+| Kontinuum flow shop → job shop (ρ) | strukturalne (§14.3) i wydajnościowe: ILS w każdym ρ (§14.3b) |
 | Zejście i ILS (1 s) | §14.4–14.5 |
+| Rodzina ruchów granicznych (zamiany + wstawienia N6/N7, pojedyncze i złożone) | zaimplementowana; T2 dla rotacji: 0 rozbieżności / 24 967; pilot ILS §14.5b |
 
 ### A.1 Decyzje proponowane (do potwierdzenia z promotorem)
 
@@ -46,11 +63,11 @@ Terminologia: „otoczenie” (Smutnicki) i „sąsiedztwo” (dotychczasowe tek
 | D8 | Budżety | 0,1 / 0,5 / 1 / 2 / 5 / 10 s, 5 ziaren; jeden przebieg 10 s i ekstrakcja budżetów z `move_log` | protokół k-bonacciego (A.2 tam) |
 | D9 | Budowa sąsiedztwa | §2: jedna ścieżka krytyczna (remis rozstrzygany na rzecz poprzednika maszynowego), bloki, wirtualna permutacja, dokładny filtr granic, wykonalność z T2, DP z PFSP, dokładne C_max wybranego ruchu | §2, §4 |
 | D10 | Ocena kandydatów | **estymata blokowa** (Taillard 1994 / Balas–Vazacopoulos 1998) dla wszystkich kandydatów + dokładne C_max ruchu wybranego. „Dokładne delty” (jedna pełna ocena na kandydata) tylko jako ablacja | przy 100×20 dokładna delta kosztuje ~3 ms na kandydata, a kandydatów jest do ~190 |
-| D11 | Warianty (główne) | N1, N5 (punkty odniesienia), Fib (k = 2), k ∈ {3, 4, 6, 8}, Dyn (k = ∞), **Inw** (Dyn + krzyżująca się para graniczna). Motzkin pod filtrem ≡ Dyn (T10), więc nie liczymy go osobno. Pełne osie Motzkina i krzyżowań bez filtra w MAX. N6/N7 (wstawienia) jako mocne punkty odniesienia, jak Insert w PFSP | §2.3, §2.4 |
+| D11 | Warianty (główne) | rodzina ruchów granicznych (§2.4): N5, Fib, k ∈ {3, 4}, Dyn (zamiany); N6, N7, c6, c7 (wstawienia pojedyncze i złożone); bm3 (wszystkie typy, zasięg 2). Do tego N1 jako najsłabszy punkt odniesienia. W MAX: k ∈ {6, 8}, bm4, bm∞, Inw oraz Motzkin i krzyżowania bez filtra. Motzkin pod filtrem ≡ Dyn (T10), więc go nie liczymy | §2.3, §2.4; pilot §14.5b |
 | D12 | Kod | nowy pakiet `src/jobshop/`. Wspólne `solve_dp` i asemblery QUBO. **Zero zmian w ścieżkach PFSP**, poza adapterem w ILS/SA z testem regresji | bezpieczeństwo trwających kampanii |
 | D13 | Liczenie | Mac M4 Pro, sekwencyjnie, **po** kampanii k-bonacciego. Chmura tylko do developmentu i testów | jedna tabela = jedna maszyna (§7) |
-| D14 | Kwanty | po klasyce. QUBO z kandydatów ścieżki krytycznej jest małe i **blokowo-diagonalne** (§2.7), więc nie trzeba okien | §A.5 |
-| D15 | Publikacja | podstawowo: **czasopismo** (C&OR / J. Scheduling / EJOR), Q1–Q2 2027. Opcjonalnie GECCO 2027 (ECOM), jeśli H1 i H5 rozstrzygną się do ~10.01 i nie koliduje to z IJCAI dla k-bonacciego | §8, §10 |
+| D14 | Kwanty | po klasyce. QUBO z kandydatów ścieżki krytycznej jest małe i **blokowo-diagonalne** (T7), więc nie trzeba okien | §A.5 |
+| D15 | Publikacja | podstawowo: **czasopismo** (C&OR / J. Scheduling / EJOR), Q1–Q2 2027. Opcjonalnie GECCO 2027 (ECOM), jeśli na bramce G3 (~20.12) H1, H6 i E4 są rozstrzygnięte i nie koliduje to z IJCAI dla k-bonacciego. Plan B: notatka teoretyczna (ORL) | §8, §10 |
 
 ### A.2 Co przenosi się z PFSP 1:1, co się zmienia, co jest nowe
 
@@ -85,7 +102,7 @@ Terminologia: „otoczenie” (Smutnicki) i „sąsiedztwo” (dotychczasowe tek
 | 0.3 | `src/jobshop/`: instancja, ocena (r, q, C_max, porządek topologiczny), ścieżka krytyczna, bloki | rdzeń |
 | 0.4 | `src/jobshop/feasibility.py`: test z T2 (certyfikat głów + DFS) + testy brute force (L1–L5, T2) przeniesione z prototypu do `tests/` | poprawność |
 | 0.5 | `src/jobshop/estimate.py`: estymata blokowa + test „dolne ograniczenie dla d = 1” | D10 |
-| 0.6 | sąsiedztwa: `n1`, `n5`, `kbonacci_k<K>` (k = 2 to Fib, k = n to Dyn), `motzkin`; potem `n6`, `n7`, `involution_c<C>`. Tryby nazwane jak w PFSP z prefiksem `js_` | jeden parser trybów |
+| 0.6 | sąsiedztwa jako **jedna parametryzowana rodzina ruchów granicznych** (typ × zasięg × złożenie, §2.4). Tryby z prefiksem `js_`: `js_n1`, `js_n5`, `js_kbonacci_k<K>` (k = 2 to Fib, k = n to Dyn), `js_n6`, `js_n7`, `js_c6`, `js_c7`, `js_bm<K>`; w P2 `js_inw` i warianty bez filtra | jeden parser trybów, jeden kod (§7.1) |
 | 0.7 | **Adapter problemu** w ILS/SA (start, C_max, sąsiad, kick, id ruchu) + **test regresji**: PFSP przed i po refaktoryzacji daje identyczne wyniki przy tym samym ziarnie i deterministycznym zegarze | D5; bezpieczeństwo starych wyników |
 | 0.8 | runner: `RunConfig.problem ∈ {pfsp, jssp}`, ścieżka instancji JSPLIB, te same katalogi wyników i wznawianie | jedna infrastruktura |
 | 0.9 | `scripts/run_jobshop_campaign.py` (etapy validate → main → continuum → ablation, dry-run z estymatą czasu, metadane jak `campaign_meta.jsonl`) | jak w k-bonaccim |
@@ -104,18 +121,18 @@ Jedna para (wariant × algorytm) na pełnym Taillardzie to 80 instancji × 5 zia
 
 | | **MINIMUM** | **OPTIMUM (rekomendacja)** | **MAKSIMUM** |
 |---|---|---|---|
-| Warianty | N1, N5, Fib, k = 3, k = 4, Dyn | N1, N5, N6, Fib, k ∈ {3, 4, 6, 8}, Dyn, Inw | OPTIMUM + Motzkin i ≤ c krzyżowań **bez filtra** z oceną top-t (c ∈ {1, 2, ∞}) + N7 + ablacje (remis na ścieżce, dokładne delty, bez filtra) |
+| Warianty | N5, Fib, k = 3, Dyn, N6, c6 | N1, N5, Fib, k ∈ {3, 4}, Dyn, N6, N7, c6, c7, bm3 (11) | OPTIMUM + k ∈ {6, 8}, bm4, bm∞, Inw, Motzkin i ≤ c krzyżowań **bez filtra** z oceną top-t + TS-N5/TS-c6 (TSAB-light) + ablacje (remis na ścieżce, dokładne delty, bez filtra) |
 | Algorytmy | ILS | ILS + SA | ILS + SA |
-| Kampania główna (Mac) | 6 × 1,22 h ≈ **7,3 h** | 10 × 2 × 1,22 h ≈ **24,4 h** | 24,4 + 7,3 (osie bez filtra) + 2,4 (N7) + 2,4 (ablacje, 4 małe klasy) ≈ **36,5 h** |
+| Kampania główna (Mac) | 6 × 1,22 h ≈ **7,3 h** | 11 × 2 × 1,22 h ≈ **26,8 h** | 26,8 + 12,2 (5 wariantów × ILS + SA) + 2,4 (TS) + 2,4 (ablacje, 4 małe klasy) ≈ **43,8 h** |
 | Kontinuum ρ (E4) | — | 4 rozmiary × 5 ρ × 10 inst. × 3 ziarna × 5 wariantów × 5 s ≈ **4,6 h** | to samo + SA ≈ **9,2 h** |
 | Anatomia (E1) + zejście (E2) | ~1 h | ~2 h | ~3 h |
 | Walidacja ekstrakcji | ~1 h | ~1 h | ~1 h |
 | Zestawy klasyczne (82 instancje) | — | — | 6 wariantów × ILS ≈ **7,5 h** |
-| **Razem (Mac)** | **~9 h** (jedna noc) | **~32 h** (~1,5 doby) | **~57 h** (~2,5 doby) |
+| **Razem (Mac)** | **~9 h** (jedna noc) | **~34 h** (~1,5 doby) | **~65 h** (~2,7 doby) |
 | Kwanty | — | D-Wave MIN (§A.5) | D-Wave + IQM (§A.5) |
-| Co daje artykułowi | przeniesienie działa, pierwsze porównanie z N5 | pełna oś k, krzyżowanie graniczne (Inw), SA, kontinuum flow → job, N6 jako mocne odniesienie | + osie Motzkina i c bez filtra (krzyżowania z prawdziwymi ograniczeniami wykonalności), N7, ablacje odporności, porównanie z literaturą na klasyce |
+| Co daje artykułowi | przeniesienie działa; zamiany vs wstawienia, pojedyncze vs złożone (po jednym punkcie) | pełna mapa rodziny ruchów granicznych (typ × zasięg × złożenie), SA, kontinuum flow → job | + dalsze zasięgi, osie Motzkina i c bez filtra (krzyżowania z prawdziwymi ograniczeniami wykonalności), TS jako punkt odniesienia, ablacje, porównanie z literaturą na klasyce |
 
-**Rekomendacja: OPTIMUM.** ~1,5 doby Maca. Daje wszystkie hipotezy H1–H6 i kontinuum, czyli najmocniejszy, nowy element artykułu.
+**Rekomendacja: OPTIMUM.** ~1,5 doby Maca. Daje hipotezy H1–H6 i H9 (mapa rodziny ruchów granicznych) oraz kontinuum, czyli najmocniejszy, nowy element artykułu.
 
 ### A.5 Kwanty na JSSP: struktura QUBO i koszty
 
@@ -123,8 +140,9 @@ Najważniejsze ustalenie pilota dla części kwantowej: **QUBO JSSP jest małe i
 - Zamiany nie przekraczają granic bloków, więc konflikty występują tylko wewnątrz bloku.
 - QUBO jest więc blokowo-diagonalne.
 - Z filtrem granic blok ma ≤ 2(k − 1) zmiennych.
-- Liczba zmiennych dla całego ruchu (optima lokalne N5, §14.2): k = 2 daje 7–22, k = 3 daje 11–40, k = 4 daje 14–55.
-- Przy k = ∞ (Dyn) jest 18–186 zmiennych, z czego do 30% odpada jako niewykonalne.
+- Liczba zmiennych dla całego ruchu w optimach N5 (§14.2): k = 2 daje 7–22, k = 3 daje 11–40, k = 4 daje 14–55.
+  W dobrych rozwiązaniach (po ILS) jest jeszcze mniej: k = 2 daje 4–8, k = 3 daje 8–14, k = 4 daje 12–19.
+- Przy k = ∞ (Dyn) jest 18–186 zmiennych, z czego 19–67% odpada jako niewykonalne.
 
 | | MIN | OPT | MAX |
 |---|---|---|---|
@@ -135,6 +153,39 @@ Najważniejsze ustalenie pilota dla części kwantowej: **QUBO JSSP jest małe i
 Uczciwie: QUBO bloku ma ≤ 2(k − 1) zmiennych, więc DP rozwiązuje je dokładnie w mikrosekundach. Wartość części kwantowej to taki sam pomost
 metodyczny jak w PFSP (protokół, reżim jednego ruchu), nie szybkość. Wyjątek: rodziny z krzyżowaniami. Tam kary wykonalności (T3d) tworzą
 niebanalne QUBO wewnątrz bloku i to jest ciekawy przypadek dla QAOA.
+
+### A.6 Przegląd krytyczny: trzy rundy (01.11.2026)
+
+Plan v1 przeszedł trzy rundy „wewnętrznego krytyka”. Każdy zarzut sprawdziłem obliczeniem albo poprawką w tekście.
+
+**Runda 1: poprawność i metodologia**
+
+| # | Zarzut | Co zrobiono | Skutek |
+|---|---|---|---|
+| 1 | Anatomia i kontinuum liczone na słabych optimach N5 (RPD 15–160%), więc wnioski zależą od jakości stanów | powtórzone na stanach po 2 s ILS (§14.2b, §14.3) i dodany test wydajnościowy kontinuum (§14.3b) | „poprawiające dalekie zamiany” to artefakt. Niewykonalność dalekich ruchów rośnie z jakością (do 67%). H3 i H5 przeformułowane |
+| 2 | Po T10 rodziny zamian zapadają się do ≤ 2 ruchów granicznych na blok, a plan pomijał wstawienia (N6/N7), naturalne w JSSP | rodzina ruchów granicznych (typ × zasięg × złożenie) zaimplementowana i przetestowana (T2 dla rotacji 0 / 24 967), pilot ILS (§14.5b) | nowa propozycja główna (§2.4), H9, warianty OPT |
+| 3 | Test T2 w prototypie dopuszczał ścieżki przez inne operacje bloku. Czy to dokładne dla dowolnych przestawień? | pełne tasowania bloków (70 680): wersja luźna 1 fałszywy alarm, wersja ścisła 0 | T2 sformułowane z E-ścieżką omijającą blok; kod poprawiony. Dla zamian, wstawień i rodzin laminarnych obie wersje są równoważne |
+| 4 | Wniosek „najlepsze k rośnie z długością bloków” oparty na jednej instancji (ta51) | złagodzony do „przesłanki” | H6 |
+| 5 | Wybór ruchu rozkłada się na bloki, więc DP jest trywialne; recenzent to zauważy | powiedziane wprost (§0 p. 5); wkład przeniesiony na typ/zasięg ruchu, T2, kontinuum | §0, §11 |
+| 6 | Nowość T2 niepewna | dodane źródła (Gröflin–Klinkert, Dauzère-Pérès–Paulli, Mati i in., Brucker–Knust) i ryzyko. Pracy Bożejki–Wodeckiego nie dało się pobrać, bo domena jest poza siecią sesji | §11, §13 |
+
+**Runda 2: realizm (czas, zasoby, priorytety)**
+
+| # | Zarzut | Poprawka |
+|---|---|---|
+| 1 | Harmonogram kalendarzowy ignorował zajętość Maca i kolizje z ICAISC/ICAPS/ANNSIM | harmonogram z bramkami G0–G3; Mac najwcześniej ~23.11, najpóźniej ~20.12; pisanie od 19.12 (§10) |
+| 2 | Brak planu B, gdyby JSSP wypadł z zakresu albo wyniki były słabe | plan B: notatka teoretyczna (ORL) z T2, T3, T8, T10 i eksperymentem MIN (§10) |
+| 3 | Kwanty JSSP konkurują o quotę D-Wave i kredyty IQM z k-bonaccim | kwanty JSSP w Q1 2027, po k-bonaccim (§10) |
+| 4 | Społeczność JSSP oczekuje TS, a nie ILS z kickiem | TS-N5/TS-c6 (TSAB-light) w MAX (E6) |
+| 5 | Więcej wariantów (rodzina ruchów granicznych) wydłuża kampanię | OPT 11 wariantów: ~34 h (nadal ~1,5 doby); MAX ~65 h |
+
+**Runda 3: forma i spójność**
+
+| # | Zarzut | Poprawka |
+|---|---|---|
+| 1 | Promotor nie przeczyta 60 KB | streszczenie na początku (1 minuta) |
+| 2 | Niespójne odsyłacze i listy wariantów po zmianach | ujednolicone A.1, A.4, §6, §9, §15; wersja dokumentu |
+| 3 | Pilot nieodtwarzalny bez danych | komenda pobrania JSPLIB w §14 |
 
 ---
 
@@ -147,17 +198,24 @@ niebanalne QUBO wewnątrz bloku i to jest ciekawy przypadek dla QAOA.
   1. Przeniesienie jest naturalne. **Ścieżka krytyczna pełni rolę permutacji**, a bloki rolę odcinków między granicami.
      DP, liczności, filtr bezstratny i QUBO przechodzą prawie bez zmian (liczność to iloczyn po blokach).
   2. Jedyną nową przeszkodą jest **wykonalność**. Opisuje ją jedno twierdzenie (T2): przestawienie wewnątrz bloków jest niewykonalne
-     ⟺ istnieje odwrócona para operacji połączona ścieżką omijającą maszynę.
+     ⟺ istnieje odwrócona para operacji połączona ścieżką, która wychodzi i wchodzi łukami zadaniowymi i omija resztę bloku.
      Wnioski:
      - zamiany sąsiednie są zawsze wykonalne (van Laarhoven i in. 1992);
      - **rodziny laminarne** (k-bonacci, Dynasearch, Motzkin) wymagają tylko testu pojedynczych zamian;
      - **krzyżowania** wprowadzają prawdziwe ograniczenia dwuciałowe (dokładnie kwadratowe w QUBO).
   3. **Flow shop to granica bez przeszkód:** przy wspólnych marszrutach (ρ = 0) każde przestawienie bloku jest wykonalne.
-     Wraz z nieporządkiem marszrut ρ rośnie niewykonalność i maleje korzyść z dalekich zamian.
      Kontinuum ρ ∈ [0, 1] to oś, na której widać „przejście flow → job”.
-  4. Korzyść z zasięgu k zależy od długości bloków. Te zależą od n/m i od ρ: przy n/m ≈ 1 hierarchia się spłaszcza, przy n/m ≥ 3 i małym ρ się rozwiera.
+     Pilot: przewaga ruchów złożonych nad N5 jest niemonotoniczna. Przy ρ = 0 jej nie ma, przy pośrednim ρ jest duża (N5 traci 4–22 pp), przy ρ = 1 zależy od n/m.
+  4. Korzyść z zasięgu k zależy od długości bloków. Te zależą od n/m i od ρ: przy n/m ≈ 1 hierarchia się spłaszcza, przy n/m ≥ 2 się rozwiera.
+     **Uwaga:** w dobrych rozwiązaniach (po ILS) 45–57% dalekich zamian (k = ∞) przy 30×15 i 50×15 jest niewykonalnych.
+     Zysk z zasięgu jest więc ograniczony przez wykonalność, nie tylko przez koszt.
+  5. **Uczciwie o algorytmie:** wybór ruchu rozkłada się na bloki (T7), a filtr spłaszcza rodziny zamian do ≤ 2 ruchów granicznych na blok (T10).
+     DP jest tu trywialne (suma optimów bloków). Wkładem nie jest więc algorytm wyboru, tylko:
+     - (a) typ i zasięg ruchu granicznego (§2.4);
+     - (b) teoria wykonalności (T2 i wnioski);
+     - (c) kontinuum flow → job.
 - **Co już mamy (pilot, §14):**
-  - twierdzenie T2 z 0 rozbieżności na ~114 tys. przypadków brute force;
+  - twierdzenie T2 z 0 rozbieżności na ~184 tys. przypadków brute force (wersja ścisła);
   - zejście: k ≥ 3 daje lepsze optima lokalne niż N5 (RPD 28,4–28,6% vs 30,8%; 35–39 wygranych na 60 par);
   - ILS 1 s: Fib i k-bonacci są lepsze od N5. Z dokładnymi deltami RPD wynosi 7,5–8,3% vs 9,0% (N1 11,3%).
     Z estymatą blokową: 5,1–6,2% vs 7,3%, przy 3–4× większej liczbie iteracji.
@@ -244,16 +302,46 @@ Dla Fib filtr redukuje kandydatów dokładnie do par N5, więc **Fib = „złoż
 
   Całe sąsiedztwo (iloczyn po blokach) pozostaje wykładnicze w liczbie bloków.
 - Wniosek dla planu:
-  - w kampanii zamiast Motzkina liczymy wariant **Inw** (Dyn + dopuszczona krzyżująca się para graniczna, z testem pary z T3c);
+  - w kampanii (OPT) liczymy rodzinę ruchów granicznych (§2.4). Wariant **Inw** (Dyn + dopuszczona krzyżująca się para graniczna, z testem pary z T3c) idzie do MAX;
   - pełne osie Motzkina i krzyżowań mają sens w JSSP tylko **bez filtra**, przy ocenie nieaddytywnej (ablacja w MAX, E5).
 
 Pełne (niefiltrowane) liczności z kolumny „Liczność” opisują sąsiedztwo formalnie, np. do porównania z PFSP (§14.2).
 
-### 2.4 Wstawienia (N6/N7) i okna
-Przeniesienie operacji u za v w bloku to rotacja fragmentu bloku. Odwrócone pary to (u, x) dla każdego przeskakiwanego x.
-Z T2 wynika dokładny warunek: ruch jest niewykonalny ⟺ istnieje ścieżka JS(u) ⇝ JP(x) dla pewnego przeskakiwanego x.
-Warunek wystarczający Balasa i Vazacopoulosa jest jego szczególnym przypadkiem (do sprawdzenia w literaturze, czy dokładna wersja jest znana).
-Okno de Montmorta z katalogu (#12) przenosi się bez zmian: rotacje w oknach rozłącznych, a wykonalność sprawdza T2 dla par z okna.
+### 2.4 Rodzina ruchów granicznych: propozycja główna dla JSSP (dodane po rundzie krytyki 1)
+
+T10 pokazuje, że po filtrze wszystkie rodziny zamian sprowadzają się do najwyżej dwóch ruchów na blok: jednego przy początku i jednego przy końcu.
+Naturalnym uogólnieniem w JSSP nie jest więc geometria łuków (zagnieżdżenia, krzyżowania), tylko **typ ruchu granicznego**.
+Proponuję rodzinę z trzema osiami:
+
+| Oś | Wartości |
+|---|---|
+| **typ** ruchu, który wymienia operację graniczną | zamiana końców (S); wstawienie operacji wewnętrznej przed pierwszą lub za ostatnią (N6, Balas–Vazacopoulos); przesunięcie pierwszej lub ostatniej operacji w głąb bloku (N7, Zhang i in.) |
+| **zasięg** k | odległość ruchu ≤ k − 1 (k = 2: tylko sąsiednia zamiana, wtedy wszystkie typy są tym samym ruchem) |
+| **złożenie** | pojedynczy ruch (najlepszy) albo ruch złożony: ≤ 1 ruch na każdy koniec bloku, przedziały rozłączne, wybór DP (`solve_dp` bez zmian) |
+
+Znane sąsiedztwa to punkty tej przestrzeni:
+
+| | pojedynczy | złożony |
+|---|---|---|
+| S, k = 2 | **N5** | **Fib** |
+| S, k | — | **k-bonacci** |
+| S, k = ∞ | — | **Dyn** |
+| N6, k = ∞ | **N6** | **c6** (nowe) |
+| N6 + N7, k = ∞ | **N7** | **c7** (nowe) |
+| S + N6 + N7, k | — | **bm_k** (nowe) |
+
+Wykonalność wstawień też rozstrzyga T2. Rotacja jest przestawieniem bloku.
+- Przeniesienie u w przód (za przeskakiwane x) odwraca pary (u, x). Ruch jest niewykonalny ⟺ istnieje ścieżka JS(u) ⇝ JP(x) dla pewnego x.
+- Przeniesienie u wstecz odwraca pary (x, u). Ruch jest niewykonalny ⟺ istnieje ścieżka JS(x) ⇝ JP(u).
+- Warunek Balasa i Vazacopoulosa (L(v, n) ≥ L(JS(u), n)) **implikuje** brak takiej ścieżki. Jest więc wystarczający, a T2 daje warunek dokładny.
+  Do sprawdzenia, czy dokładna wersja jest znana (Dauzère-Pérès i Paulli 1997; Mati i in. 2011; §13).
+- Ruchy złożone z rozłącznych przedziałów są wykonalne ⟺ wykonalne są składowe (T3b, bo rotacje w rozłącznych przedziałach też dają sumę zbiorów odwróconych par).
+- Walidacja w prototypie: **0 rozbieżności T2 na 24 967 ruchach granicznych** (775 niewykonalnych) i **0 niewykonalnych na 6 291 złożeniach** wykonalnych składowych.
+  Estymata dla d = 1 pozostaje dolnym ograniczeniem (0 naruszeń).
+
+Okno de Montmorta z katalogu (#12) to dalsze uogólnienie: dowolne rotacje i deranżacje w oknach. W JSSP, przez filtr, sensowne są tylko okna dotykające granicy bloku.
+
+Wyniki pilota ILS dla tej rodziny: §14.5b.
 
 ### 2.5 Ocena kandydatów i wybór ruchu
 1. **Estymata blokowa** (D10): przelicza głowy (od lewej) i ogony (od prawej) operacji przedziału w nowej kolejności.
@@ -268,7 +356,8 @@ Okno de Montmorta z katalogu (#12) przenosi się bez zmian: rotacje w oknach roz
 ### 2.6 Wykonalność w praktyce
 - d = 1 to zawsze wykonalne, bez testu.
 - d ≥ 2: odwrócone pary zamiany (i, j) to (σ_i, σ_y) dla y ∈ (i, j] i (σ_x, σ_j) dla x ∈ [i, j).
-- Para (x, y) jest „zakazana” ⟺ istnieje ścieżka JS(x) ⇝ JP(y) albo JS(x) = JP(y).
+- Para (x, y) jest „zakazana” ⟺ istnieje E-ścieżka: JS(x) ⇝ JP(y) (albo JS(x) = JP(y)) bez przechodzenia przez inne operacje bloku.
+  Dla pojedynczej zamiany i wstawienia wystarcza zwykła osiągalność (równoważne, T2).
 - **Certyfikat głów:** ścieżka a ⇝ b wymaga r(b) ≥ r(a) + p(a). Jeśli r(JP(y)) ≤ r(JS(x)), to ścieżki nie ma.
   Pilot: certyfikuje **89,8%** wykonalnych zamian d ≥ 2 i ani razu się nie myli (0 / 118 075).
 - **DFS** z JS(x) przycinany głowami (tylko węzły z r ≤ r(JP(y))) rozstrzyga pozostałe przypadki dokładnie.
@@ -283,10 +372,10 @@ P ← ścieżka_krytyczna(r, remis = maszynowy)                  # O(L)
 B ← bloki(P)
 K ← ∅
 dla bloku (s, L) z B:
-    dla (a, b) zgodnych z geometrią rodziny (k, zagnieżdżanie, krzyżowania):
+    dla ruchu granicznego (a, b, typ) zgodnego z rodziną (typ ∈ {S, N6, N7}, zasięg b − a ≤ k − 1):
         jeśli nie granica_ok(a, b, L, indeks bloku): pomiń     # filtr L3, bezstratny
-        jeśli b − a ≥ 2 i nie wykonalna(a, b):        pomiń     # T2: certyfikat głów, potem DFS
-        K ← K ∪ {(s+a, s+b, Ĉ(a, b) − C_max)}                  # estymata O(b − a)
+        jeśli b − a ≥ 2 i nie wykonalny(a, b, typ):   pomiń     # T2: certyfikat głów, potem DFS
+        K ← K ∪ {(s+a, s+b, typ, Ĉ(a, b, typ) − C_max)}        # estymata O(b − a)
 wybór ← DP(K) (rodziny laminarne) | skojarzenie/MILP/QUBO z karami par (krzyżowania)
 jeśli wybór = ∅: wybór ← {argmin δ̂}                           # jak w PFSP
 σ' ← zastosuj(σ, wybór); C' ← ocena(σ')                        # dokładnie, O(nm)
@@ -319,7 +408,7 @@ JSSP ma płaskie krajobrazy: często kilka ścieżek krytycznych, więc wiele de
 
 | # | Wkład | Czym udowodniony |
 |---|---|---|
-| C1 | **Konstrukcja:** rodzina sąsiedztw liczonych ciągami na wirtualnej permutacji ścieżki krytycznej; liczność jako iloczyn po blokach; łańcuch zawierań N1 ⊂ … ⊂ inwolucje zachowany blokowo | T1, §2 |
+| C1 | **Konstrukcja:** rodzina sąsiedztw liczonych ciągami na wirtualnej permutacji ścieżki krytycznej; liczność jako iloczyn po blokach; spłaszczenie pod filtrem (T10). Na tej podstawie **rodzina ruchów granicznych** (typ × zasięg × złożenie), w której N5, N6, N7, Fib, k-bonacci i Dyn są punktami jednej przestrzeni | T1, T10, §2.3–2.4 |
 | C2 | **Twierdzenie o przestawieniach bloków** i wnioski: N1, rozkład dla rodzin laminarnych, krzyżowania jako ograniczenia dwuciałowe (dokładnie kwadratowe), wykonalność wstawień, flow shop bez ograniczeń | T2, T3, T8 + brute force (§14.1) |
 | C3 | **Filtr bezstratny dla ruchów złożonych** (granice bloków) + niezmienniczość DP; estymata dokładna dla d = 1 | T4, T5 |
 | C4 | **Anatomia i kontinuum flow → job:** długości bloków, kandydaci, niewykonalność i korzyść z zasięgu w funkcji n/m i ρ | H2, H5 (E1, E4) |
@@ -333,7 +422,7 @@ JSSP ma płaskie krajobrazy: często kilka ścieżek krytycznych, więc wiele de
 | # | Treść | Status |
 |---|---|---|
 | T1 | **Liczność:** \|N_F(P)\| = Π_b a_F(L_b) dla F ∈ {Fib, k-bonacci, Dyn, Motzkin, inwolucje}; wersja z filtrem | trywialne; liczby w §14.2 |
-| **T2** | **Twierdzenie o przestawieniach bloków:** niech σ' zmienia kolejność operacji tylko wewnątrz bloków jednej ścieżki krytycznej rozwiązania wykonalnego σ (dowolna permutacja zbioru pozycji każdego bloku). σ' jest niewykonalne ⟺ istnieje blok B i operacje x, y ∈ B takie, że x poprzedza y w σ, y poprzedza x w σ', i w G(σ) istnieje ścieżka JS(x) ⇝ JP(y) (albo JS(x) = JP(y)) | **dowód (szkic poniżej)**; brute force 0 / 113 781 ✅ |
+| **T2** | **Twierdzenie o przestawieniach bloków:** niech σ' zmienia kolejność operacji tylko wewnątrz bloków jednej ścieżki krytycznej rozwiązania wykonalnego σ (dowolna permutacja zbioru pozycji każdego bloku). σ' jest niewykonalne ⟺ istnieje blok B i operacje x, y ∈ B takie, że x poprzedza y w σ, y poprzedza x w σ', i w G(σ) istnieje **E-ścieżka** z x do y, czyli ścieżka x → JS(x) ⇝ JP(y) → y, która **nie przechodzi przez inne operacje bloku B** (dopuszczalne JS(x) = JP(y)) | **dowód (szkic poniżej)**; brute force: 0 / 113 781 (tasowania fragmentów, inwolucje) i **0 / 70 680 pełnych tasowań bloków** (wersja ścisła) ✅ |
 | T3a | Zamiana sąsiednich operacji krytycznych jest wykonalna (van Laarhoven i in. 1992) | wniosek z T2 (blok bez przestoju); 0 / 84 203 ✅ |
 | T3b | **Rodziny laminarne** (przedziały rozłączne lub zagnieżdżone): zbiór odwróconych par ruchu złożonego to suma zbiorów jego zamian. Zatem ruch jest wykonalny ⟺ każda zamiana jest wykonalna osobno. Obejmuje k-bonacci, Dyn i Motzkina | wniosek z T2; 0 / 169 118 (rozłączne), 0 / 2,55 mln par i 0 / 67 746 zbiorów (zagnieżdżone) ✅ |
 | T3c | **Krzyżowania** zmieniają zbiór odwróconych par: pojawiają się nowe, a niektóre znikają. Wykonalne składowe mogą dać niewykonalny ruch (0,71% par krzyżujących się, 9,5% zbiorów z krzyżowaniami), a niewykonalna składowa może zostać „uratowana” (174 przypadki) | wniosek z T2; brute force ✅ |
@@ -345,6 +434,13 @@ JSSP ma płaskie krajobrazy: często kilka ścieżek krytycznych, więc wiele de
 | T8 | **Flow shop:** przy identycznych marszrutach każde przestawienie bloku jest wykonalne | wniosek z T2; pilot: 0 niewykonalnych przy ρ = 0 ✅ |
 | T9 (opc.) | **Addytywność w JSSP:** ujęcie max-plus jak T8 k-bonacciego; delty zamian z różnych bloków oddziałują przez ścieżki omijające bloki; warunek wystarczający addytywności | do zrobienia, jeśli E5 da ciekawy obraz |
 | T10 | **Spłaszczenie rodzin pod filtrem:** po filtrze granic blok ma ≤ 2 zamiany (początek / koniec). Zagnieżdżenie jest niemożliwe (Motzkin ≡ Dyn przy addytywnym DP), a krzyżowanie tylko jako jedna para graniczna (c ≤ 1). Liczność w bloku wielomianowa (§2.3), w całym sąsiedztwie wykładnicza w liczbie bloków | dowód trywialny (z T4); ważny dla interpretacji i doboru wariantów |
+
+**Uwaga (runda krytyki 1): wersja ścisła jest konieczna.**
+- Wersja „luźna” (dowolna ścieżka JS(x) ⇝ JP(y), także przez inne operacje B łukami maszynowymi) dała **1 fałszywy alarm na 70 680** pełnych tasowań bloków. Wersja ścisła: 0.
+- Dla pojedynczej zamiany, pojedynczego wstawienia i rodzin laminarnych obie wersje są równoważne:
+  pierwszy fragment ścieżki od przenoszonej operacji jest zawsze „czysty”.
+  Pilot (§14) i test dla pojedynczych zamian (§2.6) są więc poprawne.
+- Dla krzyżowań i dowolnych przestawień implementacja musi używać wersji ścisłej (DFS z zakazem wejścia w operacje bloku).
 
 **Szkic dowodu T2.**
 - (⇐) Ścieżka x → JS(x) ⇝ JP(y) → y nie używa relacji zmienionych przez σ', więc istnieje w G(σ'). Razem z relacją maszynową y → x daje cykl.
@@ -369,12 +465,13 @@ JSSP ma płaskie krajobrazy: często kilka ścieżek krytycznych, więc wiele de
 | H0 | Implementacja poprawna (T2–T5, liczności, DP, estymata) | testy, E0 | brute force | 100% zgodności | ✅ prototyp |
 | H1 | Przy zejściu do optimum lokalnego k ≥ 3 daje lepsze optima niż N5; złożony Fib jest „zbyt zachłanny” | E2 | Wilcoxon + Holm, Page (k) | k ≥ 3 istotnie lepsze od N5 w ≥ 6/8 klas | ✅ 28,4–28,6% vs 30,8%; Fib 32,8% |
 | H2 | Korzyść z zasięgu k rośnie z długością bloków (n/m): przy 15×15 i 20×20 hierarchia się spłaszcza, przy 50×15 i 100×20 się rozwiera | E1, E3 | Spearman (k_sat, L̄), regresja k* ~ n/m | ρ_S ≥ 0,5; k* rośnie z n/m | bloki: 2,4 (15×15) → 25 (100×20) |
-| H3 | Niewykonalność rośnie z odległością zamiany d i z ρ (do pewnego poziomu); test z T2 kosztuje < 10% czasu iteracji | E0, E1, E4 | Page (d), pomiar czasu | trend istotny; udział czasu < 10% | ✅ 0,2% (d = 2) → 4,9% (d ≥ 6); do 29% kandydatów k = ∞ na 100×20 |
+| H3 | Niewykonalność rośnie z odległością ruchu d, z n/m i z jakością rozwiązania; test z T2 kosztuje < 10% czasu iteracji | E0, E1, E4 | Page (d), pomiar czasu | trend istotny; udział czasu < 10% | ✅ losowe: 0,2% (d = 2) → 4,9% (d ≥ 6). Po ILS (k = ∞): 19% (15×15), 45% (30×15), 57% (50×15), 67% (100×20) kandydatów |
 | H4 | Addytywność zawodzi silniej niż w PFSP; realny zysk ruchu złożonego to mniej niż połowa sumy delt | E5 | Wilcoxon (realny/przewidywany) | mediana < 0,5 | ✅ 36–43% (dokładne delty), 14–19% (estymata) |
-| H5 | **Kontinuum:** przy ρ → 0 (flow shop) rośnie liczba poprawiających dalekich zamian, a niewykonalność znika. Ranking rodzin zbliża się do PFSP (duże k się opłaca), a przy ρ → 1 hierarchia się spłaszcza | E4 | Friedman w każdym ρ, interakcja ρ × k (model mieszany) | istotna interakcja; k* maleje z ρ | ✅ 50×10: poprawiające dalekie zamiany 9,0 (ρ = 0) → 1,4 (ρ = 1); 0 niewykonalnych przy ρ = 0 |
+| H5 | **Kontinuum (przeformułowane):** przewaga ruchów złożonych nad N5 jest **niemonotoniczna w ρ**: brak przy ρ = 0 (flow shop), największa przy pośrednim ρ (0,1–0,5), a przy ρ = 1 zależna od n/m (przy n/m ≥ 4 instancje są łatwe: ścieżka = 1 blok, C_max = LB) | E4 | Friedman w każdym ρ, interakcja ρ × wariant (model mieszany) | istotna interakcja; przewaga maksymalna przy pośrednim ρ | ✅ pilot §14.3b: przy ρ = 0 N5 najlepsze we wszystkich 4 rozmiarach; przy ρ = 0,1–0,5 N5 traci 4–22 pp, a złożone 0,4–7,5 pp |
 | H6 | W ILS (równy czas) Fib i k-bonacci są lepsze od N5 i N1; najlepsze k jest umiarkowane (3–4) | E3 | Friedman + Nemenyi (CD), Wilcoxon + Holm | k ∈ {3, 4} istotnie lepsze od N5 w ≥ 5/8 klas | ✅ 1 s: k = 3 7,5%, Fib 8,3%, N5 9,0%, N1 11,3% |
 | H7 | **Pozycja względem odniesień:** najlepsza rodzina w ILS nie jest gorsza od ILS-N6. Do i-TSAB / TS/PR raportujemy uczciwy dystans | E6 | Wilcoxon + Holm | jak w hipotezie | — (ryzyko: N6 bywa silniejsze) |
 | H8 | **Kwanty:** QUBO JSSP mieści się bez okien (≤ 20 zmiennych dla k = 2 do 30×20), a jakość ruchu z QPU jest bliska DP | E7 | odsetek ruchów optymalnych | ≥ 90% optymalnych dla k = 2 na IQM | rozmiary ✅ (§14.2) |
+| H9 | **Złożenie ważniejsze niż typ:** w rodzinie ruchów granicznych wersje złożone są lepsze od pojedynczych dla każdego typu (S, N6, N7). Przy złożeniu różnice między typami są małe | E3 | Friedman + Nemenyi; Wilcoxon + Holm (c6 vs N6, c7 vs N7, k = 3 vs N5) | złożone istotnie lepsze od pojedynczych w ≥ 5/8 klas | ✅ pilot: c6 7,5 vs N6 8,4; c7 7,5 vs N7 8,9; k = 3 7,4 vs N5 10,6 (§14.5b) |
 
 ### 5.2 Karty hipotez
 
@@ -398,8 +495,10 @@ JSSP ma płaskie krajobrazy: często kilka ścieżek krytycznych, więc wiele de
 - *Treść:* odsetek niewykonalnych zamian rośnie z d. Test z T2 (certyfikat + DFS) zajmuje < 10% czasu iteracji.
   Rodziny laminarne nie płacą za kombinacje (T3b).
 - *Pilot:* d = 2: 0,21%; d = 3: 1,35%; d = 4: 2,8%; d = 5: 3,9%; d ≥ 6: 4,9% (losowe instancje).
-  Na Taillardzie przy k = ∞: 5% (15×15) do 29% (100×20) kandydatów.
-- *Konsekwencja:* przy dużym k niewykonalność „zjada” część sąsiedztwa. To argument za umiarkowanym k niezależnym od kosztu oceny.
+  Na Taillardzie przy k = ∞: 5–29% kandydatów w optimach N5.
+  W **dobrych rozwiązaniach (po 2 s ILS)** 19% (15×15), 45% (30×15), 57% (50×15) i **67% (100×20)**. Przy k ≤ 4 to tylko 0–5%.
+- *Konsekwencja:* im lepsze rozwiązanie i dłuższe bloki, tym więcej dalekich ruchów jest niewykonalnych.
+  To drugi, obok kosztu oceny, argument za umiarkowanym k. Wyjaśnia też, dlaczego zysk z zasięgu może się nasycać wcześniej niż w PFSP.
 
 **H4. Addytywność w JSSP**
 - *Treść:* przewidywany zysk (suma delt) przecenia realny bardziej niż w PFSP.
@@ -410,24 +509,29 @@ JSSP ma płaskie krajobrazy: często kilka ścieżek krytycznych, więc wiele de
   - ruch prawie zawsze poprawia (2–4% nie poprawia).
 - *Wariant zaradczy (E5):* top-t ruchów z DP oceniane dokładnie, wybór najlepszego. Albo „DP z budżetem zamian” (≤ s zamian w ruchu).
 
-**H5. Kontinuum flow shop → job shop (centralna nowa oś)**
-- *Treść:* generator Taillarda z parametrem ρ, czyli prawdopodobieństwem przestawienia kroku marszruty
-  (ρ = 0: wspólna marszruta, F||C_max; ρ = 1: Taillard JSSP). Wraz z ρ:
-  - (a) maleje liczba poprawiających dalekich zamian;
-  - (b) niewykonalność rośnie od 0 (T8);
-  - (c) maleje przewaga dużych k nad Fib/N5.
-- *Pilot (optima N5, 4 instancje × 2 starty):*
-  - poprawiające zamiany dowolnej długości przy 50×10: 9,0 / 9,9 / 6,8 / 4,5 / 1,4 dla ρ = 0 / 0,1 / 0,25 / 0,5 / 1;
-  - przy 30×15: 4,5 / 5,3 / 5,6 / 1,6 / 0,6;
-  - niewykonalne przy k = ∞: 0 przy ρ = 0, 10–22 kandydatów przy ρ = 0,1–0,5 (30×15, 50×10).
+**H5. Kontinuum flow shop → job shop (centralna nowa oś; przeformułowana po rundzie krytyki 1)**
+- *Generator:* Taillard z parametrem ρ, czyli prawdopodobieństwem przestawienia kroku marszruty (ρ = 0: wspólna marszruta, F||C_max; ρ = 1: Taillard JSSP).
+  Czasy p_ij są wspólne dla wszystkich ρ (te same ziarna), więc porównanie jest sparowane.
+- *Treść (wersja 2):*
+  - (a) niewykonalność dalekich ruchów wynosi 0 przy ρ = 0 (T8) i jest największa przy pośrednim ρ;
+  - (b) przewaga ruchów złożonych nad N5 jest **niemonotoniczna**: brak przy ρ = 0, maksymalna przy ρ ≈ 0,1–0,5, przy ρ = 1 zależna od n/m.
+- *Wersja 1 odrzucona:* „liczba poprawiających dalekich zamian maleje z ρ” była artefaktem słabych stanów (A.6, runda 1).
+- *Pilot wydajnościowy (§14.3b; ILS 1 s, estymata, 3 instancje × 2 ziarna; RPD do najlepszego wyniku dowolnego wariantu na instancji):*
+  - ρ = 0: N5 najlepsze we wszystkich 4 rozmiarach (0,6–2,2%); warianty złożone tracą 0,1–1,8 pp;
+  - ρ = 0,1–0,5: N5 4,4–22,1%, a najlepszy wariant złożony 0,4–4,4% (30×15: N5 14–19% vs c6 2,2–4,1%);
+  - ρ = 1: przy 20×5 i 50×10 wszystkie warianty (prawie) zawsze trafiają LB (ścieżka to jeden blok); przy 20×10 i 30×15 N5 5,7–5,8% vs c6 1,6%.
+- *Możliwe wyjaśnienie (do sprawdzenia w E4/E1):*
+  - przy ρ = 0 bloki są krótkie i liczne (3–8 operacji, 5–15 bloków), wszystko jest wykonalne, a N5 robi 2–4× więcej iteracji niż c6/Dyn;
+  - przy pośrednim ρ marszruty są „prawie przepływowe”, ale z zaburzeniami: bloki się wydłużają (do 20–24), a ruchy dalsze niż N5 są potrzebne do ich przebudowy.
 - *Most do PFSP:* przy ρ = 0 te same instancje (np. tai20_5) liczymy algorytmem PFSP i algorytmem JSSP. Różnica to zysk z niepermutacyjności.
-- *Teza w artykule (EN):* “The flow shop is the obstacle-free end of a continuum; route disorder buys feasibility constraints and shortens the useful reach.”
+  Do tego sprawdzenie, czy ranking N5 > złożone przy ρ = 0 nie jest artefaktem kodowania flow shopu jako JSSP.
+- *Teza w artykule (EN):* “Compound border moves pay off in between: not in the pure flow shop, most under mild route disorder, and less as instances become easy.”
 
 **H6. ILS przy równym czasie**
 - *Pilot (1 s, 8 instancji × 3 ziarna, dokładne delty):* RPD do BKS: N1 11,3; N5 9,0; Fib 8,3; k = 3 7,5; k = 4 7,6; Dyn 7,7.
   Iteracje: 737 / 1249 / 1312 / 882 / 828 / 642.
 - *Ze estymatą (D10):* N5 7,3; Fib 6,2; k = 3 5,1; k = 4 5,2; Dyn 5,4. Na trzech większych instancjach: N5 18,8; Fib 16,2; k = 3 13,3; Dyn 12,3.
-  Najlepsze k rośnie z długością bloków (ta51: Dyn), zgodnie z H2.
+  Na ta51 (50×15, długie bloki) wygrywa Dyn. To zgodne z H2, ale to jedna instancja, więc tylko przesłanka.
 - *Ryzyko:* 1 s i 3 ziarna to za mało na wnioski. Pełny test w E3 (10 s, 5 ziaren, ekstrakcja).
 
 **H7. Uczciwa pozycja**
@@ -436,11 +540,21 @@ JSSP ma płaskie krajobrazy: często kilka ścieżek krytycznych, więc wiele de
 
 **H8. Kwanty** opisane w §A.5 i E7.
 
+**H9. Złożenie ważniejsze niż typ ruchu (dodane po rundzie krytyki 1)**
+- *Treść:* w każdym typie ruchu granicznego (zamiana, N6, N7) wersja złożona (≤ 1 ruch na koniec bloku, wszystkie bloki naraz) jest lepsza od pojedynczej.
+  Przy złożeniu wybór typu ma drugorzędne znaczenie.
+- *Uzasadnienie:* ruch złożony skraca naraz kilka bloków tej samej ścieżki krytycznej, a pojedynczy tylko jeden.
+  T3b gwarantuje, że złożenie nie kosztuje dodatkowych testów wykonalności.
+- *Pilot (§14.5b):* c6 vs N6: 7,53 vs 8,41; c7 vs N7: 7,50 vs 8,90; k = 3 vs N5: 7,40 vs 10,62. Typy w czołówce: k = 3 7,40, bm3 7,42, c7 7,50, c6 7,53.
+- *Jeśli odrzucona* (np. N6 > c6 w dłuższych budżetach): wartość złożenia zależy od budżetu. Wtedy wykres w funkcji budżetu (ekstrakcja z 10 s) staje się centralny.
+- *Teza w artykule (EN):* “Compounding matters more than the move type: every border move gains from being applied in all blocks at once.”
+
 ---
 
 ## 6. Eksperymenty
 
-K, czyli badane warianty: N1, N5, N6, Fib, k ∈ {3, 4, 6, 8}, Dyn, Inw (+ Motzkin i ≤ c krzyżowań bez filtra, c ∈ {1, 2, ∞}, oraz N7 w MAX).
+K, czyli badane warianty (OPT): N1, N5, Fib, k ∈ {3, 4}, Dyn, N6, N7, c6, c7, bm3.
+W MAX dochodzą: k ∈ {6, 8}, bm4, bm∞, Inw, Motzkin i ≤ c krzyżowań bez filtra (c ∈ {1, 2, ∞}), TS-N5/TS-c6.
 Budżety 0,1–10 s (ekstrakcja z 10 s), 5 ziaren, ta01–ta80.
 
 ### E0. Walidacja i model kosztu (H0, H3; T2–T6), ~1 h CPU, chmura
@@ -469,17 +583,19 @@ Budżety 0,1–10 s (ekstrakcja z 10 s), 5 ziaren, ta01–ta80.
 - ILS (+ SA w OPT), warianty K, protokół D4–D8. Ekstrakcja budżetów, walidacja ekstrakcji (jak k-bonacci: 2 klasy, k ∈ {2, 4}, osobne przebiegi).
 - Analiza:
   - Friedman + Nemenyi (CD) w każdej klasie i globalnie;
-  - Wilcoxon + Holm dla par kluczowych (N5 vs Fib vs k = 3 vs najlepsze k);
+  - Wilcoxon + Holm dla par kluczowych: N5 vs Fib vs k = 3 vs najlepsze k; N6 vs c6, N7 vs c7 (H9); najlepszy złożony vs N6;
   - k* w funkcji klasy (n/m);
   - liczba ruchów.
 - **Do artykułu:** tabela główna (klasa × wariant, RPD do BKS), diagram CD, wykres k*(n/m).
 
 ### E4. Kontinuum flow shop → job shop (H5), ~4,6 h
 - Generator Taillarda z ρ ∈ {0, 0,1, 0,25, 0,5, 1}, rozmiary 20×5, 20×10, 30×15, 50×10, 10 instancji (ziarna z jednego generatora), 3 ziarna.
-- Warianty N5, Fib, k = 3, k = 8, Dyn; ILS; 5 s.
+- Warianty N5, k = 3, Dyn, N6, c6; ILS; 5 s.
+- Miara: RPD do najlepszego wyniku dowolnego wariantu na instancji (LB przy małym ρ jest słabe) i, pomocniczo, RPD do LB.
 - Analiza:
   - interakcja ρ × wariant (Friedman w każdym ρ, model mieszany);
-  - anatomia (E1) w każdym ρ.
+  - anatomia (E1) w każdym ρ, na stanach po ILS (nie na optimach N5, A.6).
+- Kontrola: przy ρ = 0 te same instancje także w kodzie PFSP, żeby wykluczyć artefakt kodowania flow shopu jako JSSP.
 - **Most do PFSP:** przy ρ = 0 dodatkowo tai20_5, tai20_10 i tai50_10 (oryginalne instancje PFSP), algorytm PFSP vs JSSP (zysk z niepermutacyjności).
 - **Do artykułu:** rysunek „ρ na osi x”: RPD wariantów, niewykonalność, poprawiające dalekie zamiany.
 
@@ -491,8 +607,9 @@ Budżety 0,1–10 s (ekstrakcja z 10 s), 5 ziaren, ta01–ta80.
   - (c) wybór tylko jednego bloku (najlepszy blok).
 - Klasy 15×15, 30×15, 50×15.
 
-### E6. Punkty odniesienia (H7), w OPT tylko N6, w MAX + N7 i zestawy klasyczne
-- N6 i N7 z dokładną wykonalnością z T2 (porównać z warunkami Balasa–Vazacopoulosa: ile ruchów N6 odrzucają niepotrzebnie).
+### E6. Punkty odniesienia (H7); N6/N7 są już w E3, w MAX dochodzą TS i zestawy klasyczne
+- N6 i N7 z dokładną wykonalnością z T2. Porównać z warunkami Balasa–Vazacopoulosa: ile ruchów N6 odrzucają niepotrzebnie (to tani, dodatkowy wynik dla T2).
+- TS-N5 i TS-c6 (TSAB-light: tabu na odwróconych łukach, najlepszy ruch nie-tabu, aspiracja): pokazuje, czy ranking sąsiedztw z ILS przenosi się na TS.
 - Zestawy klasyczne (ft, la, orb, abz, swv, yn): tabela vs BKS i krótkie porównanie z wartościami z literatury (bez powtarzania cudzych metaheurystyk).
 
 ### E7. Kwanty (H8), po klasyce
@@ -514,6 +631,7 @@ Budżety 0,1–10 s (ekstrakcja z 10 s), 5 ziaren, ta01–ta80.
 | H6 | E3 | tabela główna, CD | 6.6 |
 | H7 | E6 | N6/N7, klasyka | 6.6 |
 | H8 | E7 | rozmiary QUBO, jakość ruchu | 7 lub osobny artykuł |
+| H9 | E3 | mapa rodziny ruchów granicznych (typ × zasięg × złożenie): tabela i diagram CD | 6.6 |
 
 ---
 
@@ -561,7 +679,7 @@ Budżety 0,1–10 s (ekstrakcja z 10 s), 5 ziaren, ta01–ta80.
 |---|---|---|---|---|
 | 1 | Introduction | luka „rodzina sąsiedztw poza permutacją”, pytanie o przejście flow → job, wkład C1–C6 | — | całość |
 | 2 | Background | JSSP, graf dysjunktywny, N1–N7, estymaty; rodzina PFSP (Fib, k-bonacci, Dyn, Motzkin) | — | §13 |
-| 3 | Building neighborhoods on the critical path | wirtualna permutacja, rodziny, liczność (T1), filtr (T4), algorytm 1 (§2.7) | rys. 1 (ścieżka, bloki, ruch złożony na Gantcie), tab. 1 (taksonomia) | teoria |
+| 3 | Building neighborhoods on the critical path | wirtualna permutacja, liczność (T1), filtr (T4), spłaszczenie (T10), **rodzina ruchów granicznych** (§2.4), algorytm 1 (§2.7) | rys. 1 (ścieżka, bloki, ruch złożony na Gantcie), tab. 1 (mapa: typ × zasięg × złożenie, z N5/N6/N7/Fib/Dyn jako punktami) | teoria |
 | 4 | Feasibility | T2 z dowodem; T3a–d; wstawienia; flow shop (T8) | rys. 2 (cykl przez E-ścieżkę) | teoria |
 | 5 | Evaluation and additivity | estymata (T5), addytywność, warianty zaradcze | — | E0, E5 |
 | 6 | Experiments | 6.1 setup; 6.2 zejście; 6.3 anatomia i k; 6.4 kontinuum ρ; 6.5 addytywność; 6.6 ILS/SA + odniesienia | rys. 3–5, tab. 2–4, CD | E1–E6 |
@@ -578,10 +696,10 @@ Budżety 0,1–10 s (ekstrakcja z 10 s), 5 ziaren, ta01–ta80.
 | P0 | `bks_jssp.json` (BKS + LB, źródła, data) | 0,5 | van Hoorn 2018 + nowsze (Coupvent des Graviers i in. 2025) |
 | P0 | `src/jobshop/core.py`: instancja, ocena, r/q, ścieżka, bloki | 1 | z prototypu |
 | P0 | `feasibility.py` + `estimate.py` + testy (L1–L5, T2, T8) | 1 | z prototypu |
-| P0 | sąsiedztwa `js_n1`, `js_n5`, `js_kbonacci_k<K>`, `js_kbonacci_kn`, `js_inw` | 1 | `solve_dp` wspólne; Inw: wyliczenie O(L²) w bloku z testem pary krzyżującej (T3c) |
+| P0 | rodzina ruchów granicznych: `js_n1`, `js_n5`, `js_kbonacci_k<K>`, `js_kbonacci_kn`, `js_n6`, `js_n7`, `js_c6`, `js_c7`, `js_bm<K>` | 1,5 | `solve_dp` wspólne; jeden generator kandydatów (typ × zasięg), jedna estymata (dowolna nowa kolejność przedziału), jeden test wykonalności (T2) |
 | P0 | adapter problemu w ILS/SA + **test regresji PFSP bit w bit** | 1 | najważniejszy test etapu 0 |
 | P0 | runner + `run_jobshop_campaign.py` + `analyze_jobshop.py` + `RUN_LOCAL.md` | 1 | jak k-bonacci |
-| P1 | `js_n6`, `js_n7` (dokładna wykonalność z T2) | 1 | punkty odniesienia |
+| P1 | `js_inw` (krzyżująca się para graniczna, test pary T3c) + TS-light dla E6 (MAX) | 1 | Inw i TS tylko w MAX |
 | P1 | generator z ρ + skrypt E4 + most PFSP (ρ = 0 na tai*) | 0,5 | H5 |
 | P1 | warianty zaradcze addytywności (top-t, limit zamian) | 0,5 | E5 |
 | P2 | Motzkin i ≤ c krzyżowań **bez filtra** (ablacja: DP przedziałowe, skojarzenie z zakazami / MILP, kary T3d, ocena top-t) | 1,5 | w porozumieniu z planem krzyżowań |
@@ -589,7 +707,7 @@ Budżety 0,1–10 s (ekstrakcja z 10 s), 5 ziaren, ta01–ta80.
 | P2 | numba dla oceny i estymat | 1–2 | go/no-go po E0 |
 | P2 | wiele ścieżek krytycznych (§2.8) | 1 | tylko gdy E1 pokaże dominację plateau |
 
-**Łącznie: P0 ~6 dni, P1 ~2 dni, P2 ~4–5 dni.**
+**Łącznie: P0 ~6,5 dnia, P1 ~2 dni, P2 ~4,5–5,5 dnia.**
 
 ---
 
@@ -603,15 +721,30 @@ Kontekst terminów:
 - CPAIOR 2027 ~1–7.12.2026: za wcześnie dla JSSP;
 - GECCO 2027: termin jeszcze nieogłoszony; w 2026 było to 19.01 (abstrakt) i 26.01 (artykuł).
 
-| Okres | Zadania | Wynik |
-|---|---|---|
-| 2–15.11 | P0 w chmurze (Claude), bez angażowania Maca; lektura §13 (Bożejko–Wodecki: ruchy złożone!) | `src/jobshop/` + testy |
-| 16–30.11 | P1, E0, E1 w chmurze; rozmowa z promotorem: D1–D15 | decyzje, anatomia |
-| 1–20.12 | Mac: kampania OPT (~32 h) **po** kampanii k-bonacciego; pisanie §3–5 (teoria) | wyniki E2–E4 |
-| **punkt kontrolny ~20.12** | GECCO czy czasopismo? Warunki GECCO: H1 i H6 rozstrzygnięte; E4 gotowe; ICAPS złożony bez opóźnień | decyzja |
-| 21.12–15.01 | analiza, E5, E6; pisanie §6 | pełny szkic |
-| ~do 26.01 (jeśli GECCO) albo luty–marzec (czasopismo) | zgłoszenie | — |
-| Q1 2027 | E7 (kwanty), jeśli są kredyty | sekcja lub osobny artykuł |
+Zasoby, które się zderzają:
+- **Mac:** kampania k-bonacciego zajmuje go od ~2.11. ILS to ~22 h, z SA do ~44 h, więc Mac jest wolny najwcześniej ~5–8.11.
+  Dodatkowe przebiegi pod ICAPS mają pierwszeństwo do ~1.12.
+- **Uwaga użytkownika:** ICAISC 15.11, ICAPS 7.12 i 14.12, ANNSIM 18.12. JSSP nie może zabierać czasu pisania przed 19.12.
+  Etap 0 i kampania idą bez udziału użytkownika (Claude w chmurze i lokalny Claude z `RUN_LOCAL.md`).
+- **Quota D-Wave i kredyty IQM:** najpierw kwanty k-bonacciego (~225 s QPU, ~200 kredytów IQM). Kwanty JSSP dopiero w kolejnych miesiącach (Q1 2027).
+
+**Harmonogram oparty na bramkach (zamiast sztywnych dat):**
+
+| Bramka / okres | Zadania | Warunek przejścia dalej | Jeśli warunek niespełniony |
+|---|---|---|---|
+| **G0** (do ~8.11) | rozmowa z promotorem: D1 (JSSP w doktoracie?), D15; lektura nowości (Bożejko–Wodecki, Gröflin–Klinkert, Dauzère-Pérès–Paulli) | JSSP w zakresie; T2 i rodzina ruchów granicznych nieopisane w tej postaci | poza zakresem: tylko **plan B** (notatka teoretyczna, niżej). T2 znane: przesunąć akcent na T3/T10, rodzinę ruchów granicznych i kontinuum |
+| Etap 0 (2–15.11, chmura) | P0 (§9) | testy L1–L5, T2, T8 zielone; **regresja PFSP bit w bit** | naprawić przed czymkolwiek na Macu |
+| **G1** (~16–22.11, chmura) | E0, E1, E2 (tanie) | estymata dla d ≥ 2 porządkuje kandydatów (Spearman ≥ 0,7); koszt testu wykonalności < 10% iteracji | zmienić D10 (dokładne delty dla k ≤ 3) i przeliczyć czas kampanii |
+| Kampania (najwcześniej ~23.11, najpóźniej ~20.12; Mac) | E3 + E4 (OPT ~34 h), bez udziału użytkownika | — | — |
+| **G2** (po kampanii) | analiza | co najmniej jeden wariant złożony istotnie lepszy od N5 **i** nie gorszy od N6 w ≥ 5/8 klas | **plan B** + uczciwy wynik negatywny w rozprawie |
+| **G3** (~20.12) | GECCO czy czasopismo? | H1, H6 i E4 rozstrzygnięte; ICAPS złożony bez opóźnień | czasopismo (bez terminu) |
+| od 19.12 | pisanie §3–§6 (teorię §3–5 można szkicować wcześniej, jeśli starczy czasu) | — | — |
+| ~26.01 (jeśli GECCO) albo luty–marzec (czasopismo) | zgłoszenie | — | — |
+| Q1 2027 | E7 (kwanty), po kwantach k-bonacciego | wolna quota / kredyty | przesunąć |
+
+**Plan B (minimalna jednostka publikacyjna):** krótka notatka teoretyczna (np. Operations Research Letters / Optimization Letters, 4–6 stron).
+- Zawartość: T2 z dowodem, wnioski T3 (rodziny laminarne, krzyżowania, wstawienia), T8 (flow shop), T10 (spłaszczenie) i mały eksperyment MIN (~9 h Maca).
+- Koszt: ~1 tydzień pisania, niezależnie od kampanii OPT.
 
 ---
 
@@ -620,7 +753,9 @@ Kontekst terminów:
 | Ryzyko | P-stwo | Skutek | Środek zaradczy |
 |---|---|---|---|
 | Promotor (Bożejko–Wodecki) już ma „ruchy złożone” w blokach JSSP | średnie | utrata części nowości | przeczytać w tygodniu 1. Nowość przesunąć na T2/T3 (wykonalność rodzin, krzyżowania jako kary dwuciałowe), kontinuum ρ i rodzinę liczoną ciągami |
-| „To tylko N5 z DP” | średnie | słaba recenzja | Fib = złożone N5 to tylko punkt wyjścia; wkład to oś k, T2 z wnioskami (rodziny laminarne, krzyżowania, flow shop), T10 i kontinuum |
+| „To tylko N5 z DP” / „DP jest tu trywialne” | wysokie | słaba recenzja | przyznajemy to wprost (T7, T10). Wkład: rodzina ruchów granicznych (typ × zasięg × złożenie, §2.4), T2 z wnioskami (rodziny laminarne, krzyżowania, wstawienia, flow shop) i kontinuum |
+| **T2 (lub jego istotna część) jest już znane** | średnie | słabsza teoria | sprawdzić w tygodniu 1: Gröflin i Klinkert (short cycle property, wykonalne wstawienia), Dauzère-Pérès i Paulli 1997, Mati i in. 2011, Brucker i Knust („Complex Scheduling”). Jeśli znane, cytujemy i akcentujemy wnioski: rodziny laminarne, krzyżowania jako kary dwuciałowe, flow shop, rotacje |
+| Brak dostępu do części literatury z sesji (np. yadda.icm.edu.pl poza dozwoloną siecią) | pewne | opóźnienie oceny nowości | PDF-y od promotora albo dopuszczenie domeny w ustawieniach sieci sesji |
 | ILS z kickiem słaby wobec SOTA | wysokie | słabsza pozycja | H7: uczciwa pozycja, porównanie z N6/N7 w tym samym szkielecie |
 | Python: mało iteracji przy 100×20 | wysokie | zaszumione wnioski dla dużych klas | estymata zamiast dokładnych delt (D10), liczba iteracji w tabelach, numba (P2) |
 | Addytywność psuje duże k | średnie | H6 słabsze | E5 (top-t, limit zamian); to też wynik |
@@ -645,6 +780,7 @@ Kontekst terminów:
 | D11 | Zakres wariantów | OPTIMUM |
 | D15 | Publikacja | czasopismo; GECCO tylko po punkcie kontrolnym |
 | — | Relacja do prac promotora o ruchach złożonych | do ustalenia po lekturze (§13) |
+| — | Konstrukcja główna | rodzina ruchów granicznych (§2.4) zamiast „samej” osi k; Motzkin i krzyżowania w JSSP tylko jako ablacja bez filtra (T10) |
 | — | Kolejność względem planu krzyżowań | krzyżowania najpierw na PFSP. W JSSP oś c pod filtrem zawęża się do c ≤ 1 na blok (T10), więc w OPT jest tylko Inw; pełna oś bez filtra w MAX |
 
 ---
@@ -655,6 +791,11 @@ Kontekst terminów:
   - Bożejko, Wodecki: tabu search z blokami i „compound moves technique”. Czy obejmuje JSSP i wykonalność ruchów złożonych?
   - Bożejko, Uchroński, Wodecki (2012): bloki ścieżki krytycznej, eliminacja.
   - Grabowski, Wodecki (2004, C&OR): bardzo szybki TS dla flow shopu.
+  - **Nowość T2:**
+    - Gröflin, Klinkert (2007, EJOR: wykonalne wstawienia, short cycle property; 2009, DAM: blokujący job shop);
+    - Dauzère-Pérès, Paulli (1997, Ann. OR): klasyfikacja ruchów;
+    - Mati, Dauzère-Pérès, Lahlou (2011, EJOR);
+    - Brucker, Knust, „Complex Scheduling” (rozdział o sąsiedztwach i wykonalności).
 - **Sąsiedztwa JSSP:**
   - van Laarhoven, Aarts, Lenstra 1992 (Oper. Res. 40(1));
   - Dell’Amico, Trubian 1993 (Ann. OR 41);
@@ -680,6 +821,12 @@ Kontekst terminów:
 
 Instancje pobrane z JSPLIB do `data/JSPLIB/instances` (poza gitem).
 
+Pobranie danych (jednorazowo; P0 zastąpi to skryptem `fetch_jsplib.py`):
+
+```bash
+mkdir -p data/JSPLIB/instances && python3 -c "import json,urllib.request as u; b='https://raw.githubusercontent.com/tamy0612/JSPLIB/master/'; [u.urlretrieve(b+e['path'], 'data/JSPLIB/instances/'+e['name']) for e in json.load(u.urlopen(b+'instances.json'))]"
+```
+
 Odtworzenie pilota:
 
 ```bash
@@ -690,6 +837,10 @@ python scripts/jobshop_proto.py continuum --instances 4 --states 2
 python scripts/jobshop_proto.py descent --files ta01,ta02,ft10 --starts 4
 python scripts/jobshop_proto.py ils --files ta01,ft10 --seeds 3 --time-ms 1000
 python scripts/jobshop_proto.py additivity --files ta01,ft10 --states 12
+python scripts/jobshop_proto.py anatomy --classes 15x15,50x15 --instances 3 --states 2 --ils-ms 2000
+python scripts/jobshop_proto.py continuum --instances 4 --states 2 --ils-ms 2000
+python scripts/jobshop_proto.py continuum_ils --modes n5,k3,dyn,c6 --instances 3 --seeds 2 --time-ms 1000
+python scripts/jobshop_proto.py ils --files ta01,ft10 --modes n5,k3,dyn,n6,n7,c6,c7,bm3,bminf --seeds 3 --time-ms 1000 --estimate
 ```
 
 ### 14.1 Lematy i twierdzenie (losowe instancje n ≤ 20, m ≤ 15, ρ ∈ {0; 0,5; 1}, stany losowe i optima lokalne N1)
@@ -704,6 +855,8 @@ python scripts/jobshop_proto.py additivity --files ta01,ft10 --states 12
 | T5: estymata d = 1 to dolne ograniczenie i jest dokładna, gdy ruch nie poprawia | 84 203 | 0 |
 | **T2: dowolne przestawienia w 1–3 blokach** | 62 600 (977 niewykonalnych) | **0** |
 | **T2: inwolucje (≥ 3 rozłączne zamiany, w tym 36 782 z krzyżowaniami)** | 51 181 (10 052 niewykonalnych) | **0** |
+| **T2, wersja ścisła: pełne tasowania 1–2 bloków (≥ 4 operacje)** | 70 680 (17 036 niewykonalnych) | **0** (wersja luźna: 1 fałszywy alarm) |
+| T2 dla ruchów granicznych (zamiany + wstawienia N6/N7) / złożenia rozłącznych | 24 967 (775 niewyk.) / 6 291 | 0 / 0 |
 | T3c: pary krzyżujące się, obie wykonalne, razem niewykonalne | 18 196 / 2 578 173 | (0,71%) |
 | T3c: zbiory z krzyżowaniami niewykonalne mimo wykonalnych składowych | 6 258 / 66 082 | (9,5%) |
 | T3c: „ratowanie” (składowa niewykonalna, ruch wykonalny), tylko przy krzyżowaniach | 174 | — |
@@ -734,7 +887,30 @@ Wnioski:
 3. Przy k = ∞ niewykonalnych jest 5–29% kandydatów.
 4. W optimach N5 poprawiające dalekie zamiany są rzadkie (0,2–1,3 na stan). Zysk z zasięgu objawia się raczej w trakcie przeszukiwania (H6) niż w ucieczce z optimum.
 
+### 14.2b Anatomia w dobrych rozwiązaniach (dodane po rundzie krytyki 1)
+
+Stany: 2 s ILS (k = 4, estymata) ze startu round-robin lub losowego, potem domknięcie N5. 3 instancje × 2 stany na klasę.
+RPD: do BKS tam, gdzie jest w prototypie (ta01–05), w pozostałych do LB. Dla 20×20 LB jest słabe, więc RPD jest zawyżone.
+
+| Klasa | RPD [%] | L (ścieżka) | bloki | L̄ bloku | max blok | kand. k=2 | k=3 | k=4 | k=8 | k=∞ | niewyk. k=4 | niewyk. k=8 | niewyk. k=∞ |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 15×15 | 5,8 | 21 | 7,7 | 3,1 | 8,0 | 6,0 | 9,7 | 12,2 | 17,5 | 18,3 | 0 | 2,7 | 3,5 (19%) |
+| 20×20 | (46 do LB) | 30 | 13,0 | 2,4 | 8,5 | 7,8 | 13,8 | 18,7 | 25,5 | 28,2 | 0,7 | 3,2 | 5,7 (20%) |
+| 30×15 | 15,7 | 35 | 4,7 | 9,1 | 17,0 | 5,3 | 10,0 | 14,0 | 26,2 | 41,8 | 0,3 | 4,7 | 19,0 (45%) |
+| 50×15 | 11,3 | 56 | 3,7 | 20,1 | 31,7 | 4,0 | 7,8 | 11,7 | 23,7 | 63,7 | 0 | 2,0 | 36,2 (57%) |
+| 100×20 | 10,3 | 113 | 3,7 | 32,8 | 60,8 | 4,5 | 8,5 | 12,3 | 26,0 | 116,7 | 0 | 2,2 | 77,7 (67%) |
+
+Wnioski z porównania z §14.2:
+1. W dobrych rozwiązaniach przy n/m ≥ 2 ścieżka ma **mniej, ale dłuższych bloków** (np. 50×15: 3,7 bloku o średniej długości 20).
+2. Kandydatów przy k ≤ 4 jest bardzo mało (4–19), więc QUBO jest jeszcze mniejsze.
+3. **Niewykonalność dalekich zamian rośnie z jakością i z n/m:** do 67% przy k = ∞. Przy k ≤ 4 praktycznie jej nie ma.
+4. Liczba „poprawiających dalekich zamian” z §14.2–14.3 (do 9 na stan) to **artefakt słabych stanów**.
+   W dobrych rozwiązaniach (lokalnych optimach silniejszego sąsiedztwa) z definicji jest 0. Dlatego H5 mierzymy wydajnościowo (§14.3b).
+
 ### 14.3 Kontinuum flow shop → job shop (generator Taillarda z ρ; optima N5; 4 instancje × 2 starty)
+
+> **Uwaga (runda krytyki 1):** tabela pochodzi z optimów N5, czyli stanów słabej jakości. Kolumny „popr.” to artefakt (w dobrych rozwiązaniach takich zamian nie ma).
+> Wnioski o kontinuum opierają się na §14.3b (wydajność) i na niewykonalności w stanach po ILS (§14.3b, akapit „Struktura”). Tabelę zostawiam dla przejrzystości historii planu.
 
 | Rozmiar | ρ | L (ścieżka) | L̄ bloku | kand. k=∞ | niewyk. k=∞ | popr. k=3 | popr. k=8 | popr. k=∞ | log₁₀\|Dyn\| |
 |---|---|---|---|---|---|---|---|---|---|
@@ -754,10 +930,48 @@ Wnioski:
 
 Wnioski:
 1. **ρ = 0 daje zero niewykonalnych** (T8).
-2. Poprawiające dalekie zamiany są najczęstsze przy ρ ≤ 0,25 i spadają 3–9× do ρ = 1.
+2. ~~Poprawiające dalekie zamiany są najczęstsze przy ρ ≤ 0,25 i spadają 3–9× do ρ = 1.~~ Artefakt słabych stanów; zastąpione przez §14.3b.
 3. Ścieżki i sąsiedztwa są największe przy małym, ale niezerowym ρ.
 
 Uwaga: RPD do LB przy małym ρ jest duże (LB obciążenia maszyn jest słaby dla flow shopu), więc w E4 porównujemy warianty względem siebie, nie do LB.
+
+### 14.3b Kontinuum wydajnościowo (dodane po rundzie krytyki 1)
+
+Ustawienia: ILS 1 s, estymata, 3 instancje × 2 ziarna na (rozmiar, ρ). Wartości to RPD [%] do najlepszego wyniku dowolnego wariantu na tej instancji,
+bo LB jest słabe przy małym ρ.
+
+| Rozmiar | ρ | N5 | k = 3 | Dyn | c6 |
+|---|---|---|---|---|---|
+| 20×5 | 0 | **2,23** | 2,42 | 2,90 | 2,30 |
+| 20×5 | 0,1 | 6,97 | 4,51 | **2,18** | 2,39 |
+| 20×5 | 0,25 | 6,06 | 3,99 | 3,76 | **2,27** |
+| 20×5 | 0,5 | 6,51 | 3,73 | 1,63 | **1,28** |
+| 20×5 | 1 | 0 | 0 | 0 | 0 |
+| 20×10 | 0 | **0,60** | 1,56 | 1,43 | 0,99 |
+| 20×10 | 0,1 | 4,37 | 2,03 | **1,54** | 1,98 |
+| 20×10 | 0,25 | 5,76 | **0,44** | 2,97 | 1,87 |
+| 20×10 | 0,5 | 8,72 | 4,35 | **2,00** | 3,96 |
+| 20×10 | 1 | 5,66 | 2,54 | 1,66 | **1,60** |
+| 30×15 | 0 | **0,68** | 2,46 | 2,27 | 2,47 |
+| 30×15 | 0,1 | 18,74 | **3,39** | 7,52 | 4,13 |
+| 30×15 | 0,25 | 16,62 | 4,02 | 4,26 | **2,20** |
+| 30×15 | 0,5 | 14,18 | 3,85 | 4,28 | **2,61** |
+| 30×15 | 1 | 5,78 | 2,81 | 1,84 | **1,59** |
+| 50×10 | 0 | **0,64** | 1,41 | 1,65 | 1,11 |
+| 50×10 | 0,1 | 22,14 | 7,54 | **4,37** | 5,63 |
+| 50×10 | 0,25 | 17,75 | 4,58 | **2,69** | 4,39 |
+| 50×10 | 0,5 | 17,35 | 5,72 | **1,75** | 2,63 |
+| 50×10 | 1 | 1,59 | 0,48 | **0** | **0** |
+
+Struktura w tych samych instancjach (stany po 2 s ILS): przy ρ = 0 niewykonalnych jest 0, przy ρ = 0,1–0,5 do 45 z 99 kandydatów k = ∞ (50×10).
+Przy ρ = 1 i n/m ≥ 4 ścieżka krytyczna to 1–1,25 bloku, czyli C_max = LB.
+
+Wnioski:
+1. **ρ = 0 (flow shop): N5 wygrywa we wszystkich czterech rozmiarach.** Pozostałe warianty są blisko.
+2. **ρ = 0,1–0,5: N5 jest 3–8× gorsze od najlepszego wariantu złożonego.**
+3. **ρ = 1:** przewaga złożonych jest mniejsza, a przy n/m ≥ 4 znika, bo instancje są łatwe.
+
+Kandydat na główny wynik artykułu (H5). Wymaga E4 z większą próbą i dłuższym budżetem.
 
 ### 14.4 Zejście best-improvement (15 instancji: ta01–05, ft10, la16–20, abz5–6, orb01–02; 4 starty; dokładne delty)
 
@@ -796,6 +1010,26 @@ Wnioski z pilota ILS:
 
 To tylko 1 s i 3 ziarna, wyłącznie do kierunku. Wnioski rozstrzyga E3.
 
+### 14.5b ILS z rodziną ruchów granicznych (dodane po rundzie krytyki 1)
+
+Ustawienia: 1 s, estymata, 11 instancji (8 małych + ta21, ta31, ta51), 3 ziarna, RPD do BKS.
+Ranga to średnia ranga na instancjach (1 = najlepszy z 9).
+
+| | N5 | k = 3 | Dyn | N6 | N7 | c6 | c7 | bm3 | bm∞ |
+|---|---|---|---|---|---|---|---|---|---|
+| RPD [%], 8 małych | 7,54 | **5,26** | 5,52 | 5,68 | 6,53 | 5,36 | 5,48 | 5,42 | 5,70 |
+| RPD [%], 3 większe | 18,84 | 13,12 | **12,69** | 15,69 | 15,21 | 13,31 | 12,89 | 12,76 | 13,02 |
+| RPD [%], wszystkie 11 | 10,62 | **7,40** | 7,47 | 8,41 | 8,90 | 7,53 | 7,50 | 7,42 | 7,70 |
+| średnia ranga | 8,77 | **3,36** | 4,45 | 5,73 | 7,05 | 3,68 | 4,32 | 3,68 | 3,95 |
+| iteracje / s (11 instancji) | 2 868 | 2 659 | 2 095 | 2 304 | 1 970 | 2 109 | 1 974 | 2 403 | 1 592 |
+
+Wnioski:
+1. **Złożenie pomaga także wstawieniom:** c6 jest lepsze od N6 (7,53 vs 8,41), a c7 od N7 (7,50 vs 8,90).
+2. N6 jest lepsze od N5 (8,41 vs 10,62), zgodnie z literaturą.
+3. Ale **złożone zamiany o umiarkowanym zasięgu (k = 3) są co najmniej tak dobre jak pojedyncze wstawienia N6/N7**.
+4. Czołówka (k = 3, bm3, c6, c7, Dyn) jest w pilocie nierozróżnialna (1 s, 3 ziarna). Rozstrzyga E3.
+5. Dodanie typów wstawień do zamian (bm3 vs k = 3) w pilocie nic nie daje. Hipoteza robocza H9: o jakości decyduje bardziej **złożenie** niż **typ** ruchu.
+
 ### 14.6 Addytywność (9 instancji, 12 stanów każda: od losowych do bliskich optimum N5; ruchy z ≥ 2 zamianami)
 
 | | Fib | k = 3 | k = 4 | k = 8 | Dyn |
@@ -815,8 +1049,8 @@ Mimo to ruch złożony prawie zawsze poprawia. Estymata jest optymistyczna zgodn
 
 | Zasób | MIN | OPT | MAX |
 |---|---|---|---|
-| Praca w chmurze (Claude) | P0 ~6 dni | P0 + P1 ~8 dni | P0–P2 ~13 dni |
-| Mac M4 Pro (sekwencyjnie) | ~9 h | ~32 h | ~57 h |
+| Praca w chmurze (Claude) | P0 ~6,5 dnia | P0 + P1 ~8,5 dnia | P0–P2 ~13–14 dni |
+| Mac M4 Pro (sekwencyjnie) | ~9 h | ~34 h | ~65 h |
 | D-Wave (QPU) | — | ~3 s (poziom MIN z §A.5) | 72–216 s (poziom OPT z §A.5) |
 | IQM (kredyty) | — | ~12 (darmowa pula) | ~35–175 (do ~105 USD) |
 | Pamięć / dysk | pomijalne (wyniki JSON jak w PFSP) | | |

@@ -416,6 +416,176 @@ def double_bridge_jssp(inst: Instance, seq, rng: random.Random) -> list[list[int
 
 
 # ---------------------------------------------------------------------------
+# Border-move family: swaps and insertions that replace a block's first/last op
+# ---------------------------------------------------------------------------
+# Types on an interval [i, j] of path positions inside one block (block-local a < b):
+#   "swap"   : endpoint swap                       (left or right border)
+#   "front"  : op at the right end jumps to the left end  (N6 "move before the block")
+#   "inward" : op at the left end moves to the right end  (N7 "first op into the block")
+# A left-border candidate has its interval starting at the block start, a right-border
+# candidate ending at the block end ("front" on the right border = last op moved inward,
+# "inward" on the right border = an interior op moved to the block end, N6 "after").
+
+def _new_order(seg: list[int], typ: str) -> list[int]:
+    if typ == "swap":
+        return [seg[-1]] + seg[1:-1] + [seg[0]]
+    if typ == "front":
+        return [seg[-1]] + seg[:-1]
+    if typ == "inward":
+        return seg[1:] + [seg[0]]
+    raise ValueError(typ)
+
+
+def order_feasible(inst: Instance, ev: Eval, old: list[int], new: list[int]) -> bool:
+    """T2 for one reordered interval: no reversed pair (x, y) with a path JS(x) -> JP(y)."""
+    m, r = inst.m, ev.r
+    npos = {o: t for t, o in enumerate(new)}
+    for a in range(len(old)):
+        x = old[a]
+        js = x + 1 if (x + 1) % m else -1
+        if js < 0:
+            continue
+        for b in range(a + 1, len(old)):
+            y = old[b]
+            if npos[y] > npos[x]:
+                continue  # pair keeps its order
+            jp = y - 1 if y % m else -1
+            if jp < 0:
+                continue
+            if b == a + 1:
+                continue  # adjacent critical pair: never a path (T3a)
+            if (jp == js or r[jp] > r[js]) and reach(inst, ev, js, jp, forbid=set(old)):
+                return False
+    return True
+
+
+def estimate_order(inst: Instance, seq, ev: Eval, k: int, pa: int, pb: int, new: list[int]) -> int:
+    """Block-local estimate for an arbitrary new order of machine positions pa..pb."""
+    m, dur, r, q = inst.m, inst.dur, ev.r, ev.q
+    before = seq[k][pa - 1] if pa > 0 else -1
+    after = seq[k][pb + 1] if pb + 1 < len(seq[k]) else -1
+    hr = []
+    prev_end = (r[before] + dur[before]) if before >= 0 else 0
+    for o in new:
+        jp = o - 1 if o % m else -1
+        h = max(prev_end, (r[jp] + dur[jp]) if jp >= 0 else 0)
+        hr.append(h)
+        prev_end = h + dur[o]
+    nxt = (q[after] + dur[after]) if after >= 0 else 0
+    best = 0
+    for t in range(len(new) - 1, -1, -1):
+        o = new[t]
+        js = o + 1 if (o + 1) % m else -1
+        tail = max(nxt, (q[js] + dur[js]) if js >= 0 else 0)
+        nxt = tail + dur[o]
+        best = max(best, hr[t] + dur[o] + tail)
+    return best
+
+
+def border_candidates(path, blks, kmax: int, combos: tuple):
+    """(i, j, typ) border moves of reach j - i <= kmax - 1 (lossless border rule).
+
+    combos: subset of {("L", t), ("R", t)} with t in {"swap", "front", "inward"}:
+      ("L", "front")  N6: an interior op jumps before the block's first op
+      ("R", "inward") N6: an interior op jumps after the block's last op
+      ("L", "inward") N7: the first op moves into the block
+      ("R", "front")  N7: the last op moves into the block
+      ("L"/"R", "swap") endpoint swap with the first / last op
+    """
+    out = set()
+    nb = len(blks)
+    for bidx, (s, L) in enumerate(blks):
+        if L < 2 or nb == 1:
+            continue
+        for d in range(1, min(kmax - 1, L - 1) + 1):
+            for side, typ in combos:
+                t = "swap" if d == 1 else typ  # for d = 1 every type is the same adjacent swap
+                if side == "L" and bidx != 0:
+                    out.add((s, s + d, t))
+                if side == "R" and bidx != nb - 1:
+                    out.add((s + L - 1 - d, s + L - 1, t))
+    return sorted(out)
+
+
+def apply_orders(inst: Instance, seq, ev: Eval, path, moves):
+    new = [x[:] for x in seq]
+    for i, j, typ in moves:
+        k = inst.mach[path[i]]
+        pa, pb = ev.pos[path[i]], ev.pos[path[j]]
+        new[k][pa : pb + 1] = _new_order(seq[k][pa : pb + 1], typ)
+    return new
+
+
+_N6 = (("L", "front"), ("R", "inward"))
+_N7 = (("L", "front"), ("R", "inward"), ("L", "inward"), ("R", "front"))
+_ALL = (("L", "front"), ("R", "inward"), ("L", "inward"), ("R", "front"), ("L", "swap"), ("R", "swap"))
+BORDER_MODES = {
+    # mode: (kmax, combos, compound)
+    "n6": (10**9, _N6, False),      # Balas-Vazacopoulos insertions to the block ends, single move
+    "n7": (10**9, _N7, False),      # + first/last op moved into the block (Zhang et al.)
+    "c6": (10**9, _N6, True),       # compound N6 (one move per block end, disjoint)
+    "c7": (10**9, _N7, True),
+    "bm3": (3, _ALL, True),         # border moves (swap + insertions), reach <= 2, compound
+    "bm4": (4, _ALL, True),
+    "bminf": (10**9, _ALL, True),
+}
+
+
+def best_border_move(inst: Instance, seq, ev: Eval, mode: str, exact: bool = False):
+    kmax, combos, compound = BORDER_MODES[mode]
+    path = critical_path(inst, ev)
+    blks = blocks_of(path, ev)
+    scored = []
+    for i, j, typ in border_candidates(path, blks, kmax, combos):
+        k = inst.mach[path[i]]
+        pa, pb = ev.pos[path[i]], ev.pos[path[j]]
+        old = seq[k][pa : pb + 1]
+        new = _new_order(old, typ)
+        if j - i >= 2 and not order_feasible(inst, ev, old, new):
+            continue
+        if exact:
+            c = cmax(inst, apply_orders(inst, seq, ev, path, [(i, j, typ)]))
+        else:
+            c = estimate_order(inst, seq, ev, k, pa, pb, new)
+        scored.append((i, j, c - ev.C, typ))
+    if not scored:
+        return None, None, []
+    if compound:
+        ending_at: dict = {}
+        for c in scored:
+            ending_at.setdefault(c[1], []).append(c)
+        n = len(path)
+        best = [0] * (n + 1)
+        choice = [None] * (n + 1)
+        for p_ in range(1, n + 1):
+            best[p_] = best[p_ - 1]
+            for c in ending_at.get(p_ - 1, ()):
+                val = best[c[0]] + c[2]
+                if val < best[p_]:
+                    best[p_], choice[p_] = val, c
+        chosen = []
+        p_ = n
+        while p_ > 0:
+            c = choice[p_]
+            if c is None:
+                p_ -= 1
+            else:
+                chosen.append(c)
+                p_ = c[0]
+        if not chosen:
+            chosen = [min(scored, key=lambda x: x[2])]
+    else:
+        chosen = [min(scored, key=lambda x: x[2])]
+    moves = [(c[0], c[1], c[3]) for c in chosen]
+    new = apply_orders(inst, seq, ev, path, moves)
+    newC = cmax(inst, new)
+    if newC is None:
+        return None, None, []
+    mid = frozenset((path[i], path[j], typ) for i, j, typ in moves)
+    return new, newC, mid
+
+
+# ---------------------------------------------------------------------------
 # Neighborhood search step
 # ---------------------------------------------------------------------------
 
@@ -428,6 +598,8 @@ def best_move(inst: Instance, seq, ev: Eval, mode: str, exact: bool = True, stat
     exact single-swap deltas (one evaluation each), else the block-local estimate.
     Returns (new_seq, new_C, swaps) or (None, None, []) when there is no candidate.
     """
+    if mode in BORDER_MODES:
+        return best_border_move(inst, seq, ev, mode, exact=exact)
     path = critical_path(inst, ev)
     blks = blocks_of(path, ev)
     if mode in ("n1", "n5"):
@@ -704,8 +876,12 @@ def cmd_anatomy(args) -> dict:
             inst = load_ta(args.jsplib, idx)
             for s in range(args.states):
                 seq = random_start(inst, rng) if s % 2 == 0 else identity_start(inst)
+                if args.ils_ms > 0:
+                    C, _, seq = ils_jssp(inst, "k4", args.ils_ms, seed=s, exact=False, start=seq, return_seq=True)
                 seq, C, steps = local_opt(inst, seq, "n5")
-                rows.append(anatomy_state(inst, seq, check_feas=not args.no_feas))
+                row = anatomy_state(inst, seq, check_feas=not args.no_feas)
+                row["rpd_bks_or_lb"] = 100.0 * (C - BKS.get(inst.name, inst.lb)) / BKS.get(inst.name, inst.lb)
+                rows.append(row)
         agg = {k: round(statistics.mean(r[k] for r in rows), 3) for k in rows[0]}
         agg["block_len_q90"] = 0
         out[cls] = agg
@@ -725,6 +901,8 @@ def cmd_continuum(args) -> dict:
                 inst = taillard_jssp(rng.randrange(1, 2**31 - 1), rng.randrange(1, 2**31 - 1), n, m, rho)
                 for s in range(args.states):
                     seq = random_start(inst, rng) if s % 2 == 0 else identity_start(inst)
+                    if args.ils_ms > 0:
+                        C, _, seq = ils_jssp(inst, "k4", args.ils_ms, seed=s, exact=False, start=seq, return_seq=True)
                     seq, C, _ = local_opt(inst, seq, "n5")
                     row = anatomy_state(inst, seq, ks=(2, 3, 4, 8, 10**9), check_feas=True)
                     row["rpd_lb"] = 100.0 * (C - inst.lb) / inst.lb
@@ -766,11 +944,11 @@ def cmd_descent(args) -> dict:
 
 
 def ils_jssp(inst: Instance, mode: str, time_ms: int, seed: int, tabu_tenure: int = 10, elite_k: int = 10,
-             exact: bool = True):
+             exact: bool = True, start=None, return_seq: bool = False):
     """Same logic as src/algorithms/ils.py (tabu on move id + aspiration, elite-pool
     double-bridge kick), with the JSSP adapter."""
     rng = random.Random(seed)
-    seq = identity_start(inst)
+    seq = identity_start(inst) if start is None else start
     C = cmax(inst, seq)
     best_seq, best_C = seq, C
     elite = [(C, seq)]
@@ -798,6 +976,8 @@ def ils_jssp(inst: Instance, mode: str, time_ms: int, seed: int, tabu_tenure: in
                 elite = elite[:elite_k]
                 cursor = 0
         it += 1
+    if return_seq:
+        return best_C, it, best_seq
     return best_C, it
 
 
@@ -829,7 +1009,7 @@ BKS = {"ft06": 55, "ft10": 930, "ft20": 1165, "la16": 945, "la17": 784, "la18": 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["lemmas", "anatomy", "continuum", "descent", "ils", "theorem", "additivity"])
+    ap.add_argument("cmd", choices=["lemmas", "anatomy", "continuum", "descent", "ils", "theorem", "additivity", "continuum_ils"])
     ap.add_argument("--jsplib", default="data/JSPLIB/instances")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--reps", type=int, default=200)
@@ -843,12 +1023,14 @@ def main() -> None:
     ap.add_argument("--seeds", type=int, default=3)
     ap.add_argument("--time-ms", type=int, default=1000)
     ap.add_argument("--estimate", action="store_true")
+    ap.add_argument("--sizes", default="20x5,20x10,30x15,50x10")
+    ap.add_argument("--ils-ms", type=int, default=0, help="anatomy/continuum: states after an ILS run of this length")
     ap.add_argument("--out", default="")
     args = ap.parse_args()
     sys.setrecursionlimit(10000)
     fn = {"lemmas": cmd_lemmas, "anatomy": cmd_anatomy, "continuum": cmd_continuum,
           "descent": cmd_descent, "ils": cmd_ils, "theorem": globals()["cmd_theorem"],
-          "additivity": globals()["cmd_additivity"]}[args.cmd]
+          "additivity": globals()["cmd_additivity"], "continuum_ils": globals()["cmd_continuum_ils"]}[args.cmd]
     out = fn(args)
     if args.out:
         with open(args.out, "w") as fh:
@@ -861,17 +1043,25 @@ def main() -> None:
 # ---------------------------------------------------------------------------
 
 
-def reach(inst: Instance, ev: Eval, src: int, dst: int) -> bool:
-    """Is dst reachable from src in the CURRENT graph (job + machine arcs)? Head-pruned DFS."""
+def reach(inst: Instance, ev: Eval, src: int, dst: int, forbid=None) -> bool:
+    """Is dst reachable from src in the CURRENT graph (job + machine arcs)? Head-pruned DFS.
+
+    forbid: operations the path may not pass through (the strict E-path of theorem T2
+    avoids the other operations of the reordered block). For a single endpoint swap, a
+    single insertion and laminar families the strict and the plain test coincide; for
+    arbitrary block permutations only the strict one is exact (1 / 70 680 mismatch of
+    the plain test on full block shuffles, 0 for the strict one)."""
     if src == dst:
         return True
+    if forbid and src in forbid:
+        return False
     m, r = inst.m, ev.r
     lim = r[dst]
     stack, seen = [src], {src}
     while stack:
         u = stack.pop()
         for v in ((u + 1) if (u + 1) % m else -1, ev.msucc[u]):
-            if v < 0 or v in seen or r[v] > lim:
+            if v < 0 or v in seen or r[v] > lim or (forbid and v in forbid and v != dst):
                 continue
             if v == dst:
                 return True
@@ -880,12 +1070,13 @@ def reach(inst: Instance, ev: Eval, src: int, dst: int) -> bool:
     return False
 
 
-def e_path(inst: Instance, ev: Eval, x: int, y: int) -> bool:
-    """Path x -> y that leaves x by its job arc and enters y by its job arc (x, y in one block)."""
+def e_path(inst: Instance, ev: Eval, x: int, y: int, block=None) -> bool:
+    """E-path x -> y: leaves x by its job arc, enters y by its job arc and (strict version,
+    block given) does not pass through other operations of the block."""
     m = inst.m
     if (x + 1) % m == 0 or y % m == 0:
         return False
-    return reach(inst, ev, x + 1, y - 1)
+    return reach(inst, ev, x + 1, y - 1, forbid=set(block) if block is not None else None)
 
 
 def predicted_infeasible(inst, ev, path, blks, new_orders) -> bool:
@@ -898,7 +1089,7 @@ def predicted_infeasible(inst, ev, path, blks, new_orders) -> bool:
         for a in range(L):
             for b in range(a + 1, L):
                 x, y = old[a], old[b]
-                if npos[y] < npos[x] and e_path(inst, ev, x, y):
+                if npos[y] < npos[x] and e_path(inst, ev, x, y, block=old):
                     return True
     return False
 
@@ -1054,6 +1245,38 @@ def cmd_additivity(args) -> dict:
             "real_nonimproving_pct": round(100 * sum(1 for _, r_, _ in v if r_ >= 0) / n, 1),
         }
     print(json.dumps(out, indent=1))
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Subcommand: continuum_ils (performance-based H5 pilot: ILS gain over N5 vs rho)
+# ---------------------------------------------------------------------------
+
+
+def cmd_continuum_ils(args) -> dict:
+    modes = args.modes.split(",")
+    sizes = [tuple(map(int, x.split("x"))) for x in args.sizes.split(",")]
+    out = {}
+    for n, m in sizes:
+        for rho in (0.0, 0.1, 0.25, 0.5, 1.0):
+            rng = random.Random(args.seed + n * 1000 + m)  # same p_ij (and nested routes) for every rho
+            res = defaultdict(list)
+            for t in range(args.instances):
+                inst = taillard_jssp(rng.randrange(1, 2**31 - 1), rng.randrange(1, 2**31 - 1), n, m, rho)
+                best_any = None
+                runs = {}
+                for mode in modes:
+                    for seed in range(args.seeds):
+                        C, it = ils_jssp(inst, mode, args.time_ms, seed, exact=False)
+                        runs[(mode, seed)] = (C, it)
+                        best_any = C if best_any is None else min(best_any, C)
+                for (mode, seed), (C, it) in runs.items():
+                    # relative to the best makespan found by any variant on this instance (LB is weak near rho = 0)
+                    res[mode].append((100.0 * (C - best_any) / best_any, it))
+            out[f"{n}x{m}_rho{rho}"] = {mo: {"rpd_vs_best": round(statistics.mean(x[0] for x in v), 3),
+                                              "iters": round(statistics.mean(x[1] for x in v))} for mo, v in res.items()}
+            print(f"{n}x{m} rho={rho}", json.dumps(out[f"{n}x{m}_rho{rho}"]))
+            sys.stdout.flush()
     return out
 
 

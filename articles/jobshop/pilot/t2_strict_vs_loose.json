@@ -1,0 +1,33 @@
+{
+ "per_seed": [
+  {
+   "tested": 23400,
+   "infeasible": 5647,
+   "mis_loose": 0,
+   "mis_strict": 0,
+   "loose_over": 0
+  },
+  {
+   "tested": 23600,
+   "infeasible": 5898,
+   "mis_loose": 0,
+   "mis_strict": 0,
+   "loose_over": 0
+  },
+  {
+   "tested": 23680,
+   "infeasible": 5491,
+   "mis_loose": 1,
+   "mis_strict": 0,
+   "loose_over": 1
+  }
+ ],
+ "total": {
+  "tested": 70680,
+  "infeasible": 17036,
+  "mis_loose": 1,
+  "mis_strict": 0,
+  "loose_over": 1
+ },
+ "note": "seeds 1-3, 150 reps each; full shuffles of 1-2 blocks with >= 4 ops"
+}

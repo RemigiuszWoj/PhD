@@ -1,0 +1,100 @@
+NOTATKA: PLAN PRZEJSCIA FLOW SHOP (PFSP) -> JOB SHOP (JSSP)   stan: 01.11.2026
+==============================================================================
+
+1. GDZIE JEST KOD (WAZNE: NIC NIE JEST WYPUSZCZONE NA GITHUBA)
+------------------------------------------------------------------------------
+Repo: RemigiuszWoj/PhD. Lokalny klon w kontenerze: /home/user/remigiuszwoj/phd
+Galaz: claude/jobshop-plan (wyszla z origin/kbonacci-icaps, commit 45a4817)
+Na zdalnym repo tej galezi NIE MA. Push zablokowany (repo podpiete tylko do
+odczytu, add_repo z zapisem odrzucony przez klasyfikator uprawnien).
+Kontener jest tymczasowy: bez pusha wszystko zniknie.
+
+Zacommitowane lokalnie (2 commity):
+  1f22e2a  plan v1 + prototyp + pilot
+  bdbf6f2  plan v2 po 3 rundach krytyki + dane pilota
+  (patch obu: jobshop-plan.patch, wyslany wczesniej; naklada sie czysto
+   przez `git am` na origin/kbonacci-icaps)
+
+NIEZACOMMITOWANE (po commicie bdbf6f2), wszystko dziala:
+  src/jobshop/{__init__,instance,schedule,feasibility,neighborhoods,
+               algorithms,runner}.py
+  src/jobshop/data/taillard_jssp.json   (ziarna ta01-80, BKS ze zrodlami)
+  scripts/fetch_jsplib.py, verify_taillard_jssp.py,
+          run_jobshop_campaign.py, analyze_jobshop.py
+  tests/test_jobshop.py                 (25 testow, zielone pod Py 3.11)
+  articles/jobshop/NOTATKA.txt          (ten plik)
+
+NIE ZROBIONE (prosba uzytkownika: "plan, szkic artykulu, instrukcja do
+lokalnego Claude'a"):
+  - articles/jobshop/RUN_LOCAL.md       (wzor: articles/kbonacci/RUN_LOCAL.md)
+  - articles/jobshop/main.tex (EN) i wersja_pl.tex (PL) - szkic artykulu
+    (struktura w PLAN.md par. 8; wzor: articles/kbonacci/main.tex)
+  - aktualizacja PLAN.md (status: kod gotowy; D5/0.7: zamiast refaktoryzacji
+    ILS/SA zrobiono lustrzana kopie w src/jobshop/algorithms.py, kod PFSP
+    nietkniety)
+  - commit + push
+
+2. CO UDALO SIE ZROBIC
+------------------------------------------------------------------------------
+Plan: articles/jobshop/PLAN.md (v2, ~80 KB, po trzech rundach krytyki, A.6).
+Sedno:
+ - Sciezka krytyczna = "wirtualna permutacja", bloki = odcinki. DP z PFSP
+   (solve_dp) przenosi sie 1:1; licznosc = iloczyn po blokach.
+ - Propozycja glowna: RODZINA RUCHOW GRANICZNYCH (typ: zamiana/N6/N7 x
+   zasieg k x pojedynczy/zlozony). N5,N6,N7,Fib,k-bonacci,Dyn to jej punkty.
+ - T2 (twierdzenie o wykonalnosci): przestawienie wewnatrz blokow jest
+   niewykonalne <=> istnieje odwrocona para x,y z E-sciezka x->JS(x)~>JP(y)->y
+   OMIJAJACA reszte bloku. Brute force: 0 rozbiezNosci na ~184 tys.
+   przypadkow (wersja luzna dala 1 falszywy alarm na 70 680).
+ - T10: pod filtrem granic blok ma <=2 ruchy, Motzkin == Dyn, krzyzowania
+   tylko jako jedna para graniczna.
+ - Pilot (Python, 1 s, 3 ziarna - tylko kierunek): ILS RPD do BKS:
+   N5 10,6 | N6 8,4 | k=3 7,4 | c6 7,5 | c7 7,5 | bm3 7,4 (H9: zlozenie
+   wazniejsze niz typ ruchu).
+ - W dobrych rozwiazaniach (po ILS) 45-67% dalekich zamian (k=inf) jest
+   niewykonalnych (klasy n/m>=2). Wczesniejsze "poprawiajace dalekie zamiany"
+   to artefakt slabych stanow.
+ - Kontinuum rho (flow->job): przy rho=0 N5 wygrywa; przy rho=0,1-0,5
+   N5 gorsze 3-8x od ruchow zlozonych; przy rho=1 zalezy od n/m.
+ - Addytywnosc zawodzi: realny zysk ~36-43% sumy delt.
+ - Harmonogram z bramkami G0-G3, plan B = notatka teoretyczna (ORL).
+ - OPT: 11 wariantow ~34 h Maca; MAX ~65 h. Kwanty JSSP w Q1 2027.
+Dane: JSPLIB 162 instancji pobrane (data/ w .gitignore, skrypt fetch);
+generator Taillarda zgodny z ta01-ta80 (80/80, 0 niezgodnosci).
+Kampania (dry-run, ILS): validate 1,1h+0,4h, min 6,8h, opt 5,6h,
+continuum 4,3h, razem ~19,4 h + ablation 1,1h + classic 4,6h.
+Smoke test validate przeszedl, analyze_jobshop.py dziala na danych syntetycznych.
+
+Nie sprawdzone: nowosc T2 (praca Bozejko-Wodecki niedostepna, domena
+yadda.icm.edu.pl poza siecia sesji; sprawdzic tez Groflin-Klinkert,
+Dauzere-Peres-Paulli, Mati i in.). Pomiar it/s per klasa w src/jobshop
+przerwany przez uzytkownika.
+
+3. PROMPT STARTOWY DO NOWEJ SESJI (wklej)
+------------------------------------------------------------------------------
+Kontynuujesz prace nad planem przejscia PFSP -> job shop w repo
+RemigiuszWoj/PhD. Przeczytaj articles/jobshop/NOTATKA.txt i
+articles/jobshop/PLAN.md (streszczenie na poczatku + A.6). Jesli galaz
+claude/jobshop-plan istnieje na origin, uzyj jej; jesli nie, zastosuj
+patch: git fetch origin kbonacci-icaps; git checkout -b claude/jobshop-plan
+origin/kbonacci-icaps; git am jobshop-plan.patch (a potem dodaj pliki
+src/jobshop, scripts/*jobshop*, tests/test_jobshop.py z notatki).
+Zadania, w tej kolejnosci, oszczednie na tokenach:
+ 1) napisz articles/jobshop/RUN_LOCAL.md wg wzoru articles/kbonacci/RUN_LOCAL.md
+    (zasady, setup: fetch_jsplib.py + verify_taillard_jssp.py + pytest,
+    dry-run, stage validate -> min -> opt -> continuum -> bridge, nohup
+    caffeinate, wznawianie, warunki STOP, analyze_jobshop.py, commit/push,
+    raport);
+ 2) napisz szkic artykulu articles/jobshop/main.tex (EN) i wersja_pl.tex (PL)
+    wg PLAN.md par. 8, wzor articles/kbonacci/main.tex (article, twocolumn,
+    TODO-placeholdery, wyniki pilota oznaczone jako wstepne);
+ 3) zaktualizuj PLAN.md (status, D5/0.7 jak w notatce);
+ 4) zacommituj i wypchnij (git push -u origin claude/jobshop-plan);
+    Tabele z pilota: articles/jobshop/pilot/*.json.
+Nie zmieniaj config.yaml ani kodu PFSP. Odpowiadaj po polsku, zwiezle.
+
+4. PYTANIA DO UZYTKOWNIKA
+------------------------------------------------------------------------------
+ - Zgoda na podpiecie repo z zapisem (add_repo access=push) albo wypchniecie
+   recznie z patcha.
+ - D1 (JSSP w doktoracie?), D15 (czasopismo czy GECCO), nowosc T2 u promotora.

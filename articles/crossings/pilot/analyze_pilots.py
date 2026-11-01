@@ -1,11 +1,11 @@
-"""Print the pilot tables quoted in ../PLAN.md from results/*.json.
+"""Print the pilot tables quoted in ../PLAN.md from measurements/*.json.
 
 Usage: python analyze_pilots.py [anatomy|descent|pairq|ils|qubo|all]
 """
 import glob, json, statistics as st, sys
 from collections import defaultdict
 from pathlib import Path
-RES = Path(__file__).resolve().parent / "results"
+RES = Path(__file__).resolve().parent / "measurements"
 
 def anatomy():
     R = json.load(open(RES / "anatomy.json"))

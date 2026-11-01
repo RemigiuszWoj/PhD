@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[2]))  # repo root
-RES = HERE / "results"
+RES = HERE / "measurements"
 import random, sys, time
 from pilot_anatomy import lcg_instance, all_deltas
 for (n, m) in [(20, 5), (20, 20), (50, 10), (50, 20), (100, 10), (100, 20), (200, 10)]:

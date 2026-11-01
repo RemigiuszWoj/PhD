@@ -18,7 +18,7 @@ Zależności spoza `requirements.txt`: `networkx`, `scipy` (MILP/HiGHS, Wilcoxon
 | `pilot_qubo_structure.py` | QUBO Motzkina / inwolucji / z poprawkami par: sprzężenia, zanurzenie na Pegasusie P16, CZ w QAOA na siatce 4×5 | ~3 min |
 | `timing_deltas.py` | czas delt dla wszystkich par (punkt odniesienia dla kosztu wyboru) | ~2 s |
 | `taillard_lb.py` | maszynowe dolne ograniczenie i nasiona Taillarda | <1 s |
-| `analyze_pilots.py [anatomy\|descent\|pairq\|ils\|qubo\|all]` | tabele cytowane w planie, z `results/*.json` | ~2 s |
+| `analyze_pilots.py [anatomy\|descent\|pairq\|ils\|qubo\|all]` | tabele cytowane w planie, z `measurements/*.json` | ~2 s |
 
 Tryby w `pilot_ils.py`: `cr_c0`, `cr_c1`, `cr_pa1`, `cr_inv` (wybór addytywny), sufiks `_safe` (bezpiecznik: lepszy z ruchu złożonego
 i najlepszej pojedynczej zamiany wg rzeczywistego C_max), `cr_swap` (sama najlepsza zamiana), `cr_pq<K>_c0` / `cr_pq<K>_inv`

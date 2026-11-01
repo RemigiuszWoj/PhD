@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[2]))  # repo root
-RES = HERE / "results"
+RES = HERE / "measurements"
 import itertools
 import networkx as nx
 import numpy as np

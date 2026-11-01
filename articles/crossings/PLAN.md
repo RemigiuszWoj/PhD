@@ -572,7 +572,7 @@ Odtworzenie: `cd articles/crossings/pilot && python pilot_ils.py 1000` (~2 min n
 - ✅ `pilot/crossing_select.py`: c₀, c₁, P₁, inwolucje (networkx), MILP dla dowolnego c (scipy/HiGHS); walidacja 2000/2000.
 - ✅ `pilot/pilot_anatomy.py` (anatomia i zejście), `pilot/pilot_pairq.py` (model drugiego rzędu), `pilot/pilot_ils.py` (ILS z repo bez
   zmian; nowe tryby podpięte w skrypcie), `pilot/pilot_qubo_structure.py` (minorminer, qiskit).
-- ✅ Wyniki w `pilot/results/`; tabele: `python analyze_pilots.py all`.
+- ✅ Wyniki w `pilot/measurements/`; tabele: `python analyze_pilots.py all`.
 - ⚠️ Piloty liczone w chmurze (4 rdzenie, czasy zaszumione) na instancjach z generatora Taillarda. tai20_5 i tai20_10 to prawdziwe
   ta001–ta004 i ta011–ta014 (LB zgodne z tabelą Taillarda). „lcg50_10” to instancje z tego samego generatora, ale ich nasion nie
   potwierdziłem jako ta041–ta044. RPD liczone do maszynowego dolnego ograniczenia.

@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[2]))  # repo root
-RES = HERE / "results"
+RES = HERE / "measurements"
 import json, math, random, sys, time
 from multiprocessing import Pool
 from src.neighborhoods.common import compute_endpoint_swap_delta, compute_head, compute_tail

@@ -25,7 +25,10 @@ the additivity error can be studied as a function of k.
 """
 
 
-from src.neighborhoods.accelerator import compute_block_boundaries
+from src.neighborhoods.accelerator import (
+    compute_block_boundaries,
+    compute_critical_path_boundaries,
+)
 from src.neighborhoods.common import compute_endpoint_swap_delta, compute_head, compute_tail
 from src.permutation_procesing import c_max
 
@@ -71,6 +74,7 @@ def compute_candidates(
     processing_times: list[list[int]],
     k: int,
     use_block_accelerator: bool = True,
+    boundary_mode: str = "last_machine",
 ) -> tuple[int, list[Candidate]]:
     """All endpoint swaps (i, j) with 1 <= j - i <= k - 1 and their deltas.
 
@@ -88,7 +92,10 @@ def compute_candidates(
 
     boundaries: list[int] | None = None
     if use_block_accelerator:
-        boundaries = compute_block_boundaries(Head, processing_times, pi)
+        if boundary_mode == "critical_path":
+            boundaries = compute_critical_path_boundaries(Head, processing_times, pi)
+        else:  # "last_machine": the test used by all neighborhoods of the previous papers
+            boundaries = compute_block_boundaries(Head, processing_times, pi)
     is_boundary = [False] * n
     if boundaries is not None:
         for u in boundaries:
@@ -173,6 +180,7 @@ def kbonacci_neighborhood(
     use_block_accelerator: bool = True,
     force_move_if_none: bool = True,
     stats: dict | None = None,
+    boundary_mode: str = "last_machine",
 ) -> tuple[list[int], int, list[tuple[int, int]]]:
     """Best compound move of the k-bonacci neighborhood.
 
@@ -191,7 +199,9 @@ def kbonacci_neighborhood(
     if k < 2:
         raise ValueError("k must be >= 2")
     n = len(pi)
-    base_c, candidates = compute_candidates(pi, processing_times, k, use_block_accelerator)
+    base_c, candidates = compute_candidates(
+        pi, processing_times, k, use_block_accelerator, boundary_mode
+    )
     if not candidates:
         return pi.copy(), base_c, []
 
@@ -222,8 +232,11 @@ def parse_kbonacci_mode(mode: str, n: int) -> int | None:
     """Map a neighborhood mode name to k, or None if it is not a k-bonacci mode.
 
     Accepted: "tribonacci" (k=3), "tetranacci" (k=4), "kbonacci_k<K>",
-    "kbonacci_kn" (k=n, i.e. Dynasearch).
+    "kbonacci_kn" (k=n, i.e. Dynasearch). A trailing "_cp" (ablation: exact
+    critical-path filter) is ignored here; see ``kbonacci_boundary_mode``.
     """
+    if mode.endswith("_cp"):
+        mode = mode[: -len("_cp")]
     if mode == "tribonacci":
         return 3
     if mode == "tetranacci":
@@ -235,3 +248,8 @@ def parse_kbonacci_mode(mode: str, n: int) -> int | None:
         if tail.isdigit() and int(tail) >= 2:
             return int(tail)
     return None
+
+
+def kbonacci_boundary_mode(mode: str) -> str:
+    """'critical_path' for the "_cp" ablation modes, else 'last_machine' (previous papers)."""
+    return "critical_path" if mode.endswith("_cp") else "last_machine"

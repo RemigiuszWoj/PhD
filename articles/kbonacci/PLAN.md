@@ -11,6 +11,51 @@ Powiązane: `articles/katalog_sasiedztw.md`, `ROADMAP.md` (front C), szkice `mai
 > Zasada nadrzędna: **badamy sąsiedztwa, nie metaheurystyki.** Protokół i wszystkie stałe badawcze są jak w poprzednich artykułach, żeby nowe wyniki
 > dało się bezpośrednio zestawić ze starymi. Nowa jest tylko klasa sąsiedztw.
 
+### A.0 Aktualizacja decyzji (01.11.2026, wieczór) — obowiązuje przed A.1–A.6
+
+| Sprawa | Decyzja |
+|---|---|
+| Klasyka na Macu | **opcja MAKSIMUM**: k ∈ {2, 3, 4, 5, 6, 8, 12, 16, n} + Insert + ablacja dokładnego filtra (k ∈ {3, 8}) + walidacja wyciągania budżetów |
+| Kwanty | **etapami**: najpierw MIN; jeśli starczy budżetu, OPT; potem MAX (skrypt `scripts/run_quantum_tiers.py` sam pilnuje budżetu i wznawia) |
+| Dodane, bo nie zmieniają obliczeń | RPD do BKS (jeśli będzie plik BKS), poprawka Holma, test Friedmana + Nemenyi (CD) obok Wilcoxona |
+| Odłożone na później lub na kolejną konferencję | start z NEH, budżety t·n·m/2, Iterated Greedy, adaptacyjne k |
+| ILS / SA | bez zmian w logice. Do SA dodano wyłącznie log ruchów (`move_log`); sprawdzone, że przebiegi z logiem i bez są identyczne (deterministyczny zegar) |
+| Filtr blokowy | bez zmian w głównej kampanii. Dokładny filtr ścieżki krytycznej tylko w ablacji (`kbonacci_k3_cp`, `kbonacci_k8_cp`) |
+
+**Gotowe w kodzie (01.11):**
+
+| Plik | Co robi |
+|---|---|
+| `scripts/run_kbonacci_campaign.py` | etapy validate → main → insert → ablation, sekwencyjnie, z wznawianiem; dry-run: ~44 h |
+| `scripts/extract_budgets.py` | wyciąganie budżetów 0,1–5 s z przebiegu 10 s + porównanie z niezależnymi przebiegami i kontrolą szumu |
+| `scripts/analyze_kbonacci.py` | tabele RPD i iteracji, Wilcoxon (+Holm), Friedman + CD, opcjonalnie BKS, najlepsze k |
+| `scripts/run_quantum_tiers.py` | kwanty MIN → OPT → MAX z budżetem i księgą zużycia |
+| `scripts/verify_taillard.py` | weryfikacja 120 instancji generatorem Taillarda |
+| `src/neighborhoods/classical/insert.py` | Insert z akceleracją Taillarda (1,85 s / ocena przy 500×20) |
+| `src/neighborhoods/quantum_qubo/kbonacci.py` | QUBO k-bonacciego dla D-Wave, z `L_max = k` także na QPU |
+| `src/neighborhoods/gate_qaoa/kbonacci.py` | k-bonacci w oknach dla IQM + darmowa wycena okien |
+| `RUN_LOCAL.md` | instrukcja dla lokalnego Claude’a |
+
+**Walidacja wyciągania budżetów (mini, chmura: tai20_5, 2 instancje × 4 ziarna, k = 3):**
+- ILS: |różnica| 0,00–0,06 pp, a dwa niezależne przebiegi różnią się o 0,00–0,04 pp (ILS jest deterministyczny).
+- SA: |różnica| 1,4–1,7 pp, przy szumie dwóch niezależnych przebiegów 1,4–2,5 pp.
+- Wniosek: SA reheatuje po stagnacji mierzonej zegarem, więc **nawet powtórzenie tego samego przebiegu** daje inny wynik.
+  Wyciąganie z logów jest więc tak samo dobre jak osobny przebieg. Pełna walidacja na Macu w etapie `validate`.
+
+**Poziomy kwantowe (z dry-runu skryptu):**
+
+| | MIN | OPT (przyrost) | MAX (przyrost) |
+|---|---|---|---|
+| D-Wave: zakres | tai20_5, k ∈ {3, 4}, ILS + SA | + k = 8 na tai20_5; + tai20_10, tai50_10, tai100_10 (ILS, k ∈ {3, 4}) | + tai200_10, tai500_20; + reszta pełnego Taillarda (ILS + SA, k ∈ {3, 4}) |
+| D-Wave: przebiegi / QPU / zegar | 200 / ≤ 18 s / ~0,4 h | 400 / ≤ 36 s / ~0,8 h | 1 900 / ≤ 171 s / ~3,7 h |
+| IQM: zakres | tai20_5 inst. 0, k ∈ {3, 4} | tai20_5 inst. 0–9, k ∈ {3, 4} | + k = 8 na tai20_5; + tai20_10, tai20_20 (k ∈ {3, 4}) |
+| IQM: ruchy / obwody | 2 / 12 | 18 / 108 | 50 / 300 |
+| IQM: kredyty sirius / garnet | 5,7 / 8,9 | 50,9 / 80,1 | 141,5 / 222,5 |
+
+D-Wave łącznie (MIN + OPT + MAX) to ≤ 225 s QPU, czyli ~56% quoty 400 s albo ~12,5% przy 1800 s.
+IQM łącznie: ~198 kredytów na sirius (~120 USD) albo ~312 na garnet (~185 USD).
+Na IQM ILS i SA przy jednym ruchu z permutacji identycznościowej wybierają ten sam ruch, dlatego MAX zamiast SA dokłada kolejne klasy instancji.
+
 ### A.1 Decyzje
 
 | # | Decyzja |

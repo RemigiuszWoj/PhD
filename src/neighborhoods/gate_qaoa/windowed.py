@@ -6,7 +6,7 @@ permutation into overlapping windows, solve each window's small QUBO with QAOA,
 and merge the swaps. Head/Tail/boundaries are computed once and reused per
 window (identical Q to the single-QUBO path restricted to that window).
 """
-from typing import Callable, List, Sequence, Tuple
+from typing import Callable, List, Optional, Sequence, Tuple
 
 from src.neighborhoods.common import compute_head, compute_tail
 from src.neighborhoods.accelerator import compute_block_boundaries
@@ -147,8 +147,13 @@ def windowed_interval_swaps(
     window_size: int,
     overlap_ratio: float,
     filter_delta: bool,
+    L_max: Optional[int] = None,
 ) -> List[Tuple[int, int]]:
-    """Collect endpoint swaps from all overlapping windows (raw, unmerged)."""
+    """Collect endpoint swaps from all overlapping windows (raw, unmerged).
+
+    ``L_max`` caps the interval length j-i+1 inside each window (k-bonacci);
+    None keeps the previous behaviour (all pairs of the window).
+    """
     n = len(pi)
     Head = compute_head(pi, processing_times)
     Tail = compute_tail(pi, processing_times)
@@ -162,7 +167,7 @@ def windowed_interval_swaps(
         if end - start < 2:
             break
         cands = enumerate_interval_candidates(
-            pi, processing_times, window=(start, end), filter_delta=filter_delta,
+            pi, processing_times, window=(start, end), L_max=L_max, filter_delta=filter_delta,
             head=Head, tail=Tail, boundaries=boundaries,
         )
         if cands:

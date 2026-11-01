@@ -1,0 +1,12 @@
+{
+ "perm_tested": 15625,
+ "perm_infeasible": 270,
+ "inv_tested": 12818,
+ "inv_infeasible": 2663,
+ "inv_with_crossing": 9330,
+ "heads_test_swaps": 29535,
+ "heads_test_feasible": 27860,
+ "heads_test_certified": 25025,
+ "inv_naive_pairwise_mismatch": 47,
+ "inv_naive_mismatch_rescue": 47
+}

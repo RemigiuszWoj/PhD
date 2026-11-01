@@ -101,6 +101,8 @@ embeddingu.
   wprost oczekiwany rezultat 2 projektu.
 
 ### B. Job Shop (POZA projektem doktorskim — opcjonalne rozszerzenie)
+> **Aktualizacja 01.11.2026:** plan przejścia PFSP → JSSP z propozycją budowy sąsiedztw na ścieżce krytycznej, twierdzeniem o wykonalności
+> przestawień w blokach, kontinuum flow → job (ρ) i pilotem: [`articles/jobshop/PLAN.md`](articles/jobshop/PLAN.md); prototyp `scripts/jobshop_proto.py`.
 Duży lift: graf dysjunktywny, Cmax = najdłuższa ścieżka w DAG, ruchy na
 blokach ścieżki krytycznej, nowy parser (ta01–80, ft/la/orb). Uogólnienie
 Fibonacciego/Motzkina: niekolidujące swapy w blokach krytycznych.

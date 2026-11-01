@@ -1,0 +1,92 @@
+{
+ "fib_exact": {
+  "moves": 100,
+  "mean_swaps": 9.78,
+  "exact_hit_pct": 0.0,
+  "real_worse_than_pred_pct": 97.0,
+  "real_better_than_pred_pct": 3.0,
+  "realized_gain_pct": 42.6,
+  "real_nonimproving_pct": 2.0
+ },
+ "fib_estimate": {
+  "moves": 101,
+  "mean_swaps": 9.99,
+  "exact_hit_pct": 0.0,
+  "real_worse_than_pred_pct": 100.0,
+  "real_better_than_pred_pct": 0.0,
+  "realized_gain_pct": 18.7,
+  "real_nonimproving_pct": 3.0
+ },
+ "k3_exact": {
+  "moves": 103,
+  "mean_swaps": 9.83,
+  "exact_hit_pct": 1.0,
+  "real_worse_than_pred_pct": 95.1,
+  "real_better_than_pred_pct": 3.9,
+  "realized_gain_pct": 37.2,
+  "real_nonimproving_pct": 1.9
+ },
+ "k3_estimate": {
+  "moves": 104,
+  "mean_swaps": 9.79,
+  "exact_hit_pct": 0.0,
+  "real_worse_than_pred_pct": 100.0,
+  "real_better_than_pred_pct": 0.0,
+  "realized_gain_pct": 14.8,
+  "real_nonimproving_pct": 1.9
+ },
+ "k4_exact": {
+  "moves": 103,
+  "mean_swaps": 9.85,
+  "exact_hit_pct": 1.0,
+  "real_worse_than_pred_pct": 95.1,
+  "real_better_than_pred_pct": 3.9,
+  "realized_gain_pct": 36.4,
+  "real_nonimproving_pct": 2.9
+ },
+ "k4_estimate": {
+  "moves": 104,
+  "mean_swaps": 9.66,
+  "exact_hit_pct": 0.0,
+  "real_worse_than_pred_pct": 100.0,
+  "real_better_than_pred_pct": 0.0,
+  "realized_gain_pct": 14.5,
+  "real_nonimproving_pct": 1.9
+ },
+ "k8_exact": {
+  "moves": 103,
+  "mean_swaps": 9.82,
+  "exact_hit_pct": 1.0,
+  "real_worse_than_pred_pct": 93.2,
+  "real_better_than_pred_pct": 5.8,
+  "realized_gain_pct": 36.4,
+  "real_nonimproving_pct": 2.9
+ },
+ "k8_estimate": {
+  "moves": 104,
+  "mean_swaps": 9.56,
+  "exact_hit_pct": 0.0,
+  "real_worse_than_pred_pct": 100.0,
+  "real_better_than_pred_pct": 0.0,
+  "realized_gain_pct": 14.2,
+  "real_nonimproving_pct": 1.9
+ },
+ "dyn_exact": {
+  "moves": 103,
+  "mean_swaps": 9.82,
+  "exact_hit_pct": 1.0,
+  "real_worse_than_pred_pct": 93.2,
+  "real_better_than_pred_pct": 5.8,
+  "realized_gain_pct": 35.9,
+  "real_nonimproving_pct": 3.9
+ },
+ "dyn_estimate": {
+  "moves": 104,
+  "mean_swaps": 9.56,
+  "exact_hit_pct": 0.0,
+  "real_worse_than_pred_pct": 100.0,
+  "real_better_than_pred_pct": 0.0,
+  "realized_gain_pct": 14.2,
+  "real_nonimproving_pct": 1.9
+ }
+}

@@ -1,0 +1,31 @@
+{
+ "counts": {
+  "swap_total_d1": 41898,
+  "improving_swaps": 20013,
+  "est_adj_total": 41898,
+  "swap_total_d2": 31301,
+  "L2_compound_tested": 84306,
+  "L4m_disjoint_only_tested": 23802,
+  "L4i_no_crossing_tested": 25773,
+  "L5_dp_tested": 3200,
+  "swap_total_d3": 23641,
+  "L4_crossing_pairs": 1240142,
+  "L4_nested_pairs": 1224194,
+  "L4m_with_nesting_tested": 33684,
+  "L4i_with_crossing_tested": 32860,
+  "swap_infeasible_d3": 317,
+  "swap_total_d4": 18123,
+  "swap_infeasible_d4": 538,
+  "L4_crossing_infeasible": 9772,
+  "L4i_with_crossing_infeasible": 3166,
+  "swap_total_d5": 13940,
+  "swap_infeasible_d5": 572,
+  "swap_total_d6": 41982,
+  "swap_infeasible_d6": 2245,
+  "swap_infeasible_d2": 62,
+  "seconds": 203.5
+ },
+ "examples": {
+  "L4i_with_crossing": "('gen6x4_rho0.5', 6, 4, 0.5, 'random', 'machine', [(2, 3), (0, 1), (6, 8), (5, 7)])"
+ }
+}

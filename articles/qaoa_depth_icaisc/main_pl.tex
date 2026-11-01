@@ -30,10 +30,12 @@ długość uszeregowania, którą osiąga iteracyjne przeszukiwanie lokalne na
 instancjach Taillarda z 20 zadaniami. Bez szumu $p = 1$ jest w dwóch
 sąsiedztwach gorsze od losowania jednostajnego. Już przy $p = 2$ najlepsza
 z 4096 próbek jest optymalna prawie w każdym oknie sąsiedztw gęstych,
-a mediana odchylenia od dolnego ograniczenia spada z około 24\% do 15\%.
+a mediana odchylenia od dolnego ograniczenia spada przy 256 shotach
+z około 24\% do 15\%.
 W sąsiedztwach liniowych losowanie jednostajne jest tak samo dobre jak każda
 głębokość. Na symulowanym 16-kubitowym procesorze o topologii gwiazdy ze
-skalibrowanym szumem najlepsza głębokość to $p = 2$, a każda kolejna
+skalibrowanym szumem najlepsza głębokość sąsiedztw gęstych to $p = 2$,
+a każda kolejna
 warstwa, licząca około 150 bramek dwukubitowych, zbliża trafienia
 z powrotem do poziomu losowania jednostajnego. Na samym urządzeniu $p = 1$
 zachowuje się jak losowanie jednostajne.
@@ -234,9 +236,10 @@ trzech poziomach. Na poziomie bez szumu obwód jest próbkowany z dokładnego
 wektora stanu. Na poziomie z szumem symulowany 16-kubitowy procesor
 o topologii gwiazdy odtwarza wierności bramek i błędy odczytu, które IQM
 podało dla procesora Sirius 23~października~2026; w trybie domyślnym każda
-bramka ma dokładnie zmierzoną wierność, a drugi tryb dodaje relaksację
-$T_1$/$T_2$, która sama przekracza zmierzony błąd większości bramek i dlatego
-ogranicza szum od góry. Na poziomie sprzętowym obwody wykonuje sam Sirius.
+bramka jednokubitowa i CZ ma dokładnie zmierzoną wierność, a drugi tryb
+dodaje relaksację $T_1$/$T_2$, która sama przekracza zmierzony błąd
+większości bramek. Żaden z trybów nie nakłada szumu na bramki MOVE. Na
+poziomie sprzętowym obwody wykonuje sam Sirius.
 
 Badanie okien odczytuje rozkład QAOA dla pojedynczych okien. Przechwytujemy
 okna pierwszego ruchu ILS z permutacji tożsamościowej i z dwóch losowych
@@ -264,13 +267,14 @@ $\mathrm{PRD} = 100\,(C_{\max} - LB)/LB$ od dolnego ograniczenia Taillarda
 $LB$, uśredniamy je po przebiegach instancji, bierzemy medianę po
 instancjach i porównujemy dwa ustawienia testem znaków par po instancjach.
 Każdy przebieg ma ziarno wyznaczone z jego konfiguracji, które ustala
-zarówno zaburzenia ILS, jak i losowanie shotów.
+zaburzenia ILS, a bez szumu także losowanie shotów.
 
 \section{Wyniki}
 
-Bez szumu jedna warstwa nie wystarcza (rys.~\ref{fig:e1}). Przy $p = 1$ QAOA
-losuje ruch optymalny niewiele częściej niż losowanie jednostajne,
-a w sąsiedztwach Fibonacciego i Dynasearch nawet rzadziej. W sąsiedztwach
+Bez szumu jedna warstwa nie wystarcza (rys.~\ref{fig:e1}). Przy $p = 1$
+tylko Adjacent losuje ruch optymalny wyraźnie częściej niż losowanie
+jednostajne. Motzkin ledwie je wyprzedza, a Fibonacci i Dynasearch wypadają
+poniżej niego. W sąsiedztwach
 gęstych płytki obwód faworyzuje przypisania łamiące warunek rozłączności. Od
 $p = 2$ sąsiedztwa gęste losują optimum mniej więcej sto razy częściej niż
 losowanie jednostajne, a przy 4096 shotach najlepsza próbka jest wtedy
@@ -288,17 +292,18 @@ Sąsiedztwa liniowe prawie nie odczuwają szumu, bo ich obwody są płytkie,
 a losowanie jednostajne i tak znajduje większość optimów.
 
 Ten sam obraz widać w długości uszeregowania w ILS (tabela~\ref{tab:e5}).
-W sąsiedztwach gęstych $p = 2$ obniża medianę odchylenia od dolnego
-ograniczenia z około 24\% do 15\%, a najlepsza głębokość wygrywa
-z losowaniem jednostajnym na wszystkich 30 instancjach. Głębsze obwody
+Przy 256 shotach $p = 2$ obniża w sąsiedztwach gęstych medianę odchylenia
+od dolnego ograniczenia z około 24\% przy losowaniu jednostajnym do 15\%,
+a najlepsza głębokość wygrywa z losowaniem jednostajnym na wszystkich 30
+instancjach. Przy 4096 shotach wygrywa nadal prawie na wszystkich. Głębsze obwody
 przegrywają tylko dlatego, że każdy ruch trwa dłużej i w 10~s mieści się
 mniej ruchów (rys.~\ref{fig:moves}). W sąsiedztwach liniowych głębokość nic
 nie daje, a klasyczne przeszukiwanie, które ocenia każdy ruch dokładnie,
 pozostaje lepsze od wszystkich wariantów QAOA.
 
 Po jednym do trzech ruchach, które Sirius wykonuje w 10~s, większość różnic
-w tabeli~\ref{tab:hw} jest niewielka. Na symulatorze z szumem Dynasearch znów
-zyskuje na $p = 2$ (11 z 12 instancji). W Dynasearch przy $p = 1$ urządzenie
+w tabeli~\ref{tab:hw} jest niewielka. Na symulatorze z szumem Dynasearch przy
+$p = 2$ znów wygrywa z $p = 1$, na 11 z 12 instancji. W Dynasearch przy $p = 1$ urządzenie
 radzi sobie lepiej niż symulator i mniej więcej tak samo jak losowanie
 jednostajne, co sugeruje, że prawdziwy szum jest silniejszy niż skalibrowany
 model. \emph{[H2: czy zysk z $p = 2$ utrzymuje się na Siriusie.]}
@@ -396,13 +401,18 @@ tego, czego potrzebuje przeszukiwanie lokalne.
 
 Nie twierdzimy, że obliczenia kwantowe mają tu przewagę nad klasycznymi:
 dokładne przeszukiwanie klasyczne pozostaje wyraźnie lepsze, a na urządzeniu
-ILS wykonuje w 10~s tylko jeden lub dwa ruchy. Badanie obejmuje tylko 20
+ILS wykonuje w 10~s tylko od jednego do trzech ruchów. Badanie obejmuje tylko 20
 zadań i kąty stałe, a energia okna jest dokładna tylko wtedy, gdy zamiany na
 siebie nie wpływają. Symulowane urządzenie nie ma szumu na bezczynnych
-kubitach, co może tłumaczyć, dlaczego Sirius wyglądał na bardziej
+kubitach ani na bramkach MOVE, co może tłumaczyć, dlaczego Sirius wyglądał na bardziej
 zaszumionego niż symulator. W dalszych pracach kąty będą kalibrowane na
 prawdopodobieństwo, że najlepsza próbka jest optymalna, a głębokość będzie
 dobierana dla każdego okna.
+
+\subsubsection{Podziękowania.} Autorzy korzystali z dużego modelu językowego
+przy redagowaniu i poprawianiu części tekstu, pisaniu skryptów eksperymentów
+i składzie w LaTeX-u; badania, ich wyniki i ich interpretacja są w całości
+dziełem autorów.
 
 \bibliographystyle{splncs04}
 \bibliography{references}

@@ -27,11 +27,11 @@ the effect on the probability of sampling the optimal move, on the circuit
 cost and on the makespan that iterated local search reaches on Taillard
 instances with 20 jobs. Without noise, $p = 1$ is worse than uniform sampling
 in two neighborhoods, while $p = 2$ already makes the best of 4096 samples
-optimal in almost every window of the dense neighborhoods and lowers the
-median deviation from the lower bound from about 24\% to 15\%. In the linear
-neighborhoods uniform sampling is as good as any depth. On a simulated
-16-qubit star processor with calibrated noise the best depth is $p = 2$, and
-every further layer of about 150 two-qubit gates pushes the hit rate back
+optimal in almost every window of the dense neighborhoods and, with 256
+shots, lowers the median deviation from the lower bound from about 24\% to
+15\%. In the linear neighborhoods uniform sampling is as good as any depth.
+On a simulated 16-qubit star processor with calibrated noise the best depth
+of the dense neighborhoods is $p = 2$, and every further layer of about 150 two-qubit gates pushes the hit rate back
 towards uniform sampling. On the device itself, $p = 1$ behaves like uniform
 sampling.
 % H2: tu zdanie o p = 2 i 3 na Siriusie
@@ -120,7 +120,7 @@ architectures, the topology of the processor used here.
 In the permutation flow shop problem (PFSP), $n$ jobs pass through $m$
 machines in the same order, and a permutation $\pi$ fixes the order of the
 jobs on every machine. The goal is to minimize the makespan
-$C_{\max}(\pi)$, the completion time of the last job on the last machine.
+$C_{\max}(\pi)$, the time at which the last machine finishes the last job.
 Iterated local search (ILS)~\cite{lourenco2003} moves from $\pi$ to the best
 permutation in a neighborhood $N(\pi)$ and perturbs $\pi$ when it stops
 improving.
@@ -163,8 +163,8 @@ Motzkin    & non-crossing interval end swaps & $M_n$     & pairwise    & 4--15 (
 A whole permutation of $n = 20$ jobs gives more variables than a 16-qubit
 processor can hold, so ILS splits the permutation into overlapping windows of
 $w$ positions with overlap $0.5$ and solves one QUBO per
-window~\cite{wojewodzki2026windowed,wojewodzki2026aciids}. The window has
-$w = 17$ positions for the linear neighborhoods and $w = 6$ for the dense ones.
+window~\cite{wojewodzki2026windowed,wojewodzki2026aciids}. Each window spans
+$w = 17$ positions in the linear neighborhoods and $w = 6$ in the dense ones.
 For the linear neighborhoods ILS keeps only candidates that a block
 accelerator marks as able to improve $C_{\max}$, so their windows hold 1 to 16
 variables on the Taillard instances with $n = 20$ (median 10), whereas the
@@ -216,17 +216,18 @@ and the cost grows linearly in $p$.
 
 \section{Experimental Setup}
 
-All experiments use the Taillard instances with $n = 20$ jobs and
-$m \in \{5, 10, 20\}$ machines, ten instances per class~\cite{taillard1993},
+All experiments use the 30 Taillard instances with $n = 20$ jobs, ten for
+each number of machines $m \in \{5, 10, 20\}$~\cite{taillard1993},
 and ILS starts from the identity permutation, as in the earlier
 campaign~\cite{wojewodzki2026aciids}. We evaluate QAOA at three levels. On the
 noiseless level the circuit is sampled from its exact statevector. On the
 noisy level a simulated 16-qubit star processor reproduces the gate
 fidelities and readout errors that IQM reported for the Sirius device on
-23~October~2026; in its default mode every gate has exactly the measured
-fidelity, and a second mode adds $T_1$/$T_2$ relaxation, which alone exceeds
-the measured error of most gates and therefore bounds the noise from above.
-On the hardware level the circuits run on Sirius itself.
+23~October~2026; in its default mode every single-qubit and CZ gate has
+exactly the measured fidelity, and a second mode adds $T_1$/$T_2$
+relaxation, which alone exceeds the measured error of most gates. Neither
+mode applies noise to the MOVE gates. On the hardware level the circuits
+run on Sirius itself.
 
 The window study reads the QAOA distribution of single windows. We capture
 the windows of the first ILS move from the identity and from two random
@@ -249,19 +250,19 @@ in 10~s on the same instance at $p = 1$~\cite{wojewodzki2026aciids}. On the
 hardware ILS repeats that campaign at $p = 2$ and $p = 3$.
 % H2: zdanie prawdziwe dopiero po biegach na Siriusie (p = 2, 3)
 
-We report the percentage relative deviation
-$\mathrm{PRD} = 100\,(C_{\max} - LB)/LB$ from the Taillard lower bound $LB$,
+We measure quality by the deviation from the Taillard lower bound $LB$ in
+percent, $\mathrm{PRD} = 100\,(C_{\max} - LB)/LB$,
 average it over the runs of an instance, take the median over instances and
 compare two settings with a paired sign test over instances. Every run has a
-seed derived from its configuration, which fixes both the ILS perturbations
-and the shot sampling.
+seed derived from its configuration, which fixes the ILS perturbations and,
+without noise, also the shot sampling.
 
 \section{Results}
 
-Without noise one layer is not enough (Fig.~\ref{fig:e1}). At $p = 1$ QAOA
-samples the optimal move hardly more often than uniform sampling, and in the
-Fibonacci and Dynasearch neighborhoods even less often. In the dense
-neighborhoods the shallow circuit favors assignments that break the
+Without noise one layer is not enough (Fig.~\ref{fig:e1}). At $p = 1$ only
+Adjacent samples the optimal move clearly more often than uniform sampling.
+Motzkin barely beats it, and Fibonacci and Dynasearch fall below it. In the
+dense neighborhoods the shallow circuit favors assignments that break the
 disjointness constraint. From $p = 2$ the dense neighborhoods sample the
 optimum about a hundred times more often than uniform sampling, and with 4096
 shots the best sample is then almost always optimal (Fig.~\ref{fig:hits}).
@@ -278,17 +279,18 @@ $p = 6$ the circuit is no better than uniform sampling. The linear
 neighborhoods hardly notice the noise, because their circuits are shallow and
 uniform sampling already finds most optima.
 
-The same picture appears in the makespan of ILS (Table~\ref{tab:e5}). In the
-dense neighborhoods $p = 2$ lowers the median deviation from the lower bound
-from about 24\% to 15\%, and the best depth beats uniform sampling on all 30
-instances. Deeper circuits lose only because each move takes longer and fewer
+The same picture appears in the makespan of ILS (Table~\ref{tab:e5}). With
+256 shots, $p = 2$ lowers the median deviation from the lower bound in the
+dense neighborhoods from about 24\% for uniform sampling to 15\%, and the
+best depth beats uniform sampling on all 30 instances. With 4096 shots it
+still wins on almost all of them. Deeper circuits lose only because each move takes longer and fewer
 moves fit into 10~s (Fig.~\ref{fig:moves}). In the linear neighborhoods depth
 brings nothing, and the classical search that evaluates every move exactly
 stays better than all QAOA variants.
 
 After the one to three moves that Sirius makes in 10~s, most differences in
-Table~\ref{tab:hw} are small. On the noisy simulator Dynasearch again gains
-from $p = 2$ (11 of 12 instances). In Dynasearch at $p = 1$ the device does
+Table~\ref{tab:hw} are small. On the noisy simulator Dynasearch at $p = 2$
+again beats $p = 1$, on 11 of 12 instances. In Dynasearch at $p = 1$ the device does
 better than the simulator and about as well as uniform sampling, which
 suggests that the real noise is stronger than the calibrated model.
 \emph{[H2: whether the gain of $p = 2$ survives on Sirius.]}
@@ -384,12 +386,17 @@ The angles matter more than the depth, and calibrating them for the mean
 energy does not reward what local search needs.
 
 We do not claim an advantage over classical computing: the exact classical
-search stays clearly better, and on the device ILS makes only one or two
+search stays clearly better, and on the device ILS makes only one to three
 moves in 10~s. The study covers only 20 jobs and fixed angles, and the window
 energy is exact only when the swaps do not interact. The simulated device has
-no noise on idle qubits, which may explain why Sirius looked noisier than the
+no noise on idle qubits or on MOVE gates, which may explain why Sirius looked noisier than the
 simulator. Future work will calibrate the angles for the chance that the best
 sample is optimal and choose the depth per window.
+
+\subsubsection{Acknowledgements.} The authors used a large language model to
+help draft and edit parts of the text, write the experiment scripts and
+typeset the paper in LaTeX; the research, its results and their
+interpretation are entirely the authors' own.
 
 \bibliographystyle{splncs04}
 \bibliography{references}

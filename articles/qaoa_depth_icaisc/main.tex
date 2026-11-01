@@ -7,6 +7,7 @@
 \usepackage{multirow}
 \usepackage[hidelinks,pdfauthor={},pdftitle={}]{hyperref}
 
+\emergencystretch=1em
 \begin{document}
 
 \title{Depth or Shots? The Number of QAOA Layers in Quantum Neighborhood
@@ -150,7 +151,7 @@ numbers; last column: variables per window in ILS, $n = 20$).}
 \centering
 \begin{tabular}{lllll}
 \toprule
-Neighborhood & Move & Moves & QUBO & Variables per window \\
+Neighborhood & Move & Moves & QUBO & Variables \\
 \midrule
 Adjacent   & one adjacent swap              & $n - 1$    & one-hot     & 1--16 (median 10) \\
 Fibonacci  & disjoint adjacent swaps        & $F_{n+1}$  & tridiagonal & 1--16 (median 10) \\

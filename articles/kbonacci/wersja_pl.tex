@@ -1,6 +1,7 @@
 % =====================================================================
-% SZKIC v0 (01.11.2026) -- wersja polska (robocza, do dyskusji z promotorem)
-% Odpowiada main.tex (EN). Liczby w Tabeli 2 pochodzą z PILOTA.
+% SZKIC v1 (01.11.2026) -- wersja polska (robocza, do dyskusji z promotorem)
+% Odpowiada main.tex (EN). Protokół identyczny z poprzednimi pracami;
+% nowa jest tylko klasa sąsiedztw. Tabela 2 = PILOT, Tabela 3 = szkielet.
 % =====================================================================
 \documentclass[10pt,twocolumn]{article}
 \usepackage[margin=0.75in]{geometry}
@@ -9,8 +10,9 @@
 \usepackage[polish]{babel}
 \usepackage{amsmath,amssymb,amsthm}
 \usepackage{booktabs}
+\usepackage{multirow}
 \usepackage{xcolor}
-\usepackage{hyperref}
+\usepackage[hidelinks]{hyperref}
 
 \newtheorem{proposition}{Twierdzenie}
 \newtheorem{definition}{Definicja}
@@ -29,54 +31,71 @@ złożonych z zamian dla permutacyjnego problemu przepływowego}
 Sąsiedztwa ruchów złożonych pozwalają przeszukać wykładniczo wiele
 uszeregowań w czasie wielomianowym metodą programowania dynamicznego.
 Dwa najbardziej znane sąsiedztwa tego typu dla permutacyjnego problemu
-przepływowego leżą jednak na przeciwnych biegunach. Sąsiedztwo Fibonacciego
-łączy tylko zamiany sąsiednie i jest tanie, natomiast Dynasearch łączy
-zamiany na dowolną odległość i kosztuje $O(mn^3)$ na ocenę. Proponujemy
-rodzinę \emph{$k$-bonacci}, która wypełnia lukę między nimi: ruch to zbiór
-zamian końców na rozłącznych przedziałach, przy odległości zamiany
-co najwyżej $k-1$. Liczność rodziny wyznaczają dokładnie liczby
-$k$-bonacciego, więc rośnie ona jak $\lambda_k^n$, gdzie
+przepływowego leżą jednak na przeciwnych biegunach. Sąsiedztwo
+Fibonacciego łączy tylko zamiany sąsiednie i jest tanie, natomiast
+Dynasearch łączy zamiany na dowolną odległość i kosztuje $O(mn^3)$ na
+ocenę. Proponujemy rodzinę \emph{$k$-bonacci}, która wypełnia lukę między
+nimi: ruch to zbiór zamian końców na rozłącznych przedziałach, przy
+odległości zamiany co najwyżej $k-1$. Liczność rodziny wyznaczają
+dokładnie liczby $k$-bonacciego, więc rośnie ona jak $\lambda_k^n$, gdzie
 $\lambda_2=1{,}618$ (Fibonacci), $\lambda_3=1{,}839$ (tribonacci)
-i $\lambda_k\to 2$ (Dynasearch). Podajemy pozycyjne programowanie dynamiczne,
-które wybiera najlepszy ruch w czasie $O(nk)$ po wyznaczeniu delt w czasie
-$O(mnk^2)$, łączymy je z akceleratorem blokowym i badamy empirycznie
-parametr $k$. Analizujemy jakość rozwiązań, koszt iteracji, strukturę
-wybieranych ruchów oraz błąd założenia o addytywności, które w problemie
-przepływowym przyjmuje każde DP ruchów złożonych.
-\todo{zdanie z głównym wynikiem pełnej kampanii}
+i $\lambda_k\to 2$ (Dynasearch). Już dla $k\approx\log_2 n+2$ rodzina
+zawiera ok. 80\% wszystkich ruchów Dynasearch. Pozycyjne programowanie
+dynamiczne wybiera najlepszy ruch w czasie $O(nk)$. Rodzinę badamy na
+pełnym benchmarku Taillarda w ramach ILS i SA, przy budżetach czasu
+z naszych wcześniejszych prac, dzięki czemu nowe sąsiedztwa można
+bezpośrednio porównać z opublikowanymi wynikami dla sąsiedztw Adjacent,
+Fibonacciego, Dynasearch i Motzkina.
+\todo{główny wynik: najlepsze $k$ dla rozmiaru i budżetu}
 \end{abstract}
 
 \section{Wstęp}
 Permutacyjny problem przepływowy z kryterium $C_{\max}$,
-$F|prmu|C_{\max}$, jest NP-trudny dla $m\geq 3$
-maszyn~\cite{garey1976}. O jakości przeszukiwania lokalnego decydują
-przede wszystkim dwie rzeczy: struktura ruchu oraz własności blokowe
-ścieżki krytycznej, które pozwalają ten ruch przycinać~\cite{nowicki1996,grabowski2004}.
+$F|prmu|C_{\max}$, jest NP-trudny dla $m\geq 3$ maszyn~\cite{garey1976}.
+O jakości przeszukiwania lokalnego decydują przede wszystkim dwie rzeczy:
+struktura ruchu oraz własności blokowe ścieżki krytycznej, które pozwalają
+ten ruch przycinać~\cite{nowicki1996,grabowski2004}.
 
 Dynasearch~\cite{congram2002} pokazał, że wykładniczo duże sąsiedztwo
-\emph{niezależnych} zamian można przeszukać dokładnie metodą
-programowania dynamicznego. Dla PFSP zaproponowano też sąsiedztwo
-Fibonacciego, złożone z rozłącznych zamian sąsiednich~\cite{fibonacci_own,bozejko2026sr},
-oraz sąsiedztwo Motzkina~\cite{motzkin_own}. Sąsiedztwa te różnią się
-o rzędy wielkości rozmiarem i kosztem, a mimo to porównuje się je zawsze
-jako odosobnione punkty. Niniejsza praca wypełnia przestrzeń między
-Fibonaccim a Dynasearch jednoparametrową rodziną.
+\emph{niezależnych} zamian można przeszukać dokładnie metodą programowania
+dynamicznego. Dla PFSP znane są też sąsiedztwo Fibonacciego, złożone
+z rozłącznych zamian sąsiednich~\cite{fibonacci_own,bozejko2026sr},
+oraz sąsiedztwo Motzkina~\cite{motzkin_own}. Te sąsiedztwa różnią się
+o rzędy wielkości rozmiarem i kosztem, a mimo to porównywano je dotąd
+wyłącznie jako odosobnione punkty. Praca wypełnia przestrzeń między
+Fibonaccim a Dynasearch jednoparametrową rodziną i pyta: \emph{jak daleko
+powinna sięgać zamiana?} Metaheurystyki, ich parametry i protokół
+eksperymentu celowo pozostawiamy takie jak w poprzednich
+pracach~\cite{fibonacci_own,motzkin_own,windowed_own}. Jedynym czynnikiem
+eksperymentalnym jest sąsiedztwo, więc każdą nową liczbę można zestawić
+z wynikami już opublikowanymi.
 
 \paragraph{Wkład.}
 \begin{enumerate}
   \item Sąsiedztwo $k$-bonacci $\N_k$ z łańcuchem zawierań
-        $\N_{\mathrm{adj}}\subset\N_2=\N_{\mathrm{fib}}\subset\N_3\subset\dots\subset\N_n=\N_{\mathrm{dyn}}$
-        i dokładną licznością (Tw.~\ref{prop:count}).
-  \item Pozycyjne DP o złożoności $O(nk)$, zgodne z akceleratorem blokowym.
-        Dla $k=n$ daje ono także szybszy, nierekurencyjny Dynasearch.
-  \item Studium parametru $k$ na benchmarku Taillarda: jakość, koszt
-        iteracji, anatomia ruchu i błąd addytywności.
-  \item \todo{adaptacyjne $k$ (wariant IJCAI) albo porównanie z Iterated Greedy}
+        $\N_{\mathrm{adj}}\subset\N_2=\N_{\mathrm{fib}}\subset\N_3\subset
+        \dots\subset\N_n=\N_{\mathrm{dyn}}$. Podajemy dokładną liczność
+        i pokazujemy, że $k=\log_2 n+O(1)$ pokrywa stały ułamek Dynasearch.
+  \item Pozycyjne DP o złożoności $O(nk)$ po wyznaczeniu delt w czasie
+        $O(mnk^2)$, zgodne z filtrem blokowym. Dla $k=n$ jest to
+        nierekurencyjny Dynasearch.
+  \item Studium parametru $k$ na pełnym benchmarku Taillarda
+        ($n=20$--$500$) w ramach ILS i SA, przy sześciu budżetach czasu.
+        Obejmuje jakość, liczbę iteracji, strukturę ruchów i błąd
+        addytywności.
+  \item \todo{opcjonalnie: QUBO $k$-bonacciego na wyżarzaczu kwantowym
+        i komputerze bramkowym, protokół jak w~\cite{windowed_own}}
 \end{enumerate}
 
 \section{Prace pokrewne}
-\todo{jak w wersji angielskiej. Najważniejsze: sprawdzić, czy Sci Rep 2026
-i IFAC 2025 nie zawierają już tej hierarchii}
+Dynasearch wprowadzono dla problemu jednomaszynowego~\cite{congram2002}.
+Ergun i Orlin~\cite{ergun2006} przyspieszyli przeszukiwanie do $O(n^2)$,
+a Grosso i in.~\cite{grosso2004} dodali wstawienia. W tym problemie zmiany
+kosztu niezależnych zamian się sumują, a w PFSP nie
+(rozdz.~\ref{sec:addytywnosc}). Ograniczanie zasięgu ruchu to znane
+narzędzie w problemach trasowania: Or-opt i sąsiedztwa
+granularne~\cite{toth2003}. \todo{sprawdzić, czy Sci Rep 2026 i IFAC 2025
+nie zawierają już tej hierarchii}
 
 \section{Problem i notacja}
 Mamy $n$ zadań wykonywanych na maszynach $1,\dots,m$ w tej samej
@@ -95,66 +114,130 @@ Przypadki szczególne: dla $k=2$ dopuszczalna jest tylko odległość $1$
 (Fibonacci), dla $k=3$ odległości $1$ i $2$ (tribonacci), a dla $k=n$
 dowolna odległość (Dynasearch).
 
-\begin{proposition}\label{prop:count}
+\begin{proposition}
 $|\N_k|=a_n$, gdzie $a_0=1$ oraz $a_p=\sum_{L=1}^{\min(k,p)}a_{p-L}$.
-Stąd $|\N_2|=F_{n+1}$, $|\N_n|=2^{n-1}$ i $|\N_k|=\Theta(\lambda_k^n)$.
+Stąd $|\N_2|=F_{n+1}$, $|\N_n|=2^{n-1}$ i $|\N_k|=\Theta(\lambda_k^n)$,
+przy czym $2-\lambda_k=\lambda_k^{-k}$, czyli $\lambda_k=2-\Theta(2^{-k})$.
 \end{proposition}
 \begin{proof}[Szkic]
 Ruch złożony to pokrycie pozycji kafelkami długości $1$ (pozycja bez
-zmian) lub $L\in\{2,\dots,k\}$ (zamiana końców kafelka). Różne pokrycia
-dają różne permutacje. \todo{pełny dowód}
+zmian) lub $L\in\{2,\dots,k\}$ (zamiana końców kafelka). Kafelek
+zaczynający się w $i$ to najmniejszy przedział od $i$, który ruch
+przeprowadza na siebie, więc różne pokrycia dają różne permutacje.
 \end{proof}
-
-\paragraph{Ocena i DP.} Wszystkie delty kosztują $O(mnk^2)$, a w przypadku
-Dynasearch $O(mn^3)$. Filtr blokowy działa w czasie $O(1)$ na kandydata
-dzięki bieżącej fladze. Pozycyjne DP ma postać
-$B[p]=\min\bigl(B[p-1],\ \min_{d} B[p-d-1]+\delta_{p-d,p}\bigr)$
-i złożoność $O(nk)$.
-
-\section{Addytywność}
-DP minimalizuje $\sum\delta_{ij}$, jednak w PFSP zmiana $C_{\max}$
-pod wpływem ruchu złożonego nie jest sumą zmian cząstkowych. Każde
-sąsiedztwo złożone oparte na DP optymalizuje więc zastępczą funkcję celu.
-
-\section{Eksperymenty (pilot)}
-Użyliśmy instancji Taillarda $20\times5$, $20\times10$ i $50\times10$
-(po 4 instancje), 3 ziaren, ILS oraz limitu czasu $1000$\,ms.
-RPD liczymy względem UB z plików Taillarda.
 
 \begin{table}[t]
 \centering
-\caption{PILOT: średnie RPD [\%] / liczba iteracji ILS w 1000\,ms.}
+\caption{Liczność $\N_k$ dla $n=10$, stała wzrostu i udział ruchów
+Dynasearch zawartych w $\N_k$.}
+\small
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+$k$ & 2 & 3 & 4 & 6 & 8 & $n$ \\
+\midrule
+$|\N_k|$, $n=10$ & 89 & 274 & 401 & 492 & 509 & 512 \\
+$\lambda_k$ & 1,618 & 1,839 & 1,928 & 1,984 & 1,996 & 2 \\
+udział, $n=100$ & $10^{-9}$ & $3{\cdot}10^{-4}$ & 0,03 & 0,46 & 0,83 & 1 \\
+udział, $n=500$ & $10^{-46}$ & $10^{-18}$ & $10^{-8}$ & 0,02 & 0,38 & 1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Udział $|\N_k|/|\N_n|$ to prawdopodobieństwo, że najdłuższa część losowej
+kompozycji $n$ nie przekracza $k$. Zgodnie z prawem najdłuższej serii jest
+ono skupione wokół $k=\log_2 n$. Dla $k=\lfloor\log_2 n\rfloor+2$ udział
+wynosi 0,79--0,89 przy $n=20$--$500$.
+
+\paragraph{Ocena i DP.} Wszystkie delty kosztują $O(mnk^2)$, a w przypadku
+Dynasearch $O(mn^3)$. Kandydatów filtrujemy tym samym testem granic bloków,
+którego użyto we wcześniejszych pracach~\cite{windowed_own}.
+\todo{decyzja o wariancie dokładnym (plan, \S14)} Pozycyjne DP ma postać
+$B[p]=\min\bigl(B[p-1],\ \min_{d} B[p-d-1]+\delta_{p-d,p}\bigr)$ i złożoność
+$O(nk)$. Gdy żaden ruch nie poprawia przewidywanego $C_{\max}$, wykonujemy
+najlepszą pojedynczą zamianę, tak jak w Dynasearch i Motzkinie.
+
+\section{Addytywność}\label{sec:addytywnosc}
+DP minimalizuje $\sum\delta_{ij}$, jednak w PFSP zmiana $C_{\max}$ pod
+wpływem ruchu złożonego nie jest sumą zmian cząstkowych. W ujęciu ścieżek
+kratowych $C'_{\max}=\max_P[\ell(P)+\sum_s\Delta_s(P)]$, więc zamiany
+oddziałują przez wybór ścieżki krytycznej. Każde sąsiedztwo złożone oparte
+na DP optymalizuje zatem zastępczą funkcję celu.
+
+\section{Protokół eksperymentu}
+Protokół jest taki sam jak we wcześniejszych pracach~\cite{windowed_own}.
+Nowe jest tylko sąsiedztwo.
+\begin{itemize}
+\item \textbf{Instancje:} 120 instancji Taillarda (12 klas,
+      $n\in\{20,\dots,500\}$, $m\in\{5,10,20\}$), zweryfikowanych
+      generatorem Taillarda.
+\item \textbf{Metaheurystyki:} ILS z listą tabu (kadencja 10) i pulą
+      elitarną 10 rozwiązań z kickiem double-bridge. SA z $T_0=1000$,
+      $\alpha=0{,}99$, podłogą temperatury 100 i reheatem $\times1{,}5$
+      z kickiem po 100\,ms stagnacji. Start z permutacji identycznościowej.
+\item \textbf{Budżety:} $\{0{,}1;\,0{,}5;\,1;\,2;\,5;\,10\}$\,s,
+      5 ziaren (0--4).
+\item \textbf{Sąsiedztwa:} $k\in\{2,3,4,8,n\}$. Wiersze Adjacent,
+      Fibonacci, Dynasearch i Motzkin pochodzą z wcześniejszej kampanii
+      na tej samej maszynie.
+\item \textbf{Miara:} RPD względem dolnego ograniczenia Taillarda; test
+      Wilcoxona, $\alpha=0{,}05$.
+\item \textbf{Sprzęt:} Apple M4 Pro, przebiegi sekwencyjne, jak wcześniej.
+\end{itemize}
+\paragraph{Jeden przebieg na rodzinę budżetów.} ILS i SA używają limitu
+czasu wyłącznie jako warunku stopu. Przebieg z budżetem $t$ jest więc
+prefiksem przebiegu 10\,s z tym samym ziarnem. Każdą konfigurację
+uruchamiamy raz na 10\,s, a wynik dla mniejszych budżetów odczytujemy
+z logu trajektorii. Ruch rozpoczęty przed $t$ jest liczony, jak w niezależnym
+przebiegu. \todo{walidacja na dwóch klasach}
+
+\section{Wyniki}
+\begin{table}[t]
+\centering
+\caption{PILOT (1\,s, RPD do UB, 4 instancje $\times$ 3 ziarna):
+średnie RPD [\%] / liczba iteracji ILS.}
 \small
 \begin{tabular}{@{}lccc@{}}
 \toprule
 Sąsiedztwo & $20\times5$ & $20\times10$ & $50\times10$ \\
 \midrule
 Adjacent         & 1,59 / 4578 & 3,26 / 2246 & 11,73 / 403 \\
-Fibonacci ($k{=}2$) & 1,31 / 12400 & 2,46 / 7129 & 8,37 / 3329 \\
-tribonacci ($k{=}3$) & 0,92 / 10177 & 1,84 / 5007 & 5,94 / 2481 \\
+$k=2$ (Fibonacci) & 1,31 / 12400 & 2,46 / 7129 & 8,37 / 3329 \\
+$k=3$ (tribonacci) & 0,92 / 10177 & 1,84 / 5007 & 5,94 / 2481 \\
 $k=4$            & 0,89 / 7897 & 1,43 / 3618 & 5,51 / 1966 \\
-$k=6$            & 0,74 / 5397 & \textbf{1,09} / 2375 & 4,85 / 1123 \\
+$k=6$            & 0,74 / 5397 & 1,09 / 2375 & 4,85 / 1123 \\
 $k=8$            & 0,72 / 3893 & 1,35 / 1580 & 4,66 / 809 \\
-$k=n$            & \textbf{0,55} / 1539 & \textbf{0,99} / 610 & \textbf{3,62} / 63 \\
-Dynasearch (rekur.) & 0,94 / 655 & 1,49 / 384 & 5,30 / 23 \\
+$k=n$            & 0,55 / 1539 & 0,99 / 610 & 3,62 / 63 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\paragraph{Wnioski z pilota.}
-\begin{itemize}
-\item Jakość poprawia się monotonicznie od $k=2$ do $k=6$, a przy
-$1000$\,ms pełne $k=n$ nadal wygrywa.
-\item Nowe DP przyspiesza Dynasearch 2–3-krotnie, co samo w sobie
-poprawia RPD z $5{,}30\%$ do $3{,}62\%$ przy $50\times10$.
-\item Błąd addytywności rośnie z $k$. Predykcja jest dokładna w 42\% ocen
-dla $k=2$ i tylko w 10–12\% dla $k\geq 6$. Zawyżenie poprawy wynosi 10\%
-przy $k=2$ i około 50\% przy $k\geq 8$.
-\item Ruch zawiera 2–5 zamian niezależnie od $k$. Większe $k$ służy do
-dłuższych zamian, a nie do większej ich liczby.
-\item Główne pytanie dla pełnej kampanii: czy przy $n\geq 100$ albo krótszym
-budżecie pojawia się wewnętrzne optimum $k^*$.
-\end{itemize}
+\begin{table*}[t]
+\centering
+\caption{SZKIELET: średnie RPD [\%] do LB, ILS, dla każdego $n$ (średnia
+po $m$, 10 instancji, 5 ziaren). Analogiczna tabela dla SA.}
+\small
+\begin{tabular}{@{}llcccccc@{}}
+\toprule
+$n$ & Sąsiedztwo & 0,1\,s & 0,5\,s & 1\,s & 2\,s & 5\,s & 10\,s \\
+\midrule
+20--500 & Adjacent (ref.) & -- & -- & -- & -- & -- & -- \\
+& Fibonacci (ref.) & -- & -- & -- & -- & -- & -- \\
+& Dynasearch (ref.) & -- & -- & -- & -- & -- & -- \\
+& Motzkin (ref.) & -- & -- & -- & -- & -- & -- \\
+\cmidrule(l){2-8}
+& $k=2$ & -- & -- & -- & -- & -- & -- \\
+& $k=3$ (tribonacci) & -- & -- & -- & -- & -- & -- \\
+& $k=4$ & -- & -- & -- & -- & -- & -- \\
+& $k=8$ & -- & -- & -- & -- & -- & -- \\
+& $k=n$ & -- & -- & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\paragraph{Pilot.} Jakość poprawia się monotonicznie od $k=2$ do $k=6$,
+a przy 1\,s pełne $k=n$ nadal wygrywa. Błąd addytywności rośnie z $k$:
+predykcja jest dokładna w 42\% ocen dla $k=2$ i w 10--12\% dla $k\geq 6$.
+\todo{zastąpić wynikami pełnej kampanii}
 
 \section{Wnioski}
 \todo{po pełnej kampanii}
@@ -162,10 +245,14 @@ budżecie pojawia się wewnętrzne optimum $k^*$.
 \begin{thebibliography}{9}\small
 \bibitem{bozejko2026sr} W.~Bożejko, M.~Uchroński, M.~Wodecki, Sci.\ Rep.\ 2026.
 \bibitem{congram2002} R.K.~Congram, C.N.~Potts, S.L.~van de Velde, INFORMS J.\ Comput.\ 14(1), 2002.
+\bibitem{ergun2006} Ö.~Ergun, J.B.~Orlin, Oper.\ Res.\ Lett.\ 34(1), 2006.
 \bibitem{fibonacci_own} \todo{praca własna -- Fibonacci}
 \bibitem{garey1976} M.R.~Garey, D.S.~Johnson, R.~Sethi, Math.\ Oper.\ Res.\ 1(2), 1976.
 \bibitem{grabowski2004} J.~Grabowski, M.~Wodecki, Comput.\ Oper.\ Res.\ 31(11), 2004.
+\bibitem{grosso2004} A.~Grosso, F.~Della Croce, R.~Tadei, Oper.\ Res.\ Lett.\ 32(1), 2004.
 \bibitem{motzkin_own} \todo{praca własna -- Motzkin, SOCO 2026}
 \bibitem{nowicki1996} E.~Nowicki, C.~Smutnicki, EJOR 91(1), 1996.
+\bibitem{toth2003} P.~Toth, D.~Vigo, INFORMS J.\ Comput.\ 15(4), 2003.
+\bibitem{windowed_own} \todo{praca własna -- windowed QUBO}
 \end{thebibliography}
 \end{document}

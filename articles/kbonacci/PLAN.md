@@ -5,6 +5,105 @@ Powiązane: `articles/katalog_sasiedztw.md`, `ROADMAP.md` (front C), szkice `mai
 
 ---
 
+## A. USTALENIA WIĄŻĄCE I PLAN WYKONAWCZY (01.11.2026, po rozmowie)
+
+> Ta sekcja **nadpisuje** sprzeczne punkty planu v2 poniżej. W szczególności nie robimy: NEH, budżetów t·n·m/2, IG, BKS, adaptacyjnego k, Friedmana.
+> Zasada nadrzędna: **badamy sąsiedztwa, nie metaheurystyki.** Protokół i wszystkie stałe badawcze są jak w poprzednich artykułach, żeby nowe wyniki
+> dało się bezpośrednio zestawić ze starymi. Nowa jest tylko klasa sąsiedztw.
+
+### A.1 Decyzje
+
+| # | Decyzja |
+|---|---|
+| D1 | Konferencja: ICAPS albo IJCAI, zależnie od tego, na którą zdążymy |
+| D2 | Start z permutacji identycznościowej, jak dotąd |
+| D3 | Budżety 0,1 / 0,5 / 1 / 2 / 5 / 10 s, 5 ziaren (0–4), jak dotąd |
+| D4 | ILS i SA **bez zmian** (kadencja tabu 10, mushroom 10; SA: T0 = 1000, α = 0,99, podłoga 100, reheat 1,5, stagnacja 100 ms) |
+| D5 | Miara jak dotąd: RPD do LB Taillarda, test Wilcoxona, α = 0,05 |
+| D6 | Filtr blokowy **bez zmian**: k-bonacci używa tego samego testu co Fib/Dyn/Motzkin, czyli porównywalność. Dokładny filtr najwyżej jako ablacja w opcji MAX |
+| D7 | Warianty: k ∈ {2, 3, 4, 8, n}. Adjacent, Fibonacci, Dynasearch i Motzkin bierzemy z wcześniejszych wyników. Insert tylko w opcji MAX |
+| D8 | Liczymy na Macu (M4 Pro), sekwencyjnie jak wcześniej. Przygotowanie w chmurze → `git pull` na Macu → lokalny Claude uruchamia |
+| D9 | Kolejność: najpierw klasyka, potem kwanty (D-Wave, IQM) po decyzji o kredytach |
+
+**Insert** to ruch „wyjmij zadanie z pozycji i i wstaw na pozycję j” ((n−1)² sąsiadów). Klasycznie najsilniejszy dla PFSP, ale nie było go
+w poprzednich pracach. Dodanie go to nowa implementacja i nowa linia odniesienia, dlatego jest tylko w MAX.
+
+**k = 2 i k = n liczymy na nowo**, mimo że Fibonacci i Dynasearch już są:
+1. Krzywa jakość(k) musi pochodzić z jednego kodu.
+2. Stary `fibonacci` przy braku poprawy nie robi ruchu, tylko wywołuje kick, a k-bonacci (jak Dynasearch i Motzkin) robi najlepszą
+   pojedynczą zamianę. To daje różnicę w pilocie: 1,61 vs 1,31.
+3. Stary `dynasearch_full` ma rekurencyjne DP (2–3× wolniejsze) i problem z limitem czasu przy n = 500 (audyt).
+Stare wiersze zostają w tabeli jako odniesienie, a różnice opisujemy.
+
+### A.2 Jeden przebieg 10 s zamiast sześciu (ekstrakcja budżetów z logów)
+
+- **Dlaczego wolno:** w ILS i SA limit czasu jest **wyłącznie warunkiem stopu**. Chłodzenie (α na iterację), reheat (stała stagnacja 100 ms),
+  tabu i pula elitarna nie zależą od budżetu. Przebieg z budżetem t jest więc prefiksem przebiegu 10 s z tym samym ziarnem.
+- **Reguła dokładna:** pętla sprawdza zegar *przed* ruchem. Wynik dla t to najlepsze rozwiązanie po ostatnim ruchu, który *rozpoczął się* przed t,
+  czyli po ruchu, którego poprzednik skończył się przed t. Ruch rozpoczęty przed t, a skończony po t, się liczy, dokładnie jak w osobnym przebiegu.
+- **Co trzeba dodać:**
+  - SA nie zapisuje `move_log` (ILS zapisuje). Dodajemy samo logowanie, bez zmian logiki.
+  - Skrypt ekstrakcji.
+  - Walidacja na małym zestawie prawdziwych przebiegów.
+- **Oszczędność:** 10 s zamiast 18,6 s na konfigurację, czyli −46%.
+
+### A.3 Plan wykonawczy: co i dlaczego, po kolei
+
+**Etap 0: przygotowanie w chmurze (Claude, gałąź `kbonacci-icaps`, ~1 dzień)**
+
+| # | Co | Dlaczego |
+|---|---|---|
+| 0.1 | Spisać stałe protokołu z poprzednich prac (config.yaml, windowed_qubo §setup) w `articles/kbonacci/PROTOKOL.md` | jedno źródło prawdy; porównywalność |
+| 0.2 | Sprawdzić, że k-bonacci idzie tą samą ścieżką co stare sąsiedztwa (`get_neighbor`, ten sam filtr, ten sam runner) | żadnych ukrytych różnic poza sąsiedztwem |
+| 0.3 | `move_log` w SA (samo logowanie) + test, że wyniki SA z logowaniem i bez są identyczne przy tym samym ziarnie | ekstrakcja dla SA; dowód, że logika się nie zmieniła |
+| 0.4 | `scripts/extract_budgets.py`: z wyników 10 s tworzy wiersze dla 0,1 / 0,5 / 1 / 2 / 5 s (reguła z A.2), w formacie zgodnym z dotychczasowymi CSV/tabelami | mniejsze budżety bez dodatkowych przebiegów |
+| 0.5 | Plan walidacji ekstrakcji: tai20_5 i tai50_10, k ∈ {3, 8}, ILS + SA, wszystkie budżety jako osobne przebiegi (~2 h na Macu) | recenzent zapyta; to tanie |
+| 0.6 | Blok konfiguracji „FAZA K” w config.yaml (tryby `kbonacci_k2/k3/k4/k8/kn`, 12 plików, budżet 10 s, osobny katalog wyników) | uruchomienie jedną komendą |
+| 0.7 | Testy jednostkowe + test dymny (wszystkie tryby, krótki budżet) w chmurze | żeby na Macu nic nie wybuchło |
+| 0.8 | `articles/kbonacci/RUN_LOCAL.md`: instrukcja dla lokalnego Claude’a (pull, venv, kolejność n, wznawianie, kontrola postępu, co i gdzie zapisać, co wypchnąć) | przejęcie uruchamiania |
+| 0.9 | Skrypt analizy: tabele RPD (k × budżet × n, ILS i SA), Wilcoxon vs stare sąsiedztwa, liczba iteracji, rysunki | wyniki od razu do artykułu |
+
+**Etap 1: kampania klasyczna (Mac, lokalny Claude)**
+
+| # | Co | Dlaczego |
+|---|---|---|
+| 1.1 | Sprawdzić, że stare wyniki (Adj/Fib/Dyn/Motz) dla wszystkich 12 plików są na Macu i kompletne (audyt: braki w zagregowanych CSV, Motzkin n = 500) | wiersze odniesienia |
+| 1.2 | Walidacja ekstrakcji (0.5) → raport | zanim zainwestujemy kilkanaście godzin |
+| 1.3 | Kampania: n = 20 → 50 → 100 → 200 → 500, sekwencyjnie, z wznawianiem | najpierw szybkie klasy; błąd wychodzi wcześnie |
+| 1.4 | Ekstrakcja budżetów + analiza (0.9) → wypchnięcie wyników na gałąź | dane do artykułu |
+
+**Etap 2: analiza i pisanie (chmura).** Tabele i rysunki do szkicu; rozdziały 3–5 można pisać już teraz.
+**Etap 3: kwanty (po klasyce, po kredytach).** Patrz A.4.
+
+### A.4 Trzy opcje: minimum / optimum / maksimum
+
+Założenia: Mac sekwencyjnie, 120 instancji × 5 ziaren × 2 algorytmy, przebiegi 10 s z ekstrakcją, +10% narzutu.
+k = n przy n = 500: jedna ocena trwa ~36 s, więc przebieg = 1 ruch z przekroczeniem limitu (+~0,7 h na kampanię; tak samo jak stary Dynasearch).
+
+| | **MINIMUM** | **OPTIMUM (rekomendacja)** | **MAKSIMUM** |
+|---|---|---|---|
+| **Klasyka: warianty** | k ∈ {2, 3, 4, 8, n} | k ∈ {2, 3, 4, 5, 6, 8, 12, 16, n} | OPTIMUM + Insert + ablacja dokładnego filtra (k ∈ {3, 8}) |
+| Klasyka: czas na Macu | **~19 h** (1 noc + dzień) | **~34 h** (~1,5 doby) | **~48 h** (2 doby) |
+| Dodatki | walidacja ekstrakcji (~2 h) | + anatomia i addytywność na stanach z trajektorii (bez ILS/SA, ~2 h) | + implementacja Insert (~1 dzień pracy) |
+| **D-Wave** (protokół jak `windowed_qubo`: tai20_5, 10 inst. × 5 ziaren, num_reads = 100, ILS + SA, przebieg 5 s → ekstrakcja 0,1–2 s) | k ∈ {3, 4}: 600 wywołań, **~18 s QPU**, ~0,5 h | k ∈ {3, 4, 8} na n = 20 + skalowanie k ∈ {3, 4} dla n = 50, 100: ~2 100 wywołań, **~63 s QPU**, ~1,5 h | + n = 200, 500 (k = 3) i tai20_10/20: ~3 900 wywołań, **~117 s QPU**, ~2,5 h + embedding |
+| % miesięcznej quoty D-Wave (≈400 s wg repo / 1800 s, jeśli 30 min) | 5% / 1% | 16% / 3,5% | 29% / 6,5% |
+| **IQM** (protokół jak `gate_qaoa`: tai20_5, ziarno 0, p = 1, 4096 shotów, okno 6, 1 ruch na przebieg; ~0,25 kr./zadanie + 0,43–0,70 kr./obwód, ~6 obwodów na ruch — do potwierdzenia darmową transpilacją) | demo: 1 instancja, k ∈ {3, 4}, ILS: **~6–9 kredytów** (darmowa pula) | 10 instancji, k ∈ {3, 4}, ILS: **~57–89 kredytów** (~35–55 USD; 2–3 mies. darmowej puli albo prośba o kredyty) | 10 instancji, k ∈ {3, 4, 8}, ILS + SA: **~170–270 kredytów** (~100–160 USD) |
+| Co daje artykułowi | pełna krzywa k na całym Taillardzie, porównanie ze starymi wynikami | + kształt krzywej (gdzie się nasyca), anatomia ruchu, addytywność, pomost kwantowy | + najsilniejsza klasyczna linia odniesienia (Insert), ablacja filtra, pełniejsza część kwantowa |
+
+**Uwagi:**
+- **Quota D-Wave:** w repo (config.yaml) zapisano empirycznie ~400 s/mies. (alokacja w maju skończyła się po ~403 s). Jeśli to 30 min, czyli 1800 s,
+  zapas jest ~4,5× większy. Sprawdzić w Leap. Każda opcja mieści się w jednym miesiącu.
+- **D-Wave w kodzie:** `quantum_dynasearch` na backendzie `dwave` **ignoruje `L_max`** (src/neighborhoods/quantum_qubo/dynasearch.py:106).
+  QUBO k-bonacciego wymaga małej nakładki `quantum_kbonacci`, czyli nowego sąsiedztwa, bez zmian w ILS/SA.
+  Na IQM `gate_dynasearch` przekazuje `L_max` poprawnie.
+- **Embedding dla n ≥ 50 nie jest pewny:** QUBO pasmowe ~(k−1)n·(udział po filtrze). Fibonacci n = 500 się zmieścił, ale pasmo k = 3 jest szersze. Ryzyko w opcji MAX.
+- **Rekomendacja: OPTIMUM.**
+  - Klasyka ~1,5 doby na Macu daje pełną krzywą k i odpowiedź, czy korzyść się nasyca.
+  - D-Wave ~1 min QPU to akapit-pomost do prac kwantowych.
+  - IQM: prosimy o ~100 kredytów.
+
+---
+
 ## 0. Skrót
 
 - **Pytanie główne** (tytuł roboczy EN: *How far should a swap reach?*): jak daleko powinny sięgać zamiany w złożonym ruchu dla PFSP,

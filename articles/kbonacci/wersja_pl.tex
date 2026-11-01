@@ -170,25 +170,53 @@ Nowe jest tylko sąsiedztwo.
 \item \textbf{Instancje:} 120 instancji Taillarda (12 klas,
       $n\in\{20,\dots,500\}$, $m\in\{5,10,20\}$), zweryfikowanych
       generatorem Taillarda.
-\item \textbf{Metaheurystyki:} ILS z listą tabu (kadencja 10) i pulą
-      elitarną 10 rozwiązań z kickiem double-bridge. SA z $T_0=1000$,
-      $\alpha=0{,}99$, podłogą temperatury 100 i reheatem $\times1{,}5$
-      z kickiem po 100\,ms stagnacji. Start z permutacji identycznościowej.
+\item \textbf{Metaheurystyki} (bez zmian): ILS z listą tabu (kadencja 10)
+      i pulą 10 najlepszych rozwiązań z kickiem double-bridge. SA
+      z $T_0=1000$, $\alpha=0{,}99$ i podłogą temperatury 100; po 100\,ms
+      bez poprawy temperatura wraca do $T_0$, a kolejne rozwiązanie
+      z puli dostaje kick double-bridge. Start z permutacji
+      identycznościowej. \todo{wiersze SA tylko jeśli policzymy SA}
 \item \textbf{Budżety:} $\{0{,}1;\,0{,}5;\,1;\,2;\,5;\,10\}$\,s,
       5 ziaren (0--4).
-\item \textbf{Sąsiedztwa:} $k\in\{2,3,4,8,n\}$. Wiersze Adjacent,
-      Fibonacci, Dynasearch i Motzkin pochodzą z wcześniejszej kampanii
-      na tej samej maszynie.
-\item \textbf{Miara:} RPD względem dolnego ograniczenia Taillarda; test
-      Wilcoxona, $\alpha=0{,}05$.
-\item \textbf{Sprzęt:} Apple M4 Pro, przebiegi sekwencyjne, jak wcześniej.
+\item \textbf{Sąsiedztwa:} $k\in\{2,3,4,5,6,8,12,16,n\}$. Wiersze
+      odniesienia: Adjacent, Fibonacci, Dynasearch i Motzkin z wcześniejszej
+      kampanii na tej samej maszynie oraz Insert (najlepsze pojedyncze
+      wstawienie, akceleracja Taillarda). Filtr blokowy jak we
+      wcześniejszych pracach; ablacja z dokładnymi granicami ścieżki
+      krytycznej dla $k\in\{3,8\}$.
+\item \textbf{Miara:} RPD do dolnego ograniczenia Taillarda i test
+      Wilcoxona, $\alpha=0{,}05$, jak wcześniej. Dodatkowo: korekta Holma,
+      test Friedmana z różnicą krytyczną Nemenyi i RPD do najlepszych
+      znanych rozwiązań.
+\item \textbf{Sprzęt:} obliczenia klasyczne na Apple M4 Pro, przebiegi
+      sekwencyjne, jak wcześniej. Obliczenia kwantowe na wyżarzaczu D-Wave
+      Advantage (topologia Pegasus, ok. 5\,600 kubitów; chmura Leap,
+      \texttt{EmbeddingComposite}, identyfikator solvera zapisywany przy
+      uruchomieniu) oraz na procesorach bramkowych IQM przez IQM Resonance:
+      Sirius (16 kubitów, topologia gwiazdy) i Garnet (20 kubitów, krata
+      kwadratowa) \todo{wpisać faktycznie użyte maszyny}.
 \end{itemize}
 \paragraph{Jeden przebieg na rodzinę budżetów.} ILS i SA używają limitu
-czasu wyłącznie jako warunku stopu. Przebieg z budżetem $t$ jest więc
+czasu wyłącznie jako warunku stopu, więc przebieg z budżetem $t$ jest
 prefiksem przebiegu 10\,s z tym samym ziarnem. Każdą konfigurację
 uruchamiamy raz na 10\,s, a wynik dla mniejszych budżetów odczytujemy
-z logu trajektorii. Ruch rozpoczęty przed $t$ jest liczony, jak w niezależnym
-przebiegu. \todo{walidacja na dwóch klasach}
+z logu trajektorii (ruch rozpoczęty przed $t$ się liczy). ILS jest
+deterministyczny przy danym ziarnie i wartości odczytane z logu pokrywają
+się z niezależnymi przebiegami. SA nie jest deterministyczny: reheat
+wyzwala licznik stagnacji mierzony zegarem, więc nawet dwa przebiegi
+z tym samym ziarnem i budżetem rozchodzą się po pierwszym kicku. Dla SA
+wartości z logu zgadzają się z niezależnymi przebiegami w granicach tego
+szumu. \todo{tabela walidacji}
+
+\paragraph{Protokół kwantowy.} Jak we wcześniejszych pracach kwantowych;
+zmienia się tylko sąsiedztwo. Na wyżarzaczu ruch $k$-bonacci to QUBO
+nakładania przedziałów o długości co najwyżej $k$ (ograniczenie działa
+także na QPU), 100 odczytów na wywołanie, w tych samych ILS i SA
+z $t_{\max}=5$\,s. Na procesorach bramkowych jeden ruch z permutacji
+identycznościowej wykonuje QAOA o stałych kątach ($p=1$, 4096 shotów)
+na oknach po 6 pozycji z nakładaniem 50\%; wszystkie okna ruchu idą
+jednym zadaniem. \todo{które poziomy policzono i zużyty czas QPU /
+kredyty}
 
 \section{Wyniki}
 \begin{table}[t]
@@ -224,11 +252,16 @@ $n$ & Sąsiedztwo & 0,1\,s & 0,5\,s & 1\,s & 2\,s & 5\,s & 10\,s \\
 & Fibonacci (ref.) & -- & -- & -- & -- & -- & -- \\
 & Dynasearch (ref.) & -- & -- & -- & -- & -- & -- \\
 & Motzkin (ref.) & -- & -- & -- & -- & -- & -- \\
+& Insert (ref.) & -- & -- & -- & -- & -- & -- \\
 \cmidrule(l){2-8}
 & $k=2$ & -- & -- & -- & -- & -- & -- \\
 & $k=3$ (tribonacci) & -- & -- & -- & -- & -- & -- \\
 & $k=4$ & -- & -- & -- & -- & -- & -- \\
+& $k=5$ & -- & -- & -- & -- & -- & -- \\
+& $k=6$ & -- & -- & -- & -- & -- & -- \\
 & $k=8$ & -- & -- & -- & -- & -- & -- \\
+& $k=12$ & -- & -- & -- & -- & -- & -- \\
+& $k=16$ & -- & -- & -- & -- & -- & -- \\
 & $k=n$ & -- & -- & -- & -- & -- & -- \\
 \bottomrule
 \end{tabular}

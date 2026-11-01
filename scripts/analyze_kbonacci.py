@@ -140,14 +140,14 @@ def main() -> None:
 
     # 3) Friedman + Nemenyi CD over neighborhoods with complete blocks (file, inst; seed-averaged)
     frows = []
-    for algo in algos:
-        for t in tls:
+    for algo, t, n_sel in [(al, tt, nn) for al in algos for tt in tls for nn in ["all"] + ns]:
+        if True:
             blocks = defaultdict(dict)
             for r in recs:
-                if r["algo"] == algo and r["tl"] == t:
+                if r["algo"] == algo and r["tl"] == t and (n_sel == "all" or r["n"] == n_sel):
                     blocks[(r["file"], r["inst"])].setdefault(r["neigh"], []).append(r["rpd"])
             common = [nb for nb in neighs if all(nb in b for b in blocks.values())]
-            if len(common) < 3 or len(blocks) < 5:
+            if len(common) < 3 or len(blocks) < 5:  # "all": only neighborhoods present for every n
                 continue
             data = [[statistics.mean(blocks[b][nb]) for b in blocks] for nb in common]
             stat, p = friedmanchisquare(*data)
@@ -165,10 +165,10 @@ def main() -> None:
             kk, N = len(common), len(blocks)
             cd = Q05.get(kk, float("nan")) * math.sqrt(kk * (kk + 1) / (6 * N))
             for i, nb in enumerate(common):
-                frows.append([algo, t, nb, round(ranks[i] / N, 3), N, round(stat, 2), p, round(cd, 3)])
+                frows.append([algo, t, n_sel, nb, round(ranks[i] / N, 3), N, round(stat, 2), p, round(cd, 3)])
     with open(a.out / "friedman.csv", "w", newline="") as fh:
         w = csv.writer(fh)
-        w.writerow(["algo", "tl_ms", "neighborhood", "avg_rank", "blocks", "chi2", "p", "nemenyi_cd"])
+        w.writerow(["algo", "tl_ms", "n", "neighborhood", "avg_rank", "blocks", "chi2", "p", "nemenyi_cd"])
         w.writerows(frows)
     print(f"wrote {a.out / 'friedman.csv'}")
 

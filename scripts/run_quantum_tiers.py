@@ -185,6 +185,9 @@ def run_dwave(args) -> None:
             continue
         if args.dry_run:
             continue
+        if not args.simulate and remaining <= 0:  # a cap of 0 would mean "unlimited" in solve_qubo
+            print(f"    STOP: no QPU time left this month ({used:.1f} of {args.budget_s:.0f} s used).")
+            return
         if not args.simulate and est > remaining and not args.partial:
             print(f"    STOP: tier needs ~{est:.1f} s but only {remaining:.1f} s left this month. "
                   "Re-run next month (it resumes) or pass --partial to spend what is left.")

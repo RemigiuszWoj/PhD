@@ -89,6 +89,8 @@ def run_stage(name: str, files, algos, dry: bool, limit: int) -> None:
         jobs.append((OUT / f"{name}_repeat", configs(fl, spec["modes"], spec["repeat_budgets"], algos)))
     for res_dir, cfgs in jobs:
         res_dir.mkdir(parents=True, exist_ok=True)
+        if not dry:
+            write_meta(res_dir, name, algos)
         runner = ExperimentRunner(base_results_dir=str(OUT), quantum_config={}, resume_dir=str(res_dir))
         todo = [c for c in cfgs if not runner._already_done(c)]
         if limit:
@@ -109,21 +111,54 @@ def run_stage(name: str, files, algos, dry: bool, limit: int) -> None:
                         "--repeat", str(OUT / "validate_repeat")], check=True)
 
 
+def write_meta(res_dir: Path, stage: str, algos) -> None:
+    """Provenance of every (re)start of a stage: commit, machine, Python, protocol constants."""
+    import datetime
+    import json
+    import platform
+
+    import yaml
+
+    def git(*args):
+        try:
+            return subprocess.run(["git", *args], capture_output=True, text=True, check=True).stdout.strip()
+        except Exception:
+            return None
+
+    with open("config.yaml") as fh:
+        cfg = yaml.safe_load(fh) or {}
+    meta = {
+        "stage": stage, "algos": list(algos),
+        "started": datetime.datetime.now().isoformat(timespec="seconds"),
+        "git_commit": git("rev-parse", "HEAD"), "git_dirty": bool(git("status", "--porcelain")),
+        "python": sys.version.split()[0], "platform": platform.platform(),
+        "machine": platform.machine(), "processor": platform.processor(),
+        "iterated_local_search": cfg.get("iterated_local_search"),
+        "simulated_annealing": cfg.get("simulated_annealing"),
+        "seeds": SEEDS, "instances": INSTANCES,
+    }
+    log = res_dir / "campaign_meta.jsonl"
+    with open(log, "a") as fh:
+        fh.write(json.dumps(meta) + "\n")
+
+
 def print_moves(res_dir: Path) -> None:
     """How many moves (metaheuristic iterations) each neighborhood makes in the full budget."""
     import json
     import statistics
     from collections import defaultdict
 
-    it = defaultdict(list)
-    for p in res_dir.rglob("result.json"):
-        r = json.loads(p.read_text())
-        c = r["config"]
-        it[(c["algorithm"], Path(c["instance_file"]).stem, c["neighborhood"])].append(r.get("iterations") or 0)
-    if not it:
+    rows = [json.loads(p.read_text()) for p in res_dir.rglob("result.json")]
+    if not rows:
         return
+    t_long = max(r["config"]["time_limit_ms"] for r in rows)
+    it = defaultdict(list)
+    for r in rows:
+        c = r["config"]
+        if c["time_limit_ms"] == t_long:
+            it[(c["algorithm"], Path(c["instance_file"]).stem, c["neighborhood"])].append(r.get("iterations") or 0)
     modes = sorted({k[2] for k in it}, key=lambda m: (len(m), m))
-    print(f"\nMean number of moves in {res_dir.name} (t_max of the stage):")
+    print(f"\nMean number of moves in {res_dir.name} (t_max = {t_long} ms):")
     for algo in sorted({k[0] for k in it}):
         print(f"  {algo:<4}{'file':<10}" + "".join(f"{m.replace('kbonacci_', ''):>9}" for m in modes))
         for f in [x for x in TAILLARD if any(k[1] == x and k[0] == algo for k in it)]:

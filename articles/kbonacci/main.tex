@@ -228,34 +228,62 @@ The protocol is that of the earlier studies~\cite{windowed_own}. Only the
 neighborhood is new.
 \begin{itemize}
 \item \textbf{Instances:} all 120 Taillard instances~\cite{taillard1993}
-      (12 classes, $n\in\{20,50,100,200,500\}$, $m\in\{5,10,20\}$).
-      They were verified against Taillard's generator.
-\item \textbf{Metaheuristics:} ILS with a tabu list (tenure 10) and an
-      elite pool of 10 solutions perturbed by double-bridge kicks. SA
-      with $T_0=1000$, $\alpha=0.99$, a temperature floor of 100, and a
-      reheat ($\times1.5$) with a kick after 100\,ms of stagnation. Both
-      start from the identity permutation.
+      (12 classes, $n\in\{20,50,100,200,500\}$, $m\in\{5,10,20\}$),
+      verified against Taillard's generator.
+\item \textbf{Metaheuristics} (unchanged): ILS with a tabu list (tenure
+      10) and an elite pool of the 10 best solutions, perturbed by
+      double-bridge kicks. SA with $T_0=1000$, $\alpha=0.99$ and a
+      temperature floor of 100; after 100\,ms without improvement the
+      temperature is reset to $T_0$ and the next elite solution receives a
+      double-bridge kick. Both start from the identity permutation.
+      \todo{SA rows only if the SA campaign is run (decided after the ILS
+      campaign)}
 \item \textbf{Budgets:} $t_{\max}\in\{0.1,0.5,1,2,5,10\}$\,s,
       5 seeds per instance (seeds 0--4).
-\item \textbf{Neighborhoods:} $k\in\{2,3,4,8,n\}$ \todo{optimum
-      variant: $\{2,3,4,5,6,8,12,16,n\}$}. The Adjacent, Fibonacci,
-      Dynasearch and Motzkin rows are taken from the earlier
-      campaign on the same machine.
-\item \textbf{Metric:} RPD to the Taillard lower bound; two-sided
-      Wilcoxon signed-rank test, $\alpha=0.05$.
-\item \textbf{Hardware:} Apple M4 Pro, runs executed sequentially, as in
-      the earlier campaign.
+\item \textbf{Neighborhoods:} $k\in\{2,3,4,5,6,8,12,16,n\}$. Reference
+      rows: Adjacent, Fibonacci, Dynasearch and Motzkin from the earlier
+      campaign on the same machine, and Insert (best single insertion
+      with Taillard's acceleration). The block-boundary filter is that of
+      the earlier studies; an ablation with exact critical-path boundaries
+      is run for $k\in\{3,8\}$.
+\item \textbf{Metric:} RPD to the Taillard lower bound and the two-sided
+      Wilcoxon signed-rank test, $\alpha=0.05$, as before. In addition:
+      Holm-adjusted $p$-values, the Friedman test with the Nemenyi
+      critical difference, and RPD to the best-known solutions.
+\item \textbf{Hardware:} classical runs on an Apple M4 Pro, executed
+      sequentially, as in the earlier campaign. Quantum runs on the
+      D-Wave Advantage annealer (Pegasus topology, about 5\,600 qubits;
+      Leap cloud, \texttt{EmbeddingComposite}, the solver identifier is
+      recorded at run time) and on IQM gate-based processors via IQM
+      Resonance: Sirius (16 qubits, star topology) and Garnet (20 qubits,
+      square lattice) \todo{list the machines actually used}.
 \end{itemize}
 
 \paragraph{One run per budget family.} Neither ILS nor SA uses the time
-limit except as a stopping rule. Cooling, reheating and tabu tenure
-depend on iterations and on a fixed stagnation time. A run with budget $t$
-is therefore a prefix of the run with budget $10$\,s and the same seed.
-Each configuration is run once with $t_{\max}=10$\,s, and the trajectory
-log yields the incumbent for every smaller budget. The loop tests the
-clock before each move, so a move started before $t$ is counted, exactly
-as in an independent run. \todo{validation: independent runs vs extracted
-values on two classes}
+limit except as a stopping rule; cooling, tabu tenure and the elite pool
+depend on iterations, and the reheat on a fixed stagnation time. A run
+with budget $t$ is therefore a prefix of the run with budget $10$\,s and
+the same seed. Each configuration is run once with $t_{\max}=10$\,s, and
+the trajectory log yields the incumbent for every smaller budget. The
+loop tests the clock before each move, so a move started before $t$ is
+counted, exactly as in an independent run. ILS is deterministic for a
+given seed, and the extracted values coincide with independent runs. SA
+is not: its reheat is triggered by a wall-clock stagnation timer, so even
+two runs with the same seed and budget diverge after the first kick. For
+SA the extracted values agree with independent runs within this
+run-to-run noise. \todo{validation table: two classes, independent
+runs vs extracted values, plus repeated runs as a noise control}
+
+\paragraph{Quantum protocol.} The quantum runs follow the earlier
+quantum studies~\cite{windowed_own} and differ only in the neighborhood.
+On the annealer the $k$-bonacci move is an interval-overlap QUBO with
+interval length at most $k$ (the length cap also holds on the QPU),
+100 reads per call, inside the same ILS and SA with $t_{\max}=5$\,s
+(smaller budgets extracted as above). On the gate-based processors one
+move is made from the identity permutation by a fixed-angle QAOA
+($p=1$, 4096 shots) on windows of six positions with 50\% overlap. All
+windows of a move are submitted as one job.
+\todo{tiers actually run (MIN/OPT/MAX) and QPU time / credits used}
 
 % ---------------------------------------------------------------------
 \section{Results}\label{sec:exp}
@@ -297,11 +325,16 @@ $n$ & Neighborhood & 0.1\,s & 0.5\,s & 1\,s & 2\,s & 5\,s & 10\,s \\
 & Fibonacci (ref.) & -- & -- & -- & -- & -- & -- \\
 & Dynasearch (ref.) & -- & -- & -- & -- & -- & -- \\
 & Motzkin (ref.) & -- & -- & -- & -- & -- & -- \\
+& Insert (ref.) & -- & -- & -- & -- & -- & -- \\
 \cmidrule(l){2-8}
 & $k=2$ & -- & -- & -- & -- & -- & -- \\
 & $k=3$ (tribonacci) & -- & -- & -- & -- & -- & -- \\
 & $k=4$ & -- & -- & -- & -- & -- & -- \\
+& $k=5$ & -- & -- & -- & -- & -- & -- \\
+& $k=6$ & -- & -- & -- & -- & -- & -- \\
 & $k=8$ & -- & -- & -- & -- & -- & -- \\
+& $k=12$ & -- & -- & -- & -- & -- & -- \\
+& $k=16$ & -- & -- & -- & -- & -- & -- \\
 & $k=n$ & -- & -- & -- & -- & -- & -- \\
 \bottomrule
 \end{tabular}

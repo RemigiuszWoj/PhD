@@ -23,6 +23,20 @@ Powiązane: `articles/katalog_sasiedztw.md`, `ROADMAP.md` (front C), szkice `mai
 | ILS / SA | bez zmian w logice. Do SA dodano wyłącznie log ruchów (`move_log`); sprawdzone, że przebiegi z logiem i bez są identyczne (deterministyczny zegar) |
 | Filtr blokowy | bez zmian w głównej kampanii. Dokładny filtr ścieżki krytycznej tylko w ablacji (`kbonacci_k3_cp`, `kbonacci_k8_cp`) |
 
+**Przegląd krytyczny przed przekazaniem (01.11, wieczór):**
+- Stałe ILS/SA w `config.yaml` zgadzają się z opisem w `windowed_qubo`: τ = 10, pula 10, T0 = 1000, α = 0,99, Tmin = 100, stagnacja 100 ms z resetem T do T0 i kickiem.
+- Poprawki:
+  - opis SA w szkicu (reset do T0, a nie mnożenie ×1,5);
+  - tabela liczby ruchów liczona tylko dla najdłuższego budżetu etapu;
+  - Friedman także osobno dla każdego n (stare wyniki mogą nie mieć kompletu dla n = 500);
+  - D-Wave nie startuje przy wyczerpanej quocie (cap 0 oznaczał w `solve_qubo` „bez limitu”);
+  - metadane każdego startu etapu (commit, Python, platforma, stałe ILS/SA) w `campaign_meta.jsonl`;
+  - `IQM_TOKEN` w `.env.example`;
+  - w szkicu sprzęt kwantowy (D-Wave Advantage, IQM Sirius/Garnet) i protokół kwantowy.
+- Kod sprawdzony pod Pythonem 3.11 (czyste środowisko z `requirements.txt`: 159 testów, testy dymne skryptów) i 3.13.
+- Uwaga do ewentualnych wcześniejszych twierdzeń w planie: pilot liczony był starym filtrem, czyli **zgodnie** z protokołem (D6).
+  Powtarzać go nie trzeba; jego liczby (RPD do UB, 1 s) zastąpi kampania główna.
+
 **Gotowe w kodzie (01.11):**
 
 | Plik | Co robi |

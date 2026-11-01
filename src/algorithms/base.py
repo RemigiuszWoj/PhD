@@ -17,6 +17,7 @@ from src.neighborhoods.classical.dynasearch import dynasearch_full
 from src.neighborhoods.classical.fibonacci import (
     fibonacci_neighborhood_topk,
 )
+from src.neighborhoods.classical.kbonacci import kbonacci_neighborhood, parse_kbonacci_mode
 from src.neighborhoods.classical.motzkin import motzkin_neighborhood_full
 
 # --- quantum_qubo ---
@@ -44,6 +45,9 @@ from src.permutation_procesing import c_max
 # Valid neighborhood mode names
 # ---------------------------------------------------------------------------
 CLASSICAL_MODES = ("adjacent", "fibonacci", "dynasearch", "motzkin")
+# k-bonacci family (parametric, parsed by parse_kbonacci_mode): "tribonacci",
+# "tetranacci", "kbonacci_k<K>" (K >= 2), "kbonacci_kn" (K = n, i.e. Dynasearch).
+KBONACCI_MODE_EXAMPLES = ("tribonacci", "tetranacci", "kbonacci_k5", "kbonacci_kn")
 QUANTUM_QUBO_MODES = (
     "quantum_adjacent",
     "quantum_fibonacci",
@@ -215,6 +219,12 @@ def get_neighbor(
     elif neigh_mode == "dynasearch":
         new_pi, new_c, _ = dynasearch_full(current_pi, processing_times)
         return new_pi, new_c, tuple(new_pi), None
+
+    elif parse_kbonacci_mode(neigh_mode, n) is not None:
+        k_kb = parse_kbonacci_mode(neigh_mode, n)
+        assert k_kb is not None
+        new_pi, new_c, swaps = kbonacci_neighborhood(current_pi, processing_times, k_kb)
+        return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
 
     elif neigh_mode == "motzkin":
         if n > 150:

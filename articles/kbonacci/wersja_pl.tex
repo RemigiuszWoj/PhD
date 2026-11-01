@@ -1,0 +1,171 @@
+% =====================================================================
+% SZKIC v0 (01.11.2026) -- wersja polska (robocza, do dyskusji z promotorem)
+% Odpowiada main.tex (EN). Liczby w Tabeli 2 pochodzą z PILOTA.
+% =====================================================================
+\documentclass[10pt,twocolumn]{article}
+\usepackage[margin=0.75in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[polish]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+\newtheorem{proposition}{Twierdzenie}
+\newtheorem{definition}{Definicja}
+\newcommand{\todo}[1]{\textcolor{red}{[DO ZROBIENIA: #1]}}
+\newcommand{\N}{\mathcal{N}}
+
+\title{Od Fibonacciego do Dynasearch: rodzina sąsiedztw $k$-bonacci\\
+złożonych z zamian dla permutacyjnego problemu przepływowego}
+\author{Zgłoszenie anonimowe}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Sąsiedztwa ruchów złożonych pozwalają przeszukać wykładniczo wiele
+uszeregowań w czasie wielomianowym metodą programowania dynamicznego.
+Dwa najbardziej znane sąsiedztwa tego typu dla permutacyjnego problemu
+przepływowego leżą jednak na przeciwnych biegunach. Sąsiedztwo Fibonacciego
+łączy tylko zamiany sąsiednie i jest tanie, natomiast Dynasearch łączy
+zamiany na dowolną odległość i kosztuje $O(mn^3)$ na ocenę. Proponujemy
+rodzinę \emph{$k$-bonacci}, która wypełnia lukę między nimi: ruch to zbiór
+zamian końców na rozłącznych przedziałach, przy odległości zamiany
+co najwyżej $k-1$. Liczność rodziny wyznaczają dokładnie liczby
+$k$-bonacciego, więc rośnie ona jak $\lambda_k^n$, gdzie
+$\lambda_2=1{,}618$ (Fibonacci), $\lambda_3=1{,}839$ (tribonacci)
+i $\lambda_k\to 2$ (Dynasearch). Podajemy pozycyjne programowanie dynamiczne,
+które wybiera najlepszy ruch w czasie $O(nk)$ po wyznaczeniu delt w czasie
+$O(mnk^2)$, łączymy je z akceleratorem blokowym i badamy empirycznie
+parametr $k$. Analizujemy jakość rozwiązań, koszt iteracji, strukturę
+wybieranych ruchów oraz błąd założenia o addytywności, które w problemie
+przepływowym przyjmuje każde DP ruchów złożonych.
+\todo{zdanie z głównym wynikiem pełnej kampanii}
+\end{abstract}
+
+\section{Wstęp}
+Permutacyjny problem przepływowy z kryterium $C_{\max}$,
+$F|prmu|C_{\max}$, jest NP-trudny dla $m\geq 3$
+maszyn~\cite{garey1976}. O jakości przeszukiwania lokalnego decydują
+przede wszystkim dwie rzeczy: struktura ruchu oraz własności blokowe
+ścieżki krytycznej, które pozwalają ten ruch przycinać~\cite{nowicki1996,grabowski2004}.
+
+Dynasearch~\cite{congram2002} pokazał, że wykładniczo duże sąsiedztwo
+\emph{niezależnych} zamian można przeszukać dokładnie metodą
+programowania dynamicznego. Dla PFSP zaproponowano też sąsiedztwo
+Fibonacciego, złożone z rozłącznych zamian sąsiednich~\cite{fibonacci_own,bozejko2026sr},
+oraz sąsiedztwo Motzkina~\cite{motzkin_own}. Sąsiedztwa te różnią się
+o rzędy wielkości rozmiarem i kosztem, a mimo to porównuje się je zawsze
+jako odosobnione punkty. Niniejsza praca wypełnia przestrzeń między
+Fibonaccim a Dynasearch jednoparametrową rodziną.
+
+\paragraph{Wkład.}
+\begin{enumerate}
+  \item Sąsiedztwo $k$-bonacci $\N_k$ z łańcuchem zawierań
+        $\N_{\mathrm{adj}}\subset\N_2=\N_{\mathrm{fib}}\subset\N_3\subset\dots\subset\N_n=\N_{\mathrm{dyn}}$
+        i dokładną licznością (Tw.~\ref{prop:count}).
+  \item Pozycyjne DP o złożoności $O(nk)$, zgodne z akceleratorem blokowym.
+        Dla $k=n$ daje ono także szybszy, nierekurencyjny Dynasearch.
+  \item Studium parametru $k$ na benchmarku Taillarda: jakość, koszt
+        iteracji, anatomia ruchu i błąd addytywności.
+  \item \todo{adaptacyjne $k$ (wariant IJCAI) albo porównanie z Iterated Greedy}
+\end{enumerate}
+
+\section{Prace pokrewne}
+\todo{jak w wersji angielskiej. Najważniejsze: sprawdzić, czy Sci Rep 2026
+i IFAC 2025 nie zawierają już tej hierarchii}
+
+\section{Problem i notacja}
+Mamy $n$ zadań wykonywanych na maszynach $1,\dots,m$ w tej samej
+kolejności $\pi$. Czasy zakończenia spełniają
+$C_{r,t}=\max(C_{r-1,t},C_{r,t-1})+p_{r,\pi(t)}$. Macierze Head/Tail
+pozwalają ocenić modyfikację odcinka $[i,j]$ w czasie $O(m(j-i+1))$.
+
+\section{Sąsiedztwo $k$-bonacci}
+\begin{definition}
+Niech $k\geq 2$. \emph{Ruch elementarny} $s(i,j)$, gdzie $1\leq j-i\leq k-1$,
+zamienia $\pi(i)$ z $\pi(j)$, a zadania $\pi(i+1),\dots,\pi(j-1)$ zostają
+na swoich miejscach. \emph{Ruch złożony} to zbiór ruchów elementarnych
+o parami rozłącznych przedziałach $[i,j]$.
+\end{definition}
+Przypadki szczególne: dla $k=2$ dopuszczalna jest tylko odległość $1$
+(Fibonacci), dla $k=3$ odległości $1$ i $2$ (tribonacci), a dla $k=n$
+dowolna odległość (Dynasearch).
+
+\begin{proposition}\label{prop:count}
+$|\N_k|=a_n$, gdzie $a_0=1$ oraz $a_p=\sum_{L=1}^{\min(k,p)}a_{p-L}$.
+Stąd $|\N_2|=F_{n+1}$, $|\N_n|=2^{n-1}$ i $|\N_k|=\Theta(\lambda_k^n)$.
+\end{proposition}
+\begin{proof}[Szkic]
+Ruch złożony to pokrycie pozycji kafelkami długości $1$ (pozycja bez
+zmian) lub $L\in\{2,\dots,k\}$ (zamiana końców kafelka). Różne pokrycia
+dają różne permutacje. \todo{pełny dowód}
+\end{proof}
+
+\paragraph{Ocena i DP.} Wszystkie delty kosztują $O(mnk^2)$, a w przypadku
+Dynasearch $O(mn^3)$. Filtr blokowy działa w czasie $O(1)$ na kandydata
+dzięki bieżącej fladze. Pozycyjne DP ma postać
+$B[p]=\min\bigl(B[p-1],\ \min_{d} B[p-d-1]+\delta_{p-d,p}\bigr)$
+i złożoność $O(nk)$.
+
+\section{Addytywność}
+DP minimalizuje $\sum\delta_{ij}$, jednak w PFSP zmiana $C_{\max}$
+pod wpływem ruchu złożonego nie jest sumą zmian cząstkowych. Każde
+sąsiedztwo złożone oparte na DP optymalizuje więc zastępczą funkcję celu.
+
+\section{Eksperymenty (pilot)}
+Użyliśmy instancji Taillarda $20\times5$, $20\times10$ i $50\times10$
+(po 4 instancje), 3 ziaren, ILS oraz limitu czasu $1000$\,ms.
+RPD liczymy względem UB z plików Taillarda.
+
+\begin{table}[t]
+\centering
+\caption{PILOT: średnie RPD [\%] / liczba iteracji ILS w 1000\,ms.}
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Sąsiedztwo & $20\times5$ & $20\times10$ & $50\times10$ \\
+\midrule
+Adjacent         & 1,59 / 4578 & 3,26 / 2246 & 11,73 / 403 \\
+Fibonacci ($k{=}2$) & 1,31 / 12400 & 2,46 / 7129 & 8,37 / 3329 \\
+tribonacci ($k{=}3$) & 0,92 / 10177 & 1,84 / 5007 & 5,94 / 2481 \\
+$k=4$            & 0,89 / 7897 & 1,43 / 3618 & 5,51 / 1966 \\
+$k=6$            & 0,74 / 5397 & \textbf{1,09} / 2375 & 4,85 / 1123 \\
+$k=8$            & 0,72 / 3893 & 1,35 / 1580 & 4,66 / 809 \\
+$k=n$            & \textbf{0,55} / 1539 & \textbf{0,99} / 610 & \textbf{3,62} / 63 \\
+Dynasearch (rekur.) & 0,94 / 655 & 1,49 / 384 & 5,30 / 23 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Wnioski z pilota.}
+\begin{itemize}
+\item Jakość poprawia się monotonicznie od $k=2$ do $k=6$, a przy
+$1000$\,ms pełne $k=n$ nadal wygrywa.
+\item Nowe DP przyspiesza Dynasearch 2–3-krotnie, co samo w sobie
+poprawia RPD z $5{,}30\%$ do $3{,}62\%$ przy $50\times10$.
+\item Błąd addytywności rośnie z $k$. Predykcja jest dokładna w 42\% ocen
+dla $k=2$ i tylko w 10–12\% dla $k\geq 6$. Zawyżenie poprawy wynosi 10\%
+przy $k=2$ i około 50\% przy $k\geq 8$.
+\item Ruch zawiera 2–5 zamian niezależnie od $k$. Większe $k$ służy do
+dłuższych zamian, a nie do większej ich liczby.
+\item Główne pytanie dla pełnej kampanii: czy przy $n\geq 100$ albo krótszym
+budżecie pojawia się wewnętrzne optimum $k^*$.
+\end{itemize}
+
+\section{Wnioski}
+\todo{po pełnej kampanii}
+
+\begin{thebibliography}{9}\small
+\bibitem{bozejko2026sr} W.~Bożejko, M.~Uchroński, M.~Wodecki, Sci.\ Rep.\ 2026.
+\bibitem{congram2002} R.K.~Congram, C.N.~Potts, S.L.~van de Velde, INFORMS J.\ Comput.\ 14(1), 2002.
+\bibitem{fibonacci_own} \todo{praca własna -- Fibonacci}
+\bibitem{garey1976} M.R.~Garey, D.S.~Johnson, R.~Sethi, Math.\ Oper.\ Res.\ 1(2), 1976.
+\bibitem{grabowski2004} J.~Grabowski, M.~Wodecki, Comput.\ Oper.\ Res.\ 31(11), 2004.
+\bibitem{motzkin_own} \todo{praca własna -- Motzkin, SOCO 2026}
+\bibitem{nowicki1996} E.~Nowicki, C.~Smutnicki, EJOR 91(1), 1996.
+\end{thebibliography}
+\end{document}

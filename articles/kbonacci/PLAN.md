@@ -102,6 +102,53 @@ k = n przy n = 500: jedna ocena trwa ~36 s, więc przebieg = 1 ruch z przekrocze
   - D-Wave ~1 min QPU to akapit-pomost do prac kwantowych.
   - IQM: prosimy o ~100 kredytów.
 
+### A.5 Kwanty na pełnym Taillardzie (n = 20…500): ile by to kosztowało
+
+Liczby w A.4 dotyczą protokołów z poprzednich prac kwantowych: D-Wave głównie n = 20 (tai20_5) plus skalowanie do n = 100, IQM tylko tai20_5.
+Pełny Taillard to 12 plików × 10 instancji × 5 ziaren × 2 algorytmy = 1 200 przebiegów na wartość k, każdy po 10 s, mniejsze budżety z logów.
+
+**D-Wave.** Rozliczany jest czas QPU na wywołanie (~30 ms przy num_reads = 100), a nie czas zegarowy. Wywołanie trwa ≥ 2,1 s zegarowo, więc w 10 s mieszczą się 1–4 wywołania.
+
+| Wariant | Wywołania | QPU | Quota (400 s / 1800 s) | Zegar |
+|---|---|---|---|---|
+| k ∈ {3, 4, 8}, 1 wyw./przebieg | 3 600 | 108 s | 0,3 mies. / 6% | ~10 h |
+| k ∈ {3, 4, 8}, 4 wyw./przebieg | 14 400 | 432 s | 1,1 mies. / 24% | ~10 h |
+| k ∈ {2, 3, 4, 8}, 1 wyw./przebieg | 4 800 | 144 s | 0,4 mies. / 8% | ~14 h |
+| k ∈ {2, 3, 4, 8}, 4 wyw./przebieg | 19 200 | 576 s | 1,4 mies. / 32% | ~14 h |
+
+→ **Na D-Wave pełny Taillard jest tani w kredytach.** Ograniczeniem nie są kredyty, tylko:
+1. **Embedding:** QUBO ma ~(k−1)·n·(udział po filtrze) zmiennych. Przy n = 500 i k = 8 to tysiące zmiennych, więc potrzebne są okna, czyli kilka wywołań na ruch.
+   Fibonacci do n = 500 już działał; k = 3–4 prawdopodobnie też, k = 8 przy n ≥ 200 raczej nie.
+2. **Czas zegarowy** ~10–14 h.
+3. **Jakość:** 1–4 iteracje w 10 s (reżim jednego ruchu jak w `windowed_qubo`, RPD ~20–25%).
+Wartość naukowa to opis tego reżimu, nie wygrana z klasyką. Do dopisania w opcji MAKSIMUM jako „D-Wave pełny Taillard, k ∈ {3, 4}”.
+
+**IQM.** Płaci się za każdy obwód. Kubitów jest 16–54, więc QUBO dzieli się na okna po 6 pozycji, czyli ~n/3 obwodów na **jeden** ruch.
+Przy n = 500 to ~166 obwodów na ruch.
+
+| Wariant (1 ruch na przebieg) | Obwody | Kredyty | USD |
+|---|---|---|---|
+| 1 ziarno, ILS, k ∈ {3, 4} | ~9 400 | ~4 100–6 600 | ~2 500–4 000 |
+| 1 ziarno, ILS, k ∈ {3, 4, 8} | ~14 100 | ~6 200–10 000 | ~3 700–6 000 |
+| 5 ziaren, ILS + SA, k ∈ {3, 4} | ~94 000 | ~41 000–66 000 | ~25 000–40 000 |
+
+→ **Na IQM pełny Taillard jest nierealny:** 150–2 200 miesięcy darmowej puli i kolejki na tysiące godzin. Dlatego `gate_qaoa` zrobił tylko tai20_5.
+Sensowne maksimum na IQM: tai20_5 (A.4) albo dodatkowo tai20_10/20 (n = 20, wciąż ~6 obwodów na ruch).
+
+### A.6 Co odrzuciliśmy z planu v2 i co to miało dawać
+
+| Element v2 | Co to jest | Po co go proponowałem | Dlaczego odpada | Koszt powrotu |
+|---|---|---|---|---|
+| **Start z NEH** | heurystyka Nawaza–Enscore–Hama: buduje dobrą permutację startową przez kolejne wstawianie zadań (standard w PFSP) | konferencje A* oczekują startu z NEH; wyniki bliżej stanu wiedzy | zmienia ILS/SA i przekreśla porównanie ze starymi wynikami (identyczność) | nowa kampania dla wszystkich sąsiedztw |
+| **Budżety t·n·m/2** | limit czasu rosnący z rozmiarem instancji (Ruiz i Stützle 2007), np. t = 30 ms: 1,5 s dla 20×5, 150 s dla 500×20 | standard porównań w literaturze PFSP; duże instancje dostają więcej czasu | inne budżety = brak porównania ze starymi tabelami | nowa kampania |
+| **Iterated Greedy (IG)** | najsilniejsza prosta metaheurystyka dla PFSP: niszczy d = 4 zadania, wstawia je z powrotem najlepiej, plus lokalne przeszukiwanie Insert | silna linia odniesienia; recenzent A* pyta „a jak to wypada względem IG?” | badamy sąsiedztwa, nie metaheurystyki | ~1,5 dnia implementacji + kampania |
+| **BKS (best-known solutions)** | najlepsze znane makespany z literatury (wiele to optima); RPD do BKS zamiast do dolnego ograniczenia | RPD do BKS to standard i pokazuje rzeczywistą odległość od najlepszych | dotychczas raportowaliśmy RPD do LB | **zero kosztu obliczeń**: ta sama kampania, tylko inna wartość odniesienia; wystarczy plik BKS |
+| **Adaptacyjne k** | k zmieniane w trakcie przeszukiwania (reguła z długości bloku, eskalacja jak w VND albo bandyta) | „wersja AI-owa” na IJCAI; odpowiada na pytanie, jak dobrać k bez strojenia | to już element algorytmu przeszukiwania | ~1 dzień + kampania; dobre na osobny artykuł |
+| **Test Friedmana** | nieparametryczny test porównujący naraz wiele wariantów (wszystkie k), z post-hoc Nemenyi i diagramem CD | Wilcoxon porównuje tylko pary; przy 9 wartościach k to 36 par (problem wielokrotnych porównań) | dotychczas tylko Wilcoxon | **zero kosztu obliczeń**: to analiza tych samych danych |
+
+**Propozycja:** BKS i Friedman nie zmieniają protokołu ani kampanii, więc warto je dodać jako uzupełnienie:
+RPD do BKS w dodatkowej kolumnie lub suplemencie, Friedman obok Wilcoxona. Tabele główne zostają jak dotąd.
+
 ---
 
 ## 0. Skrót

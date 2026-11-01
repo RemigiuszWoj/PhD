@@ -42,7 +42,8 @@ the $k$-bonacci numbers, so its size grows as $\lambda_k^n$, with
 $\lambda_2=1.618$ (Fibonacci), $\lambda_3=1.839$ (tribonacci) and
 $\lambda_k\to 2$ (Dynasearch). Already for $k\approx\log_2 n+2$ it
 contains about 80\% of all Dynasearch moves. A positional dynamic program
-selects the best move in $O(nk)$ time. We evaluate the family on the full
+selects the compound move with the best predicted makespan change in
+$O(nk)$ time. We evaluate the family on the full
 Taillard benchmark under the iterated local search and simulated annealing
 frameworks and time budgets of our earlier studies, so that the new
 neighborhoods are directly comparable with the Adjacent, Fibonacci,
@@ -86,7 +87,8 @@ number can be read against the published ones.
         \dots\subset\N_n=\N_{\mathrm{dyn}}$. We count $|\N_k|$ exactly
         and show that $k=\log_2 n+O(1)$ already covers a constant fraction
         of Dynasearch.
-  \item A \textbf{positional DP} that selects the best compound move in
+  \item A \textbf{positional DP} that selects the compound move with the
+        best predicted makespan change (sum of the individual deltas) in
         $O(nk)$ time after $O(mnk^2)$ delta evaluation, compatible with
         the block-property filter. For $k=n$ it is a non-recursive
         Dynasearch.
@@ -249,7 +251,9 @@ neighborhood is new.
 \item \textbf{Metric:} RPD to the Taillard lower bound and the two-sided
       Wilcoxon signed-rank test, $\alpha=0.05$, as before. In addition:
       Holm-adjusted $p$-values, the Friedman test with the Nemenyi
-      critical difference, and RPD to the best-known solutions.
+      critical difference, RPD to Taillard's 1993 upper bounds, and RPD to
+      the current best-known solutions \todo{cite the source of the
+      best-known values}.
 \item \textbf{Hardware:} classical runs on an Apple M4 Pro, executed
       sequentially, as in the earlier campaign. Quantum runs on the
       D-Wave Advantage annealer (Pegasus topology, about 5\,600 qubits;
@@ -267,12 +271,16 @@ the same seed. Each configuration is run once with $t_{\max}=10$\,s, and
 the trajectory log yields the incumbent for every smaller budget. The
 loop tests the clock before each move, so a move started before $t$ is
 counted, exactly as in an independent run. ILS is deterministic for a
-given seed, and the extracted values coincide with independent runs. SA
+given seed, and the extracted values coincide with independent runs up to
+the timing jitter of at most one move. SA
 is not: its reheat is triggered by a wall-clock stagnation timer, so even
 two runs with the same seed and budget diverge after the first kick. For
 SA the extracted values agree with independent runs within this
 run-to-run noise. \todo{validation table: two classes, independent
-runs vs extracted values, plus repeated runs as a noise control}
+runs vs extracted values, plus repeated runs as a noise control} A
+replication run of two earlier neighborhoods (Fibonacci and Dynasearch,
+two classes, same seeds) checks that the machine still reproduces the
+iteration counts and quality of the earlier campaign. \todo{numbers}
 
 \paragraph{Quantum protocol.} The quantum runs follow the earlier
 quantum studies~\cite{windowed_own} and differ only in the neighborhood.

@@ -43,11 +43,11 @@ def _heads_tails(seq: List[int], pt: List[List[int]]):
 
 def insert_neighborhood(
     pi: List[int], processing_times: List[List[int]]
-) -> Tuple[List[int], int, Tuple[int, int]]:
-    """Best insertion move. Returns (new_pi, new_cmax, (i, t))."""
+) -> Tuple[List[int], int, Tuple[int, int, int]]:
+    """Best insertion move. Returns (new_pi, new_cmax, move_attribute=(job, min(i,t), max(i,t)))."""
     n, m = len(pi), len(processing_times)
     if n < 2:
-        return pi.copy(), c_max(pi, processing_times), (0, 0)
+        return pi.copy(), c_max(pi, processing_times), (pi[0] if pi else -1, 0, 0)
     best_c, best_move = None, (0, 0)
     for i in range(n):
         job = pi[i]
@@ -71,4 +71,9 @@ def insert_neighborhood(
     i, t = best_move
     seq = pi[:i] + pi[i + 1 :]
     new_pi = seq[:t] + [pi[i]] + seq[t:]
-    return new_pi, best_c, best_move
+    # Tabu attribute: (job, {i, t}). The reverse move takes the same job from
+    # position t back to position i, so it carries the same attribute and the
+    # tabu list blocks the immediate undo, as (i, i+1) does for Adjacent and the
+    # swap set does for the k-bonacci family. With (i, t) the undo would be (t, i),
+    # never tabu, and ILS could cycle between two solutions.
+    return new_pi, best_c, (pi[i], min(i, t), max(i, t))

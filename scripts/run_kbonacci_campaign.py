@@ -8,7 +8,11 @@ Every run uses t_max = 10 s; the budgets 0.1-5 s are read off its move log
 
 Stages (run in this order by --stage all; each one resumes where it stopped):
   validate  tai20_5 + tai50_10, k in {3, 8}, all six budgets as INDEPENDENT runs,
-            plus a repeat of the 1 s and 5 s runs (run-to-run noise control).
+            plus a repeat of the 0.1-5 s runs (run-to-run noise control); prints
+            VALIDATION GATE: PASS/FAIL and stops the campaign on FAIL.
+  replicate tai20_5 + tai50_10, OLD neighborhoods fibonacci and dynasearch, 10 s:
+            compared afterwards with the old campaign (same seeds) to confirm that
+            the machine/Python state still matches the earlier runs.
   main      12 Taillard files, k in {2,3,4,5,6,8,12,16,n}.
   insert    12 Taillard files, Insert neighborhood (reference row).
   ablation  12 Taillard files, k in {3,8} with the exact critical-path filter.
@@ -47,12 +51,15 @@ K_MAIN = ["kbonacci_k2", "kbonacci_k3", "kbonacci_k4", "kbonacci_k5", "kbonacci_
           "kbonacci_k8", "kbonacci_k12", "kbonacci_k16", "kbonacci_kn"]
 STAGES = {
     "validate": {"files": ["tai20_5", "tai50_10"], "modes": ["kbonacci_k3", "kbonacci_k8"],
-                 "budgets": ALL_BUDGETS, "repeat_budgets": [1000, 5000]},
+                 "budgets": ALL_BUDGETS, "repeat_budgets": [100, 500, 1000, 2000, 5000]},
+    # Replication control: two OLD neighborhoods, re-run now with the same seeds, to be
+    # compared with the old campaign (same Mac? same Python/package speed?).
+    "replicate": {"files": ["tai20_5", "tai50_10"], "modes": ["fibonacci", "dynasearch"], "budgets": [LONG]},
     "main": {"files": TAILLARD, "modes": K_MAIN, "budgets": [LONG]},
     "insert": {"files": TAILLARD, "modes": ["insert"], "budgets": [LONG]},
     "ablation": {"files": TAILLARD, "modes": ["kbonacci_k3_cp", "kbonacci_k8_cp"], "budgets": [LONG]},
 }
-ORDER = ["validate", "main", "insert", "ablation"]
+ORDER = ["validate", "replicate", "main", "insert", "ablation"]
 # Rough wall-clock overrun for runs whose first move outlasts the budget
 # (k = n at n = 500: one Dynasearch-sized evaluation takes ~36 s in Python).
 OVERRUN_S = {("kbonacci_kn", 500): 30.0}
@@ -106,9 +113,12 @@ def run_stage(name: str, files, algos, dry: bool, limit: int) -> None:
                     "--out", str(out)], check=True)
     print_moves(src)
     if name == "validate":
-        subprocess.run([sys.executable, "scripts/extract_budgets.py", "compare",
-                        "--extracted", str(out), "--independent", str(src),
-                        "--repeat", str(OUT / "validate_repeat")], check=True)
+        gate = subprocess.run([sys.executable, "scripts/extract_budgets.py", "compare",
+                               "--extracted", str(out), "--independent", str(src),
+                               "--repeat", str(OUT / "validate_repeat")])
+        if gate.returncode != 0:
+            print("VALIDATION GATE FAILED -- stopping here; no further stage is started.")
+            sys.exit(2)
 
 
 def write_meta(res_dir: Path, stage: str, algos) -> None:
@@ -148,7 +158,12 @@ def print_moves(res_dir: Path) -> None:
     import statistics
     from collections import defaultdict
 
-    rows = [json.loads(p.read_text()) for p in res_dir.rglob("result.json")]
+    rows = []
+    for p in res_dir.rglob("result.json"):
+        try:
+            rows.append(json.loads(p.read_text()))
+        except (json.JSONDecodeError, OSError):
+            print(f"[moves] CORRUPT (delete this directory and resume): {p.parent}")
     if not rows:
         return
     t_long = max(r["config"]["time_limit_ms"] for r in rows)

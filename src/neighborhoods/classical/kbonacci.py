@@ -15,10 +15,13 @@ hence |N_k(n)| = a_n with a_n = a_{n-1} + ... + a_{n-k} (k-bonacci numbers).
 
 Evaluation:
     deltas  : Head+Tail, O(m * d) per candidate -> O(m * n * k^2) total
-    filter  : NPI block property (Smutnicki 7.9), optional
+    filter  : block-boundary filter of the previous papers (last-machine test,
+              ``compute_block_boundaries``); the "_cp" ablation uses the exact
+              critical-path boundaries (lossless), ``compute_critical_path_boundaries``
     DP      : positional DP over prefixes, O(n * k)
 
-The DP maximizes the sum of individual deltas. In the PFSP the makespan
+The DP minimizes the sum of the individual deltas (i.e. maximizes the
+predicted improvement). In the PFSP the makespan
 change of a compound move is NOT additive, so the predicted delta can
 differ from the real one; ``kbonacci_neighborhood`` reports both so that
 the additivity error can be studied as a function of k.
@@ -188,7 +191,7 @@ def kbonacci_neighborhood(
         pi: current permutation
         processing_times: m x n matrix
         k: tile length bound (swap distance <= k-1); k >= n gives Dynasearch
-        use_block_accelerator: NPI block-property filter
+        use_block_accelerator: block-boundary candidate filter (as in the previous papers)
         force_move_if_none: if the DP selects nothing, apply the best single swap
         stats: optional dict filled with diagnostics (predicted/real delta,
             number of swaps, swap distances, candidate count)

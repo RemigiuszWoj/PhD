@@ -72,3 +72,14 @@ def test_modes():
     for mode in ("insert", "kbonacci_k3_cp", "kbonacci_k8"):
         new_pi, new_c, _, _ = get_neighbor(mode, pi, pt, 20)
         assert sorted(new_pi) == sorted(pi) and new_c == c_max(new_pi, pt)
+
+
+def test_insert_reverse_move_has_same_tabu_attribute():
+    pi, pt = _inst(12, 4, 3)
+    new_pi, _, attr = insert_neighborhood(pi, pt)
+    job, a, b = attr
+    i, t = pi.index(job), new_pi.index(job)
+    assert {i, t} == {a, b}
+    # undo = take the job from t back to i: same job, same pair of positions
+    seq = new_pi[:t] + new_pi[t + 1 :]
+    assert seq[:i] + [job] + seq[i:] == pi

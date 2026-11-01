@@ -41,7 +41,8 @@ dokładnie liczby $k$-bonacciego, więc rośnie ona jak $\lambda_k^n$, gdzie
 $\lambda_2=1{,}618$ (Fibonacci), $\lambda_3=1{,}839$ (tribonacci)
 i $\lambda_k\to 2$ (Dynasearch). Już dla $k\approx\log_2 n+2$ rodzina
 zawiera ok. 80\% wszystkich ruchów Dynasearch. Pozycyjne programowanie
-dynamiczne wybiera najlepszy ruch w czasie $O(nk)$. Rodzinę badamy na
+dynamiczne wybiera ruch o najlepszej przewidywanej zmianie makespanu w czasie
+$O(nk)$. Rodzinę badamy na
 pełnym benchmarku Taillarda w ramach ILS i SA, przy budżetach czasu
 z naszych wcześniejszych prac, dzięki czemu nowe sąsiedztwa można
 bezpośrednio porównać z opublikowanymi wynikami dla sąsiedztw Adjacent,
@@ -76,8 +77,9 @@ z wynikami już opublikowanymi.
         $\N_{\mathrm{adj}}\subset\N_2=\N_{\mathrm{fib}}\subset\N_3\subset
         \dots\subset\N_n=\N_{\mathrm{dyn}}$. Podajemy dokładną liczność
         i pokazujemy, że $k=\log_2 n+O(1)$ pokrywa stały ułamek Dynasearch.
-  \item Pozycyjne DP o złożoności $O(nk)$ po wyznaczeniu delt w czasie
-        $O(mnk^2)$, zgodne z filtrem blokowym. Dla $k=n$ jest to
+  \item Pozycyjne DP, które w czasie $O(nk)$ (po wyznaczeniu delt w czasie
+        $O(mnk^2)$) wybiera ruch o najlepszej przewidywanej zmianie makespanu,
+        czyli najmniejszej sumie delt; zgodne z filtrem blokowym. Dla $k=n$ jest to
         nierekurencyjny Dynasearch.
   \item Studium parametru $k$ na pełnym benchmarku Taillarda
         ($n=20$--$500$) w ramach ILS i SA, przy sześciu budżetach czasu.
@@ -186,8 +188,9 @@ Nowe jest tylko sąsiedztwo.
       krytycznej dla $k\in\{3,8\}$.
 \item \textbf{Miara:} RPD do dolnego ograniczenia Taillarda i test
       Wilcoxona, $\alpha=0{,}05$, jak wcześniej. Dodatkowo: korekta Holma,
-      test Friedmana z różnicą krytyczną Nemenyi i RPD do najlepszych
-      znanych rozwiązań.
+      test Friedmana z różnicą krytyczną Nemenyi, RPD do górnych ograniczeń
+      Taillarda z 1993 roku oraz RPD do aktualnych najlepszych znanych
+      rozwiązań \todo{źródło listy BKS}.
 \item \textbf{Sprzęt:} obliczenia klasyczne na Apple M4 Pro, przebiegi
       sekwencyjne, jak wcześniej. Obliczenia kwantowe na wyżarzaczu D-Wave
       Advantage (topologia Pegasus, ok. 5\,600 kubitów; chmura Leap,
@@ -202,11 +205,15 @@ prefiksem przebiegu 10\,s z tym samym ziarnem. Każdą konfigurację
 uruchamiamy raz na 10\,s, a wynik dla mniejszych budżetów odczytujemy
 z logu trajektorii (ruch rozpoczęty przed $t$ się liczy). ILS jest
 deterministyczny przy danym ziarnie i wartości odczytane z logu pokrywają
-się z niezależnymi przebiegami. SA nie jest deterministyczny: reheat
+się z niezależnymi przebiegami z dokładnością do szumu czasowego (co najwyżej
+jeden ruch). SA nie jest deterministyczny: reheat
 wyzwala licznik stagnacji mierzony zegarem, więc nawet dwa przebiegi
 z tym samym ziarnem i budżetem rozchodzą się po pierwszym kicku. Dla SA
 wartości z logu zgadzają się z niezależnymi przebiegami w granicach tego
-szumu. \todo{tabela walidacji}
+szumu. \todo{tabela walidacji} Przebieg kontrolny dwóch wcześniejszych
+sąsiedztw (Fibonacci i Dynasearch, dwie klasy, te same ziarna) sprawdza, czy
+maszyna odtwarza liczbę iteracji i jakość z wcześniejszej kampanii.
+\todo{liczby}
 
 \paragraph{Protokół kwantowy.} Jak we wcześniejszych pracach kwantowych;
 zmienia się tylko sąsiedztwo. Na wyżarzaczu ruch $k$-bonacci to QUBO

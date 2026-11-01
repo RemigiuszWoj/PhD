@@ -10,9 +10,9 @@ Usage:
     python scripts/analyze_kbonacci.py \
         --dirs results/kbonacci/main_budgets results/kbonacci/insert_budgets results/kbonacci/ablation_budgets \
         --reference results/experiments/<old campaign dir> [...] \
-        [--bks data/taillard_bks.json] --out articles/kbonacci/tables
+        --bks data/taillard_pfsp_bks.json --out articles/kbonacci/tables
 
-BKS file format: {"tai20_5": [bks of instance 0, ..., instance 9], ...}
+BKS file format: {"tai20_5": [bks of instance 0, ..., instance 9], ..., "_meta": {...}}
 """
 
 import argparse
@@ -49,7 +49,11 @@ def load(dirs, bks):
     recs = []
     for d in dirs:
         for p in Path(d).rglob("result.json"):
-            r = _normalize_result(json.loads(p.read_text()))
+            try:
+                r = _normalize_result(json.loads(p.read_text()))
+            except (json.JSONDecodeError, OSError):
+                print(f"[load] CORRUPT, skipped: {p}")
+                continue
             c = r["config"]
             f = Path(c["instance_file"]).stem
             n, m = (int(x) for x in f[3:].split("_"))
@@ -57,6 +61,9 @@ def load(dirs, bks):
                    "inst": c["instance_number"], "seed": c["seed"], "tl": c["time_limit_ms"],
                    "rpd": r.get("gap_percent"), "cmax": r.get("cmax_best"),
                    "iters": r.get("iterations")}
+            ub93 = r.get("upper_bound")
+            if ub93:
+                rec["rpd_ub93"] = 100.0 * (rec["cmax"] - ub93) / ub93
             if bks and f in bks:
                 b = bks[f][c["instance_number"]]
                 rec["rpd_bks"] = 100.0 * (rec["cmax"] - b) / b
@@ -86,7 +93,7 @@ def main() -> None:
     bks = json.loads(a.bks.read_text()) if a.bks else None
     recs = load(a.dirs + a.reference, bks)
     a.out.mkdir(parents=True, exist_ok=True)
-    metrics = ["rpd"] + (["rpd_bks"] if bks else [])
+    metrics = ["rpd", "rpd_ub93"] + (["rpd_bks"] if bks else [])
     neighs = sorted({r["neigh"] for r in recs}, key=neigh_sort_key)
     tls = sorted({r["tl"] for r in recs})
     ns = sorted({r["n"] for r in recs})
@@ -97,6 +104,24 @@ def main() -> None:
     cell = defaultdict(list)
     for r in recs:
         cell[(r["algo"], r["n"], r["neigh"], r["tl"])].append(r)
+    cell_f = defaultdict(list)
+    for r in recs:
+        cell_f[(r["algo"], r["file"], r["neigh"], r["tl"])].append(r)
+    files_present = sorted({r["file"] for r in recs}, key=lambda f: tuple(int(x) for x in f[3:].split("_")))
+    for metric in metrics + ["iters"]:
+        for algo in algos:
+            path = a.out / f"{metric}_{algo}_by_file.csv"
+            with open(path, "w", newline="") as fh:
+                w = csv.writer(fh)
+                w.writerow(["file", "neighborhood"] + [f"{t}ms" for t in tls])
+                for f in files_present:
+                    for nb in neighs:
+                        v_row = []
+                        for t in tls:
+                            v = [x[metric] for x in cell_f.get((algo, f, nb, t), []) if x.get(metric) is not None]
+                            v_row.append(f"{statistics.mean(v):.2f}" if v else "")
+                        if any(v_row):
+                            w.writerow([f, nb] + v_row)
     for metric in metrics + ["iters"]:
         for algo in algos:
             path = a.out / f"{metric}_{algo}.csv"
@@ -117,24 +142,27 @@ def main() -> None:
     ref_present = [nb for nb in neighs if nb in REF_ORDER]
     kb = [nb for nb in neighs if nb.startswith("kbonacci_")]
     by = {(r["algo"], r["neigh"], r["file"], r["inst"], r["seed"], r["tl"]): r["rpd"] for r in recs}
+    n_of = {f: int(f[3:].split("_")[0]) for f in {r["file"] for r in recs}}
     rows = []
     for algo in algos:
         for t in tls:
-            fam = []
-            for k in kb:
-                for ref in ref_present:
-                    pairs = [(v, by[(algo, ref, f, i, s, t)]) for (al, nb, f, i, s, tt), v in by.items()
-                             if al == algo and nb == k and tt == t and (algo, ref, f, i, s, t) in by]
-                    if len(pairs) < 6:
-                        continue
-                    x, y = zip(*pairs)
-                    p = wilcoxon(x, y).pvalue if any(u != v for u, v in pairs) else 1.0
-                    fam.append([algo, t, k, ref, len(pairs), statistics.mean(x) - statistics.mean(y), p])
-            for row, padj in zip(fam, holm([f[-1] for f in fam])):
-                rows.append(row + [padj])
+            for n_sel in ["all"] + ns:
+                fam = []
+                for k in kb:
+                    for ref in ref_present:
+                        pairs = [(v, by[(algo, ref, f, i, s, t)]) for (al, nb, f, i, s, tt), v in by.items()
+                                 if al == algo and nb == k and tt == t and (n_sel == "all" or n_of[f] == n_sel)
+                                 and (algo, ref, f, i, s, t) in by]
+                        if len(pairs) < 6:
+                            continue
+                        x, y = zip(*pairs)
+                        p = wilcoxon(x, y).pvalue if any(u != v for u, v in pairs) else 1.0
+                        fam.append([algo, t, n_sel, k, ref, len(pairs), statistics.mean(x) - statistics.mean(y), p])
+                for row, padj in zip(fam, holm([f[-1] for f in fam])):  # Holm within (algo, budget, n)
+                    rows.append(row + [padj])
     with open(a.out / "wilcoxon.csv", "w", newline="") as fh:
         w = csv.writer(fh)
-        w.writerow(["algo", "tl_ms", "kbonacci", "reference", "pairs", "mean_rpd_diff", "p", "p_holm"])
+        w.writerow(["algo", "tl_ms", "n", "kbonacci", "reference", "pairs", "mean_rpd_diff", "p", "p_holm"])
         w.writerows(rows)
     print(f"wrote {a.out / 'wilcoxon.csv'} ({len(rows)} tests)")
 

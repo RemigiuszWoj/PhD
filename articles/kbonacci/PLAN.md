@@ -37,6 +37,25 @@ Powiązane: `articles/katalog_sasiedztw.md`, `ROADMAP.md` (front C), szkice `mai
 - Uwaga do ewentualnych wcześniejszych twierdzeń w planie: pilot liczony był starym filtrem, czyli **zgodnie** z protokołem (D6).
   Powtarzać go nie trzeba; jego liczby (RPD do UB, 1 s) zastąpi kampania główna.
 
+**Iteracje przeglądu z „wewnętrznym krytykiem” (01.11, noc).** Każda iteracja: czytanie aktualnych plików → zarzuty → poprawka → test → ponowne sprawdzenie.
+
+| Iteracja | Obszar | Znalezione i poprawione |
+|---|---|---|
+| 1 | poprawność kodu | **(krytyczne)** `extract` w etapie validate brał też krótkie niezależne przebiegi jako źródła i nadpisywał nimi wartości z przebiegu 10 s, przez co walidacja przechodziła trywialnie. Teraz źródłem są tylko przebiegi najdłuższego budżetu; dodany test regresji. **Insert:** atrybut tabu `(i, t)` nie blokował cofnięcia ruchu (`(t, i)`), więc ILS mógł krążyć w 2-cyklu; teraz `(zadanie, min, max)`, jak `(i, i+1)` w Adjacent; test. Docstring k-bonacci (DP minimalizuje sumę delt, nazwa filtra). Bufor stdout pod `nohup` (`PYTHONUNBUFFERED=1`). Odporność na uszkodzony `result.json`. Leniwy import `yaml` w skrypcie kwantowym (dla `.venv-iqm`). Sprawdzone: `solve_qubo` naprawdę zlicza `qpu_access_time`, więc księga D-Wave działa |
+| 2 | metodologia | Sztywny próg walidacji 0,1 pp zastąpiony automatycznym werdyktem `|diff| ≤ max(0,1 pp; 2 × szum)` z powtórkami dla wszystkich budżetów; FAIL zatrzymuje kampanię. Nowy etap **replicate** (stare Fibonacci i Dynasearch, 2 klasy) sprawdza, czy Mac liczy jak w poprzedniej kampanii; w porównaniu kolumny iteracji. Wilcoxon także per n, tabele także per plik. Normalizacja `fibonahi` → `fibonacci` w porównaniach. `compare` pomija tylko sam plik źródłowy (wcześniej gubił pary 10 s w replikacji); test |
+| 3 | przekazanie | `RUN_LOCAL.md` od nowa: `git status` przed `pull`, bez podbijania pakietów, `PYTHONUNBUFFERED`, etap replicate z kryteriami (iteracje ≤ ~10%, RPD ≤ ~0,3 pp), automatyczny werdykt, plik BKS, warunki stopu |
+| 4 | tekst artykułu | „najlepszy ruch” → „ruch o najlepszej przewidywanej zmianie” (spójność z rozdziałem o addytywności); ILS „zgodny z dokładnością do jednego ruchu”; kontrola replikacji; RPD do UB-1993 i BKS w miarach |
+| 5 | kontrola końcowa | 163 testy pod 3.11 (czyste środowisko) i 3.13; `py_compile` 3.11; testy dymne `replicate` i `validate` (przy niekompletnej walidacji werdykt FAIL i stop, zgodnie z założeniem); dry-runy kwantowe |
+
+**BKS:** `data/taillard_pfsp_bks.json`, czyli aktualne najlepsze znane makespany dla ta001–ta120.
+- Źródło: lista Helbecque (P3D-DFS / GPU-accelerated-tree-search-Chapel, commity zapisane w pliku).
+- Kontrole krzyżowe:
+  - wszystkie wartości mieszczą się w [LB, UB-1993] plików instancji;
+  - starsza lista ChOp różni się w 25 miejscach, zawsze wyższymi wartościami;
+  - lista EDD_AED_pfs zgadza się w 108/120, a w 12 otwartych instancjach podaje dolne ograniczenia.
+- Do potwierdzenia z promotorem przed cytowaniem w artykule.
+- RPD do UB-1993 (z nagłówków plików instancji) liczy się zawsze, bez dodatkowego pliku.
+
 **Gotowe w kodzie (01.11):**
 
 | Plik | Co robi |

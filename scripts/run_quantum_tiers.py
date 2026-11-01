@@ -47,7 +47,6 @@ try:  # tokens (DWAVE_API_TOKEN, IQM_TOKEN) live in the gitignored .env
 except ImportError:
     pass
 
-import yaml  # noqa: E402
 
 TAILLARD = [
     "tai20_5", "tai20_10", "tai20_20", "tai50_5", "tai50_10", "tai50_20",
@@ -152,6 +151,8 @@ def dwave_tier_configs(tier: str, tl_ms: int):
 def run_dwave(args) -> None:
     from src.experiments.runner import ExperimentRunner
     from src.neighborhoods.common import get_qpu_budget
+
+    import yaml  # only the D-Wave path reads config.yaml (keeps .venv-iqm free of extra deps)
 
     res_dir = OUT / ("dwave_sim" if args.simulate else "dwave")
     res_dir.mkdir(parents=True, exist_ok=True)

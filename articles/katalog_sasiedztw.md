@@ -61,7 +61,8 @@ Hamminga”.
 - **19.10.2026:** na razie **bez krzyżowania**; w k-bonaccim środek przedziału jest **zablokowany**.
 - **01.11.2026:** plan rodziny krzyżowań (Motzkin → N₁ / P₁ → inwolucje): [`crossings/PLAN.md`](crossings/PLAN.md). Pilot: przy wyborze
   addytywnym krzyżowania szkodzą (nieaddytywność rośnie, gdy zamiany na siebie nachodzą), a **bezpiecznik** (ruch złożony albo najlepsza
-  pojedyncza zamiana, wg rzeczywistego C_max) poprawia Motzkina przy 50×10 z 17,3% do 5,9% RPD. Dotyczy to też wcześniejszych wyników Motzkina.
+  pojedyncza zamiana, wg rzeczywistego C_max) poprawia Motzkina przy 50×10 z 17,3% do 5,9% RPD, czyli do poziomu Dynasearch w nowym kodzie
+  (5,75% bez bezpiecznika; Dynasearchowi bezpiecznik szkodzi). Dotyczy to też wcześniejszych wyników Motzkina.
 - **Do rozstrzygnięcia z promotorem — co robi blok długości 3 w tribonaccim:**
   (a) zamiana końców (i, i+2), środek stoi — liczności dokładnie k-bonacci, k = n daje dokładnie Dynasearch
   (wersja z 19.10);

@@ -146,6 +146,23 @@ def _select_one_crossing_family(cands, unlimited):
 def select_c1(cands): return _select_one_crossing_family(cands, False)
 def select_perarc1(cands): return _select_one_crossing_family(cands, True)
 
+def select_dyn(cands):
+    """Dynasearch: best set of pairwise disjoint intervals [a, b] (= k-bonacci with k = n), weighted interval scheduling."""
+    if not cands: return 0.0, []
+    n = max(b for a, b in cands) + 1
+    ending = {}
+    for (a, b), w in cands.items(): ending.setdefault(b, []).append((a, w))
+    best = [0.0] * (n + 1); ch = [None] * (n + 1)
+    for q in range(1, n + 1):
+        best[q] = best[q - 1]
+        for a, w in ending.get(q - 1, ()):
+            if best[a] + w < best[q]: best[q] = best[a] + w; ch[q] = (a, q - 1)
+    out, q = [], n
+    while q > 0:
+        if ch[q] is None: q -= 1
+        else: out.append(ch[q]); q = ch[q][0]
+    return best[n], sorted(out)
+
 def select_inv(cands):
     G = nx.Graph()
     for (a, b), w in cands.items():
@@ -226,6 +243,7 @@ if __name__ == "__main__":
             (select_perarc1, lambda S: max_cross_per_arc(S) <= 1),
             (select_inv, lambda S: True),
             (lambda C: select_milp(C, 2), lambda S: crossings(S) <= 2),
+            (select_dyn, lambda S: all(x[1] < y[0] for x, y in zip(sorted(S), sorted(S)[1:]))),
         ]
         for f, pred in checks:
             trials += 1

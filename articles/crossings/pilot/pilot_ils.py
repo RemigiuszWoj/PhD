@@ -17,13 +17,15 @@ import src.algorithms.ils as ils_mod
 from src.algorithms.ils import iterated_local_search
 from src.permutation_procesing import c_max
 from pilot_anatomy import lcg_instance, all_deltas, apply
-from crossing_select import select_c0, select_c1, select_perarc1, select_inv
+from crossing_select import select_c0, select_c1, select_perarc1, select_inv, select_dyn
 from pilot_pairq import pair_qubo_milp
 from taillard_lb import lb
 
 _orig = ils_mod.get_neighbor
 SEL = {"c0": select_c0, "c1": select_c1, "pa1": select_perarc1, "inv": select_inv}
 STATS = {"moves": 0, "cr": 0, "swaps": 0, "worse_than_single": 0}
+
+SEL["dyn"] = select_dyn
 
 def cr_neighbor(variant, pi, p):
     base, D = all_deltas(pi, p)
@@ -45,11 +47,21 @@ def cr_neighbor(variant, pi, p):
         _, mv = pair_qubo_milp(top, Q, forbid_cross=variant.endswith("_c0"))
         if not mv: mv = [single]
     else:
-        key = variant.replace("_safe", "")
+        key = variant.replace("_safe", "").replace("_prefix", "")
         _, mv = SEL[key](C)
         if not mv: mv = [single]
     new_pi = apply(pi, mv); new_c = c_max(new_pi, p)
     STATS["moves"] += 1
+    if variant.endswith("_prefix") and len(mv) > 1:
+        # candidates: global best single swap and every prefix of the selected swaps sorted by delta
+        best_pi, best_c, best_mv = apply(pi, [single]), None, [single]
+        best_c = c_max(best_pi, p)
+        order = sorted(mv, key=lambda ab: D[ab])
+        for k in range(1, len(order) + 1):
+            q = apply(pi, order[:k]); qc = c_max(q, p)
+            if qc < best_c: best_pi, best_c, best_mv = q, qc, order[:k]
+        if len(best_mv) < len(mv): STATS["worse_than_single"] += 1
+        new_pi, new_c, mv = best_pi, best_c, best_mv
     if variant.endswith("_safe") and len(mv) > 1:
         sp = apply(pi, [single]); sc = c_max(sp, p)
         if sc < new_c:

@@ -15,7 +15,7 @@ import json, math, random, sys, time
 from multiprocessing import Pool
 from src.neighborhoods.common import compute_endpoint_swap_delta, compute_head, compute_tail
 from src.permutation_procesing import c_max
-from crossing_select import (select_c0, select_c1, select_perarc1, select_inv, select_milp,
+from crossing_select import (select_c0, select_c1, select_perarc1, select_inv, select_milp, select_dyn,
                     crossings, max_cross_per_arc)
 
 def lcg_instance(seed, n, m):
@@ -42,7 +42,7 @@ def apply(pi, arcs):
     for a, b in arcs: q[a], q[b] = q[b], q[a]
     return q
 
-SEL = {"c0": select_c0, "c1": select_c1, "pa1": select_perarc1, "inv": select_inv}
+SEL = {"dyn": select_dyn, "c0": select_c0, "c1": select_c1, "pa1": select_perarc1, "inv": select_inv}
 
 def geometry(x, y):
     (a, b), (c, d) = sorted([x, y])

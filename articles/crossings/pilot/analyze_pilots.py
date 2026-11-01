@@ -78,7 +78,6 @@ def pairq():
         print(f"   pair-corrected MILP time median: {st.median(r['pq_inv']['t_ms'] for r in L):.0f} ms")
 
 def ils():
-    from scipy.stats import wilcoxon
     for tl in sorted({int(Path(p).name.split('_')[1][:-2]) for p in glob.glob(str(RES / "ils_*ms_*.json"))}):
         # several files per budget may repeat a mode (e.g. cr_c0_safe); keep the first file in name order
         res, seen = [], set()
@@ -90,24 +89,31 @@ def ils():
         g = defaultdict(list)
         for r in res: g[(r["file"], r["mode"])].append(r)
         files = sorted({r["file"] for r in res}, key=["tai20_5", "tai20_10", "lcg50_10"].index)
-        order = ["motzkin", "dynasearch", "cr_swap", "cr_c0", "cr_c1", "cr_pa1", "cr_inv", "cr_c0_safe", "cr_c1_safe",
-                 "cr_pa1_safe", "cr_inv_safe", "cr_pq12_c0", "cr_pq12_inv", "cr_pq_c0", "cr_pq_inv"]
+        order = ["motzkin", "dynasearch", "cr_swap", "cr_dyn", "cr_c0", "cr_c1", "cr_pa1", "cr_inv", "cr_dyn_safe", "cr_c0_safe",
+                 "cr_c1_safe", "cr_pa1_safe", "cr_inv_safe", "cr_dyn_prefix", "cr_c0_prefix", "cr_inv_prefix",
+                 "cr_pq12_c0", "cr_pq12_inv", "cr_pq_c0", "cr_pq_inv"]
         modes = sorted({r["mode"] for r in res}, key=order.index)
         print(f"\nILS {tl} ms: mean RPD to LB [%] +- std (mean iterations); 4 instances x 3 seeds")
         for mo in modes:
             print(f"  {mo:12s} " + "".join(
                 f"{st.mean(r['rpd'] for r in g[(f, mo)]):7.2f} ±{st.stdev(r['rpd'] for r in g[(f, mo)]):4.2f} ({st.mean(r['iters'] for r in g[(f, mo)]):5.0f} it)  "
                 if g[(f, mo)] else " " * 30 for f in files))
+        # seeds within an instance are not independent: compare instance means (4 blocks), report direction only
+        inst = defaultdict(lambda: defaultdict(list))
+        for r in res: inst[(r["file"], r["mode"])][r["inst"]].append(r["rpd"])
         def paired(a, b, f):
-            A = {(r["inst"], r["seed"]): r["rpd"] for r in g[(f, a)]}; B = {(r["inst"], r["seed"]): r["rpd"] for r in g[(f, b)]}
-            d = [A[k] - B[k] for k in sorted(set(A) & set(B))]
-            if not d or all(x == 0 for x in d): return None
-            return f"diff {st.mean(d):+.2f} pp, wins {sum(1 for x in d if x < 0)}/{sum(1 for x in d if x > 0)}, p={wilcoxon(d).pvalue:.3f}"
+            A, B = inst.get((f, a)), inst.get((f, b))
+            if not A or not B: return None
+            d = [st.mean(A[i]) - st.mean(B[i]) for i in sorted(set(A) & set(B))]
+            return f"diff {st.mean(d):+.2f} pp, a better in {sum(1 for x in d if x < 0)}/{len(d)} instances"
+        print("  instance-level comparisons (mean over seeds per instance; no p-values: 4 blocks cannot reach p < 0.125)")
         for f in files:
             for a, b in [("cr_inv", "cr_c0"), ("cr_c0_safe", "cr_c0"), ("cr_inv_safe", "cr_inv"), ("cr_inv_safe", "cr_c0_safe"),
-                         ("cr_c1_safe", "cr_c0_safe"), ("cr_c0_safe", "cr_swap"), ("cr_inv_safe", "cr_swap"), ("cr_c0_safe", "dynasearch")]:
-                s = paired(a, b, f)
-                if s: print(f"  {f}: {a} vs {b}: {s}")
+                         ("cr_c1_safe", "cr_c0_safe"), ("cr_pa1_safe", "cr_c0_safe"), ("cr_c0_safe", "cr_swap"),
+                         ("cr_dyn", "cr_c0_safe"), ("cr_dyn", "cr_swap"), ("cr_dyn_safe", "cr_dyn"),
+                         ("cr_c0_prefix", "cr_c0_safe"), ("cr_inv_prefix", "cr_inv_safe"), ("cr_dyn_prefix", "cr_dyn")]:
+                out = paired(a, b, f)
+                if out: print(f"  {f}: {a} vs {b}: {out}")
 
 def qubo():
     for r in json.load(open(RES / "qubo_structure.json")):

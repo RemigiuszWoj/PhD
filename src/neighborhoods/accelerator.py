@@ -77,6 +77,31 @@ def compute_block_boundaries(
     return boundaries
 
 
+def compute_critical_path_boundaries(
+    Head: List[List[int]],
+    processing_times: List[List[int]],
+    pi: List[int],
+) -> List[int]:
+    """Positions where ONE critical path changes machine (exact block boundaries).
+
+    Backtracks from (m-1, n-1) over the Head matrix in O(n + m). A swap (i, j)
+    whose interval contains none of these positions leaves that path's cells
+    and length unchanged, so it cannot decrease C_max: filtering on this set is
+    lossless. At most m - 1 positions. Used only by the ``kbonacci_k<K>_cp``
+    ablation; ``compute_block_boundaries`` (last-machine test, used by all
+    neighborhoods of the previous papers) is unchanged.
+    """
+    m, n = len(processing_times), len(pi)
+    r, t, U = m - 1, n - 1, set()
+    while r > 0 or t > 0:
+        if r > 0 and Head[r][t] == Head[r - 1][t] + processing_times[r][pi[t]]:
+            U.add(t)
+            r -= 1
+        else:
+            t -= 1
+    return sorted(U)
+
+
 def is_blocked_adjacent_swap(
     a: int,
     boundaries: List[int],

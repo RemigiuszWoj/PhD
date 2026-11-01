@@ -1,0 +1,414 @@
+% =====================================================================
+% DRAFT v1 (01.11.2026) -- k-bonacci neighborhoods for the PFSP
+% Target: ICAPS 2027 or IJCAI 2027 (decided by progress); double-blind.
+% Layout: plain article class for drafting; switch to the official
+% template once the CFP is out.
+% Protocol = identical to the previous papers of this line (same ILS/SA,
+% same constants, same budgets, same accelerator); only the neighborhood
+% class is new. Table 2 = PILOT (placeholder), Table 3 = skeleton.
+% =====================================================================
+\documentclass[10pt,twocolumn]{article}
+\usepackage[margin=0.75in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+\newtheorem{proposition}{Proposition}
+\newtheorem{definition}{Definition}
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+\newcommand{\N}{\mathcal{N}}
+
+\title{From Fibonacci to Dynasearch: the $k$-bonacci Family of\\
+Compound-Swap Neighborhoods for the Permutation Flow Shop}
+\author{Anonymous submission}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Compound-move neighborhoods search an exponential set of schedules in
+polynomial time by dynamic programming. For the permutation flow shop,
+the two best-known members of this family sit at opposite extremes. The
+Fibonacci neighborhood combines only adjacent swaps and is cheap.
+Dynasearch combines swaps of any distance and costs $O(mn^3)$ per
+evaluation. We introduce the \emph{$k$-bonacci} family that interpolates
+between them: a move is a set of endpoint swaps on disjoint intervals
+whose swap distance is at most $k-1$. The family is counted exactly by
+the $k$-bonacci numbers, so its size grows as $\lambda_k^n$, with
+$\lambda_2=1.618$ (Fibonacci), $\lambda_3=1.839$ (tribonacci) and
+$\lambda_k\to 2$ (Dynasearch). Already for $k\approx\log_2 n+2$ it
+contains about 80\% of all Dynasearch moves. A positional dynamic program
+selects the compound move with the best predicted makespan change in
+$O(nk)$ time. We evaluate the family on the full
+Taillard benchmark under the iterated local search and simulated annealing
+frameworks and time budgets of our earlier studies, so that the new
+neighborhoods are directly comparable with the Adjacent, Fibonacci,
+Dynasearch and Motzkin results reported there.
+\todo{headline result: best $k$ per size and budget}
+\end{abstract}
+
+% ---------------------------------------------------------------------
+\section{Introduction}
+
+The permutation flow shop scheduling problem (PFSP) with makespan
+criterion, $F|prmu|C_{\max}$, is NP-hard for $m\geq 3$
+machines~\cite{garey1976}. It remains a standard testbed for local
+search~\cite{taillard1993,ruiz2007}. Two design decisions dominate the
+performance of a local search for the PFSP: the move structure, and the
+critical-path (block) properties that prune it~\cite{nowicki1996,grabowski2004}.
+
+Dynasearch~\cite{congram2002} showed that an exponentially large
+neighborhood of \emph{independent} pairwise interchanges can be searched
+exactly by dynamic programming. This turns a compound move into the unit
+of search, an idea within very large-scale neighborhood search
+(VLSN)~\cite{ahuja2002}. Two further compound neighborhoods for the PFSP
+have sizes counted by classical integer sequences: the Fibonacci
+neighborhood of disjoint adjacent swaps~\cite{fibonacci_own,bozejko2026sr}
+and the Motzkin neighborhood of non-crossing, possibly nested
+swaps~\cite{motzkin_own}.
+
+These neighborhoods differ by orders of magnitude in size and cost, yet
+they have only been compared as isolated points. This paper fills the
+space between Fibonacci and Dynasearch with a one-parameter family and
+asks a simple question: \emph{how far should a swap reach?} We deliberately
+keep the metaheuristics, their parameters and the experimental protocol of
+the earlier studies~\cite{fibonacci_own,motzkin_own,windowed_own}
+unchanged. The neighborhood is the only experimental factor, so every new
+number can be read against the published ones.
+
+\paragraph{Contributions.}
+\begin{enumerate}
+  \item The \textbf{$k$-bonacci neighborhood} $\N_k$ and the chain
+        $\N_{\mathrm{adj}}\subset\N_2=\N_{\mathrm{fib}}\subset\N_3\subset
+        \dots\subset\N_n=\N_{\mathrm{dyn}}$. We count $|\N_k|$ exactly
+        and show that $k=\log_2 n+O(1)$ already covers a constant fraction
+        of Dynasearch.
+  \item A \textbf{positional DP} that selects the compound move with the
+        best predicted makespan change (sum of the individual deltas) in
+        $O(nk)$ time after $O(mnk^2)$ delta evaluation, compatible with
+        the block-property filter. For $k=n$ it is a non-recursive
+        Dynasearch.
+  \item A \textbf{study of $k$} on the full Taillard benchmark
+        ($n=20$--$500$) under ILS and SA with six time budgets. It covers
+        solution quality, iterations within the budget, the structure of
+        the selected moves, and the \textbf{additivity error} that every
+        compound-move DP makes in the PFSP.
+  \item \todo{optional: $k$-bonacci QUBO on a quantum annealer and on a
+        gate-based device, same protocol as~\cite{windowed_own}}
+\end{enumerate}
+
+% ---------------------------------------------------------------------
+\section{Related Work}
+
+\paragraph{Compound moves.} Dynasearch was introduced for single-machine
+total weighted tardiness~\cite{congram2002}. Ergun and
+Orlin~\cite{ergun2006} reduced its swap-neighborhood search to $O(n^2)$,
+and Grosso et al.~\cite{grosso2004} added insertions. Bo\.zejko and
+Wodecki analyzed swap multimoves for the PFSP~\cite{bozejko2007}. In
+single-machine total weighted tardiness the cost changes of independent
+swaps add up, which makes the DP exact. In the PFSP they do not
+(Section~\ref{sec:additivity}).
+\paragraph{Sequence-counted neighborhoods.} Fibonacci~\cite{fibonacci_own},
+its QUBO form on a quantum annealer~\cite{bozejko2026sr}, and
+Motzkin~\cite{motzkin_own}. \todo{verify that Sci.\ Rep.\ 2026 and IFAC
+2025 do not already contain the bounded-distance hierarchy}
+\paragraph{Bounded-reach moves.} Restricting how far a move may reach is a
+standard device in routing, e.g., Or-opt segments and granular
+neighborhoods~\cite{toth2003}. Balzereit et al.~\cite{balzereit2024}
+study the radius--runtime trade-off of distance-bounded local search in
+single-machine scheduling from a parameterized-complexity viewpoint.
+We study the same kind of trade-off empirically for a compound
+neighborhood.
+
+% ---------------------------------------------------------------------
+\section{Problem and Notation}
+
+$n$ jobs are processed on machines $1,\dots,m$ in the same order
+$\pi=(\pi(1),\dots,\pi(n))$. $p_{r,j}$ is the processing time of job $j$
+on machine $r$. Completion times satisfy
+$C_{r,t}=\max(C_{r-1,t},C_{r,t-1})+p_{r,\pi(t)}$, and
+$C_{\max}(\pi)=C_{m,n}$. Head and tail matrices $H$ and $T$ (forward and
+backward longest paths) give the makespan after any modification of a
+segment $[i,j]$ by recomputing only that segment,
+$C_{\max}=\max_r\bigl(H'_{r,j}+T_{r,j+1}\bigr)$, at cost $O(m(j-i+1))$.
+
+% ---------------------------------------------------------------------
+\section{The $k$-bonacci Neighborhood}
+
+\begin{definition}
+Let $k\geq 2$. An \emph{elementary move} $s(i,j)$ with $1\leq j-i\leq k-1$
+exchanges $\pi(i)$ and $\pi(j)$ and leaves $\pi(i+1),\dots,\pi(j-1)$ in
+place. A \emph{compound move} is a set of elementary moves whose
+intervals $[i,j]$ are pairwise disjoint. $\N_k(\pi)$ is the set of
+permutations reachable by one compound move.
+\end{definition}
+
+Special cases: $k=2$ allows swap distance $1$ only (Fibonacci), $k=3$
+allows distances $1$ and $2$ (tribonacci), and $k=n$ allows any distance
+(Dynasearch).
+
+\begin{proposition}\label{prop:count}
+$|\N_k(\pi)|=a_n$, where $a_0=1$ and $a_p=\sum_{L=1}^{\min(k,p)}a_{p-L}$.
+Hence $|\N_2|=F_{n+1}$, $|\N_n|=2^{n-1}$, and
+$|\N_k|=\Theta(\lambda_k^n)$, where $\lambda_k$ is the largest real root
+of $x^k=x^{k-1}+\dots+x+1$. Moreover $2-\lambda_k=\lambda_k^{-k}$, so
+$\lambda_k=2-\Theta(2^{-k})$.
+\end{proposition}
+\begin{proof}[Sketch]
+A compound move is a tiling of positions $1..n$ by tiles of length $1$
+(untouched position) and $L\in\{2,\dots,k\}$ (the ends of the tile are
+swapped). Conditioning on the first tile gives the recurrence. Distinct
+tilings give distinct permutations: the tile starting at $i$ is the
+smallest interval starting at $i$ that the move maps onto itself. The
+identity for $\lambda_k$ follows from
+$x^k=(x^k-1)/(x-1)$.
+\end{proof}
+
+\begin{table}[t]
+\centering
+\caption{Size of $\N_k$ for $n=10$, growth constant $\lambda_k$, and
+the share of all Dynasearch moves contained in $\N_k$.}
+\label{tab:count}
+\small
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+$k$ & 2 & 3 & 4 & 6 & 8 & $n$ \\
+\midrule
+$|\N_k|$, $n=10$ & 89 & 274 & 401 & 492 & 509 & 512 \\
+$\lambda_k$ & 1.618 & 1.839 & 1.928 & 1.984 & 1.996 & 2 \\
+share, $n=100$ & $10^{-9}$ & $3{\cdot}10^{-4}$ & 0.03 & 0.46 & 0.83 & 1 \\
+share, $n=500$ & $10^{-46}$ & $10^{-18}$ & $10^{-8}$ & 0.02 & 0.38 & 1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The share $|\N_k|/|\N_n|$ equals the probability that the longest part
+of a uniformly random composition of $n$ is at most $k$. By the classical
+longest-run law this probability is concentrated around $k=\log_2 n$.
+For $k=\lfloor\log_2 n\rfloor+2$ the share is $0.79$--$0.89$ for
+$n=20$--$500$, whereas for any constant $k$ it vanishes exponentially.
+
+\paragraph{Evaluation.} For every candidate $(i,j)$ we compute
+$\delta_{ij}=C_{\max}(\pi\circ s(i,j))-C_{\max}(\pi)$ with heads and
+tails. There are fewer than $n(k-1)$ candidates, each costing
+$O(m(j-i))$, so all deltas cost $O(mnk^2)$, against $O(mn^3)$ for
+Dynasearch. Candidates are filtered with the block-boundary test used for
+the Fibonacci, Dynasearch and Motzkin neighborhoods in the earlier
+studies~\cite{windowed_own}: a swap $(i,j)$ is kept only if a boundary
+position lies in $[i,j]$. \todo{wording of the filter: decision on the
+exact critical-path variant (see plan, \S14)}
+\paragraph{Positional DP.} Let $B[p]$ be the minimum total delta of a
+compound move restricted to positions $1..p$. Then
+\begin{equation}
+B[p]=\min\Bigl(B[p-1],\ \min_{1\le d\le k-1} B[p-d-1]+\delta_{p-d,p}\Bigr),
+\end{equation}
+with $B[0]=0$, which takes $O(nk)$ time and memory. When no move improves
+the predicted makespan, the best single swap is applied, as in the
+Dynasearch and Motzkin neighborhoods.
+
+% ---------------------------------------------------------------------
+\section{Additivity}\label{sec:additivity}
+The DP optimizes $\sum\delta_{ij}$. In the PFSP, however, the makespan
+change of a compound move is not the sum of the individual changes. In
+the lattice-path view
+$C'_{\max}=\max_P\bigl[\ell(P)+\sum_s\Delta_s(P)\bigr]$: two swaps on
+disjoint intervals interact through the choice of the critical path $P$.
+The sum can therefore under- or overestimate the real change, and is
+exact when one path is critical before and after every swap
+\todo{small counterexamples}. Every DP-based compound neighborhood
+(Fibonacci, Dynasearch, Motzkin) thus optimizes a surrogate. A larger $k$
+admits longer swaps, so the surrogate error should grow with $k$.
+
+% ---------------------------------------------------------------------
+\section{Experimental Protocol}\label{sec:setup}
+
+The protocol is that of the earlier studies~\cite{windowed_own}. Only the
+neighborhood is new.
+\begin{itemize}
+\item \textbf{Instances:} all 120 Taillard instances~\cite{taillard1993}
+      (12 classes, $n\in\{20,50,100,200,500\}$, $m\in\{5,10,20\}$),
+      verified against Taillard's generator.
+\item \textbf{Metaheuristics} (unchanged): ILS with a tabu list (tenure
+      10) and an elite pool of the 10 best solutions, perturbed by
+      double-bridge kicks. SA with $T_0=1000$, $\alpha=0.99$ and a
+      temperature floor of 100; after 100\,ms without improvement the
+      temperature is reset to $T_0$ and the next elite solution receives a
+      double-bridge kick. Both start from the identity permutation.
+      \todo{SA rows only if the SA campaign is run (decided after the ILS
+      campaign)}
+\item \textbf{Budgets:} $t_{\max}\in\{0.1,0.5,1,2,5,10\}$\,s,
+      5 seeds per instance (seeds 0--4).
+\item \textbf{Neighborhoods:} $k\in\{2,3,4,5,6,8,12,16,n\}$. Reference
+      rows: Adjacent, Fibonacci, Dynasearch and Motzkin from the earlier
+      campaign on the same machine, and Insert (best single insertion
+      with Taillard's acceleration). The block-boundary filter is that of
+      the earlier studies; an ablation with exact critical-path boundaries
+      is run for $k\in\{3,8\}$.
+\item \textbf{Metric:} RPD to the Taillard lower bound and the two-sided
+      Wilcoxon signed-rank test, $\alpha=0.05$, as before. In addition:
+      Holm-adjusted $p$-values, the Friedman test with the Nemenyi
+      critical difference, RPD to Taillard's 1993 upper bounds, and RPD to
+      the current best-known solutions \todo{cite the source of the
+      best-known values}.
+\item \textbf{Hardware:} classical runs on an Apple M4 Pro, executed
+      sequentially, as in the earlier campaign. Quantum runs on the
+      D-Wave Advantage annealer (Pegasus topology, about 5\,600 qubits;
+      Leap cloud, \texttt{EmbeddingComposite}, the solver identifier is
+      recorded at run time) and on IQM gate-based processors via IQM
+      Resonance: Sirius (16 qubits, star topology) and Garnet (20 qubits,
+      square lattice) \todo{list the machines actually used}.
+\end{itemize}
+
+\paragraph{One run per budget family.} Neither ILS nor SA uses the time
+limit except as a stopping rule; cooling, tabu tenure and the elite pool
+depend on iterations, and the reheat on a fixed stagnation time. A run
+with budget $t$ is therefore a prefix of the run with budget $10$\,s and
+the same seed. Each configuration is run once with $t_{\max}=10$\,s, and
+the trajectory log yields the incumbent for every smaller budget. The
+loop tests the clock before each move, so a move started before $t$ is
+counted, exactly as in an independent run. ILS is deterministic for a
+given seed, and the extracted values coincide with independent runs up to
+the timing jitter of at most one move. SA
+is not: its reheat is triggered by a wall-clock stagnation timer, so even
+two runs with the same seed and budget diverge after the first kick. For
+SA the extracted values agree with independent runs within this
+run-to-run noise. \todo{validation table: two classes, independent
+runs vs extracted values, plus repeated runs as a noise control} A
+replication run of two earlier neighborhoods (Fibonacci and Dynasearch,
+two classes, same seeds) checks that the machine still reproduces the
+iteration counts and quality of the earlier campaign. \todo{numbers}
+
+\paragraph{Quantum protocol.} The quantum runs follow the earlier
+quantum studies~\cite{windowed_own} and differ only in the neighborhood.
+On the annealer the $k$-bonacci move is an interval-overlap QUBO with
+interval length at most $k$ (the length cap also holds on the QPU),
+100 reads per call, inside the same ILS and SA with $t_{\max}=5$\,s
+(smaller budgets extracted as above). On the gate-based processors one
+move is made from the identity permutation by a fixed-angle QAOA
+($p=1$, 4096 shots) on windows of six positions with 50\% overlap. All
+windows of a move are submitted as one job.
+\todo{tiers actually run (MIN/OPT/MAX) and QPU time / credits used}
+
+% ---------------------------------------------------------------------
+\section{Results}\label{sec:exp}
+
+\begin{table}[t]
+\centering
+\caption{PILOT (placeholder; 1\,s, RPD to the upper bound, 4 instances
+$\times$ 3 seeds): mean RPD [\%] / ILS iterations.}
+\label{tab:pilot}
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Neighborhood & $20\times5$ & $20\times10$ & $50\times10$ \\
+\midrule
+Adjacent         & 1.59 / 4578 & 3.26 / 2246 & 11.73 / 403 \\
+$k=2$ (Fibonacci) & 1.31 / 12400 & 2.46 / 7129 & 8.37 / 3329 \\
+$k=3$ (tribonacci) & 0.92 / 10177 & 1.84 / 5007 & 5.94 / 2481 \\
+$k=4$            & 0.89 / 7897 & 1.43 / 3618 & 5.51 / 1966 \\
+$k=6$            & 0.74 / 5397 & 1.09 / 2375 & 4.85 / 1123 \\
+$k=8$            & 0.72 / 3893 & 1.35 / 1580 & 4.66 / 809 \\
+$k=n$            & 0.55 / 1539 & 0.99 / 610 & 3.62 / 63 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table*}[t]
+\centering
+\caption{SKELETON: mean RPD [\%] to the lower bound, ILS, per $n$ (mean
+over $m$, 10 instances, 5 seeds). The same layout is used for SA.
+Reference rows come from the earlier campaign.}
+\label{tab:main}
+\small
+\begin{tabular}{@{}llcccccc@{}}
+\toprule
+$n$ & Neighborhood & 0.1\,s & 0.5\,s & 1\,s & 2\,s & 5\,s & 10\,s \\
+\midrule
+\multirow{1}{*}{20--500}
+& Adjacent (ref.) & -- & -- & -- & -- & -- & -- \\
+& Fibonacci (ref.) & -- & -- & -- & -- & -- & -- \\
+& Dynasearch (ref.) & -- & -- & -- & -- & -- & -- \\
+& Motzkin (ref.) & -- & -- & -- & -- & -- & -- \\
+& Insert (ref.) & -- & -- & -- & -- & -- & -- \\
+\cmidrule(l){2-8}
+& $k=2$ & -- & -- & -- & -- & -- & -- \\
+& $k=3$ (tribonacci) & -- & -- & -- & -- & -- & -- \\
+& $k=4$ & -- & -- & -- & -- & -- & -- \\
+& $k=5$ & -- & -- & -- & -- & -- & -- \\
+& $k=6$ & -- & -- & -- & -- & -- & -- \\
+& $k=8$ & -- & -- & -- & -- & -- & -- \\
+& $k=12$ & -- & -- & -- & -- & -- & -- \\
+& $k=16$ & -- & -- & -- & -- & -- & -- \\
+& $k=n$ & -- & -- & -- & -- & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\paragraph{Pilot.} Table~\ref{tab:pilot} shows a monotone improvement
+from $k=2$ to $k=6$ in all three classes. At $1$\,s, $k=n$ is still best,
+although its iteration count collapses from 3329 to 63 at $n=50$. On
+random permutations the predicted delta is exact in 42\% of evaluations
+for $k=2$ and in only 10--12\% for $k\geq 6$. The predicted improvement
+overestimates the real one by 10\% at $k=2$ and by about 50\% at $k\geq 8$.
+\todo{replace with the full campaign: Table~\ref{tab:main}; figures
+RPD vs $k$ per budget, iterations vs $k$, distance histogram, additivity
+error vs $k$}
+
+\paragraph{Planned analyses.} (i) Best $k$ per $(n,t_{\max})$ and whether
+it is interior. (ii) Iterations per budget versus $k$. (iii) Distances of
+the selected swaps versus the block length $n/m$. (iv) Wilcoxon tests of
+$k$-bonacci against the reference neighborhoods.
+
+% ---------------------------------------------------------------------
+\section{Conclusions}
+\todo{recommended $k$ per size and budget; additivity; banded QUBO of
+width $\approx k-1$ as a bridge to quantum neighborhood
+search~\cite{windowed_own}}
+
+% ---------------------------------------------------------------------
+\begin{thebibliography}{99}\small
+\bibitem{ahuja2002} R.K.~Ahuja, \"O.~Ergun, J.B.~Orlin, A.P.~Punnen.
+A survey of very large-scale neighborhood search techniques.
+\emph{Discrete Appl.\ Math.} 123:75--102, 2002.
+\bibitem{balzereit2024} \todo{verify authors/venue}. Parameterized local
+search for scheduling. arXiv:2409.00771, 2024.
+\bibitem{bozejko2007} W.~Bo\.zejko, M.~Wodecki. On the theoretical
+properties of swap multimoves. \emph{Oper.\ Res.\ Lett.} 35(2):227--231, 2007.
+\bibitem{bozejko2026sr} W.~Bo\.zejko, M.~Uchro\'nski, M.~Wodecki. The new
+exponential Fibonacci neighborhood as QUBO generated on a D-Wave quantum
+computing environment for the permutational scheduling problem.
+\emph{Sci.\ Rep.}, 2026.
+\bibitem{congram2002} R.K.~Congram, C.N.~Potts, S.L.~van de Velde. An
+iterated dynasearch algorithm for the single-machine total weighted
+tardiness scheduling problem. \emph{INFORMS J.\ Comput.} 14(1):52--67, 2002.
+\bibitem{ergun2006} \"O.~Ergun, J.B.~Orlin. Fast neighborhood search for
+the single machine total weighted tardiness problem. \emph{Oper.\ Res.\
+Lett.} 34(1):41--45, 2006. \todo{verify}
+\bibitem{fibonacci_own} \todo{own work, third person: Fibonacci neighborhood}
+\bibitem{garey1976} M.R.~Garey, D.S.~Johnson, R.~Sethi. The complexity of
+flowshop and jobshop scheduling. \emph{Math.\ Oper.\ Res.} 1(2):117--129, 1976.
+\bibitem{grabowski2004} J.~Grabowski, M.~Wodecki. A very fast tabu search
+algorithm for the permutation flow shop problem with makespan criterion.
+\emph{Comput.\ Oper.\ Res.} 31(11):1891--1909, 2004.
+\bibitem{grosso2004} A.~Grosso, F.~Della Croce, R.~Tadei. An enhanced
+dynasearch neighborhood for the single-machine total weighted tardiness
+scheduling problem. \emph{Oper.\ Res.\ Lett.} 32(1):68--72, 2004. \todo{verify}
+\bibitem{motzkin_own} \todo{own work, third person: Motzkin neighborhood, SOCO 2026}
+\bibitem{nowicki1996} E.~Nowicki, C.~Smutnicki. A fast tabu search
+algorithm for the permutation flow-shop problem. \emph{Eur.\ J.\ Oper.\ Res.}
+91(1):160--175, 1996.
+\bibitem{ruiz2007} R.~Ruiz, T.~St\"utzle. A simple and effective iterated
+greedy algorithm for the permutation flowshop scheduling problem.
+\emph{Eur.\ J.\ Oper.\ Res.} 177(3):2033--2049, 2007.
+\bibitem{taillard1993} E.~Taillard. Benchmarks for basic scheduling
+problems. \emph{Eur.\ J.\ Oper.\ Res.} 64(2):278--285, 1993.
+\bibitem{toth2003} P.~Toth, D.~Vigo. The granular tabu search and its
+application to the vehicle-routing problem. \emph{INFORMS J.\ Comput.}
+15(4):333--346, 2003.
+\bibitem{windowed_own} \todo{own work, third person: windowed QUBO / classical--quantum neighborhoods}
+\end{thebibliography}
+\end{document}

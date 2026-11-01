@@ -79,6 +79,10 @@ def simulated_annealing(
     mushroom_list.offer(initial_pi, initial_cmax)
 
     neigh_time_s = 0.0  # cumulative wall time inside get_neighbor()
+    # Instrumentation only (no effect on the search): (end of iteration [ms],
+    # best Cmax) after every loop pass, as in ILS. Lets smaller time budgets be
+    # read off one long run (scripts/extract_budgets.py).
+    move_log: List[Tuple[int, int]] = []
 
     with open_log_file(iter_log_path, "simulated_annealing") as log_file:
         while time.time() - state.start_time < time_limit:
@@ -123,8 +127,11 @@ def simulated_annealing(
                         state.current_cmax = c_max(state.current_pi, processing_times)
                     last_improve_time = time.time()
 
+            move_log.append((state.elapsed_ms(), state.best_cmax))
+
     stats = {
         "iterations": state.iteration,
         "neigh_time_ms": int(neigh_time_s * 1000),
+        "move_log": move_log,
     }
     return state.best_pi, state.best_cmax, state.iteration_history, state.cmax_history, stats

@@ -17,6 +17,13 @@ from src.neighborhoods.classical.dynasearch import dynasearch_full
 from src.neighborhoods.classical.fibonacci import (
     fibonacci_neighborhood_topk,
 )
+from src.neighborhoods.classical.insert import insert_neighborhood
+from src.neighborhoods.classical.kbonacci import (
+    kbonacci_boundary_mode,
+    kbonacci_neighborhood,
+    parse_kbonacci_mode,
+)
+from src.neighborhoods.quantum_qubo.kbonacci import quantum_kbonacci_neighborhood
 from src.neighborhoods.classical.motzkin import motzkin_neighborhood_full
 
 # --- quantum_qubo ---
@@ -44,6 +51,10 @@ from src.permutation_procesing import c_max
 # Valid neighborhood mode names
 # ---------------------------------------------------------------------------
 CLASSICAL_MODES = ("adjacent", "fibonacci", "dynasearch", "motzkin")
+# k-bonacci family (parametric, parsed by parse_kbonacci_mode): "tribonacci",
+# "tetranacci", "kbonacci_k<K>" (K >= 2), "kbonacci_kn" (K = n, i.e. Dynasearch).
+KBONACCI_MODE_EXAMPLES = ("tribonacci", "tetranacci", "kbonacci_k5", "kbonacci_kn", "kbonacci_k3_cp")
+# "insert": best single insertion (Taillard acceleration) -- reference only, k-bonacci paper.
 QUANTUM_QUBO_MODES = (
     "quantum_adjacent",
     "quantum_fibonacci",
@@ -216,6 +227,18 @@ def get_neighbor(
         new_pi, new_c, _ = dynasearch_full(current_pi, processing_times)
         return new_pi, new_c, tuple(new_pi), None
 
+    elif neigh_mode == "insert":
+        new_pi, new_c, move = insert_neighborhood(current_pi, processing_times)
+        return new_pi, new_c, move, None
+
+    elif parse_kbonacci_mode(neigh_mode, n) is not None:
+        k_kb = parse_kbonacci_mode(neigh_mode, n)
+        assert k_kb is not None
+        new_pi, new_c, swaps = kbonacci_neighborhood(
+            current_pi, processing_times, k_kb, boundary_mode=kbonacci_boundary_mode(neigh_mode)
+        )
+        return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
+
     elif neigh_mode == "motzkin":
         if n > 150:
             print(f"[motzkin] Warning: n={n} may be slow.")
@@ -240,6 +263,26 @@ def get_neighbor(
             num_spin_reversal_transforms=p.get("num_spin_reversal_transforms"),
         )
         return new_pi, new_c, move, None
+
+    elif neigh_mode.startswith("quantum_kbonacci_k"):
+        # quantum k-bonacci: annealer QUBO with L_max = k honoured on the QPU too
+        k_q = parse_kbonacci_mode(neigh_mode[len("quantum_"):], n)
+        if k_q is None:
+            raise ValueError(f"Bad quantum k-bonacci mode {neigh_mode!r}")
+        p = _extract_quantum_params(quantum_config, neigh_mode)
+        new_pi, new_c, swaps = quantum_kbonacci_neighborhood(
+            current_pi,
+            processing_times,
+            k_q,
+            num_reads=p.get("num_reads", 5),
+            backend=p.get("backend", "simulator"),
+            dwave_token=p.get("dwave_token"),
+            solver=p.get("solver"),
+            annealing_time_us=p.get("annealing_time_us"),
+            chain_strength=p.get("chain_strength"),
+            num_spin_reversal_transforms=p.get("num_spin_reversal_transforms"),
+        )
+        return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
 
     elif neigh_mode == "quantum_fibonacci":
         p = _extract_quantum_params(quantum_config, neigh_mode)
@@ -395,4 +438,7 @@ def get_neighbor(
         return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
 
     else:
-        raise ValueError(f"Unknown neigh_mode='{neigh_mode}'. " f"Valid modes: {ALL_MODES}")
+        raise ValueError(
+            f"Unknown neigh_mode='{neigh_mode}'. Valid modes: {ALL_MODES} + k-bonacci family "
+            f"{KBONACCI_MODE_EXAMPLES} (kbonacci_k<K>, kbonacci_kn, *_cp, quantum_kbonacci_k<K>) + ('insert',)"
+        )

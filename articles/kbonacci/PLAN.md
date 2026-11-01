@@ -497,3 +497,44 @@ Odtworzenie: `python scripts/check_block_filter.py` (obie tabele, ~5 min). Przy 
 | k = 8 | 0,72 | 1,35 | 4,66 |
 | k = n | **0,55** | **0,99** | **3,62** |
 | stary Dynasearch (rekurencyjny) | 0,94 | 1,49 | 5,30 |
+
+---
+
+## 16. Estymata zasobów: 2 algorytmy × pełny Taillard (01.11.2026)
+
+Założenia: 120 instancji × 5 ziaren × 2 algorytmy (ILS + SA albo ILS + IG); przebiegi z limitem czasu, więc koszt CPU = suma budżetów.
+Warianty: V = 7 (k ∈ {2, 3, 4, 8, n} + Adjacent + Insert) albo V = 10 (k ∈ {2, 3, 4, 6, 8, 12, 16, n} + Adjacent + Insert).
+k = n i Motzkin przy n = 500 to n/a, bo jedna ocena trwa ~36 s (ekstrapolacja).
+
+**Lokalnie (M4 Pro, 8 rdzeni P, +10% narzutu):**
+
+| Protokół | h CPU / (wariant × alg.) | V = 7 | V = 10 |
+|---|---|---|---|
+| A: 6 budżetów 0,1–10 s (jak we wcześniejszych pracach) | 3,1 | 43 h CPU → **~6 h** | 62 h CPU → **~8,5 h** |
+| B: t·n·m/2, t = 30 | 4,6 | 64 h CPU → **~9 h** | 92 h CPU → **~12,5 h** |
+| B: t = 10 i 30 | 6,1 | 85 h CPU → **~12 h** | 122 h CPU → **~17 h** |
+
+Kontener chmurowy (4 rdzenie) wychodzi ~2× dłużej i daje zaszumione pomiary czasu, więc służy tylko do testów, nie do tabel.
+
+**D-Wave Advantage** (dane z `windowed_qubo`: 30 ms rozliczanego czasu QPU na wywołanie przy num_reads = 100, ~2,1 s zegarowo; quota ~400 s/mies.):
+
+| Scenariusz (4 sąsiedztwa × 2 alg. × 120 inst. × 5 ziaren) | Wywołania | QPU | Quota | Zegar |
+|---|---|---|---|---|
+| 1 iteracja na przebieg (reżim jednego ruchu) | 4 800 | 144 s | 0,36 mies. | ~3 h |
+| 3 iteracje | 14 400 | 432 s | 1,1 mies. | ~8 h |
+| 10 iteracji | 48 000 | 1 440 s | 3,6 mies. | ~28 h |
+
+Z dokładnym filtrem QUBO k-bonacciego ma ≤ (m−1)(k−1)(k+2)/2 zmiennych niezależnie od n. Dla m = 20 i k = 4 to ≤ 171, czyli na granicy embeddingu;
+dla k ≥ 6 przy m = 20 potrzebne okna. Gotowa baza: `quantum_dynasearch` z `L_max_dynasearch = k`.
+
+**IQM Resonance** (dane z `gate_qaoa`: ~0,95 kredytu/obwód na garnet, ~0,68 na sirius; 1 kredyt ≈ 2 s ≈ 0,60 USD; darmowe 30 kredytów/mies.;
+garnet 20 kubitów, sirius 16):
+
+| Scenariusz (4 sąsiedztwa × 2 alg., 1 ruch na przebieg) | Obwody | Kredyty (garnet / sirius) | Darmowe miesiące | USD |
+|---|---|---|---|---|
+| tai20_5, 10 instancji, 1 ziarno | 80 | 76 / 54 | 2,5 / 1,8 | 46 / 33 |
+| tai20_5, 10 instancji, 5 ziaren | 400 | 380 / 272 | 12,7 / 9,1 | 228 / 163 |
+| pełny Taillard | 4 800 | 4 560 / 3 264 | 152 / 109 | 2 736 / 1 958 |
+
+Przy m > 5 QUBO przekracza 16–20 kubitów, więc potrzebne są okna, a koszt rośnie kilkukrotnie. Pełny Taillard na IQM jest **nierealny**.
+Sensowne jest tylko demo na tai20_5.

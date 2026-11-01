@@ -1,0 +1,64 @@
+NOTATKA: rodzina krzyzowan (Motzkin -> pojedyncze krzyzowania -> inwolucje)   stan na 01.11.2026
+=====================================================================================================
+
+REPO / BRANCH
+  repo:   RemigiuszWoj/PhD
+  branch: claude/tender-thompson-ql1r4e   (wszystko z tej notatki jest na nim)
+  zawiera zmergowany branch kbonacci-icaps (kampania, ekstrakcja budzetow, analiza, BKS).
+  PR nie utworzony (nikt nie prosil).
+
+CO JEST ZROBIONE
+  1. articles/crossings/PLAN.md (wersja 2, 17 sekcji, sekcja 17 = lista zmian po 6 rundach krytyki).
+  2. articles/crossings/pilot/  skrypty pilotow + measurements/*.json + README.md
+     (tabele z planu: cd articles/crossings/pilot && python analyze_pilots.py all).
+  3. src/neighborhoods/classical/crossing.py  (moduly produkcyjny):
+     tryby cross_<dyn|c0|c1|pa1|inv>[_safe|_prefix][_cp] oraz cross_swap;
+     dokladny wybor ruchu (DP, rdzenie H, skojarzenie networkx), limity TOP_K=3000 / CORE_K=400,
+     liczniki per przebieg (zapisywane w result.json jako neighborhood_stats).
+  4. podpiecie: src/algorithms/base.py (get_neighbor), src/experiments/runner.py (neighborhood_stats).
+  5. tests/test_crossing.py (33 testy) ; caly zestaw: 196 passed pod Pythonem 3.11.
+  6. scripts/run_crossing_campaign.py  (etapy main / anatomy / ablation / extra; wznawialny).
+  7. katalog_sasiedztw.md i ROADMAP.md wskazuja na plan.
+
+NAJWAZNIEJSZE WYNIKI PILOTA (szczegoly: PLAN.md sekcja A.0 i 14)
+  - przy wyborze addytywnym nachodzenie zamian (zagniezdzenia, krzyzowania) szkodzi; inwolucje < Motzkin.
+  - "bezpiecznik" (lepszy z ruchu zlozonego i najlepszej pojedynczej zamiany wg realnego Cmax):
+    Motzkin 50x10: 17,3% -> 5,9% RPD. Ale Dynasearch bez bezpiecznika jest najlepszy (5,75% / 4,86%),
+    a bezpiecznik Dynasearchowi szkodzi. Hipoteza H9: zamiany nie powinny sie krzyzowac ani zagniezdzac.
+  - ruchy zlozone daja nad sama zamiana ok. 1 pp przy n=50, 0,1-0,3 pp przy n=20.
+  - pilot maly: 4 instancje x 3 ziarna, instancje 50x10 niepotwierdzone jako ta041-044. To hipotezy.
+
+CZEGO JESZCZE NIE MA (kolejnosc pracy)
+  1. scripts/crossing_anatomy.py  -- skrypt kampanii go wywoluje (etap anatomy), ale NIE ISTNIEJE.
+     Do napisania z articles/crossings/pilot/pilot_anatomy.py (stany z trajektorii ILS, nie z zejscia).
+  2. networkx w requirements.txt (kampania sprawdza i konczy sie komunikatem, jesli brak).
+  3. scripts/analyze_crossing.py (uogolnienie analyze_kbonacci.py: RPD, Wilcoxon+Holm, Page, TOST, udzial
+     bezpiecznika, rodziny testow P1-P4 z PLAN.md 7.4a).
+  4. articles/crossings/RUN_LOCAL.md  (instrukcja dla lokalnego Claude'a, wzor: articles/kbonacci/RUN_LOCAL.md).
+  5. szkic artykulu: articles/crossings/main.tex (EN) + wersja_pl.tex, wzor: articles/kbonacci/main.tex,
+     struktura w PLAN.md sekcja 8.
+  6. test dymny: python scripts/run_crossing_campaign.py --stage main --files tai20_5 --limit 3
+     (dry-run przeszedl; prawdziwe uruchomienie niesprawdzone).
+  UWAGA: kampanie k-bonacciego i krzyzowan konkuruja o Maca; krzyzowania PO k-bonaccim.
+  Pilne (D12): dopisac cross_dyn_safe / kbonacci_kn_safe jako ablacje w kampanii k-bonacciego, zanim ruszy.
+
+DECYZJE DO PODJECIA Z PROMOTOREM (PLAN.md sekcja 12)
+  D1 N1 vs P1 | D2 konferencja (GECCO 2027, termin niepotwierdzony; zapas SOCO 2027/czasopismo)
+  D3 gdzie opisac bezpiecznik | D4 co z wczesniejszymi wynikami Motzkina przy n>=50
+  D11 osobny artykul czy wspolny z k-bonaccim | D12 ablacja w k-bonaccim (pilne) | D13 margines TOST
+
+PROMPT STARTOWY DLA NOWEJ SESJI CLAUDE'A
+-----------------------------------------------------------------------------------------------------
+Pracujemy w repo RemigiuszWoj/PhD na branchu claude/tender-thompson-ql1r4e. Przeczytaj najpierw
+articles/crossings/NOTATKA.txt, potem articles/crossings/PLAN.md (sekcje A.0, A.3, 7.4a, 12, 17).
+Kod: src/neighborhoods/classical/crossing.py, tests/test_crossing.py, scripts/run_crossing_campaign.py.
+Srodowisko: Python 3.11, pip install -r requirements.txt pytest scipy python-dotenv networkx;
+python -m pytest tests -q musi dac 196 passed.
+Zadanie: (1) napisz scripts/crossing_anatomy.py, scripts/analyze_crossing.py, dodaj networkx do
+requirements.txt, (2) napisz articles/crossings/RUN_LOCAL.md na wzor articles/kbonacci/RUN_LOCAL.md
+(Mac, nohup+caffeinate, wznawianie, bramka STOP, raport, commit tylko tabel), (3) napisz szkic artykulu
+articles/crossings/main.tex (EN, struktura z PLAN.md sekcja 8, tabele jako szkielet z danymi pilota
+oznaczonymi PILOT) i wersja_pl.tex. Zasady: nie zmieniaj config.yaml, src/algorithms/*, filtra blokowego;
+oszczedzaj tokeny; commituj i pushuj na ten branch; nie tworz PR bez prosby. Po zakonczeniu dopisz
+w NOTATKA.txt co zrobione.
+-----------------------------------------------------------------------------------------------------

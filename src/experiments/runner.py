@@ -11,6 +11,7 @@ from typing import Iterable, List, Sequence
 import yaml
 
 from src.algorithms import iterated_local_search, simulated_annealing
+from src.neighborhoods.classical.crossing import get_crossing_stats, reset_crossing_stats
 from src.neighborhoods.common import QPUError, get_qpu_stats, reset_qpu_stats, set_qpu_budget
 from src.parser import parser
 
@@ -91,6 +92,7 @@ class RunResult:
     avg_iter_ms: float | None = None    # total_time_ms / iterations
     neigh_time_ms: int | None = None    # cumulative wall time inside get_neighbor()
     move_log: List[List[int]] | None = None  # [[czas_ms, best_cmax], ...] po kazdym ruchu
+    neighborhood_stats: dict | None = None   # cross_* modes only: swaps, crossings, safeguard use, caps
 
     def gap_percent(self) -> float | None:
         if self.lower_bound is None:
@@ -221,6 +223,7 @@ class ExperimentRunner:
 
         # Per-run QPU bookkeeping (covers all solve_qubo() invocations during this run)
         reset_qpu_stats()
+        reset_crossing_stats()
 
         start = time.time()
         run_fn = self._dispatch.get(cfg.algorithm)
@@ -272,6 +275,7 @@ class ExperimentRunner:
             avg_iter_ms=avg_iter_ms,
             neigh_time_ms=neigh_time_ms,
             move_log=[[t, c] for t, c in (algo_stats.get("move_log") or [])],
+            neighborhood_stats=get_crossing_stats() if cfg.neighborhood.startswith("cross_") else None,
         )
 
     def _run_dir_name(self, cfg: RunConfig, jobs: int | None = None, machines: int | None = None) -> str:

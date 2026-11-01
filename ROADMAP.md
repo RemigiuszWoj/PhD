@@ -40,6 +40,8 @@ jako obwody QAOA.
 > inwolucje), plan badań i przydział do konferencji: [`articles/katalog_sasiedztw.md`](articles/katalog_sasiedztw.md).
 > Definicja tribonacciego poniżej (3-cykle) różni się od tej z 19.10 (zamiana końców, środek zablokowany) —
 > decyzja do podjęcia z promotorem, opisana w katalogu.
+> **Aktualizacja 01.11.2026:** plan rodziny krzyżowań (Motzkin → pojedyncze krzyżowania → inwolucje):
+> [`articles/crossings/PLAN.md`](articles/crossings/PLAN.md).
 
 Pełny reuse pipeline'u; równolegle z A, bo nie dotyka QPU (symulator +
 klasyka). W projekcie doktorskim wymienione: Hamming i de Montmort;

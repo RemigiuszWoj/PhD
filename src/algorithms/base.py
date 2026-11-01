@@ -438,4 +438,7 @@ def get_neighbor(
         return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
 
     else:
-        raise ValueError(f"Unknown neigh_mode='{neigh_mode}'. " f"Valid modes: {ALL_MODES}")
+        raise ValueError(
+            f"Unknown neigh_mode='{neigh_mode}'. Valid modes: {ALL_MODES} + k-bonacci family "
+            f"{KBONACCI_MODE_EXAMPLES} (kbonacci_k<K>, kbonacci_kn, *_cp, quantum_kbonacci_k<K>) + ('insert',)"
+        )

@@ -15,7 +15,8 @@ Stages (run in this order by --stage all; each one resumes where it stopped):
 
 Usage (Mac, repo root):
     python scripts/run_kbonacci_campaign.py --dry-run
-    python scripts/run_kbonacci_campaign.py --stage all
+    python scripts/run_kbonacci_campaign.py --stage all              # ILS only (default)
+    python scripts/run_kbonacci_campaign.py --stage all --algos sa   # later: add SA (resumes)
     python scripts/run_kbonacci_campaign.py --stage main --files tai20_5,tai20_10
 """
 
@@ -37,7 +38,7 @@ TAILLARD = [  # ascending n: errors show up on the fast classes first
 ]
 INSTANCES = list(range(10))
 SEEDS = list(range(5))
-ALGOS = ["ils", "sa"]
+ALGOS = ["ils", "sa"]  # available; default run = ILS only (--algos), SA added later if worthwhile
 ALL_BUDGETS = [100, 500, 1000, 2000, 5000, 10000]
 LONG = 10000
 OUT = ROOT / "results" / "kbonacci"
@@ -57,11 +58,11 @@ ORDER = ["validate", "main", "insert", "ablation"]
 OVERRUN_S = {("kbonacci_kn", 500): 30.0}
 
 
-def configs(files, modes, budgets):
+def configs(files, modes, budgets, algos):
     out = []
     for f in files:
         for mode in modes:
-            for algo in ALGOS:
+            for algo in algos:
                 for t in budgets:
                     for i in INSTANCES:
                         for s in SEEDS:
@@ -80,12 +81,12 @@ def est_hours(cfgs) -> float:
     return sec / 3600
 
 
-def run_stage(name: str, files, dry: bool, limit: int) -> None:
+def run_stage(name: str, files, algos, dry: bool, limit: int) -> None:
     spec = STAGES[name]
     fl = [f for f in spec["files"] if f in files]
-    jobs = [(OUT / name, configs(fl, spec["modes"], spec["budgets"]))]
+    jobs = [(OUT / name, configs(fl, spec["modes"], spec["budgets"], algos))]
     if spec.get("repeat_budgets"):
-        jobs.append((OUT / f"{name}_repeat", configs(fl, spec["modes"], spec["repeat_budgets"])))
+        jobs.append((OUT / f"{name}_repeat", configs(fl, spec["modes"], spec["repeat_budgets"], algos)))
     for res_dir, cfgs in jobs:
         res_dir.mkdir(parents=True, exist_ok=True)
         runner = ExperimentRunner(base_results_dir=str(OUT), quantum_config={}, resume_dir=str(res_dir))
@@ -101,25 +102,53 @@ def run_stage(name: str, files, dry: bool, limit: int) -> None:
     src, out = OUT / name, OUT / f"{name}_budgets"
     subprocess.run([sys.executable, "scripts/extract_budgets.py", "extract", "--src", str(src),
                     "--out", str(out)], check=True)
+    print_moves(src)
     if name == "validate":
         subprocess.run([sys.executable, "scripts/extract_budgets.py", "compare",
                         "--extracted", str(out), "--independent", str(src),
                         "--repeat", str(OUT / "validate_repeat")], check=True)
 
 
+def print_moves(res_dir: Path) -> None:
+    """How many moves (metaheuristic iterations) each neighborhood makes in the full budget."""
+    import json
+    import statistics
+    from collections import defaultdict
+
+    it = defaultdict(list)
+    for p in res_dir.rglob("result.json"):
+        r = json.loads(p.read_text())
+        c = r["config"]
+        it[(c["algorithm"], Path(c["instance_file"]).stem, c["neighborhood"])].append(r.get("iterations") or 0)
+    if not it:
+        return
+    modes = sorted({k[2] for k in it}, key=lambda m: (len(m), m))
+    print(f"\nMean number of moves in {res_dir.name} (t_max of the stage):")
+    for algo in sorted({k[0] for k in it}):
+        print(f"  {algo:<4}{'file':<10}" + "".join(f"{m.replace('kbonacci_', ''):>9}" for m in modes))
+        for f in [x for x in TAILLARD if any(k[1] == x and k[0] == algo for k in it)]:
+            cells = [f"{statistics.mean(it[(algo, f, m)]):9.0f}" if it.get((algo, f, m)) else f"{'-':>9}"
+                     for m in modes]
+            print(f"      {f:<10}" + "".join(cells))
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--stage", default="all", help="all | " + " | ".join(ORDER) + " (comma list allowed)")
     ap.add_argument("--files", default=",".join(TAILLARD), help="subset of Taillard files")
+    ap.add_argument("--algos", default="ils", help="ils (default) | sa | ils,sa")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--limit", type=int, default=0, help="at most N runs per stage (smoke test)")
     a = ap.parse_args()
     stages = ORDER if a.stage == "all" else [s.strip() for s in a.stage.split(",")]
     files = [f.strip() for f in a.files.split(",")]
+    algos = [x.strip() for x in a.algos.split(",")]
+    if any(x not in ALGOS for x in algos):
+        ap.error(f"--algos must be from {ALGOS}")
     for s in stages:
         if s not in STAGES:
             ap.error(f"unknown stage {s}")
-        run_stage(s, files, a.dry_run, a.limit)
+        run_stage(s, files, algos, a.dry_run, a.limit)
 
 
 if __name__ == "__main__":

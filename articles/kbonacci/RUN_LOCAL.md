@@ -15,7 +15,7 @@ python -m pytest tests -q            # oczekiwane: wszystko zielone (159+ testó
 python scripts/run_kbonacci_campaign.py --dry-run
 ```
 
-`--dry-run` powinien pokazać ok. 44 h: validate ~2,1 h, validate_repeat ~0,7 h, main ~31 h, insert ~3,3 h, ablation ~6,7 h.
+`--dry-run` (domyślnie **tylko ILS**) powinien pokazać ok. 22 h: validate ~1,1 h, validate_repeat ~0,3 h, main ~15,5 h, insert ~1,7 h, ablation ~3,3 h.
 
 **Warunki pomiaru:**
 - zasilacz podłączony;
@@ -23,13 +23,15 @@ python scripts/run_kbonacci_campaign.py --dry-run
 - żadnych innych ciężkich procesów;
 - Mac nie może zasnąć, więc używamy `caffeinate`.
 
-## 1. Kampania klasyczna (opcja MAKSIMUM)
+## 1. Kampania klasyczna (opcja MAKSIMUM): najpierw tylko ILS
 
 ```bash
 mkdir -p results/kbonacci
 caffeinate -i python scripts/run_kbonacci_campaign.py --stage all 2>&1 | tee -a results/kbonacci/campaign.log
 ```
 
+- Domyślnie liczony jest **tylko ILS**. Po każdym etapie skrypt drukuje tabelę **średniej liczby ruchów** (iteracji) dla każdego pliku i k.
+  Na jej podstawie decydujemy, czy liczyć SA. SA dokłada się później tą samą komendą z `--algos sa` (~22 h; gotowe przebiegi ILS są pomijane).
 - Etapy idą po kolei: `validate` → `main` → `insert` → `ablation`. Po każdym automatycznie uruchamia się `extract_budgets.py`,
   który z przebiegów 10 s wyciąga budżety 0,1–5 s.
 - **Wznawianie:** wystarczy uruchomić tę samą komendę. Gotowe przebiegi (`result.json`) są pomijane.

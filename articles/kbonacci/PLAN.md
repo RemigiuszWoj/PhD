@@ -15,6 +15,7 @@ Powiązane: `articles/katalog_sasiedztw.md`, `ROADMAP.md` (front C), szkice `mai
 
 | Sprawa | Decyzja |
 |---|---|
+| Kolejność | **najpierw tylko ILS** (~22 h na Macu); po obejrzeniu liczby ruchów decyzja, czy dołożyć SA (`--algos sa`, kolejne ~22 h) |
 | Klasyka na Macu | **opcja MAKSIMUM**: k ∈ {2, 3, 4, 5, 6, 8, 12, 16, n} + Insert + ablacja dokładnego filtra (k ∈ {3, 8}) + walidacja wyciągania budżetów |
 | Kwanty | **etapami**: najpierw MIN; jeśli starczy budżetu, OPT; potem MAX (skrypt `scripts/run_quantum_tiers.py` sam pilnuje budżetu i wznawia) |
 | Dodane, bo nie zmieniają obliczeń | RPD do BKS (jeśli będzie plik BKS), poprawka Holma, test Friedmana + Nemenyi (CD) obok Wilcoxona |

@@ -322,21 +322,24 @@ ciepła), z podłogą szumu shotów i podłogą sprzętową dzień do dnia.}}}
 
 \begin{figure}[t]
 \centering
-\fbox{\parbox[c][3.5cm][c]{0.9\textwidth}{\centering \tofill{Figura: względne
-odchylenie długości uszeregowania, symulator wobec Siriusa, jeden punkt na
-instancję, $p = 1, 2, 3$.}}}
-\caption{Zgodność z urządzeniem na poziomie przebiegów.}
+\includegraphics[width=\textwidth]{figures/t5_prd_pl.pdf}
+\caption{Każdy punkt to jeden bieg ILS na symulatorze i na Siriusie (tai20,
+$p = 1$). Szary pas pokazuje średnią różnicę dwóch biegów Siriusa, a prawy panel
+pokazuje średnią różnicę z 95\,\% CI.}
 \label{fig:prd}
 \end{figure}
 
+\input{measurements/t5_table_pl}
+
 \begin{figure}[t]
 \centering
-\fbox{\parbox[c][3.5cm][c]{0.9\textwidth}{\centering \tofill{Figura: czas na
-obwód i szczytowa pamięć w funkcji liczby kubitów, wszystkie symulatory
-(skala logarytmiczna).}}}
-\caption{Koszt symulacji z szumem.}
+\includegraphics[width=\textwidth]{figures/t6_cost_pl.pdf}
+\caption{Wykres pokazuje czas na obwód w funkcji liczby kubitów ($p = 1$,
+jeden wątek). Linie kropkowane oznaczają limit 300\,s i 16 kubitów Siriusa.}
 \label{fig:cost}
 \end{figure}
+
+\input{measurements/t6_table_pl}
 
 \section{Dyskusja}
 \tofill{Szkic: który symulator do czego; ograniczenia: rezonator jako kubit,

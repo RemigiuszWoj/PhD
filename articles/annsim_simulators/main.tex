@@ -312,19 +312,25 @@ shot-noise floor and the hardware day-to-day floor.}}}
 
 \begin{figure}[t]
 \centering
-\fbox{\parbox[c][3.5cm][c]{0.9\textwidth}{\centering \tofill{Figure: relative
-deviation of the makespan, simulator versus Sirius, one point per instance, $p = 1, 2, 3$.}}}
-\caption{Run-level agreement with the device.}
+\includegraphics[width=\textwidth]{figures/t5_prd.pdf}
+\caption{Each point is one ILS run on a simulator and on Sirius (tai20,
+$p = 1$). The grey band shows the mean difference between two Sirius runs, and
+the right panel shows the mean difference with its 95\,\% CI.}
 \label{fig:prd}
 \end{figure}
 
+\input{measurements/t5_table}
+
 \begin{figure}[t]
 \centering
-\fbox{\parbox[c][3.5cm][c]{0.9\textwidth}{\centering \tofill{Figure: wall time per
-circuit and peak memory versus number of qubits, all simulators (log scale).}}}
-\caption{Cost of noisy simulation.}
+\includegraphics[width=\textwidth]{figures/t6_cost.pdf}
+\caption{The plot shows the time per circuit against the number of qubits
+($p = 1$, one thread). The dotted lines mark the 300\,s limit and the 16 qubits
+of Sirius.}
 \label{fig:cost}
 \end{figure}
+
+\input{measurements/t6_table}
 
 \section{Discussion}
 \tofill{Draft: which simulator for which purpose; limitations: resonator modeled

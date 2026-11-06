@@ -5,7 +5,7 @@
 Powiadomienie 28.02.2027, wersja finalna 25.03.2027 (tylko LaTeX).
 
 **STAN 06.11.2026: NIE WYSŁANE.** H2 na Siriusie wpisane (tabela 4, zdania EN/PL); `abstrakt.txt`
-odświeżony (244 słowa, limit LNCS 150–250); `overleaf_source.zip` przebudowany. 10 stron, pdfinfo puste,
+odświeżony (247 słów, limit LNCS 150–250); `overleaf_source.zip` przebudowany. 10 stron, pdfinfo puste,
 fonty osadzone, bez Type 3.
 
 ## Wymagania ze strony ICAISC (sprawdzone 01.11.2026)
@@ -51,5 +51,5 @@ Blok autorów do wersji z nazwiskami (zamiast `\author{Anonymous}` / `\institute
 - 0 wspólnych fraz 8-wyrazowych z ACIIDS, GCMM, windowed, SOCO, ICAISC 2026, BPASTS poza fragmentem
   tytułu i oświadczeniem o LLM ✔
 - pdfinfo: puste Title/Author/Subject/Keywords ✔; pdffonts: wszystko osadzone, brak Type 3 ✔
-- DOI wszystkich 20 cytowanych prac sprawdzone (Crossref / DataCite) ✔; ICAISC 2026 jeszcze bez DOI w Crossref → „in press”
+- DOI wszystkich 20 cytowanych prac sprawdzone (Crossref / DataCite) ✔ (06.11: +congram2002, DOI OK, razem 21); ICAISC 2026 jeszcze bez DOI w Crossref → „in press”
 - po H2 powtórzyć: kompilacja, pdfinfo/pdffonts, liczba stron, liczba słów abstraktu

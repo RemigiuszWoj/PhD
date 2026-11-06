@@ -27,15 +27,15 @@ with fixed angles calibrated on three kinds of training windows. We measure
 the effect on the probability of sampling the optimal move, on the circuit
 cost and on the makespan that iterated local search reaches on Taillard
 instances with 20 jobs. Without noise, $p = 1$ is worse than uniform sampling
-in two neighborhoods, while $p = 2$ already makes the best of 4096 samples
-optimal in almost every window of the dense neighborhoods and, with 256
-shots, lowers the median deviation from the lower bound from about 24\% to
-15\%. In the linear neighborhoods uniform sampling is as good as any depth.
+in two neighborhoods. Already at $p = 2$ the best of 4096 samples is optimal
+in almost every window of the dense neighborhoods, and with 256 shots the
+median deviation from the lower bound falls from about 24\% to 15\%. In the linear neighborhoods uniform sampling is as good as any depth.
 On a simulated 16-qubit star processor with calibrated noise the best depth
 of the dense neighborhoods is $p = 2$, and every further layer of about 150 two-qubit gates pushes the hit rate back
 towards uniform sampling. On the device itself, $p = 1$ behaves like uniform
 sampling, and two or three layers bring no gain.
-The source of the angles matters more than the depth, and the mean energy
+Beyond two layers the source of the angles matters more than the depth, and
+the mean energy
 minimized in calibration is a poor proxy for hitting the optimum.
 \keywords{QAOA \and circuit depth \and flow shop \and neighborhood search \and fixed angles}
 \end{abstract}
@@ -138,7 +138,7 @@ more than doing nothing. Table~\ref{tab:neigh} lists the four neighborhoods.
 Adjacent selects exactly one swap of neighbors and uses a one-hot QUBO with
 $Q_{ii} = \Delta_i - P$, $Q_{ij} = 2P$ and $P = 2\max_i|\Delta_i| + 1$.
 Fibonacci~\cite{bozejko2026new} allows any set of disjoint adjacent swaps,
-which gives a tridiagonal QUBO. Dynasearch and
+which gives a tridiagonal QUBO. Dynasearch~\cite{congram2002} and
 Motzkin~\cite{wojewodzki2026soco} swap the end points of intervals; Dynasearch
 forbids intervals to overlap, while Motzkin also allows nesting, and both
 give a QUBO with pairwise conflicts.
@@ -211,7 +211,7 @@ On the star-shaped processor every qubit couples only to a central
 resonator, and a two-qubit interaction first moves one qubit's state into the
 resonator. One $R_{ZZ}$ gate then compiles to two CZ and about two MOVE
 gates~\cite{gnatowski2026routing}, so a dense window of 15 variables needs 150
-CZ gates per layer, five times as many as a linear window with 15 couplings,
+CZ gates per layer, five times as many as a Fibonacci window with 15 couplings,
 and the cost grows linearly in $p$.
 
 \section{Experimental Setup}
@@ -247,7 +247,7 @@ Linear neighborhoods run once per instance and dense ones five times. A noisy
 simulator needs minutes per circuit, so its wall time says nothing about the
 device; each noisy run therefore makes exactly as many moves as Sirius made
 in 10~s on the same instance at $p = 1$~\cite{wojewodzki2026aciids}. On the
-hardware ILS repeats that campaign at $p = 2$ and $p = 3$, once per instance,
+hardware, ILS repeats that campaign at $p = 2$ and $p = 3$, once per instance,
 with the small-window table and, for Adjacent, the best table from the window
 study. The device calibration on the day of these runs (6~November~2026) was
 close to the one the simulator uses, with a median CZ error of 1.9\% against
@@ -280,8 +280,8 @@ about ten times more in a dense window than in a Fibonacci window. With noise
 this cost decides the best depth (Fig.~\ref{fig:e4}). In the dense
 neighborhoods the best sample is optimal most often at $p = 2$, and at
 $p = 6$ the circuit is no better than uniform sampling. The linear
-neighborhoods hardly notice the noise, because their circuits are shallow and
-uniform sampling already finds most optima.
+neighborhoods hardly notice the noise. Fibonacci circuits are shallow, and in
+both neighborhoods uniform sampling already finds most optima.
 
 The same picture appears in the makespan of ILS (Table~\ref{tab:e5}). With
 256 shots, $p = 2$ lowers the median deviation from the lower bound in the
@@ -289,19 +289,21 @@ dense neighborhoods from about 24\% for uniform sampling to 15\%, and the
 best depth beats uniform sampling on all 30 instances. With 4096 shots it
 still wins on almost all of them. Deeper circuits lose only because each move takes longer and fewer
 moves fit into 10~s (Fig.~\ref{fig:moves}). In the linear neighborhoods depth
-brings nothing, and the classical search that evaluates every move exactly
-stays better than all QAOA variants.
+brings nothing. In every neighborhood the classical search that evaluates
+every move exactly stays better than all QAOA variants.
 
-After the one to three moves that Sirius makes in 10~s, most differences in
-Table~\ref{tab:hw} are small. On the noisy simulator Dynasearch at $p = 2$
-again beats $p = 1$, on 11 of 12 instances. In Dynasearch at $p = 1$ the device does
-better than the simulator and about as well as uniform sampling, which
-suggests that the real noise is stronger than the calibrated model.
+After the one to three moves that Sirius makes in 10~s, most differences
+between the simulated rows of Table~\ref{tab:hw} are small. On the noisy
+simulator Dynasearch at $p = 2$ again beats $p = 1$, on 11 of 12 instances.
+In Dynasearch at $p = 1$ the device does better than the simulator and about
+as well as uniform sampling, which in Dynasearch beats $p = 1$. This suggests
+that the real noise is stronger than the calibrated model.
 The gain of $p = 2$ does not survive on Sirius. In the linear neighborhoods
 two and three layers leave the median PRD almost unchanged. In the dense ones
 extra layers make it worse: Dynasearch at $p = 3$ is worse than at $p = 1$ on
-10 of 12 instances, and Motzkin gets worse with each layer, although with 12
-instances this trend is not significant.
+10 of 12 instances and worse than uniform sampling on 11 of 12, and Motzkin
+gets worse with each layer, although with 12 instances this trend is not
+significant.
 
 \begin{figure}[t]
 \centering
@@ -389,9 +391,10 @@ because every further layer costs about 150 two-qubit gates. In the linear
 neighborhoods the windows are so small that uniform sampling does as well as
 QAOA. In simulation two layers are therefore the best choice for dense
 neighborhoods, with the rest of the budget spent on shots. On Sirius,
-however, extra layers bring no gain, so on current hardware a single layer is
-enough.
-The angles matter more than the depth, and calibrating them for the mean
+however, extra layers do not help, and even one layer does no better than
+uniform sampling, so the gain from depth seen in simulation does not yet
+carry over to current hardware. Beyond two layers the angles matter more than
+the depth, and calibrating them for the mean
 energy does not reward what local search needs.
 
 We do not claim an advantage over classical computing: the exact classical

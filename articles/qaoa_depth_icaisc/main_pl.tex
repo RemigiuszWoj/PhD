@@ -40,7 +40,8 @@ warstwa, licząca około 150 bramek dwukubitowych, zbliża trafienia
 z powrotem do poziomu losowania jednostajnego. Na samym urządzeniu $p = 1$
 zachowuje się jak losowanie jednostajne, a dwie lub trzy warstwy nie dają
 zysku.
-Pochodzenie kątów waży więcej niż głębokość, a średnia energia, którą
+Powyżej dwóch warstw pochodzenie kątów waży więcej niż głębokość, a średnia
+energia, którą
 minimalizuje kalibracja, słabo przewiduje trafianie optimum.
 \keywords{QAOA \and głębokość obwodu \and problem przepływowy \and przeszukiwanie sąsiedztwa \and kąty stałe}
 \end{abstract}
@@ -147,8 +148,8 @@ więcej niż brak ruchu. Tabela~\ref{tab:neigh} zestawia cztery sąsiedztwa.
 Adjacent wybiera dokładnie jedną zamianę sąsiadów i ma QUBO typu one-hot
 z $Q_{ii} = \Delta_i - P$, $Q_{ij} = 2P$ oraz $P = 2\max_i|\Delta_i| + 1$.
 Sąsiedztwo Fibonacciego~\cite{bozejko2026new} dopuszcza dowolny zbiór
-rozłącznych zamian sąsiednich, co daje QUBO trójdiagonalne. Dynasearch
-i sąsiedztwo Motzkina~\cite{wojewodzki2026soco} zamieniają końce przedziałów;
+rozłącznych zamian sąsiednich, co daje QUBO trójdiagonalne.
+Dynasearch~\cite{congram2002} i sąsiedztwo Motzkina~\cite{wojewodzki2026soco} zamieniają końce przedziałów;
 Dynasearch zabrania nakładania się przedziałów, Motzkin dopuszcza też ich
 zagnieżdżanie, a oba dają QUBO z konfliktami parami.
 
@@ -223,7 +224,8 @@ z centralnym rezonatorem, a oddziaływanie dwukubitowe wymaga najpierw
 przeniesienia stanu jednego kubitu do rezonatora. Jedna bramka $R_{ZZ}$
 kompiluje się wtedy do dwóch bramek CZ i około dwóch bramek
 MOVE~\cite{gnatowski2026routing}, więc gęste okno z 15 zmiennymi potrzebuje
-150 bramek CZ na warstwę, pięć razy więcej niż okno liniowe z 15 sprzężeniami,
+150 bramek CZ na warstwę, pięć razy więcej niż okno Fibonacciego z 15
+sprzężeniami,
 a koszt rośnie liniowo z $p$.
 
 \section{Plan eksperymentów}
@@ -256,8 +258,8 @@ $p = 0$, czyli losowanie jednostajne z tym samym odczytem najniższej energii,
 oraz klasyczne przeszukiwanie sąsiedztwa, które ocenia każdy ruch dokładnie.
 Warianty QAOA używają $S = 256$ i $S = 4096$ shotów. Sąsiedztwa liniowe
 uruchamiamy raz na instancję, a gęste pięć razy. Symulator z szumem
-potrzebuje minut na obwód, więc jego czas nie mówi nic o urządzeniu; każdy
-przebieg z szumem wykonuje więc dokładnie tyle ruchów, ile Sirius wykonał
+potrzebuje minut na obwód, więc jego czas nie mówi nic o urządzeniu. Dlatego
+każdy przebieg z szumem wykonuje dokładnie tyle ruchów, ile Sirius wykonał
 w 10~s na tej samej instancji przy $p = 1$~\cite{wojewodzki2026aciids}. Na
 sprzęcie ILS powtarza tamtą kampanię dla $p = 2$ i $p = 3$, raz na
 instancję, z tabelą z małych okien, a w Adjacent z najlepszą tabelą z badania
@@ -292,8 +294,8 @@ w oknie gęstym mniej więcej dziesięć razy więcej niż w oknie Fibonacciego.
 Z szumem ten koszt wyznacza najlepszą głębokość (rys.~\ref{fig:e4}).
 W sąsiedztwach gęstych najlepsza próbka jest optymalna najczęściej przy
 $p = 2$, a przy $p = 6$ obwód nie jest lepszy od losowania jednostajnego.
-Sąsiedztwa liniowe prawie nie odczuwają szumu, bo ich obwody są płytkie,
-a losowanie jednostajne i tak znajduje większość optimów.
+Sąsiedztwa liniowe prawie nie odczuwają szumu. Obwody Fibonacciego są płytkie,
+a w obu sąsiedztwach losowanie jednostajne i tak znajduje większość optimów.
 
 Ten sam obraz widać w długości uszeregowania w ILS (tabela~\ref{tab:e5}).
 Przy 256 shotach $p = 2$ obniża w sąsiedztwach gęstych medianę odchylenia
@@ -302,19 +304,21 @@ a najlepsza głębokość wygrywa z losowaniem jednostajnym na wszystkich 30
 instancjach. Przy 4096 shotach wygrywa nadal prawie na wszystkich. Głębsze obwody
 przegrywają tylko dlatego, że każdy ruch trwa dłużej i w 10~s mieści się
 mniej ruchów (rys.~\ref{fig:moves}). W sąsiedztwach liniowych głębokość nic
-nie daje, a klasyczne przeszukiwanie, które ocenia każdy ruch dokładnie,
-pozostaje lepsze od wszystkich wariantów QAOA.
+nie daje. W każdym sąsiedztwie klasyczne przeszukiwanie, które ocenia każdy
+ruch dokładnie, pozostaje lepsze od wszystkich wariantów QAOA.
 
 Po jednym do trzech ruchach, które Sirius wykonuje w 10~s, większość różnic
-w tabeli~\ref{tab:hw} jest niewielka. Na symulatorze z szumem Dynasearch przy
-$p = 2$ znów wygrywa z $p = 1$, na 11 z 12 instancji. W Dynasearch przy $p = 1$ urządzenie
-radzi sobie lepiej niż symulator i mniej więcej tak samo jak losowanie
-jednostajne, co sugeruje, że prawdziwy szum jest silniejszy niż skalibrowany
-model. Na Siriusie zysk z $p = 2$ się nie utrzymuje. W sąsiedztwach liniowych
-dwie i trzy warstwy prawie nie zmieniają mediany PRD. W gęstych kolejne
-warstwy ją pogarszają: Dynasearch przy $p = 3$ jest gorszy niż przy $p = 1$
-na 10 z 12 instancji, a Motzkin pogarsza się z każdą warstwą, choć przy 12
-instancjach ten trend nie jest istotny.
+między wierszami symulowanymi w tabeli~\ref{tab:hw} jest niewielka. Na
+symulatorze z szumem Dynasearch przy $p = 2$ znów wygrywa z $p = 1$, na 11
+z 12 instancji. W Dynasearch przy $p = 1$ urządzenie radzi sobie lepiej niż
+symulator i mniej więcej tak samo jak losowanie jednostajne, które w tym
+sąsiedztwie jest lepsze od $p = 1$. Sugeruje to, że prawdziwy szum jest
+silniejszy niż skalibrowany model. Na Siriusie zysk z $p = 2$ się nie
+utrzymuje. W sąsiedztwach liniowych dwie i trzy warstwy prawie nie zmieniają
+mediany PRD. W gęstych kolejne warstwy ją pogarszają: Dynasearch przy $p = 3$
+jest gorszy niż przy $p = 1$ na 10 z 12 instancji i gorszy od losowania
+jednostajnego na 11 z 12, a Motzkin pogarsza się z każdą warstwą, choć przy
+12 instancjach ten trend nie jest istotny.
 
 \begin{figure}[t]
 \centering
@@ -403,9 +407,10 @@ bo każda kolejna warstwa kosztuje około 150 bramek dwukubitowych.
 W sąsiedztwach liniowych okna są tak małe, że losowanie jednostajne radzi
 sobie tak samo dobrze jak QAOA. W symulacji dwie warstwy są więc najlepszym
 wyborem dla sąsiedztw gęstych, a resztę budżetu warto przeznaczyć na shoty.
-Na Siriusie kolejne warstwy nie dają jednak zysku, więc na obecnym sprzęcie
-wystarcza jedna warstwa.
-Kąty ważą więcej niż głębokość, a kalibracja na średnią energię nie nagradza
+Na Siriusie kolejne warstwy jednak nie pomagają, a nawet jedna warstwa nie
+jest lepsza od losowania jednostajnego, więc zysk z głębokości widoczny
+w symulacji nie przenosi się jeszcze na obecny sprzęt. Powyżej dwóch warstw
+kąty ważą więcej niż głębokość, a kalibracja na średnią energię nie nagradza
 tego, czego potrzebuje przeszukiwanie lokalne.
 
 Nie twierdzimy, że obliczenia kwantowe mają tu przewagę nad klasycznymi:

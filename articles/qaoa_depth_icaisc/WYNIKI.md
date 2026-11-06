@@ -320,3 +320,32 @@ Mediana PRD po 12 instancjach (= tabela 4):
 4. Prawdopodobne wyjaśnienie: symulator nie ma szumu na MOVE i bezczynnych kubitach, a gęsty obwód przy
    p = 3 ma ok. 440–540 MOVE (Motzkin/Dynasearch, mediany z H3). Zalecenie „dwie warstwy” zostaje
    ograniczone do symulacji; na obecnym sprzęcie wystarcza p = 1.
+
+## W11. Liczby dodane do tekstu po pętli krytyka (06.11 wieczór)
+
+Przeliczone ponownie 06.11 skryptami ze scratchpadu (`fraz/w11.py`, `review_check.py`); testy znaków po
+instancjach (wygrane/przegrane pierwszego wariantu, p dwustronne).
+
+**Głębokość czy shoty (E5, bez szumu, tabela small, 30 instancji):**
+- p = 2 z S = 256 wobec p = 1 z S = 4096: Dynasearch 29/1, Motzkin 30/0 (oba p < 0,001).
+- p = 2: S = 256 wobec S = 4096: Dynasearch 19/11 (p = 0,20), Motzkin 21/9 (p = 0,043), czyli więcej shotów
+  przy p = 2 nic nie daje (w 10 s to mniej ruchów).
+
+**Sirius wobec symulatora (12 instancji, gęste zawsze 1 ruch):**
+- Dynasearch, Sirius p = 3 wobec losowania z szumem (p = 0): 1/11 (p = 0,006); wobec symulatora z szumem
+  p = 3: 1/11 (p = 0,006). Motzkin p = 3: 5/6 i 3/9 (p = 0,15), nieistotne.
+- Sprzęt wobec modelu: p = 1 lepszy (Dynasearch 9/2, W9), p = 2 na równi (Dynasearch 6/5, Motzkin 5/4,
+  Fibonacci 4/5, Adjacent 2/4), p = 3 model zawyża (Dynasearch 1/11).
+- Przebiegi bez żadnej poprawy na Siriusie: Dynasearch 2/12 (p = 2) i 4/12 (p = 3), Motzkin 3/12 i 1/12,
+  liniowe 0/12.
+
+**Inne:**
+- Mediana PRD permutacji tożsamościowej (punkt startu tabeli 4): 40,33% (zakres 17,5–54,7) na 12 instancjach,
+  więc tabela 4 nie jest porównywalna z tabelą 3.
+- E1: 1440 okien, w 1195 optymalna energia jest ujemna; E4: 57 okien w każdym gęstym sąsiedztwie,
+  24 w Adjacent, 23 w Fibonaccim (razem 161).
+- Klasyczny fallback gęstych sąsiedztw (najlepsza pojedyncza zamiana, gdy żadne okno nic nie wybierze): nie dał
+  żadnego z pojedynczych ruchów symulatora z szumem i najwyżej jeden ruch na Siriusie (audyt K6 na wszystkich
+  60 ruchach gęstych, z H2).
+- Motzkin: tabela ILS ma niższą energię niż small dopiero od p = 3; przy p = 2 wyższą (421/423 okien,
+  sprawdzenie K4), stąd zdanie w wynikach ograniczone do Dynasearch przy p = 2.

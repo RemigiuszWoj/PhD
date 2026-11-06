@@ -137,8 +137,8 @@ def fig3(e1_all, lang):
     e4 = defaultdict(list)
     for r in rows("e4_window_noise.jsonl"):
         e4[(r["neigh"], r["table"], r["p"], r["mode"])].append(r)
-    lab = {"en": ("noiseless", "noisy (calibrated)", "noisy (thermal, inst. 0)", "best of 4096 optimal"),
-           "pl": ("bez szumu", "z szumem (skalibrowany)", "z szumem (termiczny, inst. 0)", "najlepsza z 4096 optymalna")}[lang]
+    lab = {"en": ("noiseless", "noisy (calibrated)", "noisy (thermal)", "best of 4096 optimal"),
+           "pl": ("bez szumu", "z szumem (skalibrowany)", "z szumem (termiczny)", "najlepsza z 4096 optymalna")}[lang]
     fig, axes = plt.subplots(1, 4, figsize=(WIDTH, 1.8), sharey=True)
     for ax, nb in zip(axes, NB):
         tb = best[nb]
@@ -308,7 +308,7 @@ def tab3(e5):
         lines.append(r"\addlinespace[1pt]")
     body = "\n".join(lines[:-1])
     for lang, labs in (("en", {"ideal": "noiseless", "noisy": "noisy sim.", "sirius": "Sirius"}),
-                       ("pl", {"ideal": "bez szumu", "noisy": "z szumem", "sirius": "Sirius"})):
+                       ("pl", {"ideal": "bez szumu", "noisy": "sym. z szumem", "sirius": "Sirius"})):
         out = body
         for k, v in labs.items():
             out = out.replace(f"{{LAB_{k}}}", v)

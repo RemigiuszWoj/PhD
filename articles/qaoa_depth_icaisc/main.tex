@@ -34,8 +34,7 @@ shots, lowers the median deviation from the lower bound from about 24\% to
 On a simulated 16-qubit star processor with calibrated noise the best depth
 of the dense neighborhoods is $p = 2$, and every further layer of about 150 two-qubit gates pushes the hit rate back
 towards uniform sampling. On the device itself, $p = 1$ behaves like uniform
-sampling.
-% H2: tu zdanie o p = 2 i 3 na Siriusie
+sampling, and two or three layers bring no gain.
 The source of the angles matters more than the depth, and the mean energy
 minimized in calibration is a poor proxy for hitting the optimum.
 \keywords{QAOA \and circuit depth \and flow shop \and neighborhood search \and fixed angles}
@@ -88,9 +87,9 @@ the best depth under the calibrated noise of a 16-qubit star processor.
 Finally, we carry the window results over to the makespan of iterated local
 search on Taillard instances with 20 jobs, with uniform sampling ($p = 0$)
 and the exact classical neighborhood search as references.
-% H2: tu zdanie o p = 2 i 3 na Siriusie
 The hardware runs at $p = 1$ come from an earlier campaign on the IQM Sirius
-processor~\cite{wojewodzki2026aciids}.
+processor~\cite{wojewodzki2026aciids}, and we repeat them on the same device
+at $p = 2$ and $p = 3$.
 
 \section{Related Work}
 
@@ -248,8 +247,12 @@ Linear neighborhoods run once per instance and dense ones five times. A noisy
 simulator needs minutes per circuit, so its wall time says nothing about the
 device; each noisy run therefore makes exactly as many moves as Sirius made
 in 10~s on the same instance at $p = 1$~\cite{wojewodzki2026aciids}. On the
-hardware ILS repeats that campaign at $p = 2$ and $p = 3$.
-% H2: zdanie prawdziwe dopiero po biegach na Siriusie (p = 2, 3)
+hardware ILS repeats that campaign at $p = 2$ and $p = 3$, once per instance,
+with the small-window table and, for Adjacent, the best table from the window
+study. The device calibration on the day of these runs (6~November~2026) was
+close to the one the simulator uses, with a median CZ error of 1.9\% against
+1.7\%. The runs at $p = 1$ are a month older and come from a different
+calibration.
 
 We measure quality by the deviation from the Taillard lower bound $LB$ in
 percent, $\mathrm{PRD} = 100\,(C_{\max} - LB)/LB$,
@@ -294,7 +297,11 @@ Table~\ref{tab:hw} are small. On the noisy simulator Dynasearch at $p = 2$
 again beats $p = 1$, on 11 of 12 instances. In Dynasearch at $p = 1$ the device does
 better than the simulator and about as well as uniform sampling, which
 suggests that the real noise is stronger than the calibrated model.
-\emph{[H2: whether the gain of $p = 2$ survives on Sirius.]}
+The gain of $p = 2$ does not survive on Sirius. In the linear neighborhoods
+two and three layers leave the median PRD almost unchanged. In the dense ones
+extra layers make it worse: Dynasearch at $p = 3$ is worse than at $p = 1$ on
+10 of 12 instances, and Motzkin gets worse with each layer, although with 12
+instances this trend is not significant.
 
 \begin{figure}[t]
 \centering
@@ -353,7 +360,7 @@ Neighborhood & $S$ & $p=0$ & $p=1$ & $p=2$ & $p=3$ & $p=6$ & $p=10$ & classical 
 
 \begin{table}[t]
 \caption{Median PRD [\%] on instances 0--3 after as many moves as Sirius
-made in 10~s ($S = 4096$; \textbf{?}: pending; --: not run).}
+made in 10~s ($S = 4096$; --: not run).}
 \label{tab:hw}
 \centering
 \begin{tabular}{llrrrrr}
@@ -377,12 +384,13 @@ uniform sampling).}
 
 A single QAOA layer is too weak for neighborhood search in the flow shop
 problem. Without noise, two layers find the optimal move in almost every
-dense window, and with noise $p = 2$ is also the best depth, because every
-further layer costs about 150 two-qubit gates. In the linear neighborhoods
-the windows are so small that uniform sampling does as well as QAOA. For
-dense neighborhoods we therefore recommend two layers and spending the rest
-of the budget on shots.
-% H2: zalecenie "dwie warstwy" opiera się na symulatorze; złagodzić, jeśli Sirius przy p = 2 nie pokaże zysku
+dense window, and with simulated noise $p = 2$ is also the best depth,
+because every further layer costs about 150 two-qubit gates. In the linear
+neighborhoods the windows are so small that uniform sampling does as well as
+QAOA. In simulation two layers are therefore the best choice for dense
+neighborhoods, with the rest of the budget spent on shots. On Sirius,
+however, extra layers bring no gain, so on current hardware a single layer is
+enough.
 The angles matter more than the depth, and calibrating them for the mean
 energy does not reward what local search needs.
 
@@ -390,8 +398,9 @@ We do not claim an advantage over classical computing: the exact classical
 search stays clearly better, and on the device ILS makes only one to three
 moves in 10~s. The study covers only 20 jobs and fixed angles, and the window
 energy is exact only when the swaps do not interact. The simulated device has
-no noise on idle qubits or on MOVE gates, which may explain why Sirius looked noisier than the
-simulator. Future work will calibrate the angles for the chance that the best
+no noise on idle qubits or on MOVE gates, which may explain why Sirius looked
+noisier than the simulator and why extra layers hurt more on the device: a
+dense circuit at $p = 3$ contains about 500 MOVE gates. Future work will calibrate the angles for the chance that the best
 sample is optimal and choose the depth per window.
 
 \subsubsection{Acknowledgements.} The authors used a large language model to

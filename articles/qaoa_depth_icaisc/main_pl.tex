@@ -38,8 +38,8 @@ skalibrowanym szumem najlepsza głębokość sąsiedztw gęstych to $p = 2$,
 a każda kolejna
 warstwa, licząca około 150 bramek dwukubitowych, zbliża trafienia
 z powrotem do poziomu losowania jednostajnego. Na samym urządzeniu $p = 1$
-zachowuje się jak losowanie jednostajne.
-% H2: tu zdanie o p = 2 i 3 na Siriusie
+zachowuje się jak losowanie jednostajne, a dwie lub trzy warstwy nie dają
+zysku.
 Pochodzenie kątów waży więcej niż głębokość, a średnia energia, którą
 minimalizuje kalibracja, słabo przewiduje trafianie optimum.
 \keywords{QAOA \and głębokość obwodu \and problem przepływowy \and przeszukiwanie sąsiedztwa \and kąty stałe}
@@ -94,9 +94,9 @@ shotów, i wyznaczamy najlepszą głębokość przy skalibrowanym szumie
 z okien na długość uszeregowania w iteracyjnym przeszukiwaniu lokalnym na
 instancjach Taillarda z 20 zadaniami. Punktami odniesienia są losowanie
 jednostajne ($p = 0$) i dokładne klasyczne przeszukiwanie sąsiedztwa.
-% H2: tu zdanie o p = 2 i 3 na Siriusie
 Przebiegi sprzętowe przy $p = 1$ pochodzą z wcześniejszej kampanii na
-procesorze IQM Sirius~\cite{wojewodzki2026aciids}.
+procesorze IQM Sirius~\cite{wojewodzki2026aciids}, a przy $p = 2$ i $p = 3$
+powtarzamy je na tym samym urządzeniu.
 
 \section{Przegląd literatury}
 
@@ -259,8 +259,12 @@ uruchamiamy raz na instancję, a gęste pięć razy. Symulator z szumem
 potrzebuje minut na obwód, więc jego czas nie mówi nic o urządzeniu; każdy
 przebieg z szumem wykonuje więc dokładnie tyle ruchów, ile Sirius wykonał
 w 10~s na tej samej instancji przy $p = 1$~\cite{wojewodzki2026aciids}. Na
-sprzęcie ILS powtarza tamtą kampanię dla $p = 2$ i $p = 3$.
-% H2: zdanie prawdziwe dopiero po biegach na Siriusie (p = 2, 3)
+sprzęcie ILS powtarza tamtą kampanię dla $p = 2$ i $p = 3$, raz na
+instancję, z tabelą z małych okien, a w Adjacent z najlepszą tabelą z badania
+okien. Kalibracja urządzenia w dniu tych przebiegów (6~listopada~2026) była
+bliska tej, której używa symulator: mediana błędu CZ wynosiła 1{,}9\% wobec
+1{,}7\%. Przebiegi przy $p = 1$ są o miesiąc starsze i pochodzą z innej
+kalibracji.
 
 Podajemy procentowe odchylenie względne
 $\mathrm{PRD} = 100\,(C_{\max} - LB)/LB$ od dolnego ograniczenia Taillarda
@@ -306,7 +310,11 @@ w tabeli~\ref{tab:hw} jest niewielka. Na symulatorze z szumem Dynasearch przy
 $p = 2$ znów wygrywa z $p = 1$, na 11 z 12 instancji. W Dynasearch przy $p = 1$ urządzenie
 radzi sobie lepiej niż symulator i mniej więcej tak samo jak losowanie
 jednostajne, co sugeruje, że prawdziwy szum jest silniejszy niż skalibrowany
-model. \emph{[H2: czy zysk z $p = 2$ utrzymuje się na Siriusie.]}
+model. Na Siriusie zysk z $p = 2$ się nie utrzymuje. W sąsiedztwach liniowych
+dwie i trzy warstwy prawie nie zmieniają mediany PRD. W gęstych kolejne
+warstwy ją pogarszają: Dynasearch przy $p = 3$ jest gorszy niż przy $p = 1$
+na 10 z 12 instancji, a Motzkin pogarsza się z każdą warstwą, choć przy 12
+instancjach ten trend nie jest istotny.
 
 \begin{figure}[t]
 \centering
@@ -366,7 +374,7 @@ Sąsiedztwo & $S$ & $p=0$ & $p=1$ & $p=2$ & $p=3$ & $p=6$ & $p=10$ & klasyczne \
 
 \begin{table}[t]
 \caption{Mediana PRD [\%] na instancjach 0--3 po tylu ruchach, ile Sirius
-wykonał w 10~s ($S = 4096$; \textbf{?}: w toku; --: nie uruchamiano).}
+wykonał w 10~s ($S = 4096$; --: nie uruchamiano).}
 \label{tab:hw}
 \centering
 \begin{tabular}{llrrrrr}
@@ -390,12 +398,13 @@ $p = 0$: losowanie jednostajne).}
 
 Jedna warstwa QAOA jest za słaba dla przeszukiwania sąsiedztwa w problemie
 przepływowym. Bez szumu dwie warstwy znajdują ruch optymalny prawie w każdym
-oknie gęstym, a z szumem $p = 2$ jest też najlepszą głębokością, bo każda
-kolejna warstwa kosztuje około 150 bramek dwukubitowych. W sąsiedztwach
-liniowych okna są tak małe, że losowanie jednostajne radzi sobie tak samo
-dobrze jak QAOA. Dla sąsiedztw gęstych zalecamy więc dwie warstwy
-i przeznaczenie reszty budżetu na shoty.
-% H2: zalecenie "dwie warstwy" opiera się na symulatorze; złagodzić, jeśli Sirius przy p = 2 nie pokaże zysku
+oknie gęstym, a z symulowanym szumem $p = 2$ jest też najlepszą głębokością,
+bo każda kolejna warstwa kosztuje około 150 bramek dwukubitowych.
+W sąsiedztwach liniowych okna są tak małe, że losowanie jednostajne radzi
+sobie tak samo dobrze jak QAOA. W symulacji dwie warstwy są więc najlepszym
+wyborem dla sąsiedztw gęstych, a resztę budżetu warto przeznaczyć na shoty.
+Na Siriusie kolejne warstwy nie dają jednak zysku, więc na obecnym sprzęcie
+wystarcza jedna warstwa.
 Kąty ważą więcej niż głębokość, a kalibracja na średnią energię nie nagradza
 tego, czego potrzebuje przeszukiwanie lokalne.
 
@@ -404,8 +413,10 @@ dokładne przeszukiwanie klasyczne pozostaje wyraźnie lepsze, a na urządzeniu
 ILS wykonuje w 10~s tylko od jednego do trzech ruchów. Badanie obejmuje tylko 20
 zadań i kąty stałe, a energia okna jest dokładna tylko wtedy, gdy zamiany na
 siebie nie wpływają. Symulowane urządzenie nie ma szumu na bezczynnych
-kubitach ani na bramkach MOVE, co może tłumaczyć, dlaczego Sirius wyglądał na bardziej
-zaszumionego niż symulator. W dalszych pracach kąty będą kalibrowane na
+kubitach ani na bramkach MOVE, co może tłumaczyć, dlaczego Sirius wyglądał
+na bardziej zaszumionego niż symulator i dlaczego kolejne warstwy bardziej
+szkodzą na urządzeniu: gęsty obwód przy $p = 3$ zawiera około 500 bramek
+MOVE. W dalszych pracach kąty będą kalibrowane na
 prawdopodobieństwo, że najlepsza próbka jest optymalna, a głębokość będzie
 dobierana dla każdego okna.
 

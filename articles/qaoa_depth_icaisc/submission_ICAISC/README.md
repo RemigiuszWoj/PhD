@@ -4,9 +4,9 @@
 **Termin:** 15.11.2026 (strona podaje „Paper submission deadline”); **wysyłka planowana do 13.11.2026**.
 Powiadomienie 28.02.2027, wersja finalna 25.03.2027 (tylko LaTeX).
 
-**STAN 01.11.2026: NIE WYSŁANE.** Brakuje H2 na Siriusie (tabela 4, zdania w miejscach `% H2` w main.tex).
-`abstrakt.txt` jest w wersji sprzed H2 — po dopisaniu zdania o H2 wygenerować go ponownie (limit LNCS
-150–250 słów; teraz 236, więc zdanie o H2 musi mieć najwyżej ~14 słów albo trzeba coś skrócić).
+**STAN 06.11.2026: NIE WYSŁANE.** H2 na Siriusie wpisane (tabela 4, zdania EN/PL); `abstrakt.txt`
+odświeżony (244 słowa, limit LNCS 150–250); `overleaf_source.zip` przebudowany. 10 stron, pdfinfo puste,
+fonty osadzone, bez Type 3.
 
 ## Wymagania ze strony ICAISC (sprawdzone 01.11.2026)
 - pełny artykuł Springer LNAI (llncs), „preferably around 12 pages” — mamy 10 ✔

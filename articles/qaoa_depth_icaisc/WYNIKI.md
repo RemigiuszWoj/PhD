@@ -282,3 +282,41 @@ Bez szumu przy tej samej liczbie ruchów (prefiks `move_log` z E5, S = 4096): Dy
    Dla H2: zysk z p = 2 na sprzęcie może być mniejszy, niż pokazuje symulator.
 4. Ziarna są odtwarzalne: łańcuch uruchamiał E5n z `PYTHONHASHSEED=0` (kod bez tego się nie uruchomi),
    a `abs(hash(key))` w Pythonie 3.11 z `.venv-iqm` daje dokładnie zapisane ziarna (sprawdzone 26.10).
+
+## W10. H2 — ILS na IQM Sirius przy p = 2 i 3
+
+Źródło: `measurements/h2_sirius_ils.jsonl` (96 przebiegów, 482 obwody, 06.11 8:44–9:10, konto PWR, 4096 shotów),
+log `logs/h2.log`. Ten sam protokół co kampania p = 1 z ACIIDS (`articles/gate_qaoa/measurements/
+sirius_full_taillard_ils.json`, 07.10): ILS 10 s od permutacji tożsamościowej, tai20_5/10/20, inst. 0–3, jeden
+przebieg na instancję. Tabele: small, w Adjacent big (H2_TABLE). Kalibracja z dnia biegów: zestaw 7d63b093,
+`data/iqm_sirius_calibration_20261106.json` (mediana CZ 1,9% wobec 1,7% w symulatorze z 23.10). Koszt 268,80 kr
+(p = 2 ≈ 0,538 kr/obwód, p = 3 ≈ 0,580). Ruchy w 10 s: gęste zawsze 1; Adjacent 1–3 (p = 2) i 2 (p = 3);
+Fibonacci 2–3 i 2.
+
+Mediana PRD po 12 instancjach (= tabela 4):
+
+| Sąsiedztwo | Sirius p=1 | Sirius p=2 | Sirius p=3 |
+|---|---|---|---|
+| Adjacent | 34,91 | 34,49 | 34,49 |
+| Fibonacci | 29,85 | 29,00 | 28,70 |
+| Dynasearch | 31,77 | 31,78 | **37,74** |
+| Motzkin | 32,07 | 34,59 | **37,72** |
+
+**Testy znaków** (wygrane/przegrane wyższego p, p dwustronne; p = 1 z pierwszego powtórzenia, jak w tabeli 4):
+- Adjacent: p2 vs p1 3/3, p3 vs p1 4/0 (p = 0,125), p3 vs p2 4/2 — różnice ≤ 0,4 pp.
+- Fibonacci: 5/4, 5/4, 4/4 — spadek mediany 29,85 → 28,70 nie jest zyskiem.
+- Dynasearch: p2 vs p1 3/3; **p3 vs p1 1/10 (p = 0,012)**; p3 vs p2 2/9 (p = 0,065).
+- Motzkin: p2 vs p1 2/6 (p = 0,29); p3 vs p1 2/9 (p = 0,065); p3 vs p2 4/7 (p = 0,55).
+- Z p = 1 uśrednionym po 5 powtórzeniach instancji 0 (gęste): Dynasearch 4/3, 1/10 (p = 0,012); Motzkin 3/5
+  (p = 0,73), 3/8 (p = 0,23). Wnioski bez zmian.
+
+**Wnioski z H2:**
+1. **Zysk z p = 2 z symulatora (W9: Dynasearch 11/1) nie przenosi się na sprzęt.** Przy p = 2 Sirius jest
+   na poziomie p = 1, które samo zachowuje się jak losowanie (W9.3).
+2. **W gęstych sąsiedztwach kolejne warstwy szkodzą**: Dynasearch p = 3 jest istotnie gorszy od p = 1,
+   Motzkin pogarsza się z każdą warstwą (trend nieistotny przy 12 instancjach).
+3. **Liniowe sąsiedztwa stoją w miejscu** — płytkie obwody (Fibonacci ok. 48 MOVE przy p = 3), a losowanie
+   i tak trafia większość optimów.
+4. Prawdopodobne wyjaśnienie: symulator nie ma szumu na MOVE i bezczynnych kubitach, a gęsty obwód przy
+   p = 3 ma ok. 440–540 MOVE (Motzkin/Dynasearch, mediany z H3). Zalecenie „dwie warstwy” zostaje
+   ograniczone do symulacji; na obecnym sprzęcie wystarcza p = 1.

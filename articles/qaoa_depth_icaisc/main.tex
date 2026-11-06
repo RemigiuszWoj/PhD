@@ -126,8 +126,8 @@ methods can match once the circuit is deep enough. Harrigan et
 al.~\cite{harrigan2021} ran QAOA on a superconducting processor and found
 that for problems whose graph does not match the chip, routing adds gates and
 the performance drops with problem size. Gnatowski et
-al.~\cite{gnatowski2026routing} gave an exact routing algorithm for star
-architectures, the topology of the processor used here.
+al.~\cite{gnatowski2026routing} gave an exact routing algorithm for the star
+topology of the processor used here.
 
 \section{Quantum Neighborhood Search}
 
@@ -163,8 +163,7 @@ Motzkin~\cite{wojewodzki2026soco} swap the end points of intervals and give
 a QUBO with pairwise conflicts. Dynasearch forbids overlapping intervals,
 while Motzkin also allows nested ones. We call Adjacent and Fibonacci the
 \emph{linear} neighborhoods, since they swap only neighboring jobs, and
-Dynasearch and Motzkin the \emph{dense} ones, since any two positions of a
-window can form a candidate.
+Dynasearch and Motzkin the \emph{dense} ones, since they swap any two positions.
 
 \begin{table}[t]
 \caption{The four neighborhoods ($F_{n+1}$, $M_n$: Fibonacci and Motzkin
@@ -199,8 +198,8 @@ neighborhoods a greedy pass goes over the selected swaps of all windows from
 left to right and drops every swap that conflicts with one kept before it,
 which also repairs an infeasible readout. ILS then applies the swaps that
 remain. If no window selects a swap in Dynasearch or Motzkin, ILS applies
-the best single improving interval swap of the whole permutation, which it
-finds classically.
+the best improving interval swap of the whole permutation, found
+classically.
 
 \section{QAOA at Depth $p$}
 
@@ -322,9 +321,9 @@ We compare two settings with a two-sided paired sign test over instances,
 which ignores ties, and call a difference significant at the 5\% level
 without correcting for the number of comparisons. The upper bounds reported for these
 instances~\cite{taillard1993} lie 1 to 26\% above $LB$ (median 8\%), so a PRD
-of about 9\% is already close to them. Every run has a
-seed derived from its configuration, which fixes the ILS perturbations and,
-without noise, also the shot sampling.
+of about 9\% is already close to them. Each run's
+seed comes from its configuration and fixes the ILS perturbations and,
+without noise, the sampling.
 
 \section{Results}
 
@@ -494,13 +493,13 @@ most one of those on Sirius, so it does not drive the results under noise.
 The missing noise on idle qubits and MOVE gates may explain why Sirius seemed
 noisier than the simulator and why extra layers hurt more on the device,
 since a dense circuit at $p = 3$ contains about 500 MOVE gates. Future work will
-calibrate the angles for the chance that the best sample is optimal, for
+calibrate the angles for the hit rate, for
 instance with the CVaR objective~\cite{barkoutsos2020cvar}, and choose the
 depth per window.
 
 \subsubsection{Use of AI Tools.} The authors used a large language model to
 help draft and edit parts of the text, write the experiment scripts and
-typeset the paper in LaTeX; the research, its results and their
+typeset the paper; the research, its results and their
 interpretation are entirely the authors' own.
 
 \bibliographystyle{splncs04}

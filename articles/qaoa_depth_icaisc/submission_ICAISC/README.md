@@ -6,11 +6,11 @@ Powiadomienie 28.02.2027, wersja finalna 25.03.2027 (tylko LaTeX).
 
 **STAN 06.11.2026 (wieczór): NIE WYSŁANE.** Po 8 rundach krytyka (EN/PL, wersja PL napisana od nowa
 zgodnie z EN) tekst wprowadzony; `abstrakt.txt` odświeżony (249 słów, limit LNCS 150–250);
-`overleaf_source.zip` przebudowany. 13 stron (strona prosi o ok. 12, do skrócenia przy formatowaniu),
+`overleaf_source.zip` przebudowany. 12 stron EN (po 6 skrótach 06.11; PL zostaje 13; wersja z nazwiskami 13 przez blok autorów),
 pdfinfo puste, fonty osadzone, bez Type 3.
 
 ## Wymagania ze strony ICAISC (sprawdzone 01.11.2026)
-- pełny artykuł Springer LNAI (llncs), „preferably around 12 pages” — mamy 13 (do skrócenia)
+- pełny artykuł Springer LNAI (llncs), „preferably around 12 pages” — mamy 12 (EN)
 - recenzja **dwustronnie ślepa**: anonimowy PDF + źródła **z nazwiskami**
 - strona prosi, by nie ujawniać autorów w podziękowaniach, linkach i bibliografii („self-references where
   possible”) — u nas własne prace w 3. osobie; trzy pozycje „under review” z nazwiskami (decyzja 24.10, wariant b)

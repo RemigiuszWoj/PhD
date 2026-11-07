@@ -68,6 +68,7 @@ def main():
     ap.add_argument("--day", default=time.strftime("%Y-%m-%d"))
     ap.add_argument("--max-circuits", type=int, default=None, help="send only the first N of the remaining")
     ap.add_argument("--p", type=int, choices=P_H3, default=None, help="send only circuits of this depth")
+    ap.add_argument("--account", choices=("pwr", "private"), default="pwr")
     args = ap.parse_args()
 
     rows = _rows()
@@ -90,7 +91,7 @@ def main():
     from iqm.qiskit_iqm import transpile_to_IQM
 
     load_dotenv(args.env)
-    if os.environ.get("IQM_PWR_TOKEN"):                          # university account, as in ACIIDS and H2
+    if args.account == "pwr":                                    # university account, as in ACIIDS and H2
         os.environ["IQM_TOKEN"] = os.environ["IQM_PWR_TOKEN"]
     os.environ["IQM_COMPUTER"] = "sirius"
     from src.neighborhoods.gate_qaoa import solve as S
@@ -116,6 +117,7 @@ def main():
                                   "p": r["p"], "K": r["K"], "variables": r["variables"], "shots": SHOTS,
                                   "counts": got, "compiled": _compiled(c, hw), "job_id": job.job_id(),
                                   "calibration_set_id": sorted(cal), "timeline": timeline,
+                                  "account": args.account,
                                   "wall_s": round(time.time() - t0, 1)}) + "\n")
     print(f"{len(tc)} circuits -> {OUT} (calibration set {sorted(cal)}, "
           f"{time.time() - t0:.0f} s)", flush=True)

@@ -48,8 +48,7 @@ def latest_snapshot() -> Path:
 def relaxation_kraus(t1: float, t2: float, t: float):
     """Kraus operators of amplitude damping (T1) followed by pure dephasing, so
     that populations relax with T1 and coherences decay as exp(-t / T2)."""
-    if t2 > 2 * t1:
-        raise ValueError(f"T2 = {t2} > 2 T1 = {2 * t1}")
+    t2 = min(t2, 2 * t1)                               # a measured T2 can exceed 2 T1 within its error bar
     gamma = 1.0 - np.exp(-t / t1)
     rate_phi = 1.0 / t2 - 1.0 / (2.0 * t1)
     lam = 1.0 - np.exp(-2.0 * t * rate_phi)            # phase damping: coherence x sqrt(1 - lam)

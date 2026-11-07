@@ -28,6 +28,7 @@ error probability get ``pauli_total(lambda, n) = lambda (4^n - 1) / 4^n``.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from statistics import median
 
@@ -39,6 +40,8 @@ GATES = {"r": "prx", "cz": "cz", "move": "move"}
 
 
 def latest_snapshot() -> Path:
+    if os.environ.get("ANNSIM_SNAPSHOT"):             # pin a run to one snapshot (T5 and stage 3: 20261023)
+        return REPO / "data" / os.environ["ANNSIM_SNAPSHOT"]
     files = sorted((REPO / "data").glob("iqm_sirius_calibration_*.json"))
     if not files:
         raise FileNotFoundError("no Sirius calibration snapshot in data/")

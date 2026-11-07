@@ -20,7 +20,18 @@ Noise Scenarios against a 16-Qubit Star Processor}
 \maketitle
 
 \begin{abstract}
-\tofill{Draft: the abstract is written after the results.}
+Simulators carry most of the development of algorithms for noisy quantum processors, but whether they
+predict what a device does is rarely tested on the task the simulation stands for. We feed nine freely
+available circuit simulators with the calibration of IQM Sirius, a 16-qubit processor with a star-shaped
+topology, and compare their predictions with the device on fixed-angle QAOA that selects moves in iterated
+local search for the permutation flow shop problem. Three noise scenarios range from a noiseless circuit
+through depolarizing gate and readout errors to added relaxation during gates. The engines that can run a
+scenario agree with one another within sampling noise, so the choice among them is a matter of cost: only
+trajectory simulators reach all 16 qubits with noise, and Qulacs does so fastest. On whole search runs, the
+simulators with relaxation reproduce the schedules of the device within its own run-to-run spread. On
+single circuits they do not: the simulated output distributions differ from the measured ones about ten
+times more than the device differs from itself between two days, and at depth one the device even
+outperforms the noiseless simulation, which points to relaxation of idle qubits that no scenario models.
 \end{abstract}
 
 \section{Introduction}
@@ -46,8 +57,10 @@ increasing detail. We separate the effect of the simulation engine from that
 of the compiler, compare simulated and measured outcomes both at the level of
 single circuits and at the level of the final schedule, and bound every
 comparison by the agreement of the hardware with itself. We also report what
-each simulator costs and where it stops working. \tofill{One sentence with the
-main finding once the results are in.}
+each simulator costs and where it stops working. The simulators agree with each
+other and with the device on the outcome of the search but not on what a single
+circuit measures, so a simulator validated on the final schedule cannot be
+trusted to predict output distributions.
 
 \section{Background}
 
@@ -191,25 +204,25 @@ We add three things: many simulators fed with the same calibration, a star
 processor, and a comparison on the outcome of an optimization task.
 
 \begin{table}[t]
-\caption{Simulators. Noisy method from the documentation; the last two
-columns come from our measurements (stage 1).}
+\caption{The table lists the noisy method of each simulator according to its
+documentation. The measured limits are in Table~\ref{tab:t6}.}
 \label{tab:sims}
 \centering
 \small
-\begin{tabular}{llllcc}
+\begin{tabular}{llll}
 \toprule
-Simulator & Noisy method & IQM compiler & License & max qubits, noisy & s / circuit \\
+Simulator & Noisy method & IQM compiler & License \\
 \midrule
-Qiskit Aer & trajectories, density matrix & qiskit-iqm & Apache-2.0 & \tofill{?} & \tofill{?} \\
-Cirq + qsim & trajectories & IQM client (Cirq) & Apache-2.0 & \tofill{?} & \tofill{?} \\
-Qulacs & probabilistic gates, Kraus & via TKET & MIT & \tofill{?} & \tofill{?} \\
-MQT DDSIM & decision diagrams & --- & MIT & \tofill{?} & \tofill{?} \\
-Qibo & density matrix & --- & Apache-2.0 & \tofill{?} & \tofill{?} \\
-CUDA-Q (CPU) & density matrix & --- & Apache-2.0 & \tofill{?} & \tofill{?} \\
-PennyLane & density matrix & --- & Apache-2.0 & \tofill{?} & \tofill{?} \\
-Braket (local) & density matrix & --- & Apache-2.0 & \tofill{?} & \tofill{?} \\
-QuTiP & master equation (pulses) & --- & BSD-3 & \tofill{?} & \tofill{?} \\
-Stim & stabilizer only & --- & Apache-2.0 & n/a & n/a \\
+Qiskit Aer & trajectories, density matrix & qiskit-iqm & Apache-2.0 \\
+Cirq + qsim & trajectories & IQM client (Cirq) & Apache-2.0 \\
+Qulacs & probabilistic gates, Kraus & via TKET & MIT \\
+MQT DDSIM & decision diagrams & --- & MIT \\
+Qibo & density matrix & --- & Apache-2.0 \\
+CUDA-Q (CPU) & density matrix & --- & Apache-2.0 \\
+PennyLane & density matrix & --- & Apache-2.0 \\
+Braket (local) & density matrix & --- & Apache-2.0 \\
+QuTiP & master equation (pulses) & --- & BSD-3 \\
+Stim & stabilizer only & --- & Apache-2.0 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -224,32 +237,34 @@ matrix. S3 adds amplitude and phase damping during each gate. On Sirius,
 relaxation alone exceeds the measured error of most gates (median CZ error
 0.0167 measured against 0.0205 implied by $T_1$ and $T_2$), so S3 bounds the
 noise from above. Neither scenario models idle qubits; every simulator applies
-noise during gates only. DDSIM receives S2 and S3 with averaged rates.
+noise during gates only. The noise simulators of DDSIM fail already on noiseless
+circuits, so DDSIM runs S1 only.
 
 \paragraph{Two tracks.}
-In track A every simulator runs the same compiled circuit, exported as
-OpenQASM with MOVE written as a swap between a qubit and the resonator, so any
-difference comes from the engine and its channels. In track B the same logical
-circuit passes through three compilers (the IQM adapters for Qiskit and Cirq
-and TKET) and runs in one engine, so differences come from compilation.
+In track A every simulator runs the same compiled circuit, exported as a list
+of native gates with MOVE written as a swap between a qubit and the resonator,
+so any difference comes from the engine and its channels. In track B the same
+logical circuit passes through two compilers (the IQM adapters for Qiskit and
+Cirq) and runs in one engine, so differences come from compilation.
 
 \paragraph{Hardware references.}
 Table~\ref{tab:hw} lists the device data. Run-level comparisons use iterated
-local search on Sirius at $p = 1$ from an earlier campaign~\cite{wojewodzki2026aciids}
-and at $p = 2, 3$ \tofill{H2}. Circuit-level comparisons need histograms of
-single windows; a small run on two different days \tofill{H3} gives them and
-measures how well the device agrees with itself.
+local search on Sirius at $p = 1$ from an earlier campaign~\cite{wojewodzki2026aciids}.
+Circuit-level comparisons need histograms of single windows. H3 runs the 84
+circuits of the first move of tai20 instance 0 at $p = 1, 2$ on two days (6 and
+7 November 2026), 4096 shots each, and the simulators replay the compiled
+circuits with the calibration of the same day.
 
 \paragraph{Metrics.}
-For single windows we compare output distributions by total variation distance
-and Hellinger distance and report the probability of sampling the optimal move
-and whether the lowest-energy of 4096 samples is optimal. Two independent
-4096-shot samples of one distribution never agree exactly; we estimate that
-floor by bootstrap and the hardware floor from the two days of H3. For whole
-runs we compare the relative deviation of the makespan from the Taillard lower
-bound after the same number of moves as the device made, with a paired sign
-test and Kendall's $\tau$ over instances. Cost is wall time per circuit and
-peak memory.
+For single circuits we compare the mean QUBO energy of the samples, normalised
+so that 0 is the optimum and 1 the worst assignment, and whether the optimal
+move is sampled at all. The total variation distance is reported as well, but
+with 4096 shots over up to $2^{15}$ outcomes it mostly measures sampling noise.
+The hardware floor is the difference between the two days of H3. For whole runs
+we compare the relative deviation of the makespan from the Taillard lower bound
+after as many moves as the device made, with the Wilcoxon signed-rank test,
+Holm's correction and a bootstrap interval over instances; repeated device runs
+give the floor. Cost is wall time per circuit and peak memory.
 
 \section{Experimental Setup}
 
@@ -257,10 +272,9 @@ The study runs in three stages. First, every simulator is installed and
 tested on one window. Second, all simulators that can run a scenario do so on
 the windows of instances 0--3 of the Taillard classes with $n = 20$ jobs: 161
 windows with an improving move, of which 71 hold at most 11 variables and fit
-the density-matrix simulators. Third, the two or three simulators that best
-predict the device at acceptable cost run the full Taillard set ($n = 20$ to
-$500$), against the $p = 1$ hardware data available for all twelve classes. We
-fix the selection criteria before the second stage.
+the density-matrix simulators. Third, qsim and Qulacs, the two simulators that
+run all 16 qubits with noise at the lowest cost, replay the 153 device runs with
+$n = 50$ to $500$ in scenario S2.
 
 \begin{table}[t]
 \caption{Hardware data used as reference.}
@@ -272,8 +286,8 @@ fix the selection criteria before the second stage.
 Device & Experiment & Scope & Status \\
 \midrule
 IQM Sirius & ILS, $p = 1$, 10 s, 4096 shots & 12 classes ($n = 20$--$500$), inst.\ 0--3; 225 runs & done (7--14 Oct 2026) \\
-IQM Sirius & ILS, $p = 2, 3$ (H2) & $n = 20$, inst.\ 0--3; 96 runs & \tofill{planned} \\
-IQM Sirius & window histograms (H3), two days & tai20, inst.\ 0, $p = 1, 2$ & \tofill{optional} \\
+IQM Sirius & ILS, $p = 2, 3$ (H2) & $n = 20$, inst.\ 0--3; 96 runs & done (Nov 2026), not used here \\
+IQM Sirius & window histograms (H3), two days & tai20, inst.\ 0, $p = 1, 2$ & done (6--7 Nov 2026) \\
 IBM Heron (ibm\_fez) & one move per run, $p = 1$ & tai20\_5, inst.\ 0--9 & done (Aug 2026) \\
 IQM Garnet, Emerald & one move per run, $p = 1$ & tai20\_5, inst.\ 0 & done (Sept--Oct 2026) \\
 \bottomrule
@@ -282,33 +296,74 @@ IQM Garnet, Emerald & one move per run, $p = 1$ & tai20\_5, inst.\ 0 & done (Sep
 
 \section{Results}
 
-\tofill{Draft: written after stages 1--3.}
+Every simulator that supports a scenario reproduces the same distributions. The
+exact methods agree to machine precision, and the sampled ones stay within the
+shot-noise floor in all but the few percent of windows expected by chance. The
+exceptions are cases where a program fails: the noise simulators of DDSIM return
+wrong distributions even without noise and crash on larger windows, the
+trajectory method of Aer stops with an error once S3 adds relaxation, and the
+noise simulator of Qulacs never applies amplitude damping. The choice of engine
+therefore does not change the prediction, only its cost.
+
+Figure~\ref{fig:cost} and Table~\ref{tab:t6} show that cost. The density-matrix
+simulators stop at nine to thirteen qubits within 300\,s per circuit, while the
+trajectory methods of qsim and Qulacs run all 16 qubits of Sirius with noise.
+Qulacs is the fastest program at every size. Its explicit loop over shots needs
+only the memory of a pure state, whereas its built-in noise simulator is
+slightly faster but needs gigabytes and gets S3 wrong. The trajectories of Qibo
+are correct but one to two orders of magnitude slower.
+
+The compiler matters more than the engine. The IQM adapter for Cirq compiles the
+same circuits with the same number of CZ gates as the adapter for Qiskit but
+with 30 to 60\,\% more MOVE gates (Table~\ref{tab:compilers}), and at $p = 2$
+the extra noise lowers how often the lowest-energy sample is the optimal move.
+
+On whole ILS runs with the move budget of the device, the scenario with
+relaxation cannot be told apart from Sirius for either simulator
+(Figure~\ref{fig:prd}, Table~\ref{tab:t5}). The mean deviation from the lower
+bound differs by less than half a percentage point, well inside the spread
+between two runs of the device. Without relaxation, qsim gives significantly
+worse schedules than the device, and Qulacs points the same way without reaching
+significance. \tofill{stage 3: one or two sentences on $n = 50$--$500$.}
+
+Single circuits do not show this agreement. The device reproduces itself
+closely, since the mean energy of a circuit changes by less than 0.01 between
+the two days, but every simulator in every scenario misses it by about ten times
+as much (Figure~\ref{fig:h3}, Table~\ref{tab:h3}). At $p = 1$ the device does
+better than the noiseless simulation: it samples the optimal move in 79 of 84
+histograms, against 46 in S1, and its samples contain fewer ones. The optimal
+move sets few variables to one, so a drift of the qubits towards their ground
+state favours it, which is what relaxation of idle qubits would cause. At
+$p = 2$ the scenarios S2 and S3 match the mean energy over all circuits but
+flatten the differences between circuits that the device shows.
 
 \begin{table}[t]
-\caption{Track B: gates per window after compilation (median), $p = 1$.}
+\caption{The table gives the median number of CZ and MOVE gates per window
+after compilation ($p = 1$, 161 windows).}
 \label{tab:compilers}
 \centering
 \small
-\begin{tabular}{lccc}
+\begin{tabular}{lcc}
 \toprule
-Neighborhood & qiskit-iqm (CZ / MOVE) & IQM Cirq (CZ / MOVE) & TKET (CZ / MOVE) \\
+Neighborhood & qiskit-iqm (CZ / MOVE) & IQM Cirq (CZ / MOVE) \\
 \midrule
-Adjacent & 72 / \tofill{?} & \tofill{?} & \tofill{?} \\
-Fibonacci & 15 / \tofill{?} & \tofill{?} & \tofill{?} \\
-Dynasearch & 164 / \tofill{?} & \tofill{?} & \tofill{?} \\
-Motzkin & 134 / \tofill{?} & \tofill{?} & \tofill{?} \\
+Adjacent & 72 / 72 & 72 / 92 \\
+Fibonacci & 16 / 16 & 16 / 20 \\
+Dynasearch & 164 / 178 & 164 / 286 \\
+Motzkin & 134 / 144 & 134 / 214 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{figure}[t]
 \centering
-\fbox{\parbox[c][3.5cm][c]{0.9\textwidth}{\centering \tofill{Figure: total
-variation distance to Sirius, simulator $\times$ scenario (heat map), with the
-shot-noise floor and the hardware day-to-day floor.}}}
-\caption{Agreement of each simulator and scenario with the device on single windows.}
-\label{fig:heat}
+\includegraphics[width=0.8\textwidth]{figures/h3_energy.pdf}
+\caption{Each point is one H3 circuit on one day. The grey band shows the mean
+difference between the two days on Sirius.}
+\label{fig:h3}
 \end{figure}
+
+\input{measurements/h3_table}
 
 \begin{figure}[t]
 \centering
@@ -332,12 +387,24 @@ of Sirius.}
 
 \input{measurements/t6_table}
 
-\section{Discussion}
-\tofill{Draft: which simulator for which purpose; limitations: resonator modeled
-as a qubit, no idle noise, one calibration snapshot, $n = 20$ core.}
+\section{Discussion and Conclusions}
 
-\section{Conclusions}
-\tofill{Draft.}
+For a study like this one, any trajectory simulator predicts the outcome of the
+optimization as well as a second run on the device would, provided that its
+noise model includes relaxation, and Qulacs does so at the lowest cost. The
+agreement owes much to the readout of the search, which keeps the best of 4096
+samples and is insensitive to the shape of the distribution. The same simulators
+fail once the question concerns the distribution itself, such as the probability
+of the optimal move or the effect of depth, and there the device behaves in ways
+no scenario predicts. The most likely missing ingredient is noise on idle
+qubits: on a star processor every two-qubit gate passes through the resonator,
+so most qubits wait during most of the circuit.
+
+These conclusions have limits. The run-level simulations use one calibration
+snapshot, all noise models treat the resonator as a qubit, the circuit-level data cover one instance
+class at two depths, and the run-level comparison beyond $n = 20$ rests on
+\tofill{stage 3}. The next step is a scenario with idle noise built from the
+timing of the compiled circuits and tested against the same histograms.
 
 \bibliographystyle{plain}
 \bibliography{references}

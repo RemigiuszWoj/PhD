@@ -1,0 +1,21 @@
+\begin{table}[t]
+\caption{The table compares the mean normalised QUBO energy (0 is the optimum) of the 84 H3 circuits on two days. $|\Delta E|$ is the mean per-circuit difference from Sirius, which differs from itself by 0.006--0.008 between the days.}
+\label{tab:h3}
+\centering
+\small
+\begin{tabular}{clccccc}
+\toprule
+$p$ & Source & $E$ qsim & $E$ Qulacs & $|\Delta E|$ & optimum sampled & ones \\
+\midrule
+1 & Sirius & \multicolumn{2}{c}{0.118} & 0.006 & 79/84 & 3.20 \\
+ & S1 (noiseless) & 0.199 & 0.200 & 0.081 & 46/84 & 4.69 \\
+ & S2 & 0.214 & 0.214 & 0.096 & 43/84 & 4.95 \\
+ & S3 & 0.199 & 0.198 & 0.081 & 47/84 & 4.75 \\
+\midrule
+2 & Sirius & \multicolumn{2}{c}{0.177} & 0.008 & 71/84 & 4.25 \\
+ & S1 (noiseless) & 0.082 & 0.082 & 0.100 & 82/84 & 2.26 \\
+ & S2 & 0.182 & 0.182 & 0.054 & 65/84 & 4.55 \\
+ & S3 & 0.182 & 0.183 & 0.055 & 70/84 & 4.57 \\
+\bottomrule
+\end{tabular}
+\end{table}

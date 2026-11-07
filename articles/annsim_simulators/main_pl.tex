@@ -22,7 +22,24 @@ gwiazdy}
 \maketitle
 
 \begin{abstract}
-\tofill{Szkic: streszczenie powstanie po wynikach.}
+Symulatory niosą większość pracy nad algorytmami dla zaszumionych procesorów
+kwantowych, ale rzadko sprawdza się, czy przewidują zachowanie urządzenia
+w zadaniu, które symulacja zastępuje. Dziewięć darmowych symulatorów obwodów
+dostaje kalibrację IQM Sirius, 16-kubitowego procesora o topologii gwiazdy,
+i porównujemy ich przewidywania z urządzeniem na QAOA o stałych kątach, które
+wybiera ruchy w iteracyjnym przeszukiwaniu lokalnym dla permutacyjnego
+problemu przepływowego. Trzy scenariusze szumu prowadzą od obwodu bez szumu
+przez błędy depolaryzujące bramek i odczytu do dodanej relaksacji w czasie
+bramek. Silniki, które obsługują dany scenariusz, zgadzają się ze sobą
+w granicach szumu próbkowania, więc wybór między nimi jest kwestią kosztu:
+tylko symulatory trajektoriowe obejmują z szumem wszystkie 16 kubitów,
+a najszybciej robi to Qulacs. Na całych przebiegach przeszukiwania symulatory
+z relaksacją odtwarzają uszeregowania urządzenia w granicach jego własnego
+rozrzutu między przebiegami. Na pojedynczych obwodach już nie: rozkłady
+z symulacji różnią się od zmierzonych mniej więcej dziesięć razy bardziej niż
+urządzenie samo od siebie między dwoma dniami, a przy głębokości jeden
+urządzenie wypada nawet lepiej niż symulacja bez szumu, co wskazuje na
+relaksację kubitów w bezczynności, której nie modeluje żaden scenariusz.
 \end{abstract}
 
 \section{Wstęp}
@@ -49,8 +66,10 @@ szumu o rosnącej szczegółowości. Oddzielamy wpływ silnika symulacji od wpł
 kompilatora, porównujemy wyniki symulowane z mierzonymi zarówno dla
 pojedynczych obwodów, jak i dla końcowego harmonogramu, a każde porównanie
 ograniczamy zgodnością sprzętu z samym sobą. Podajemy też koszt każdego
-symulatora i miejsce, w którym przestaje działać. \tofill{Jedno zdanie
-z głównym wynikiem po zakończeniu badań.}
+symulatora i miejsce, w którym przestaje działać. Symulatory zgadzają się ze
+sobą i z urządzeniem co do wyniku przeszukiwania, ale nie co do tego, co
+mierzy pojedynczy obwód, więc symulatorowi sprawdzonemu na końcowym
+uszeregowaniu nie można ufać w przewidywaniu rozkładów wyników.
 
 \section{Tło}
 
@@ -198,25 +217,25 @@ kalibracją, procesor o topologii gwiazdy i porównanie na wyniku zadania
 optymalizacyjnego.
 
 \begin{table}[t]
-\caption{Symulatory. Metoda z szumem według dokumentacji; dwie ostatnie
-kolumny pochodzą z naszych pomiarów (etap 1).}
+\caption{Tabela podaje metodę z szumem każdego symulatora według jego
+dokumentacji. Zmierzone granice podaje tabela~\ref{tab:t6}.}
 \label{tab:sims}
 \centering
 \small
-\begin{tabular}{llllcc}
+\begin{tabular}{llll}
 \toprule
-Symulator & Metoda z szumem & Kompilator IQM & Licencja & maks.\ kubitów z szumem & s / obwód \\
+Symulator & Metoda z szumem & Kompilator IQM & Licencja \\
 \midrule
-Qiskit Aer & trajektorie, macierz gęstości & qiskit-iqm & Apache-2.0 & \tofill{?} & \tofill{?} \\
-Cirq + qsim & trajektorie & klient IQM (Cirq) & Apache-2.0 & \tofill{?} & \tofill{?} \\
-Qulacs & bramki probab., Kraus & przez TKET & MIT & \tofill{?} & \tofill{?} \\
-MQT DDSIM & diagramy decyzyjne & --- & MIT & \tofill{?} & \tofill{?} \\
-Qibo & macierz gęstości & --- & Apache-2.0 & \tofill{?} & \tofill{?} \\
-CUDA-Q (CPU) & macierz gęstości & --- & Apache-2.0 & \tofill{?} & \tofill{?} \\
-PennyLane & macierz gęstości & --- & Apache-2.0 & \tofill{?} & \tofill{?} \\
-Braket (lokalnie) & macierz gęstości & --- & Apache-2.0 & \tofill{?} & \tofill{?} \\
-QuTiP & równania master (impulsy) & --- & BSD-3 & \tofill{?} & \tofill{?} \\
-Stim & tylko stabilizatory & --- & Apache-2.0 & nd. & nd. \\
+Qiskit Aer & trajektorie, macierz gęstości & qiskit-iqm & Apache-2.0 \\
+Cirq + qsim & trajektorie & klient IQM (Cirq) & Apache-2.0 \\
+Qulacs & bramki probab., Kraus & przez TKET & MIT \\
+MQT DDSIM & diagramy decyzyjne & --- & MIT \\
+Qibo & macierz gęstości & --- & Apache-2.0 \\
+CUDA-Q (CPU) & macierz gęstości & --- & Apache-2.0 \\
+PennyLane & macierz gęstości & --- & Apache-2.0 \\
+Braket (lokalnie) & macierz gęstości & --- & Apache-2.0 \\
+QuTiP & równania master (impulsy) & --- & BSD-3 \\
+Stim & tylko stabilizatory & --- & Apache-2.0 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -231,34 +250,37 @@ pomyłek odczytu. S3 dodaje tłumienie amplitudy i fazy w czasie każdej bramki.
 Na Siriusie sama relaksacja przekracza zmierzony błąd większości bramek
 (mediana błędu CZ: zmierzona 0,0167 wobec 0,0205 wynikającej z $T_1$ i $T_2$),
 więc S3 ogranicza szum od góry. Żaden scenariusz nie modeluje bezczynnych
-kubitów; każdy symulator stosuje szum tylko w czasie bramek. DDSIM dostaje S2
-i S3 z uśrednionymi wartościami.
+kubitów; każdy symulator stosuje szum tylko w czasie bramek. Symulatory szumu
+DDSIM zawodzą już na obwodach bez szumu, więc DDSIM liczy tylko S1.
 
 \paragraph{Dwa tory.}
 W torze A każdy symulator wykonuje ten sam skompilowany obwód, wyeksportowany
-do OpenQASM z bramką MOVE zapisaną jako zamiana między kubitem a rezonatorem,
-więc każda różnica pochodzi z silnika i jego kanałów. W torze B ten sam obwód
-logiczny przechodzi przez trzy kompilatory (adaptery IQM dla Qiskita i Cirqa
-oraz TKET) i wykonuje się w jednym silniku, więc różnice pochodzą z kompilacji.
+jako lista bramek natywnych z bramką MOVE zapisaną jako zamiana między kubitem
+a rezonatorem, więc każda różnica pochodzi z silnika i jego kanałów. W torze B
+ten sam obwód logiczny przechodzi przez dwa kompilatory (adaptery IQM dla
+Qiskita i Cirqa) i wykonuje się w jednym silniku, więc różnice pochodzą
+z kompilacji.
 
 \paragraph{Odniesienie sprzętowe.}
 Tabela~\ref{tab:hw} wymienia dane z urządzeń. Porównania na poziomie
 przebiegów korzystają z iteracyjnego przeszukiwania lokalnego na Siriusie przy
-$p = 1$ z wcześniejszej kampanii~\cite{wojewodzki2026aciids} oraz przy
-$p = 2, 3$ \tofill{H2}. Porównania na poziomie obwodów wymagają histogramów
-pojedynczych okien; daje je mały bieg w dwa różne dni \tofill{H3}, który
-mierzy też zgodność urządzenia z samym sobą.
+$p = 1$ z wcześniejszej kampanii~\cite{wojewodzki2026aciids}. Porównania na
+poziomie obwodów wymagają histogramów pojedynczych okien. Bieg H3 wykonuje 84
+obwody pierwszego ruchu instancji 0 klasy tai20 przy $p = 1, 2$ w dwa dni
+(6 i 7 listopada 2026), po 4096 shotów, a symulatory odtwarzają skompilowane
+obwody z kalibracją z tego samego dnia.
 
 \paragraph{Miary.}
-Dla pojedynczych okien porównujemy rozkłady wyników odległością całkowitej
-zmienności i odległością Hellingera oraz podajemy prawdopodobieństwo
-wylosowania ruchu optymalnego i to, czy najlepsza z 4096 próbek jest
-optymalna. Dwie niezależne próby po 4096 shotów z tego samego rozkładu nigdy
-nie zgadzają się dokładnie; tę podłogę szacujemy metodą bootstrap, a podłogę
-sprzętową z dwóch dni biegu H3. Dla całych przebiegów porównujemy względne
-odchylenie długości uszeregowania od dolnego ograniczenia Taillarda po tej
-samej liczbie ruchów, jaką wykonało urządzenie, testem znaków par i $\tau$
-Kendalla po instancjach. Koszt to czas na obwód i szczytowa pamięć.
+Dla pojedynczych obwodów porównujemy średnią energię QUBO próbek,
+znormalizowaną tak, że 0 to optimum, a 1 najgorsze przypisanie, oraz to, czy
+ruch optymalny w ogóle pojawia się w próbce. Podajemy też odległość
+całkowitej zmienności, ale przy 4096 shotach i do $2^{15}$ możliwych wynikach
+mierzy ona głównie szum próbkowania. Podłogą sprzętową jest różnica między
+dwoma dniami biegu H3. Dla całych przebiegów porównujemy względne odchylenie
+długości uszeregowania od dolnego ograniczenia Taillarda po tej samej liczbie
+ruchów, jaką wykonało urządzenie, testem Wilcoxona dla par z poprawką Holma
+i przedziałem bootstrap po instancjach; podłogę dają powtórzone przebiegi
+urządzenia. Koszt to czas na obwód i szczytowa pamięć.
 
 \section{Plan eksperymentów}
 
@@ -267,10 +289,9 @@ i sprawdzany na jednym oknie. Następnie wszystkie symulatory, które mogą
 wykonać dany scenariusz, liczą okna instancji 0--3 klas Taillarda
 z $n = 20$ zadaniami: 161 okien z ruchem poprawiającym, z których 71 ma co
 najwyżej 11 zmiennych i mieści się w symulatorach macierzy gęstości. Na końcu
-dwa lub trzy symulatory, które najlepiej przewidują urządzenie przy
-akceptowalnym koszcie, liczą pełny zbiór Taillarda ($n = 20$ do $500$) wobec
-danych sprzętowych dla $p = 1$, dostępnych dla wszystkich dwunastu klas.
-Kryteria wyboru ustalamy przed drugim etapem.
+qsim i Qulacs, czyli dwa symulatory, które najtaniej obejmują z szumem
+wszystkie 16 kubitów, odtwarzają 153 przebiegi urządzenia dla $n = 50$ do
+$500$ w scenariuszu S2.
 
 \begin{table}[t]
 \caption{Dane sprzętowe użyte jako odniesienie.}
@@ -282,8 +303,8 @@ Kryteria wyboru ustalamy przed drugim etapem.
 Urządzenie & Eksperyment & Zakres & Stan \\
 \midrule
 IQM Sirius & ILS, $p = 1$, 10 s, 4096 shotów & 12 klas ($n = 20$--$500$), inst.\ 0--3; 225 przebiegów & zrobione (7--14.10.2026) \\
-IQM Sirius & ILS, $p = 2, 3$ (H2) & $n = 20$, inst.\ 0--3; 96 przebiegów & \tofill{planowane} \\
-IQM Sirius & histogramy okien (H3), dwa dni & tai20, inst.\ 0, $p = 1, 2$ & \tofill{opcjonalne} \\
+IQM Sirius & ILS, $p = 2, 3$ (H2) & $n = 20$, inst.\ 0--3; 96 przebiegów & zrobione (XI 2026), tu nieużyte \\
+IQM Sirius & histogramy okien (H3), dwa dni & tai20, inst.\ 0, $p = 1, 2$ & zrobione (6--7.11.2026) \\
 IBM Heron (ibm\_fez) & jeden ruch na przebieg, $p = 1$ & tai20\_5, inst.\ 0--9 & zrobione (VIII 2026) \\
 IQM Garnet, Emerald & jeden ruch na przebieg, $p = 1$ & tai20\_5, inst.\ 0 & zrobione (IX--X 2026) \\
 \bottomrule
@@ -292,33 +313,78 @@ IQM Garnet, Emerald & jeden ruch na przebieg, $p = 1$ & tai20\_5, inst.\ 0 & zro
 
 \section{Wyniki}
 
-\tofill{Szkic: powstanie po etapach 1--3.}
+Każdy symulator, który obsługuje dany scenariusz, odtwarza te same rozkłady.
+Metody dokładne zgadzają się do precyzji maszynowej, a próbkujące mieszczą się
+w progu szumu próbkowania we wszystkich oknach poza kilkoma procentami, których
+należy się spodziewać przez przypadek. Wyjątkami są przypadki, w których
+program zawodzi: symulatory szumu DDSIM zwracają złe rozkłady nawet bez szumu
+i wywracają się na większych oknach, metoda trajektorii Aer kończy się
+błędem, gdy S3 dodaje relaksację, a symulator szumu Qulacs nigdy nie stosuje
+tłumienia amplitudy. Wybór silnika nie zmienia więc przewidywania, tylko jego
+koszt.
+
+Ten koszt pokazują rysunek~\ref{fig:cost} i tabela~\ref{tab:t6}. Symulatory
+macierzy gęstości kończą się na dziewięciu do trzynastu kubitach przy limicie
+300\,s na obwód, a metody trajektorii qsim i Qulacs obejmują z szumem wszystkie
+16 kubitów Siriusa. Qulacs jest najszybszym programem przy każdym rozmiarze.
+Jego jawna pętla po shotach potrzebuje tylko pamięci stanu czystego,
+a wbudowany symulator szumu jest nieco szybszy, ale zajmuje gigabajty i liczy
+S3 źle. Trajektorie Qibo są poprawne, ale o jeden do dwóch rzędów wielkości
+wolniejsze.
+
+Kompilator ma większe znaczenie niż silnik. Adapter IQM dla Cirqa kompiluje te
+same obwody z tą samą liczbą bramek CZ co adapter dla Qiskita, ale z 30--60\,\%
+większą liczbą bramek MOVE (tabela~\ref{tab:compilers}), a przy $p = 2$
+dodatkowy szum sprawia, że próbka o najniższej energii rzadziej jest ruchem
+optymalnym.
+
+Na całych przebiegach ILS z budżetem ruchów urządzenia scenariusza
+z relaksacją nie da się odróżnić od Siriusa dla żadnego z dwóch symulatorów
+(rysunek~\ref{fig:prd}, tabela~\ref{tab:t5}). Średnie odchylenie od dolnego
+ograniczenia różni się o mniej niż pół punktu procentowego, czyli dużo mniej
+niż dwa przebiegi samego urządzenia. Bez relaksacji qsim daje istotnie gorsze
+uszeregowania niż urządzenie, a Qulacs wskazuje ten sam kierunek, choć bez
+istotności. \tofill{etap 3: jedno lub dwa zdania o $n = 50$--$500$.}
+
+Na pojedynczych obwodach tej zgodności nie ma. Urządzenie dobrze odtwarza samo
+siebie, bo średnia energia obwodu zmienia się między dniami o mniej niż
+0,01, ale każdy symulator w każdym scenariuszu chybia o mniej więcej dziesięć
+razy więcej (rysunek~\ref{fig:h3}, tabela~\ref{tab:h3}). Przy $p = 1$
+urządzenie wypada lepiej niż symulacja bez szumu: ruch optymalny pojawia się
+w 79 z 84 histogramów, wobec 46 w S1, a jego próbki zawierają mniej jedynek.
+Ruch optymalny ustawia na jeden niewiele zmiennych, więc dryf kubitów w stronę
+stanu podstawowego mu sprzyja, a taki skutek miałaby relaksacja kubitów
+w bezczynności. Przy $p = 2$ scenariusze S2 i S3 trafiają średnią energię
+wszystkich obwodów, ale spłaszczają różnice między obwodami, które widać na
+urządzeniu.
 
 \begin{table}[t]
-\caption{Tor B: bramki na okno po kompilacji (mediana), $p = 1$.}
+\caption{Tabela podaje medianę liczby bramek CZ i MOVE na okno po kompilacji
+($p = 1$, 161 okien).}
 \label{tab:compilers}
 \centering
 \small
-\begin{tabular}{lccc}
+\begin{tabular}{lcc}
 \toprule
-Sąsiedztwo & qiskit-iqm (CZ / MOVE) & IQM Cirq (CZ / MOVE) & TKET (CZ / MOVE) \\
+Sąsiedztwo & qiskit-iqm (CZ / MOVE) & IQM Cirq (CZ / MOVE) \\
 \midrule
-Adjacent & 72 / \tofill{?} & \tofill{?} & \tofill{?} \\
-Fibonacci & 15 / \tofill{?} & \tofill{?} & \tofill{?} \\
-Dynasearch & 164 / \tofill{?} & \tofill{?} & \tofill{?} \\
-Motzkin & 134 / \tofill{?} & \tofill{?} & \tofill{?} \\
+Adjacent & 72 / 72 & 72 / 92 \\
+Fibonacci & 16 / 16 & 16 / 20 \\
+Dynasearch & 164 / 178 & 164 / 286 \\
+Motzkin & 134 / 144 & 134 / 214 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{figure}[t]
 \centering
-\fbox{\parbox[c][3.5cm][c]{0.9\textwidth}{\centering \tofill{Figura: odległość
-całkowitej zmienności do Siriusa, symulator $\times$ scenariusz (mapa
-ciepła), z podłogą szumu shotów i podłogą sprzętową dzień do dnia.}}}
-\caption{Zgodność każdego symulatora i scenariusza z urządzeniem dla pojedynczych okien.}
-\label{fig:heat}
+\includegraphics[width=0.8\textwidth]{figures/h3_energy_pl.pdf}
+\caption{Każdy punkt to jeden obwód H3 z jednego dnia. Szary pas pokazuje
+średnią różnicę między dwoma dniami na Siriusie.}
+\label{fig:h3}
 \end{figure}
+
+\input{measurements/h3_table_pl}
 
 \begin{figure}[t]
 \centering
@@ -341,12 +407,27 @@ jeden wątek). Linie kropkowane oznaczają limit 300\,s i 16 kubitów Siriusa.}
 
 \input{measurements/t6_table_pl}
 
-\section{Dyskusja}
-\tofill{Szkic: który symulator do czego; ograniczenia: rezonator jako kubit,
-brak szumu bezczynności, jedna migawka kalibracji, rdzeń $n = 20$.}
+\section{Dyskusja i wnioski}
 
-\section{Wnioski}
-\tofill{Szkic.}
+W badaniu takim jak to każdy symulator trajektoriowy przewiduje wynik
+optymalizacji tak dobrze jak drugi przebieg na urządzeniu, pod warunkiem że
+jego model szumu zawiera relaksację, a Qulacs robi to najtaniej. Zgodność
+w dużej mierze zawdzięczamy odczytowi w przeszukiwaniu, który zachowuje
+najlepszą z 4096 próbek i nie zależy od kształtu rozkładu. Te same symulatory
+zawodzą, gdy pytanie dotyczy samego rozkładu, na przykład prawdopodobieństwa
+ruchu optymalnego albo wpływu głębokości, i tam urządzenie zachowuje się
+w sposób, którego nie przewiduje żaden scenariusz. Najbardziej
+prawdopodobnym brakującym składnikiem jest szum kubitów w bezczynności:
+w procesorze gwiazdowym każda bramka dwukubitowa przechodzi przez rezonator,
+więc większość kubitów czeka przez większość obwodu.
+
+Te wnioski mają granice. Symulacje przebiegów korzystają z jednej migawki
+kalibracji, wszystkie modele szumu traktują rezonator jak kubit, dane na
+poziomie obwodów obejmują jedną klasę instancji przy dwóch głębokościach,
+a porównanie przebiegów powyżej $n = 20$ opiera się na \tofill{etap 3}.
+Kolejnym krokiem jest scenariusz z szumem bezczynności zbudowany
+z harmonogramu skompilowanych obwodów i sprawdzony na tych samych
+histogramach.
 
 \bibliographystyle{plain}
 \bibliography{references}

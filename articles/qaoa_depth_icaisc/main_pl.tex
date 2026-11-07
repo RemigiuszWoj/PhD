@@ -89,14 +89,12 @@ rodzajach okien treningowych i mierzymy bez szumu, jak często obwód losuje
 ruch optymalny w oknach, które buduje przeszukiwanie lokalne. Następnie
 sprawdzamy, czy stały czas przeszukiwania lepiej wydać na więcej warstw, czy
 na więcej shotów, i wyznaczamy najlepszą głębokość przy modelu szumu bramek
-skalibrowanym na 16-kubitowym procesorze o topologii gwiazdy. Sprawdzamy też, jak wyniki z okien przekładają się na długość uszeregowania w iteracyjnym przeszukiwaniu
+skalibrowanym na 16-kubitowym procesorze o topologii gwiazdy. Mierzymy też długość uszeregowania w iteracyjnym przeszukiwaniu
 lokalnym na instancjach Taillarda z 20 zadaniami. Punktami odniesienia są
 losowanie jednostajne ($p = 0$) i klasyczne przeszukiwanie sąsiedztwa. Na
 koniec uruchamiamy ILS na procesorze IQM Sirius przy $p = 2$ i $p = 3$
 i porównujemy te przebiegi z przebiegami przy $p = 1$ z wcześniejszej
-kampanii~\cite{wojewodzki2026aciids}. W symulacji dwie warstwy wystarczają sąsiedztwom Dynasearch i Motzkina, a dwie warstwy z 256 shotami wygrywają
-z jedną warstwą z 4096 shotami, natomiast w sąsiedztwach Adjacent i Fibonacciego żadna głębokość nie jest istotnie lepsza od losowania
-jednostajnego. Na Siriusie kolejne warstwy nie dają zysku.
+kampanii~\cite{wojewodzki2026aciids}.
 
 \section{Przegląd literatury}
 
@@ -125,13 +123,12 @@ uszeregowanie, a nie jeden ruch.
 
 Szum ogranicza głębokość użytecznego obwodu. Stilck Fran\c{c}a
 i Garc\'{i}a-Patr\'{o}n~\cite{franca2021} pokazali, że na zaszumionych
-urządzeniach wynik algorytmów wariacyjnych przy dostatecznie głębokim obwodzie
+procesorach kwantowych wynik algorytmów wariacyjnych przy dostatecznie głębokim obwodzie
 zbliża się do stanu, któremu dorównują wydajne metody klasyczne. Harrigan
 i in.~\cite{harrigan2021} uruchomili QAOA na procesorze nadprzewodzącym
 i stwierdzili, że dla problemów, których graf nie pasuje do układu, routing
 dokłada bramki, a jakość spada wraz z rozmiarem problemu. Gnatowski
-i in.~\cite{gnatowski2026routing} podali dokładny algorytm routingu dla
-architektur gwiaździstych, czyli topologii procesora użytego w tej pracy.
+i in.~\cite{gnatowski2026routing} podali dokładny algorytm routingu dla topologii gwiazdy, którą ma procesor użyty w tej pracy.
 
 \section{Kwantowe przeszukiwanie sąsiedztwa}
 
@@ -159,16 +156,18 @@ zamiany na siebie wpływają, tylko przybliża zmianę długości uszeregowania.
 Ruchem optymalnym nazywamy przypisanie minimalizujące
 $E$. Tabela~\ref{tab:neigh} zestawia cztery sąsiedztwa. Adjacent wybiera
 dokładnie jedną zamianę sąsiadów i ma QUBO typu one-hot
-$E(x) = \sum_i (\Delta_i - P)\,x_i + 2P \sum_{i<j} x_i x_j$ z
-$P = 2\max_i|\Delta_i| + 1$. Sąsiedztwo
+\begin{equation}
+  E(x) = \sum_i (\Delta_i - P)\,x_i + 2P \sum_{i<j} x_i x_j ,
+  \qquad P = 2\max_i|\Delta_i| + 1 .
+\end{equation}
+Sąsiedztwo
 Fibonacciego~\cite{bozejko2026new} dopuszcza dowolny zbiór rozłącznych zamian
 sąsiednich, co daje QUBO trójdiagonalne. Dynasearch~\cite{congram2002}
 i sąsiedztwo Motzkina~\cite{wojewodzki2026soco} zamieniają końce przedziałów
 i dają QUBO z konfliktami parami. Dynasearch zabrania nakładania się
 przedziałów, a Motzkin dopuszcza też przedziały zagnieżdżone. Adjacent
 i Fibonacci nazywamy sąsiedztwami \emph{liniowymi}, ponieważ zamieniają tylko
-sąsiednie zadania, a Dynasearch i Motzkin \emph{gęstymi}, ponieważ kandydat może
-łączyć dowolne dwie pozycje okna.
+sąsiednie zadania, a Dynasearch i Motzkin \emph{gęstymi}, ponieważ zamieniają dowolne dwie pozycje.
 
 \begin{table}[t]
 \caption{Cztery sąsiedztwa ($F_{n+1}$, $M_n$: liczby Fibonacciego
@@ -204,14 +203,15 @@ wszystkich okien od lewej do prawej i odrzuca każdą zamianę kolidującą
 z zamianą zachowaną wcześniej, co naprawia też niedopuszczalny odczyt. ILS
 wykonuje następnie pozostałe zamiany. Jeśli w sąsiedztwie Dynasearch lub
 Motzkina
-żadne okno nie wybierze zamiany, ILS wykonuje najlepszą pojedynczą
-poprawiającą zamianę przedziałową w całej permutacji, którą znajduje
-klasycznie.
+żadne okno nie wybierze zamiany, ILS wykonuje najlepszą poprawiającą zamianę przedziałową w całej permutacji, znalezioną klasycznie.
 
 \section{QAOA o głębokości $p$}
 
 Podstawienie $x_k = (1 - Z_k)/2$ zamienia $E(x)$ w hamiltonian Isinga
-$H_C = \sum_k h_k Z_k + \sum_{k<l} J_{kl} Z_k Z_l$, który skalujemy tak,
+\begin{equation}
+  H_C = \sum_k h_k Z_k + \sum_{k<l} J_{kl} Z_k Z_l ,
+\end{equation}
+który skalujemy tak,
 aby jego największy współczynnik miał moduł jeden. Stan QAOA o głębokości
 $p$ ma postać
 \begin{equation}
@@ -226,18 +226,19 @@ Kąty ustalamy z góry, więc każde okno wymaga jednego wykonania obwodu na
 ruch. Dla każdego sąsiedztwa i każdej głębokości kalibrujemy jeden
 harmonogram kątów $(\gamma_1, \dots, \gamma_p, \beta_1, \dots, \beta_p)$,
 minimalizując średnią z
-$\langle H_C \rangle / (\sum_k |h_k| + \sum_{k<l} |J_{kl}|)$ na zbiorze
+\begin{equation}
+  \frac{\langle H_C \rangle}{\sum_k |h_k| + \sum_{k<l} |J_{kl}|}
+\end{equation}
+na zbiorze
 treningowym okien z trzech instancji testowych~\cite{taillard1993}. Z tych instancji pochodzi dziesiąta część okien użytych w badaniu okien
-oraz trzy z 12 instancji używanych z szumem. Bez nich badanie okien układa trzy opisane
-niżej tabele kątów w tej samej kolejności. Przy $p = 1$ kąty daje najlepszy
+oraz trzy z 12 instancji używanych z szumem. Przy $p = 1$ kąty daje najlepszy
 punkt siatki $25 \times 13$ po $\gamma \in [0, \pi]$ i $\beta \in [0, \pi/2]$.
 Dla $p \ge 2$ metoda Neldera--Meada startuje z czterech harmonogramów:
 harmonogramu dla $p-1$ z pustą ostatnią warstwą, który nie pozwala funkcji
 celu wzrosnąć, jego przepróbkowania INTERP~\cite{zhou2020} oraz dwóch kopii
 tego przepróbkowania z szumem gaussowskim o odchyleniu standardowym 0{,}15.
 Każdy start ma co najwyżej $400p$ iteracji, a zachowujemy najlepszy z czterech
-wyników. Funkcja celu nie rośnie więc z $p$ na zbiorze treningowym, co nie
-mówi nic o oknach spoza niego.
+wyników.
 
 Budujemy trzy tabele kątów, które różnią się tylko oknami treningowymi.
 Tabela \emph{z małych okien} korzysta z okien o $w = 6$ pozycjach i sięga do
@@ -249,10 +250,12 @@ ILS. Obie sięgają do $p = 5$. Dla sąsiedztw gęstych dwie ostatnie się
 pokrywają i różnią się od tabeli z małych okien tylko filtrem $\Delta$.
 
 ILS próbkuje obwód $S$ razy i wybiera próbkę o najniższej energii
-pierwotnego QUBO. Wybór najczęstszego ciągu bitów zwracałby często pusty
-ruch. Jeśli $P_{\mathrm{opt}}$ to prawdopodobieństwo przypisania optymalnego,
+pierwotnego QUBO. Jeśli $P_{\mathrm{opt}}$ to prawdopodobieństwo przypisania optymalnego,
 najlepsza z $S$ próbek jest optymalna z prawdopodobieństwem
-$1 - (1 - P_{\mathrm{opt}})^S$, które nazywamy odsetkiem trafień, więc więcej
+\begin{equation}
+  1 - (1 - P_{\mathrm{opt}})^S ,
+\end{equation}
+które nazywamy odsetkiem trafień, więc więcej
 shotów może nadrobić słabszy rozkład.
 
 W procesorze o topologii gwiazdy każdy kubit jest sprzężony tylko
@@ -260,8 +263,7 @@ z centralnym rezonatorem, a oddziaływanie dwukubitowe wymaga najpierw
 przeniesienia stanu jednego kubitu do rezonatora. Jedna bramka $R_{ZZ}$
 kompiluje się wtedy do dwóch bramek CZ i około dwóch bramek
 MOVE~\cite{gnatowski2026routing}. Gęste okno z 15 zmiennymi potrzebuje od 150
-(Motzkin) do 180 (Dynasearch) bramek CZ na warstwę, pięć do sześciu razy więcej niż 30 bramek CZ okna Fibonacciego z 15
-sprzężeniami, a koszt rośnie
+(Motzkin) do 180 (Dynasearch) bramek CZ na warstwę, a koszt rośnie
 proporcjonalnie do $p$. Tabela~\ref{tab:e3} porównuje gwiazdę z 20-kubitową
 kratą kwadratową (IQM Apollo), w której routing wstawia bramki SWAP; w obu
 przypadkach używamy transpilatora IQM na poziomie optymalizacji~1.
@@ -279,8 +281,7 @@ poziomie z szumem symulowany 16-kubitowy procesor o topologii gwiazdy
 odtwarza wierności bramek i błędy odczytu, które IQM podało dla procesora
 Sirius 23~października~2026. W domyślnym trybie \emph{skalibrowanym} kanał
 depolaryzujący nadaje każdej bramce jednokubitowej i CZ dokładnie zmierzoną
-wierność, a tryb \emph{termiczny} dodaje relaksację $T_1$/$T_2$, która sama
-przekracza zmierzony błąd większości bramek. Tryb termiczny uruchamiamy
+wierność, a tryb \emph{termiczny} dodaje relaksację $T_1$/$T_2$. Tryb termiczny uruchamiamy
 tylko na pierwszej instancji każdej grupy przy $p = 1$, 3 i 6 (Adjacent: 1 i 3, ponieważ jego tabela z dużych okien kończy się na $p = 5$). Żaden z trybów
 nie nakłada szumu na bramki MOVE ani na bezczynne kubity, choć zmierzony
 błąd bramki MOVE wynosi około 1\%, a gęsta warstwa zawiera mniej więcej tyle
@@ -309,12 +310,12 @@ zmianach $\Delta_k$. Te 10~s obejmuje symulację i próbkowanie każdego obwodu,
 przy ośmiu przebiegach równolegle na jednym komputerze. Warianty QAOA
 używają $S = 256$ i $S = 4096$ shotów. ILS uruchamiamy raz na instancję
 w sąsiedztwach liniowych i pięć razy w gęstych. Symulator z szumem
-potrzebuje minut na obwód, więc jego czas nie mówi nic o urządzeniu. Dlatego
+potrzebuje minut na obwód, więc jego czas nie mówi nic o procesorze kwantowym. Dlatego
 każdy przebieg z szumem wykonuje dokładnie tyle ruchów, ile Sirius wykonał
 w 10~s na tej samej instancji przy $p = 1$~\cite{wojewodzki2026aciids}. Na
-sprzęcie ILS powtarza tamtą kampanię dla $p = 2$ i $p = 3$, raz na
+procesorze kwantowym ILS powtarza tamtą kampanię dla $p = 2$ i $p = 3$, raz na
 instancję, z tabelą z małych okien, a w Adjacent z tabelą z dużych okien.
-Kalibracja urządzenia w dniu tych przebiegów (6~listopada~2026) była bliska
+Kalibracja procesora kwantowego w dniu tych przebiegów (6~listopada~2026) była bliska
 tej, której używa symulator: mediana błędu CZ wynosiła 1{,}9\% wobec 1{,}7\%.
 Przebiegi przy $p = 1$ są o miesiąc starsze i pochodzą z innej kalibracji.
 ILS sprawdza budżet 10~s tylko między ruchami, więc na Siriusie przebieg
@@ -322,22 +323,23 @@ gęsty wykonuje jeden ruch, który kończy się 12--17~s po starcie, a przebieg
 liniowy od jednego do trzech.
 
 Jakość mierzymy procentowym odchyleniem od dolnego ograniczenia Taillarda
-$LB$, $\mathrm{PRD} = 100\,(C_{\max} - LB)/LB$, uśredniamy je po przebiegach
+$LB$,
+\begin{equation}
+  \mathrm{PRD} = 100\,\frac{C_{\max} - LB}{LB} ,
+\end{equation}
+uśredniamy je po przebiegach
 instancji i bierzemy medianę po instancjach. Dwa ustawienia porównujemy
 dwustronnym testem znaków dla par po instancjach, który pomija remisy,
 a różnicę uznajemy za istotną na poziomie 5\% bez poprawki na liczbę porównań.
 Górne ograniczenia podane dla tych instancji~\cite{taillard1993} leżą od 1 do
 26\% powyżej $LB$ (mediana 8\%), więc PRD około 9\% jest już blisko nich.
-Każdy przebieg ma ziarno wyznaczone z jego konfiguracji, które ustala
-zaburzenia ILS, a bez szumu także losowanie shotów.
 
 \section{Wyniki}
 
 Bez szumu jedna warstwa nie wystarcza (rys.~\ref{fig:e1}). Z tabelą z małych
 okien, której używa ILS, tylko Adjacent losuje przy $p = 1$ ruch optymalny wyraźnie częściej niż przy
 losowaniu jednostajnym. Motzkin ledwie przewyższa ten poziom,
-a Fibonacci i Dynasearch wypadają poniżej niego. W sąsiedztwach gęstych
-płytki obwód faworyzuje przypisania, które wybierają kolidujące zamiany. Od
+a Fibonacci i Dynasearch wypadają poniżej niego. Od
 $p = 2$ ta tabela losuje optimum okna gęstego mniej więcej sto razy częściej niż przy losowaniu jednostajnym, a przy 4096 shotach najlepsza próbka jest wtedy
 prawie zawsze optymalna (rys.~\ref{fig:hits}). Kolejne warstwy niewiele więc
 dodają, a ich miejsce mogą zająć shoty. Zysk nie rośnie monotonicznie z $p$,
@@ -377,20 +379,16 @@ Ponieważ każdy przebieg gęsty w tabeli~\ref{tab:hw} wykonuje jeden ruch
 z permutacji identycznościowej, te wiersze oceniają okna z rys.~\ref{fig:e4}
 długością uszeregowania. Sama permutacja identycznościowa ma medianę PRD 40\%,
 więc tabela pokazuje, co dają jeden do trzech ruchów, i nie można jej
-porównywać z tabelą~\ref{tab:e5}. Większość różnic między wierszami
-symulowanymi jest niewielka. Na symulatorze z szumem Dynasearch przy $p = 2$
-wygrywa z $p = 1$ prawie na każdej instancji. W Dynasearch, gdzie
-w symulacji losowanie jednostajne jest lepsze od $p = 1$, urządzenie przy
-$p = 1$ radzi sobie mniej więcej tak jak losowanie jednostajne i lepiej niż symulator, choć różnica nie jest istotna. Sugeruje to, że
-prawdziwy szum jest silniejszy niż w skalibrowanym modelu. Na Siriusie zysk z $p = 2$ się nie utrzymuje.
+porównywać z tabelą~\ref{tab:e5}. Na symulatorze z szumem Dynasearch przy $p = 2$
+wygrywa z $p = 1$ prawie na każdej instancji. Na Siriusie Dynasearch przy $p = 1$ radzi sobie mniej więcej tak jak losowanie jednostajne. Na Siriusie zysk z $p = 2$ się nie utrzymuje.
 W sąsiedztwach liniowych dwie i trzy warstwy prawie nie zmieniają mediany
 PRD. W gęstych druga warstwa nie daje zysku, a trzecia pogarsza medianę.
 Dynasearch przy $p = 3$ jest
-istotnie gorszy od symulowanego losowania jednostajnego i od symulatora przy
-tej samej głębokości. Przegrywa też istotnie z urządzeniem przy $p = 1$, którego przebiegi miały
+istotnie gorszy od losowania jednostajnego ($p = 0$) i od symulatora przy
+tej samej głębokości. Przegrywa też istotnie z procesorem kwantowym przy $p = 1$, którego przebiegi miały
 inną kalibrację, i, choć nieistotnie, z $p = 2$ z tego samego dnia. Przy
-$p = 1$ urządzenie radzi sobie lepiej niż model, przy $p = 2$ oba są na
-tym samym poziomie, a przy $p = 3$ model przecenia urządzenie. W sąsiedztwie
+$p = 1$ procesor kwantowy radzi sobie lepiej niż model, przy $p = 2$ oba są na
+tym samym poziomie, a przy $p = 3$ model przecenia procesor kwantowy. W sąsiedztwie
 Motzkina mediana rośnie z każdą warstwą, choć żaden z testów znaków nie jest
 istotny.
 
@@ -490,25 +488,24 @@ liczbę shotów, ponieważ w sąsiedztwach gęstych druga warstwa daje więcej n
 szesnastokrotne zwiększenie liczby shotów. Na Siriusie kolejne warstwy
 jednak nie pomagają, a nawet jedna warstwa nie jest lepsza od losowania
 jednostajnego. Zysk z głębokości widoczny w symulacji nie przenosi się na
-to urządzenie. Powyżej dwóch warstw kąty mają większe znaczenie niż głębokość, a kalibracja
+ten procesor kwantowy. Powyżej dwóch warstw kąty mają większe znaczenie niż głębokość, a kalibracja
 na średnią energię nie celuje w najlepszą próbkę, choć przeszukiwanie lokalne
 korzysta wyłącznie z niej.
 
-Przeszukiwanie klasyczne pozostaje wyraźnie lepsze, a na Siriusie ILS
-wykonuje w 10~s tylko od jednego do trzech ruchów. Badanie obejmuje tylko instancje z 20 zadaniami i kąty stałe oraz porównuje
+Badanie obejmuje tylko instancje z 20 zadaniami i kąty stałe oraz porównuje
 głębokość z shotami wyłącznie bez szumu. Energia okna jest przy tym dokładna
 tylko wtedy, gdy zamiany na siebie nie wpływają. Okna do
 16 zmiennych łatwo też przeszukać klasycznie w całości. W sąsiedztwach gęstych klasyczna procedura zapasowa nie dostarczyła żadnego
 z pojedynczych ruchów symulatora z szumem, a na Siriusie dostarczyła co
 najwyżej jeden, więc nie decyduje o wynikach uzyskanych z szumem. Brak szumu bezczynnych kubitów i bramek MOVE w modelu może tłumaczyć, dlaczego Sirius wydawał się bardziej zaszumiony niż
-symulator i dlaczego kolejne warstwy bardziej szkodzą na urządzeniu, ponieważ gęsty obwód przy $p = 3$ zawiera około 500 bramek MOVE. W dalszych pracach kąty
-będą kalibrowane na prawdopodobieństwo, że najlepsza próbka jest optymalna,
+symulator i dlaczego kolejne warstwy bardziej szkodzą na procesorze kwantowym, ponieważ gęsty obwód przy $p = 3$ zawiera około 500 bramek MOVE. W dalszych pracach kąty
+będą kalibrowane na odsetek trafień,
 na przykład funkcją celu CVaR~\cite{barkoutsos2020cvar}, a głębokość będzie
 dobierana dla każdego okna.
 
 \subsubsection{Użycie narzędzi AI.} Autorzy korzystali z dużego modelu
 językowego przy redagowaniu i poprawianiu części tekstu, pisaniu skryptów
-eksperymentów i składzie w LaTeX-u; badania, ich wyniki i ich interpretacja
+eksperymentów i składzie tekstu; badania, ich wyniki i ich interpretacja
 są w całości dziełem autorów.
 
 \bibliographystyle{splncs04}

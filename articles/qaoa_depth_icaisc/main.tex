@@ -87,15 +87,11 @@ training windows and measure, without noise, how often the circuit samples
 the optimal move of the windows that local search builds. We then ask whether
 more layers or more shots are the better use of a fixed search time and determine
 the best depth under a gate noise model calibrated on a 16-qubit star
-processor. We also carry the window results over to the makespan of iterated
+processor. We also measure the makespan of iterated
 local search on Taillard instances with 20 jobs, with uniform sampling
 ($p = 0$) and the classical neighborhood search as references. Finally, we
 run ILS on the IQM Sirius processor at $p = 2$ and $p = 3$ and compare these
 runs with the $p = 1$ runs of an earlier campaign~\cite{wojewodzki2026aciids}.
-In simulation two layers are enough for Dynasearch and Motzkin, and two
-layers with 256 shots beat one layer with 4096 shots, while in Adjacent and
-Fibonacci no depth significantly beats uniform sampling. On Sirius extra
-layers bring no gain.
 
 \section{Related Work}
 
@@ -120,7 +116,7 @@ applied to job shop scheduling~\cite{kurowski2023,amaro2022}, where the
 circuit encodes a whole schedule rather than one move.
 
 Noise limits how deep a useful circuit can be. Stilck Fran\c{c}a and
-Garc\'{i}a-Patr\'{o}n~\cite{franca2021} showed that on noisy devices the
+Garc\'{i}a-Patr\'{o}n~\cite{franca2021} showed that on noisy quantum processors the
 output of variational algorithms approaches a state that efficient classical
 methods can match once the circuit is deep enough. Harrigan et
 al.~\cite{harrigan2021} ran QAOA on a superconducting processor and found
@@ -155,8 +151,10 @@ more than doing nothing. The sum is exact for one swap and only approximates
 the makespan change when selected swaps interact. We call the minimizer of
 $E$ the optimal move. Table~\ref{tab:neigh} lists the four neighborhoods.
 Adjacent selects exactly one swap of neighbors and uses the one-hot QUBO
-$E(x) = \sum_i (\Delta_i - P)\,x_i + 2P \sum_{i<j} x_i x_j$ with
-$P = 2\max_i|\Delta_i| + 1$.
+\begin{equation}
+  E(x) = \sum_i (\Delta_i - P)\,x_i + 2P \sum_{i<j} x_i x_j ,
+  \qquad P = 2\max_i|\Delta_i| + 1 .
+\end{equation}
 Fibonacci~\cite{bozejko2026new} allows any set of disjoint adjacent swaps,
 which gives a tridiagonal QUBO. Dynasearch~\cite{congram2002} and
 Motzkin~\cite{wojewodzki2026soco} swap the end points of intervals and give
@@ -203,8 +201,11 @@ classically.
 
 \section{QAOA at Depth $p$}
 
-Substituting $x_k = (1 - Z_k)/2$ turns $E(x)$ into the Ising Hamiltonian
-$H_C = \sum_k h_k Z_k + \sum_{k<l} J_{kl} Z_k Z_l$, which we scale so that its
+The substitution $x_k = (1 - Z_k)/2$ turns $E(x)$ into the Ising Hamiltonian
+\begin{equation}
+  H_C = \sum_k h_k Z_k + \sum_{k<l} J_{kl} Z_k Z_l ,
+\end{equation}
+which we scale so that its
 largest coefficient has magnitude one. The depth-$p$ QAOA state is
 \begin{equation}
   |\gamma,\beta\rangle = \prod_{\ell=1}^{p}
@@ -219,19 +220,21 @@ The angles are fixed in advance, so each window needs a single circuit
 execution per move. For each neighborhood and each depth we calibrate one
 schedule of angles $(\gamma_1, \dots, \gamma_p, \beta_1, \dots, \beta_p)$ by
 minimizing
-the mean of $\langle H_C \rangle / (\sum_k |h_k| + \sum_{k<l} |J_{kl}|)$ over a
+the mean of
+\begin{equation}
+  \frac{\langle H_C \rangle}{\sum_k |h_k| + \sum_{k<l} |J_{kl}|}
+\end{equation}
+over a
 training set of windows from three of the test instances~\cite{taillard1993}.
 These instances supply a tenth of the windows of the window study and three
-of the 12 instances used with noise. Without them the window study ranks the
-three angle tables described below in the same order. At $p = 1$ the best
+of the 12 instances used with noise. At $p = 1$ the best
 point of a $25 \times 13$ grid over $\gamma \in [0, \pi]$ and
 $\beta \in [0, \pi/2]$ gives the angles. For $p \ge 2$ Nelder--Mead starts
 from four schedules: the depth-$(p-1)$ schedule with an empty last layer,
 which keeps the objective from rising, its INTERP resample~\cite{zhou2020}
 and two copies of the resample with Gaussian noise of standard deviation
 0.15. Each run takes at most $400p$ iterations, and the best of the four
-results is kept. The objective therefore does not increase with $p$ on the
-training set, which says nothing about unseen windows.
+results is kept.
 
 We build three angle tables that differ only in the training windows. The
 \emph{small-window} table uses windows of $w = 6$ positions and goes up to
@@ -243,18 +246,19 @@ ILS itself. Both go up to $p = 5$. For the dense neighborhoods the last two
 coincide and differ from the small-window table only in the $\Delta$ filter.
 
 ILS samples the circuit $S$ times and selects the sample with the lowest
-original QUBO energy. Taking the most frequent bitstring instead would often
-return the empty move. If $P_{\mathrm{opt}}$ is the probability of an optimal
+original QUBO energy. If $P_{\mathrm{opt}}$ is the probability of an optimal
 assignment, the best of $S$ samples is optimal with probability
-$1 - (1 - P_{\mathrm{opt}})^S$, which we call the hit rate, so more shots
+\begin{equation}
+  1 - (1 - P_{\mathrm{opt}})^S ,
+\end{equation}
+which we call the hit rate, so more shots
 can make up for a weaker distribution.
 
 On the star-shaped processor every qubit couples only to a central
 resonator, and a two-qubit interaction first moves one qubit's state into the
 resonator. One $R_{ZZ}$ gate then compiles to two CZ gates and about two
 MOVE gates~\cite{gnatowski2026routing}. A dense window of 15 variables needs
-150 (Motzkin) to 180 (Dynasearch) CZ gates per layer, five to six times the
-30 CZ gates of a Fibonacci window with 15 couplings, and the cost grows in
+150 (Motzkin) to 180 (Dynasearch) CZ gates per layer, and the cost grows in
 proportion to $p$.
 Table~\ref{tab:e3} compares the star with a 20-qubit square lattice (IQM
 Apollo), where routing inserts SWAP gates; both use the IQM transpiler at
@@ -269,11 +273,10 @@ instances in all. ILS starts from the identity permutation, as in the earlier
 campaign~\cite{wojewodzki2026aciids}. We evaluate QAOA at three levels. On the
 noiseless level the circuit is sampled from its exact statevector. On the
 noisy level a simulated 16-qubit star processor reproduces the gate
-fidelities and readout errors that IQM reported for the Sirius device on
+fidelities and readout errors that IQM reported for the Sirius quantum processor on
 23~October~2026. In its default \emph{calibrated} mode a depolarizing channel
 gives every single-qubit and CZ gate exactly the measured fidelity, and a
-\emph{thermal} mode adds $T_1$/$T_2$ relaxation, which alone exceeds the
-measured error of most gates. We run the thermal mode only on the first
+\emph{thermal} mode adds $T_1$/$T_2$ relaxation. We run the thermal mode only on the first
 instance of each group at $p = 1$, 3 and 6 (Adjacent: 1 and 3, since its
 big-window table ends at $p = 5$). Neither mode applies noise to the MOVE
 gates or to idle qubits, although a MOVE gate has a measured error of about
@@ -304,10 +307,10 @@ one computer. The QAOA variants use $S = 256$ and $S = 4096$ shots. ILS runs
 once per instance in the linear neighborhoods and five times in the dense
 ones. A noisy
 simulator needs minutes per circuit, so its wall time says nothing about the
-device; each noisy run therefore makes exactly as many moves as Sirius made
+quantum processor; each noisy run therefore makes exactly as many moves as Sirius made
 in 10~s on the same instance at $p = 1$~\cite{wojewodzki2026aciids}. On the
-hardware, ILS repeats that campaign at $p = 2$ and $p = 3$, once per instance,
-with the small-window table and, for Adjacent, the big-window table. The device calibration on the day of these runs (6~November~2026) was
+quantum processor, ILS repeats that campaign at $p = 2$ and $p = 3$, once per instance,
+with the small-window table and, for Adjacent, the big-window table. The calibration of the quantum processor on the day of these runs (6~November~2026) was
 close to the one the simulator uses, with a median CZ error of 1.9\% against
 1.7\%. The runs at $p = 1$ are a month older and come from a different
 calibration. ILS checks the 10~s budget only between moves, so on Sirius a
@@ -315,23 +318,23 @@ dense run makes a single move, which ends 12 to 17~s after the start, and a
 linear run makes one to three.
 
 We measure quality by the deviation from the Taillard lower bound $LB$ in
-percent, $\mathrm{PRD} = 100\,(C_{\max} - LB)/LB$,
+percent,
+\begin{equation}
+  \mathrm{PRD} = 100\,\frac{C_{\max} - LB}{LB} ,
+\end{equation}
 average it over the runs of an instance and take the median over instances.
 We compare two settings with a two-sided paired sign test over instances,
 which ignores ties, and call a difference significant at the 5\% level
 without correcting for the number of comparisons. The upper bounds reported for these
 instances~\cite{taillard1993} lie 1 to 26\% above $LB$ (median 8\%), so a PRD
-of about 9\% is already close to them. Each run's
-seed comes from its configuration and fixes the ILS perturbations and,
-without noise, the sampling.
+of about 9\% is already close to them.
 
 \section{Results}
 
 Without noise one layer is not enough (Fig.~\ref{fig:e1}). With the
 small-window table, which ILS uses, only Adjacent samples the optimal move
 clearly more often than uniform sampling at $p = 1$. Motzkin barely beats it,
-and Fibonacci and Dynasearch fall below it. In the dense neighborhoods the
-shallow circuit favors assignments that select conflicting swaps. From
+and Fibonacci and Dynasearch fall below it. From
 $p = 2$ this table samples the optimum of a dense window about a hundred
 times more often than uniform sampling, and with 4096 shots the best sample
 is then almost always optimal (Fig.~\ref{fig:hits}). Further layers therefore
@@ -369,21 +372,17 @@ the number of moves, not from the sampler.
 Because every dense run in Table~\ref{tab:hw} makes a single move from the
 identity, these rows judge the windows of Fig.~\ref{fig:e4} by the makespan.
 The identity itself lies at a median PRD of 40\%, so the table shows what one
-to three moves achieve and cannot be compared with Table~\ref{tab:e5}. Most
-differences between the simulated rows are small. On the noisy simulator
-Dynasearch at $p = 2$ beats $p = 1$ on almost every instance. In Dynasearch,
-where uniform sampling beats $p = 1$ in simulation, the device at $p = 1$
-does about as well as uniform sampling and better than the simulator, though
-not significantly. This suggests that the real noise is stronger than the
-calibrated model. The gain of $p = 2$ does not survive on Sirius. In the
+to three moves achieve and cannot be compared with Table~\ref{tab:e5}. On the noisy simulator
+Dynasearch at $p = 2$ beats $p = 1$ on almost every instance. On Sirius, Dynasearch at $p = 1$ does about as well as uniform
+sampling. The gain of $p = 2$ does not survive on Sirius. In the
 linear neighborhoods two and three layers leave the median PRD almost
 unchanged. In the dense ones the second layer brings no gain and the third
 makes the median worse. Dynasearch at $p = 3$ is significantly worse than
-simulated uniform sampling and than the simulator at the same depth. It also
-loses significantly to the device at $p = 1$, whose runs used another
+uniform sampling ($p = 0$) and than the simulator at the same depth. It also
+loses significantly to the quantum processor at $p = 1$, whose runs used another
 calibration, and, though not significantly, to $p = 2$ from the same day. At
-$p = 1$ the device does better than the model, at $p = 2$ the two are level,
-and at $p = 3$ the model overrates the device. The median of Motzkin
+$p = 1$ the quantum processor does better than the model, at $p = 2$ the two are level,
+and at $p = 3$ the model overrates the quantum processor. The median of Motzkin
 rises with each layer, although none of its sign tests is significant.
 
 \begin{figure}[t]
@@ -479,19 +478,18 @@ layers, and without noise shots beyond them, since in the dense neighborhoods th
 layer is worth more than sixteen times as many shots. On Sirius, however,
 extra layers do not help, and even one layer does no better than uniform
 sampling. The gain from depth seen in simulation does not carry over to this
-device. Beyond two layers the angles matter more than the depth, and
+quantum processor. Beyond two layers the angles matter more than the depth, and
 calibrating them for the mean energy does not target the best sample, which
 is all that local search uses.
 
-The classical search stays clearly better, and on Sirius ILS makes only one
-to three moves in 10~s. The study covers only 20 jobs and fixed angles, it
+The study covers only 20 jobs and fixed angles, it
 compares depth with shots only without noise, and the window energy is exact
 only when the swaps do not interact. Windows of up to 16 variables are also
 easy to enumerate classically. In the dense neighborhoods the classical
 fallback produced none of the single moves of the noisy simulator and at
 most one of those on Sirius, so it does not drive the results under noise.
 The missing noise on idle qubits and MOVE gates may explain why Sirius seemed
-noisier than the simulator and why extra layers hurt more on the device,
+noisier than the simulator and why extra layers hurt more on the quantum processor,
 since a dense circuit at $p = 3$ contains about 500 MOVE gates. Future work will
 calibrate the angles for the hit rate, for
 instance with the CVaR objective~\cite{barkoutsos2020cvar}, and choose the

@@ -6,7 +6,7 @@ Powiadomienie 28.02.2027, wersja finalna 25.03.2027 (tylko LaTeX).
 
 **STAN 06.11.2026 (wieczór): NIE WYSŁANE.** Po 8 rundach krytyka (EN/PL, wersja PL napisana od nowa
 zgodnie z EN) tekst wprowadzony; `abstrakt.txt` odświeżony (249 słów, limit LNCS 150–250);
-`overleaf_source.zip` przebudowany. 12 stron EN (po 6 skrótach 06.11; PL zostaje 13; wersja z nazwiskami 13 przez blok autorów),
+`overleaf_source.zip` przebudowany. 12 stron EN (06.11: 6 skrótów; 07.11: wzory wydzielone, „quantum processor” zamiast „device”, 12 kolejnych skrótów, rysunki bez zmian; PL wyrównana treściowo z EN, 13 stron; wersja z nazwiskami 13 przez blok autorów),
 pdfinfo puste, fonty osadzone, bez Type 3.
 
 ## Wymagania ze strony ICAISC (sprawdzone 01.11.2026)

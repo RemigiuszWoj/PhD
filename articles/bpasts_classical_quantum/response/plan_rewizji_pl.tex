@@ -1,0 +1,520 @@
+% Plan rewizji i szkic odpowiedzi do recenzentów — BPASTS-05673-2026-01
+% Wersja robocza PL (do zatwierdzenia). Kompilacja: lualatex plan_rewizji_pl.tex
+\documentclass[11pt,a4paper]{article}
+\usepackage[polish]{babel}
+\usepackage{fontspec}
+\setmainfont{TeX Gyre Pagella}
+\setsansfont{TeX Gyre Heros}
+\usepackage{amsmath,amssymb}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[most]{tcolorbox}
+\usepackage{booktabs,tabularx,array}
+\usepackage{enumitem}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,calc}
+\usepackage[colorlinks=true,linkcolor=NavyBlue,urlcolor=NavyBlue]{hyperref}
+
+\sloppy\emergencystretch=3em
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\setlist{itemsep=2pt,topsep=3pt}
+
+% --- komentarz recenzenta (oryginał EN) ---
+\newtcolorbox{rev}[1]{enhanced,breakable,colback=gray!6,colframe=gray!55,
+  fonttitle=\sffamily\bfseries\small,title={#1},boxrule=0.5pt,arc=1.5pt,
+  left=5pt,right=5pt,top=3pt,bottom=3pt,fontupper=\small\itshape}
+% --- para teraz / po zmianie ---
+\newtcolorbox{teraz}{enhanced,breakable,colback=red!3,colframe=red!45,
+  title={Teraz},fonttitle=\sffamily\bfseries\scriptsize,boxrule=0.4pt,arc=1pt,
+  left=4pt,right=4pt,top=2pt,bottom=2pt,fontupper=\small}
+\newtcolorbox{pozmianie}{enhanced,breakable,colback=green!3,colframe=OliveGreen!70,
+  title={Po zmianie (propozycja, EN)},fonttitle=\sffamily\bfseries\scriptsize,
+  boxrule=0.4pt,arc=1pt,left=4pt,right=4pt,top=2pt,bottom=2pt,fontupper=\small}
+
+% --- etykiety rodzaju pracy ---
+\newcommand{\etk}[2]{\tikz[baseline=(t.base)]\node[fill=#1,text=white,rounded corners=1.5pt,
+  inner sep=1.6pt,font=\sffamily\scriptsize\bfseries](t){#2};}
+\newcommand{\TXT}{\etk{NavyBlue}{TEKST}}
+\newcommand{\FIG}{\etk{Plum}{RYSUNEK}}
+\newcommand{\LIT}{\etk{Sepia}{LITERATURA}}
+\newcommand{\CALC}[1]{\etk{BrickRed}{OBLICZENIA #1}}
+\newcommand{\DEC}[1]{\etk{Orange}{DECYZJA #1}}
+
+\newcommand{\odp}{\par\textbf{\sffamily Odpowiedź (szkic):}\ }
+\newcommand{\zm}{\par\textbf{\sffamily Zmiana w artykule:}\ }
+\newcommand{\Cmax}{C_{\max}}
+
+\title{\sffamily\bfseries Rewizja BPASTS-05673-2026-01\\[2pt]
+\large Plan prac i szkic odpowiedzi do recenzentów}
+\author{wersja robocza PL do zatwierdzenia}
+\date{5 listopada 2026}
+
+\begin{document}
+\maketitle
+
+\begin{center}\small
+\emph{Classical and Quantum Neighborhoods Evaluation in Iterated Local Search and Simulated Annealing\\
+for the Permutation Flow Shop Problem} (Wojewódzki, Bożejko)\\
+Decyzja: major revision (R1 drobne uwagi, R2 duża rewizja).
+\end{center}
+
+\tableofcontents
+
+\section{Jak czytać ten dokument}
+
+Część~\ref{sec:plan} to plan: co znalazłem w kodzie i danych, jakie decyzje są po Twojej stronie, co trzeba policzyć i dlaczego oraz w jakiej kolejności to robić. Niczego nie liczyłem i nie zmieniałem w artykule.
+
+Części~\ref{sec:r1} i~\ref{sec:r2} zawierają każdy zarzut recenzenta w oryginale (szara ramka), szkic odpowiedzi po polsku i opis zmiany w artykule. Przy zmianach w zdaniach podaję pary \emph{Teraz} / \emph{Po zmianie}. Proponowane zdania od razu piszę po angielsku, bo w tej postaci wejdą do artykułu. Odpowiedzi do recenzentów przetłumaczę po akceptacji tej wersji.
+
+Etykiety przy punktach: \TXT{} zmiana tekstu, \FIG{} nowy rysunek, pseudokod lub tabela, \LIT{} nowe pozycje bibliografii, \CALC{C$n$} wymaga obliczeń opisanych w sekcji~\ref{sec:calc}, \DEC{D$n$} czeka na Twoją decyzję z sekcji~\ref{sec:dec}.
+
+Część~\ref{sec:szkice} zawiera szkice nowych elementów artykułu: definicję PFSP, pseudokod, lemat o karze, tabelę złożoności i dwa diagramy.
+
+Odpowiedzi piszę w jednym tonie: zgadzamy się, mówimy co i gdzie zmieniamy, a tam, gdzie recenzent wskazał błąd, przyznajemy go wprost. Bez podziękowań przy każdym punkcie. Jedno zdanie podziękowania wystarczy na początku listu.
+
+% =====================================================================
+\section{Plan rewizji}\label{sec:plan}
+
+\subsection{Co znalazłem w kodzie i danych (poza uwagami recenzentów)}\label{sec:found}
+
+Wyniki w artykule pochodzą z biegów z 16--18 marca 2026 (\texttt{results/experiments/quantum\_1/}), liczonych kodem ze stanu repo \texttt{dc94a4c} (13.03.2026). Przejrzałem ten kod i pliki \texttt{summary.csv}. Poniższe sprawy trzeba załatwić w rewizji niezależnie od tego, czy recenzent je zauważył.
+
+\begin{enumerate}[label=\textbf{F\arabic*.},leftmargin=2.2em]
+\item \textbf{Metryka RPD.} Tabele liczą odchylenie od \emph{dolnej granicy} Taillarda (pole \texttt{lower\_bound} w \texttt{result.json}), a tekst mówi o ,,best-known optimum''. Liczby są spójne z danymi (np. 13,48\% dla dyn\textsubscript{ILS} przy 100~ms), ale opis jest błędny. Względem najlepszego znanego rozwiązania (UB) te same biegi dają 2,36\%. \DEC{D7}
+\item \textbf{Błąd tabu dla q-dyn i q-mot w ILS.} Funkcja \texttt{handle\_tabu\_move} nie obsługuje \texttt{quantum\_dynasearch} ani \texttt{quantum\_motzkin}. Gdy ruch jest tabu, iteracja jest pomijana bez zmiany rozwiązania, a w następnej idzie do QPU to samo zapytanie. Każde takie wywołanie kosztuje ok.\ 2~s. Tekst artykułu (,,random restart'') opisuje zachowanie, którego kod dla tych dwóch wariantów nie realizował. Ten błąd mógł zaniżyć wyniki q-dyn i q-mot.
+\item \textbf{SA bierze najlepszego sąsiada, nie losowego.} Kryterium Metropolisa działa na ruchu zwróconym przez operator sąsiedztwa, czyli na najlepszym ruchu (dla dyn/mot jest to wynik DP lub QUBO). Tekst mówi ,,generates a neighboring solution''. Po osiągnięciu optimum lokalnego algorytm krąży między kilkoma rozwiązaniami. Dodatkowo podgrzewanie $\times 1{,}5$ przy $T\approx 1$ nie zmienia niczego, gdy typowe $\Delta$ to dziesiątki jednostek. To wyjaśnia identyczne wyniki SA we wszystkich limitach czasu. \DEC{D4}
+\item \textbf{Brak liczby wywołań i czasów QPU.} \texttt{result.json} z marca zawiera tylko historię poprawy $\Cmax$. Nie ma liczby iteracji, liczby wywołań QPU ani czasów QPU, a o te prosi R1.
+\item \textbf{Embedding liczony od zera przy każdym wywołaniu.} Kod tworzył nowy \texttt{DWaveSampler} i \texttt{EmbeddingComposite} w każdej iteracji. Embedding (minorminer) i połączenie z Leap liczone są od nowa. To główny składnik ok.\ 1,9~s na wywołanie. Uwaga R1 o cache'owanym embeddingu trafia w sedno.
+\item \textbf{Kara $P=\sum_k|\delta_k|+1$ niszczy rozdzielczość na QPU.} Dla q-fib, q-dyn i q-mot kara jest rzędu $K\cdot|\delta|$ ($K$ to liczba zmiennych). QPU skaluje współczynniki do swojego zakresu, więc różnice między $\delta_k$ zajmują ułamek procenta tego zakresu i giną w błędach sterowania (ICE). Lemat w sekcji~\ref{sec:lemat} pokazuje, że wystarcza $P>\max_k|\delta_k|$. To moja hipoteza na główną przyczynę słabych wyników kwantowych. Wymaga sprawdzenia. \CALC{C5}\ \DEC{D5}
+\item \textbf{Przekroczenie budżetu czasu przez warianty QPU.} Jedno wywołanie trwa ok.\ 2~s, więc bieg z limitem 100~ms trwa w praktyce ok.\ 2~s (pola \texttt{time\_to\_best\_ms} przekraczają limit). Artykuł tego nie mówi.
+\item \textbf{Klasyczny Adjacent nie używa Head+Tail.} W \texttt{get\_neighbor} każdy sąsiad jest liczony pełnym $\Cmax$ ($O(mn^2)$ na sąsiedztwo), a tekst deklaruje Head+Tail i $O(mn)$. Trzeba ujednolicić kod albo tekst.
+\item \textbf{Klasyczny Fibonacci w ILS stoi w miejscu.} Średnia 26,02\% jest identyczna dla 100~ms i 10\,000~ms, co wskazuje na zablokowanie się wariantu z top-$k$ i tabu. Do sprawdzenia w kodzie (najpierw czytanie, bez biegów).
+\item \textbf{Jeden bieg na instancję.} Każda komórka tabeli to 10 instancji $\times$ 1 ziarno. Recenzent tego nie wytknął, ale przy powtórce warto dać kilka ziaren. \DEC{D1}
+\item \textbf{Nieznany model QPU.} Konfiguracja miała \texttt{solver: null}, więc Leap wybierał domyślny solver, a wyniki nie zapisują jego nazwy. Recenzent~2 wymaga tej informacji. Można ją odczytać z historii zadań w panelu Leap (Ty) albo zapisać przy powtórce.
+\item \textbf{Zły odnośnik do Dynasearch.} \texttt{dynasearch\_Campos} to praca o scatter search dla problemu liniowego porządkowania. Dynasearch pochodzi od Pottsa i van de Velde oraz Congrama, Pottsa i van de Velde (2002).
+\item \textbf{Token D-Wave w publicznej historii gita} (\texttt{config.yaml}, commit \texttt{dc94a4c}, repo \texttt{RemigiuszWoj/PhD} jest publiczne). Nie dotyczy artykułu, ale token trzeba unieważnić w Leap.
+\end{enumerate}
+
+Najważniejszy wniosek merytoryczny: klasyczne DP i model QUBO rozwiązują \emph{ten sam} problem wyboru ruchów, czyli minimalizują sumę niezależnie policzonych $\delta_k$ przy ograniczeniach zgodności. DP robi to dokładnie w czasie wielomianowym ($O(n)$ dla Fibonacciego, $O(n^2)$ dla Dynasearch, $O(n^3)$ dla Motzkina). Wyżarzacz kwantowy nie może więc znaleźć lepszej kombinacji niż DP, w najlepszym razie znajdzie tę samą. Do tego suma $\delta_k$ jest tylko przybliżeniem rzeczywistej zmiany $\Cmax$, bo w PFSP efekty ruchów nie są addytywne. Proponuję oprzeć na tym nowe ujęcie artykułu: formułujemy QUBO dla czterech sąsiedztw i mierzymy, ile kosztuje przekazanie dokładnie rozwiązywalnego podproblemu do QPU i skąd bierze się ten koszt. Ta teza jest uczciwa, odpowiada na zarzut~1d recenzenta~2 i nie obiecuje przewagi kwantowej. \DEC{D3}
+
+\subsection{Decyzje po Twojej stronie}\label{sec:dec}
+
+\begin{enumerate}[label=\textbf{D\arabic*.},leftmargin=2.2em]
+\item \textbf{Zakres eksperymentów.}
+  \emph{(A, rekomendowane)} Powtórka całości dla $n=20$ z poprawionym kodem (F2, F3, F5, F8, F9), w trzech wariantach selekcji (DP / QUBO + solver klasyczny / QUBO + QPU), z logowaniem iteracji i czasów QPU oraz z kilkoma ziarnami.
+  \emph{(B, minimum)} Zostają marcowe wyniki QPU, dokładamy tylko QUBO + solver klasyczny na CPU, a czasy QPU bierzemy z logu z maja--sierpnia. Błędy F2 i F3 opisujemy w tekście jako ograniczenie.
+  Wariant B jest tańszy, ale zostawia błąd F2 w opublikowanych liczbach i nie daje liczby wywołań, o którą prosi R1. Moim zdaniem B nie przejdzie u recenzenta~2.
+\item \textbf{Nazwa metody ILS.} Algorytm zawsze przechodzi do najlepszego dopuszczalnego sąsiada, a pamięć tabu i losowy restart pełnią rolę dywersyfikacji. Nie ma pętli ,,local search do optimum, potem perturbacja''. To jest przeszukiwanie tabu z restartami, i tak nazywa go wasz artykuł z ICAISC 2026 (,,Tabu Search''). Rekomenduję zmianę nazwy na TS w całym artykule, w tym w tytule. Alternatywa to zostawić ILS i opisać tabu jako dodatkowy składnik, ale recenzent łatwo może odpisać, że to nie jest ILS.
+\item \textbf{Nowe ujęcie wkładu i tytuł.} Tytuł zawiera ,,Quantum Neighborhoods'', a recenzent~2 słusznie to kwestionuje. Propozycje:
+  \begin{itemize}
+  \item \emph{QUBO Formulations of Compound Neighborhoods for the Permutation Flow Shop Problem: Classical and Quantum-Annealing Move Selection in Tabu Search and Simulated Annealing}
+  \item \emph{Classical versus Quantum-Annealing Move Selection in Compound Neighborhoods for the Permutation Flow Shop Problem}
+  \end{itemize}
+  Do tego teza z końca sekcji~\ref{sec:found} jako główny wkład.
+\item \textbf{SA.} \emph{(a, rekomendowane)} Zostawiamy schemat ,,operator zwraca najlepszy ruch, Metropolis decyduje o akceptacji'', bo dzięki temu obie metaheurystyki porównują ten sam operator selekcji. Opisujemy to wprost, kalibrujemy $T_{\text{init}}$ do typowych $|\Delta|$, usuwamy $f$ i uzasadniamy podgrzewanie albo je usuwamy. \emph{(b)} Przechodzimy na losowego sąsiada. Wtedy jednak dla sąsiedztw złożonych QUBO traci sens w SA, bo nic nie wybiera. Obie opcje wymagają powtórki SA.
+\item \textbf{Kara $P$ w powtórce.} \emph{(a, rekomendowane)} $P=\max_k|\delta_k|+\varepsilon$ z lematem w artykule. \emph{(b)} Zostawiamy $\sum_k|\delta_k|+1$ i tylko uzasadniamy. Opcja (a) prawdopodobnie poprawi wyniki QPU, ale zmienia model względem wersji wysłanej, co w odpowiedzi trzeba nazwać wprost.
+\item \textbf{Cytowanie Bożejko i Bożejko (2015).} Praca o procesach gaussowskich nie ma związku z treścią, a recenzent zarzuca nadmiar autocytowań. Rekomenduję usunięcie zdania i pozycji. To może wymagać uzgodnienia z promotorem.
+\item \textbf{Punkt odniesienia RPD.} \emph{(a, rekomendowane)} RPD względem najlepszego znanego rozwiązania (UB Taillarda), jak w większości literatury PFSP. \emph{(b)} Zostajemy przy dolnej granicy i poprawiamy opis. Opcja (a) zmienia wszystkie liczby (na mniejsze), ale nie zmienia rankingów.
+\item \textbf{Ujawnienie błędu F2 w liście.} Rekomenduję jedno zdanie w liście do redaktora: w trakcie rewizji znaleźliśmy i poprawiliśmy błąd obsługi tabu w dwóch wariantach QUBO i powtórzyliśmy wszystkie eksperymenty. To lepsze niż sytuacja, w której ktoś odkryje różnicę w liczbach sam.
+\end{enumerate}
+
+\subsection{Co trzeba policzyć i dlaczego}\label{sec:calc}
+
+Niczego z poniższych nie uruchamiałem. Przy każdym punkcie podaję, po co jest, którego zarzutu dotyczy i czy zużywa czas QPU. Koszty to szacunki.
+
+\begin{enumerate}[label=\textbf{C\arabic*.},leftmargin=2.2em]
+\item \textbf{Główna powtórka eksperymentu} (D1-A). \emph{Po co:} wszystkie liczby w artykule zmieniają się po poprawkach F2, F3, F5, F8 i D5, a R1 i R2 wymagają nowych pomiarów. \emph{Zakres:} 2 metaheurystyki $\times$ 4 sąsiedztwa $\times$ 3 rodzaje selekcji $\times$ 30 instancji ($n=20$, $m\in\{5,10,20\}$) $\times$ 6 limitów czasu. \emph{Koszt CPU:} DP i QUBO+SA to ok.\ $2\cdot 4\cdot 2\cdot 30\cdot 18{,}6~\text{s} \approx 2{,}5$~h na ziarno. \emph{Koszt QPU:} przy ok.\ 35~ms dostępu na wywołanie i 10--15 wywołaniach na zestaw limitów to ok.\ 2--3~min czasu QPU na ziarno. Po cache'owaniu embeddingu wywołań w tym samym czasie będzie więcej, więc nawet 3--5 razy tyle. Przed startem trzeba sprawdzić dostępną kwotę Leap. \emph{Dotyczy:} R1.5, R1.6, R2.4, R2.5.
+\item \textbf{Liczba iteracji i porównanie przy równej liczbie wywołań.} \emph{Po co:} R1.6 chce porównania liczby wyborów ruchu. Proponuję dwie miary: średnią liczbę iteracji w każdej komórce oraz bieg klasyczny zatrzymany po tej samej liczbie iteracji, którą wykonał wariant QPU. To oddziela jakość selekcji od narzutu czasowego. \emph{Koszt:} tylko CPU, minuty. Logowanie dodane w C1.
+\item \textbf{Rozbicie czasu wywołania QPU.} \emph{Po co:} R1.5 (service time vs QPU access time). Z D-Wave dostajemy \texttt{qpu\_access\_time}, \texttt{qpu\_programming\_time}, \texttt{qpu\_sampling\_time}, a po stronie klienta mierzymy czas całego wywołania (sieć, kolejka, embedding). Mamy już log z maja--sierpnia (24\,317 wywołań). Wynika z niego ok.\ 27--41~ms dostępu do QPU przy ok.\ 1,9~s czasu zegarowego na iterację. Log pochodzi jednak z innego ustawienia (mniej odczytów niż \texttt{num\_reads=1000} z marca), więc do artykułu trzeba danych z C1. \emph{Koszt:} brak dodatkowego QPU, dane spadną z C1.
+\item \textbf{Test osadzalności offline.} \emph{Po co:} R1.3 (precyzyjne zdanie o limicie kubitów) i R1.4 (cache'owany embedding). Na lokalnym grafie topologii Pegasus/Zephyr z \texttt{dwave\_networkx} sprawdzamy, czy grafy konfliktów q-adj, q-fib, q-dyn i q-mot dla $n=20$ i $n=50$ dają się osadzić, i ile kubitów fizycznych oraz jak długie łańcuchy to daje. \emph{Koszt:} tylko CPU, bez QPU, minuty.
+\item \textbf{Rozdzielczość współczynników QUBO.} \emph{Po co:} sprawdzenie hipotezy F6 i uzasadnienie kary dla R2. Dla kilkudziesięciu losowych permutacji liczymy stosunek $\min|\delta_k|/P$ dla obecnej i proponowanej kary oraz sprawdzamy, ile różnych $\delta_k$ rozróżni QPU po skalowaniu. \emph{Koszt:} tylko CPU, sekundy.
+\item \textbf{Gęstość macierzy $Q$.} \emph{Po co:} R2 każe uzasadnić słowa ,,dense'' i ,,sparse''. Liczba niezerowych współczynników dla każdego sąsiedztwa przy $n=20$ wynika ze wzorów (sekcja~\ref{sec:zlozonosc}), a dla q-mot zależy od filtra $\delta_k<0$, więc trzeba ją policzyć na danych. \emph{Koszt:} sekundy, można dołączyć do C5.
+\item \textbf{Jakość selekcji QPU względem DP.} \emph{Po co:} najczystsza odpowiedź na R2.5. W każdym wywołaniu porównujemy wartość funkcji zastępczej $\sum\delta_k x_k$ dla rozwiązania z QPU i z DP: jak często QPU trafia w optimum i jaka jest średnia luka. \emph{Koszt:} zero dodatkowo, jeśli w C1 zapisujemy oba wyniki.
+\end{enumerate}
+
+\subsection{Nowa struktura artykułu}\label{sec:struktura}
+
+\begin{enumerate}[leftmargin=2em]
+\item \textbf{Introduction} (prozą, bez wypunktowań): PFSP i klasyczne źródła; metody dokładne i heurystyczne; sąsiedztwa złożone i bardzo duże sąsiedztwa (VLSN); QUBO i wyżarzanie kwantowe, w tym prace o szeregowaniu; luka i wkład; relacja do preprintu SSRN 7411334.
+\item \textbf{Problem definition}: $F_m|prmu|\Cmax$, notacja, rekurencja z warunkami brzegowymi, cel.
+\item \textbf{Solution methods}: krótki przegląd metod dokładnych i heurystycznych; TS (lub ILS, zależnie od D2) i SA z opisem zgodnym z kodem; pseudokod hybrydowej iteracji; diagram przepływu CPU/QPU.
+\item \textbf{Neighborhood structures}: Adjacent, Fibonacci, Dynasearch, Motzkin; diagram łuków; DP z odnośnikami; tabela złożoności.
+\item \textbf{QUBO formulations of move selection}: ogólna postać, konwencja macierzy, związek QUBO--Ising--hamiltonian, lemat o karze; cztery podsekcje ,,QUBO formulation of the X neighborhood''; osobno koszt budowy, rozwiązania i zastosowania.
+\item \textbf{Experimental setup}: CPU, QPU (model, dostęp, Ocean SDK, parametry), embedding, trzy rodzaje selekcji, budżety, ziarna, metryki.
+\item \textbf{Results}: jakość (RPD), liczba iteracji, rozbicie czasu, jakość selekcji QPU vs DP. Ok.\ jednej strony, słownie, z małą liczbą liczb w tekście.
+\item \textbf{Discussion and conclusions}: maksymalnie pół strony.
+\end{enumerate}
+
+\subsection{Kolejność prac}
+
+\begin{enumerate}[leftmargin=2em]
+\item Twoje decyzje D1--D8 oraz unieważnienie tokenu.
+\item Zmiany tekstowe niezależne od wyników: wstęp, definicja, sąsiedztwa, sekcja QUBO, literatura, rysunki (pary ,,teraz / po zmianie'' do akceptacji, sekcja po sekcji).
+\item Poprawki kodu (F2, F3, F5, F8, F9, logowanie), pokazane w czacie przed commitem.
+\item C4, C5 i C6 (CPU, minuty), potem C1 z C2, C3 i C7 po sprawdzeniu kwoty QPU.
+\item Wyniki, dyskusja, abstrakt.
+\item List do recenzentów EN i PL, ostateczna wersja do wysłania.
+\end{enumerate}
+
+% =====================================================================
+\section{Recenzent 1}\label{sec:r1}
+
+\textbf{Szkic otwarcia listu:} Dziękujemy obu recenzentom za uwagi. Poprawiliśmy manuskrypt zgodnie ze wszystkimi uwagami. Poniżej odpowiadamy na nie punkt po punkcie, a zmiany w tekście zaznaczyliśmy kolorem.
+
+\begin{rev}{R1.1 — prezentacja: pseudokod i diagram}
+The main drawback of the paper is its presentation that relies mainly on textual descriptions. It would be clearer if it included pseudocode and/or simple diagrams showing the workflow of the hybrid algorithms and the roles of the classical and quantum components.
+\end{rev}
+\odp Zgadzamy się. Dodaliśmy pseudokod jednej iteracji algorytmu hybrydowego (Algorytm~1), który pokazuje, które kroki wykonuje CPU, a który QPU, oraz diagram przepływu (Rys.~X) z zaznaczonymi składnikami czasu wywołania QPU: sieć, kolejka, embedding, programowanie i próbkowanie. Opisy słowne w sekcjach o sąsiedztwach uzupełniliśmy rysunkiem łuków dla Dynasearch i Motzkina.
+\zm \FIG{} Algorytm~1 i diagram przepływu (szkice w sekcji~\ref{sec:szkice}), rysunek łuków (wspólny z R2.2.3--2.4).
+
+\begin{rev}{R1.2 — notacja $t_{ms}$}
+The notation like ``t\_ms'' should be clearly defined in the main text when it is first introduced rather than being inferred from the table captions.
+\end{rev}
+\odp Zgadzamy się. Budżet czasu oznaczamy teraz jednym symbolem $t_{\max}$ (w milisekundach). Definiujemy go w sekcji o metodach przy pierwszym użyciu i stosujemy w tabelach, na rysunkach i w tekście. Usunęliśmy oznaczenie $t_{\mathrm{ms}}$.
+\zm \TXT{} ujednolicenie $t_{\mathrm{ms}}\to t_{\max}$ w podpisach tabel i rysunków oraz w sekcji wyników.
+
+\begin{rev}{R1.3 — limit liczby kubitów}
+Sentence ``The available qubit count on the QPU additionally bounds the maximum tractable instance size.'' should be more precise.
+\end{rev}
+\odp Zgadzamy się, że zdanie było nieprecyzyjne. Ograniczeniem nie jest sama liczba kubitów, tylko możliwość osadzenia grafu konfliktów modelu QUBO w topologii procesora. Każda zmienna logiczna zajmuje łańcuch kubitów fizycznych, a długość łańcuchów rośnie z gęstością grafu. Zastąpiliśmy zdanie konkretnymi liczbami: dla każdego sąsiedztwa podajemy liczbę zmiennych, liczbę niezerowych współczynników kwadratowych oraz liczbę kubitów fizycznych i maksymalną długość łańcucha po osadzeniu dla $n=20$ i $n=50$.
+\zm \TXT{} \CALC{C4}
+\begin{teraz}
+The available qubit count on the QPU additionally bounds the maximum tractable instance size.
+\end{teraz}
+\begin{pozmianie}
+The size of the instances we can handle is limited by minor embedding rather than by the raw qubit count. Each logical variable of the QUBO occupies a chain of physical qubits, and the chains grow with the density of the conflict graph. For $n=20$ the Dynasearch model has [K] variables and [E] quadratic terms and requires [Q] physical qubits with chains of up to [L] qubits on the [solver]; for $n=50$ [no embedding was found / Q' qubits are required] (Table~X).
+\end{pozmianie}
+
+\begin{rev}{R1.4 — rodzaj embeddingu}
+What kind of embedding did you use? If QUBO is dense, you can use precomputed clique embedding that is cached, that could reduce embedding time.
+\end{rev}
+\odp W wersji wysłanej używaliśmy \texttt{EmbeddingComposite}, który heurystyką minorminer liczy osadzenie od nowa przy każdym wywołaniu. To była istotna część narzutu. W rewizji osadzenie liczymy raz i używamy go ponownie. Model Adjacent ma pełny graf konfliktów, więc stosujemy zapamiętane osadzenie klikowe. Model Fibonacci ma graf ścieżki, którego osadzenie jest trywialne i stałe dla danego $n$. W modelach Dynasearch i Motzkin zbiór zmiennych zależy od filtra ruchów nieulepszających, dlatego osadzamy pełny graf konfliktów raz dla danego $n$ i zerujemy wagi zmiennych odfiltrowanych [jeśli C4 potwierdzi, że ten graf da się osadzić]. Rozdział eksperymentalny opisuje teraz sposób osadzania i podaje, ile czasu zajmował przed zmianą i po niej.
+\zm \TXT{} \CALC{C1}\ \CALC{C4} --- opis osadzania w sekcji eksperymentalnej oraz zmiana w kodzie (\texttt{FixedEmbeddingComposite} lub \texttt{DWaveCliqueSampler}).
+
+\begin{rev}{R1.5 — service time i QPU access time}
+If possible please additionally provide also service time and QPU access time, that could help reader to understand how much time is used for networking, DWave system queues etc. If the machine was locally installed, the results could be much different as more annealer calls would fit within time limit.
+\end{rev}
+\odp Zgadzamy się. Dodaliśmy tabelę z rozbiciem czasu jednego wywołania: czas zegarowy po stronie klienta, czas usługi zwracany przez Leap, czas dostępu do QPU i jego składniki (programowanie, próbkowanie). Wyniki pokazują, że czysty dostęp do QPU to [ok.\ 30--40~ms], a całe wywołanie trwa [ok.\ X~s], więc większość czasu zabierają sieć, kolejka i obsługa po stronie klienta. W dyskusji wprost piszemy, że przy procesorze dostępnym lokalnie w tym samym budżecie zmieściłoby się [kilkadziesiąt] razy więcej wywołań, i podajemy tę liczbę jako oszacowanie, a nie wynik.
+\zm \FIG{} tabela rozbicia czasu, \TXT{} akapit w dyskusji. \CALC{C3}
+
+\begin{rev}{R1.6 — liczba wywołań wyżarzacza}
+I am not sure if using time limit gives enough information, maybe you can add also number of annealer calls (move selections?) and use it for comparison with the number of move selection performed by pure classical versions.
+\end{rev}
+\odp Zgadzamy się. Sam limit czasu miesza dwa efekty: jakość wyboru ruchu i narzut na wywołanie. Dodaliśmy dwie rzeczy. Pierwsza to średnia liczba iteracji (wyborów ruchu) dla każdego wariantu i budżetu. Druga to porównanie przy równej liczbie iteracji: wariant klasyczny zatrzymujemy po tej samej liczbie wyborów ruchu, jaką w danym budżecie wykonał wariant QPU. Przy równej liczbie iteracji różnica w jakości wynika już tylko z jakości wyboru ruchu.
+\zm \FIG{} tabela liczby iteracji i tabela porównania przy równej liczbie iteracji, \TXT{} akapit w wynikach. \CALC{C2}
+
+% =====================================================================
+\section{Recenzent 2}\label{sec:r2}
+
+\subsection{Uwagi ogólne}
+
+\begin{rev}{R2.G1 — QUBO to nie to samo co obliczenia kwantowe}
+The manuscript does not consistently distinguish between QUBO formulations and quantum computing as an optimization paradigm. A QUBO formulation can be solved using either classical or quantum algorithms; therefore, the use of a QUBO formulation does not, by itself, imply the use of quantum computing. This distinction should be made explicit throughout the manuscript, and the terminology should be revised accordingly.
+\end{rev}
+\odp Zgadzamy się w pełni. W całym tekście rozdzielamy teraz trzy pojęcia: \emph{sąsiedztwo} (zbiór ruchów), \emph{model selekcji} (problem wyboru zgodnych ruchów, zapisany jako DP albo jako QUBO) oraz \emph{solver} (dokładne DP, klasyczny solver QUBO albo QPU). Nazwy ,,Quantum Adjacent'' i podobne usunęliśmy. Warianty nazywamy teraz według modelu i solvera, np.\ Adjacent/DP, Adjacent/QUBO-SA i Adjacent/QUBO-QPU. Słowa ,,quantum'' używamy tylko tam, gdzie mowa o wykonaniu na QPU. Zmieniliśmy też tytuł [D3].
+\zm \TXT{} tytuł, abstrakt, wstęp, nazwy podsekcji 3.1--3.4, tabele, legendy rysunków. \DEC{D3}
+
+\begin{rev}{R2.G2 — niezrównoważona bibliografia}
+The reference list appears unbalanced. The manuscript would benefit from a broader discussion of established research in operations research, particularly concerning the PFSP, exact and heuristic scheduling methods, QUBO formulations, and quantum annealing. The relatively frequent citation of works by R. Wojewódzki and W. Bożejko should be complemented by a more comprehensive selection of relevant literature.
+\end{rev}
+\odp Zgadzamy się. Rozbudowaliśmy wstęp o przegląd metod dokładnych (branch-and-bound, programowanie całkowitoliczbowe), heurystyk konstrukcyjnych (NEH), metaheurystyk dla PFSP (SA, TS, iterated greedy), sąsiedztw złożonych i bardzo dużych sąsiedztw (Dynasearch, VLSN), formułowań QUBO oraz zastosowań wyżarzania kwantowego w szeregowaniu. Lista pozycji jest w sekcji~\ref{sec:lit}. Usunęliśmy jedno autocytowanie, które nie było związane z treścią [D6]. Zostawiliśmy te prace własne, które definiują sąsiedztwa Fibonacciego i Motzkina, bo bez nich opis byłby niepełny.
+\zm \LIT{} ok.\ 20 nowych pozycji, \TXT{} wstęp. \DEC{D6}
+
+\begin{rev}{R2.G3 — nakładanie się z preprintem SSRN 7411334}
+There may also be some overlap with the following recent work: Wojewódzki, R., \& Bożejko, W. Scalable Quantum Neighborhood Search for the Permutation Flow Shop Problem via Windowed QUBO Decomposition. Available at SSRN, No. 7411334. The authors should clarify the relationship between the two contributions and explicitly identify the methodological and experimental differences.
+\end{rev}
+\odp Preprint powstał później niż niniejszy manuskrypt i na nim się opiera: cytuje go jako źródło bazowych formułowań QUBO. Prace różnią się zakresem. Niniejszy manuskrypt wprowadza modele QUBO wyboru ruchu dla czterech sąsiedztw w ich pełnej postaci i porównuje je z dokładną selekcją klasyczną wewnątrz dwóch metaheurystyk dla $n=20$, gdzie model mieści się w procesorze bez dekompozycji. Preprint dotyczy skalowania: usuwa filtr kandydatów w modelach liniowych, dzieli modele kwadratowe na nakładające się okna rozwiązywane osobno i rozszerza eksperymenty do $n=500$, z inną strategią dywersyfikacji. Nie powtarza naszego porównania trzech sposobów selekcji ani analizy czasu wywołań. Dodaliśmy we wstępie akapit, który opisuje tę relację i cytuje preprint.
+\zm \TXT{} \LIT{} akapit we wstępie.
+
+\subsection{Wstęp}
+
+\begin{rev}{R2.1a--c — źródła o PFSP, metody klasyczne przed kwantowymi, kolejność akapitów}
+(a) In the first paragraph, please include additional well-established references on the Flow Shop Scheduling Problem, particularly foundational and widely cited studies. (b) Before introducing quantum computing, the manuscript should provide a concise overview of established approaches to solving the PFSP. This discussion should cover both exact methods, such as branch-and-bound algorithms and mathematical programming approaches, and heuristic or metaheuristic methods. (c) The current second paragraph should be moved to a position following the discussion of classical PFSP solution methods.
+\end{rev}
+\odp Zgadzamy się. Pierwszy akapit cytuje teraz prace podstawowe: Johnsona, Gareya, Johnsona i Sethiego (NP-trudność), Taillarda oraz przeglądy Framinana, Gupty i Leistena oraz Ruiza i Maroto. Nowy drugi akapit omawia metody dokładne i (meta)heurystyki. Dawny drugi akapit o sąsiedztwach jest teraz trzeci. Dopiero po nim wprowadzamy QUBO i wyżarzanie kwantowe.
+\zm \TXT{} \LIT{} przebudowa wstępu zgodnie z sekcją~\ref{sec:struktura}.
+
+\begin{rev}{R2.1d — zbyt mocne twierdzenie o wyżarzaczu}
+The following statement is too strong: ``The quantum annealer then enables the selection of the best permissible combination of swaps in a single optimization step, potentially considering a significantly larger number of combinations than classical greedy or dynamic approaches.'' [\dots] Please distinguish between finding an optimal solution to the mathematical QUBO model and obtaining a high-quality candidate solution using a real quantum device. Any claimed advantage over classical methods should be supported by experimental evidence.
+\end{rev}
+\odp Zgadzamy się i usuwamy to zdanie. Było nie tylko zbyt mocne, ale też błędne w części o programowaniu dynamicznym. DP przegląda wszystkie dopuszczalne kombinacje niejawnie i zwraca optimum modelu w czasie wielomianowym. Wyżarzacz rozwiązuje ten sam model, więc nie może znaleźć lepszej kombinacji niż DP, a z powodu szumu, osadzania i skończonej liczby próbek może znaleźć gorszą. Dodaliśmy też uwagę, że oba sposoby optymalizują sumę niezależnie policzonych zmian $\delta_k$, a ta suma tylko przybliża rzeczywistą zmianę $\Cmax$. Wkład artykułu opisujemy teraz jako formułowanie modeli QUBO i pomiar kosztu, jaki niesie przekazanie selekcji do QPU. Nie twierdzimy, że QPU daje przewagę.
+\zm \TXT{} \DEC{D3}
+\begin{teraz}
+The key idea of this work is to transform the neighborhood move selection --- i.e., the decision of which swaps to perform --- into a QUBO problem. The quantum annealer then enables the selection of the best permissible combination of swaps in a single optimization step, potentially considering a significantly larger number of combinations than classical greedy or dynamic approaches.
+\end{teraz}
+\begin{pozmianie}
+In this work the move selection step of a compound neighborhood, that is, the choice of a set of mutually compatible moves, is written as a QUBO model. For the four neighborhoods we study, the same selection problem can be solved exactly by dynamic programming in polynomial time, so a quantum annealer cannot return a better selection than the classical procedure. At best it returns the same one, and noise, minor embedding and a finite number of samples may lead it to a worse one. Both procedures also optimize the sum of individually evaluated move gains, which only approximates the true change of the makespan. We therefore do not look for a quantum advantage. We measure how much solution quality and time it costs to delegate an exactly solvable selection step to a quantum processing unit, and we identify where this cost comes from.
+\end{pozmianie}
+
+\begin{rev}{R2.1e — ,,classical'' i ,,hybrid neighborhoods''}
+Please clarify what is meant by ``classical neighborhoods'' and ``hybrid neighborhoods.'' [\dots] The terminology should be defined explicitly and used consistently throughout the manuscript.
+\end{rev}
+\odp Zgadzamy się. Wprowadziliśmy na końcu wstępu jawne definicje. \emph{Sąsiedztwo} to zbiór ruchów. \emph{Selekcja} to wybór zbioru zgodnych ruchów i może być wykonana dokładnie (DP na CPU), klasycznym solverem QUBO (CPU) albo na QPU. \emph{Algorytm hybrydowy} to metaheurystyka działająca na CPU, która w każdej iteracji wysyła model selekcji do QPU. Słowo ,,hybrid neighborhood'' usunęliśmy.
+\zm \TXT{} definicje na końcu wstępu, nazewnictwo wariantów w całym tekście (jak w R2.G1).
+
+\subsection{Definicja problemu}
+
+\begin{rev}{R2.2 — kolejność sekcji 2}
+The section should first define the scheduling problem, its assumptions, and its objective function. It should then briefly review relevant exact and heuristic solution methods before introducing the neighborhood structures used in the proposed approach.
+\end{rev}
+\odp Zgadzamy się. Sekcja~2 zawiera teraz wyłącznie definicję problemu. Krótki przegląd metod i opis metaheurystyk przenieśliśmy do nowej sekcji~3, a sąsiedztwa do sekcji~4.
+\zm \TXT{} podział na sekcje 2--4 (sekcja~\ref{sec:struktura}).
+
+\begin{rev}{R2.2a--c — notacja $F_m|prmu|C_{\max}$, cel, rekurencja z warunkami brzegowymi}
+(a) Please introduce the PFSP more intuitively and consider using the standard three-field scheduling notation $F_m|prmu|C_{\max}$. The notation should be explained, including the meaning of the permutation constraint. (b) Please state the optimization objective explicitly. (c) [\dots] define the quantities explicitly, for example $\pi(j)$ [\dots] The completion-time recurrence should be presented with clearly defined boundary conditions.
+\end{rev}
+\odp Zgadzamy się. Problem opisujemy teraz najpierw słownie, potem notacją trójpolową Grahama i współautorów z wyjaśnieniem każdego pola. Cel ($\min \Cmax$) zapisaliśmy wprost. Rekurencję podajemy z osobnymi warunkami brzegowymi, zgodnie z sugestią recenzenta, a $\pi(j)$ i $p_{k,\pi(j)}$ definiujemy przed użyciem. Usunęliśmy też niespójność, w której wzór ogólny był formalnie zapisany dla $k=1$ i $j=1$.
+\zm \TXT{} nowa definicja (szkic w sekcji~\ref{sec:def}). Usuwamy zdanie o funkcjach dodatnio określonych na grupach permutacji [D6].
+
+\subsection{Metaheurystyki}
+
+\begin{rev}{R2 ILS — standardowy ILS nie ma listy tabu}
+Standard Iterated Local Search does not inherently include a tabu list. Its defining components are typically local search, perturbation, and an acceptance criterion. A tabu mechanism can be incorporated into an ILS variant, but this should be identified as an additional algorithmic component. Please specify.
+\end{rev}
+\odp \emph{[Wariant zależny od D2, rekomendowany:]} Recenzent ma rację. Nasz algorytm w każdej iteracji przechodzi do najlepszego dopuszczalnego sąsiada, używa pamięci tabu z kryterium aspiracji, a gdy ruch zwrócony przez operator złożony jest zabroniony, wykonuje losowy restart. Taki schemat to przeszukiwanie tabu z restartami, a nie ILS. Zmieniliśmy nazwę metody na Tabu Search (TS) w całym tekście, opisaliśmy wszystkie składniki (wybór ruchu, pamięć tabu, aspiracja, restart) i dodaliśmy odwołania do Glovera oraz do prac stosujących TS dla PFSP (Nowicki i Smutnicki, Grabowski i Wodecki).
+
+\emph{[Wariant alternatywny:]} Zgadzamy się. Algorytm jest wariantem ILS z dodatkową pamięcią tabu. W tekście wyróżniamy teraz składniki ILS (przeszukiwanie lokalne, perturbacja jako losowy restart, kryterium akceptacji) oraz pamięć tabu jako składnik dodatkowy.
+\zm \TXT{} \DEC{D2}
+
+\begin{rev}{R2 SA (a) — interpretacja temperatury}
+Please clarify the interpretation of the temperature parameter T. In a scheduling metaheuristic, it is an algorithmic control parameter inspired by physical annealing, rather than a physical temperature.
+\end{rev}
+\odp Zgadzamy się i dopisaliśmy to wprost. $T$ jest parametrem sterującym prawdopodobieństwem akceptacji ruchu pogarszającego, wyrażonym w jednostkach funkcji celu. Nie ma związku z temperaturą fizyczną ani z fizyką wyżarzacza kwantowego. Dodaliśmy to zastrzeżenie, bo w artykule występują obok siebie oba rodzaje ,,wyżarzania''.
+\zm \TXT{} jedno zdanie w opisie SA.
+
+\begin{rev}{R2 SA (b) — role $T_{\text{final}}$ i $f$}
+Please explain the roles of $T_{\text{final}}$ and the parameter $f$. As these parameters are mathematically dependent, please explain why both are required and how they are selected.
+\end{rev}
+\odp Recenzent ma rację: przy $T_{\min}=T_{\text{final}}\cdot f$ jeden z parametrów jest zbędny. We wszystkich eksperymentach $f=1$, więc usunęliśmy $f$ z opisu i zostawiliśmy tylko $T_{\text{final}}$ jako dolne ograniczenie temperatury. Opisaliśmy też, jak dobraliśmy $T_{\text{init}}$, $T_{\text{final}}$ i $\alpha$: [D4-a: $T_{\text{init}}$ kalibrujemy tak, by początkowe prawdopodobieństwo akceptacji typowego ruchu pogarszającego wynosiło ok.\ $p_0$, a $\alpha$ tak, by temperatura spadła do $T_{\text{final}}$ w zadanym ułamku budżetu].
+\zm \TXT{} \DEC{D4} \CALC{C1} (zmiana parametrów wymaga powtórki SA).
+
+\begin{rev}{R2 SA (c) — podgrzewanie po stagnacji}
+Increasing the temperature after a period of stagnation is a modification of conventional Simulated Annealing, rather than a standard cooling rule. Please explain the motivation for this mechanism in more detail.
+\end{rev}
+\odp Zgadzamy się, że to modyfikacja klasycznego SA. Opisujemy ją teraz jako wariant z podgrzewaniem (reheating) i podajemy motywację: przy krótkich budżetach geometryczne chłodzenie szybko sprowadza SA do przeszukiwania zachłannego, a podgrzewanie ma przywrócić akceptację ruchów pogarszających. Musimy jednak przyznać, że przy parametrach z wersji wysłanej mechanizm był nieskuteczny: mnożnik $r=1{,}5$ przy $T\approx T_{\text{final}}=1$ dawał temperaturę zbyt niską, by zmienić zachowanie algorytmu. Stąd identyczne wyniki SA dla wszystkich budżetów (Tab.~1--6). W rewizji [D4-a: kalibrujemy podgrzewanie względem typowego $|\Delta|$ / D4-b: usuwamy podgrzewanie] i powtarzamy eksperymenty SA. Opis SA mówi teraz też wprost, że operator sąsiedztwa zwraca najlepszy ruch, a kryterium Metropolisa decyduje, czy go przyjąć.
+\zm \TXT{} \DEC{D4} \CALC{C1}
+
+\subsection{Sąsiedztwa}
+
+\begin{rev}{R2 2.2 — Fibonacci: źródło i opis DP}
+``Subsequently, the problem of selecting an optimal subset of non-conflicting swaps is formulated as a dynamic programming problem.'' Please provide appropriate references and a clearer explanation of this formulation.
+\end{rev}
+\odp Zgadzamy się. Podajemy teraz jawne równanie rekurencyjne: $F(0)=0$, $F(1)=\min(0,\delta_1)$ oraz $F(i)=\min\{F(i-1),\,F(i-2)+\delta_i\}$ dla $i\ge 2$, gdzie $\delta_i$ to zmiana dla zamiany pozycji $(i,i+1)$. Rekonstrukcja wyboru odbywa się przez śledzenie decyzji wstecz. Złożoność wynosi $O(n)$, a ocena wszystkich $\delta_i$ techniką Head+Tail kosztuje $O(mn)$. To ta sama zasada, którą Dynasearch stosuje dla zamian niezależnych. Cytujemy Pottsa i van de Velde oraz Congrama, Pottsa i van de Velde, a także prace definiujące sąsiedztwo Fibonacciego.
+\zm \TXT{} \LIT{} równanie DP i odnośniki.
+
+\begin{rev}{R2 2.3 — Motzkin: diagram, zgodność ruchów, złożoność $O(n^3)$}
+Please consider including a diagram illustrating an endpoint swap on a segment $[i,j]$ [\dots] Please also explain the constraints governing the selection of compatible swaps, particularly the distinction between disjoint, nested, and crossing intervals. Appropriate references or a more detailed derivation should be provided to support the claimed $O(n^3)$ computational complexity.
+\end{rev}
+\odp Zgadzamy się. Dodaliśmy rysunek: zamiana końców odcinka $[i,j]$ oraz trzy przypadki relacji dwóch łuków (rozłączne, zagnieżdżone, krzyżujące się). Opisujemy, dlaczego łuki zagnieżdżone są dopuszczalne: zamiany na różnych pozycjach są przemienne, a wynik nie zależy od kolejności. Opisujemy też, dlaczego łuki krzyżujące się i łuki o wspólnym końcu są wykluczone: zbiór łuków bez skrzyżowań odpowiada ścieżkom Motzkina, co nadaje sąsiedztwu nazwę. Złożoność wyprowadzamy w trzech krokach: $n(n-1)/2$ ruchów, ocena każdego techniką Head+Tail w $O(m(j-i))$, czyli razem $O(mn^3)$, oraz przedziałowe DP $G(L,R)=\min\{G(L+1,R),\ \min_{L<k\le R}[\delta_{L,k}+G(L+1,k-1)+G(k+1,R)]\}$ w $O(n^3)$. Łącznie daje to $O(mn^3)$. Wcześniej podawaliśmy $O(n^3)$ bez czynnika $m$.
+\zm \FIG{} \TXT{} rysunek łuków (szkic w sekcji~\ref{sec:luki}), równanie DP, korekta złożoności.
+
+\begin{rev}{R2 2.4 — Dynasearch: diagram i złożoność}
+A diagram illustrating the selection of multiple non-overlapping intervals would help distinguish this neighborhood from the Motzkin neighborhood. Please provide additional discussion and appropriate references supporting the claimed $O(n^3)$ computational complexity. In particular, clarify the number of candidate moves, the complexity of evaluating their objective-function changes, and the complexity of the dynamic programming procedure.
+\end{rev}
+\odp Zgadzamy się. Rysunek z R2 2.3 pokazuje oba sąsiedztwa obok siebie: w Dynasearch odcinki muszą być rozłączne, a w Motzkinie mogą być zagnieżdżone. Podajemy trzy składniki złożoności, o które pyta recenzent: liczba ruchów kandydujących to $n(n-1)/2$ (lub $O(nL_{\max})$ przy ograniczeniu długości), ocena wszystkich zmian kosztuje $O(mn^3)$, a DP $D(j)=\min\{D(j-1),\ \min_{i<j}[D(i-1)+\delta_{i,j}]\}$ działa w czasie $O(n^2)$. Łącznie daje to $O(mn^3)$, z dominującym kosztem oceny ruchów. Poprawiliśmy odnośnik: wcześniej błędnie cytowaliśmy pracę o scatter search, a teraz cytujemy Congrama, Pottsa i van de Velde (2002) oraz przegląd bardzo dużych sąsiedztw Ahuji i współautorów.
+\zm \FIG{} \TXT{} \LIT{} korekta odnośnika (F12) i złożoności.
+
+\subsection{Modele QUBO}
+
+\begin{rev}{R2 3 — terminologia: ,,3.1 Quantum Adjacent''}
+I strongly recommend reconsidering subsection titles such as ``3.1. Quantum Adjacent.'' The described method appears to be a QUBO formulation of the Adjacent neighborhood, rather than a quantum neighborhood in itself. [\dots] Please revise the subsection titles and descriptions to distinguish between the mathematical QUBO formulation, the classical solution of the resulting QUBO, and its solution using a quantum processing unit.
+\end{rev}
+\odp Zgadzamy się. Podsekcje noszą teraz tytuły ,,QUBO formulation of the Adjacent selection'' itd. Każda opisuje wyłącznie model. Sposoby rozwiązania (dokładne DP, klasyczny solver QUBO, QPU) opisujemy raz, w sekcji eksperymentalnej, i stosujemy do wszystkich czterech modeli.
+\zm \TXT{} tytuły i pierwsze zdania podsekcji 3.1--3.4.
+\begin{teraz}
+\textbf{3.1 Quantum Adjacent.} The \emph{Quantum Adjacent} neighborhood represents the quantum counterpart of the classical adjacent-swap neighborhood, formulated as a QUBO problem.
+\end{teraz}
+\begin{pozmianie}
+\textbf{5.1 QUBO formulation of the Adjacent selection.} We write the choice of a single adjacent swap as a QUBO model. The model can be solved by any QUBO solver; in Section~6 we solve it with a classical sampler and on a quantum annealer.
+\end{pozmianie}
+
+\begin{rev}{R2 3 — złożoność budowy, rozwiązania i zastosowania}
+``The computational complexity of constructing the Q matrix is $O(n^2)$, while the permutation itself is updated by applying the single swap indicated by the QUBO solution.'' This statement is misleading if it is intended to describe the computational complexity of the overall optimization procedure. [\dots] Please distinguish the complexity of constructing the QUBO, solving it, and applying the resulting moves.
+\end{rev}
+\odp Zgadzamy się. Dla każdego modelu podajemy teraz osobno trzy koszty: obliczenie współczynników (w tym $\delta_k$), rozwiązanie modelu i zastosowanie wybranych ruchów. Zbieramy je w jednej tabeli (szkic w sekcji~\ref{sec:zlozonosc}). Koszt rozwiązania opisujemy uczciwie: DP ma gwarantowaną złożoność wielomianową, klasyczny solver QUBO ma koszt zależny od liczby przemiatań i odczytów, a dla QPU nie podajemy złożoności asymptotycznej, tylko zmierzone składniki czasu (osadzanie, programowanie, próbkowanie, komunikacja). Liczba zmiennych i gęstość grafu decydują o tym, czy model w ogóle da się osadzić.
+\zm \FIG{} tabela złożoności, \TXT{} poprawione zdania w każdej podsekcji.
+
+\begin{rev}{R2 3 — rola hamiltonianu}
+In all subsections, the authors introduce a Hamiltonian without adequately explaining its role. Please clarify the relationship between the Hamiltonian, the QUBO objective function, and the binary decision variables.
+\end{rev}
+\odp Zgadzamy się. Na początku sekcji QUBO dodaliśmy akapit, który wiąże trzy obiekty. Funkcja celu QUBO to $f(\mathbf{x})=\mathbf{x}^\top Q\mathbf{x}$ dla $\mathbf{x}\in\{0,1\}^K$. Podstawienie $x_k=(1+s_k)/2$ daje równoważny model Isinga ze spinami $s_k\in\{-1,1\}$, który wyżarzacz realizuje jako hamiltonian problemu. Minimum hamiltonianu odpowiada minimum $f$ z dokładnością do stałej. W podsekcjach nazywamy funkcję konsekwentnie $f(\mathbf{x})$, a słowa ,,hamiltonian'' używamy tylko przy opisie QPU.
+\zm \TXT{} akapit wprowadzający, ujednolicenie oznaczeń $H\to f$.
+
+\begin{rev}{R2 3 — uzasadnienie wag kar}
+The penalty formulation requires more justification. For example, Subsection 3.1 states: ``where $P=2\max_i|\delta_i|+1$ is a penalty weight that enforces the constraint of selecting exactly one swap.'' This choice appears insufficiently justified. The authors should explain how penalty magnitudes affect the numerical scaling and practical performance of both classical and quantum solvers.
+\end{rev}
+\odp Zgadzamy się. Dodaliśmy lemat z krótkim dowodem: jeśli $P>\max_k|\delta_k|$, to każde minimum funkcji spełnia ograniczenia, zarówno dla ograniczenia ,,dokładnie jeden'' w modelu Adjacent, jak i dla kar parowych w pozostałych modelach (szkic w sekcji~\ref{sec:lemat}). Opisujemy też skutek zbyt dużej kary. Model jest wtedy nadal poprawny, ale QPU skaluje wszystkie współczynniki do ograniczonego zakresu, a różnice między $\delta_k$ zajmują ułamek tego zakresu i są porównywalne z błędami sterowania sprzętu. Dla solvera klasycznego zbyt duża kara spłaszcza krajobraz funkcji i utrudnia ucieczkę z minimów lokalnych. W wersji wysłanej stosowaliśmy $P=\sum_k|\delta_k|+1$, czyli karę większą od potrzebnej ok.\ $K$-krotnie. W rewizji [D5-a: stosujemy $P=\max_k|\delta_k|+\varepsilon$ i pokazujemy wpływ tej zmiany na jakość selekcji / D5-b: pozostawiamy karę i opisujemy jej skutki].
+\zm \TXT{} lemat, akapit o skalowaniu. \DEC{D5} \CALC{C5}
+
+\begin{rev}{R2 3 — konwencja macierzy, ,,dense''}
+Subsection 3.1 states that ``The QUBO matrix $Q$ is symmetric and dense,'' whereas an earlier passage describes $Q$ as ``an upper-triangular matrix [\dots]''. The authors should explicitly state which convention is used [\dots]. The term ``dense'' should also be justified by the actual structure of the matrix.
+\end{rev}
+\odp Recenzent wskazał prawdziwą niespójność. Implementacja (\texttt{dimod}) używa macierzy górnotrójkątnej: współczynniki liniowe leżą na przekątnej, a każdy współczynnik kwadratowy pojawia się raz, dla $k<l$. Tę konwencję deklarujemy teraz raz, na początku sekcji, i stosujemy wszędzie. Słowa ,,dense'' i ,,sparse'' zastąpiliśmy liczbą niezerowych współczynników kwadratowych dla każdego modelu: $(n-1)(n-2)/2$ dla Adjacent (graf pełny), $n-2$ dla Fibonacciego (ścieżka), liczba par nakładających się odcinków dla Dynasearch oraz liczba par krzyżujących się lub o wspólnym końcu dla Motzkina. Dla $n=20$ podajemy te liczby w tabeli. Określenie ,,tridiagonal'' dla Fibonacciego poprawiliśmy na ,,bidiagonal'' (górnotrójkątna z jedną nadprzekątną).
+\zm \TXT{} \CALC{C6} (liczby dla q-dyn i q-mot przy $n=20$).
+
+\begin{rev}{R2 3.4 — ,,translates the Dynasearch mechanism into the quantum paradigm''}
+The statement [\dots] is conceptually inaccurate. Based on the description, the method translates the Dynasearch selection mechanism into a QUBO formulation. Whether the resulting model is solved classically or using a quantum processing unit is a separate matter. Please correct this statement and similar descriptions throughout the manuscript.
+\end{rev}
+\odp Zgadzamy się. Poprawiliśmy to zdanie i przejrzeliśmy cały tekst pod kątem podobnych sformułowań.
+\zm \TXT{}
+\begin{teraz}
+The \emph{Quantum Dynasearch} neighborhood translates the Dynasearch mechanism into the quantum paradigm, encoding the selection of a set of non-overlapping endpoint swaps as a QUBO problem.
+\end{teraz}
+\begin{pozmianie}
+We write the Dynasearch selection step, that is, the choice of a set of non-overlapping endpoint swaps, as a QUBO model.
+\end{pozmianie}
+
+\subsection{Eksperymenty}
+
+\begin{rev}{R2 4 — opis sprzętu kwantowego i procedury}
+This description appears to specify only the classical computing environment, whereas subsequent sections suggest that experiments were conducted using a real quantum processing unit. Please provide complete details of the quantum hardware and the experimental procedure. At a minimum, specify the quantum annealer model, the QPU access method, the relevant solver and sampling parameters.
+\end{rev}
+\odp Zgadzamy się, to było poważne pominięcie. Sekcja eksperymentalna podaje teraz: model procesora i jego topologię [nazwa solvera z Leap], dostęp przez chmurę Leap (Solver API) z Wrocławia, wersje Ocean SDK (\texttt{dwave-system}, \texttt{dimod}, \texttt{minorminer}), sposób osadzania (R1.4), parametry próbkowania (\texttt{num\_reads}, czas wyżarzania, \texttt{chain\_strength}, brak spin-reversal), sposób dekodowania (próbka o najniższej energii, naprawa zachłanna przy złamanych ograniczeniach) oraz liczbę ziaren i powtórzeń. Opisujemy też, że jedno wywołanie QPU może przekroczyć budżet czasu, i podajemy rzeczywisty czas biegu.
+\zm \TXT{} nowa sekcja ,,Experimental setup'', \CALC{C1} (nazwa solvera i rzeczywiste czasy zapisywane w powtórce).
+
+\begin{rev}{R2 5 — porównanie trzech wariantów}
+The experimental comparison would be more informative if the authors also evaluated the proposed QUBO formulations using a classical QUBO solver. In particular, I recommend comparing: 1. The original classical neighborhood implementation. 2. The corresponding QUBO formulation solved using a classical QUBO solver. 3. The same QUBO formulation solved using the quantum processing unit.
+\end{rev}
+\odp Zgadzamy się, takie porównanie oddziela wpływ modelu od wpływu solvera. Dla każdego sąsiedztwa i obu metaheurystyk porównujemy teraz trzy warianty selekcji: (1) dokładne DP, (2) ten sam model QUBO rozwiązany klasycznym symulowanym wyżarzaniem (\texttt{dwave-samplers}, ta sama liczba odczytów) oraz (3) ten sam model na QPU. Ponieważ DP daje optimum modelu, dodaliśmy też miarę jakości samej selekcji: jak często warianty (2) i (3) zwracają optimum DP i jaka jest średnia luka w wartości funkcji celu modelu. Wyniki pokazują [do uzupełnienia po C1 i C7]. W dyskusji oddzielamy wkład trzech czynników: narzutu wywołania, jakości selekcji oraz samego kodowania QUBO.
+\zm \FIG{} nowa tabela wyników (3 warianty), tabela jakości selekcji, \TXT{} wyniki i dyskusja. \CALC{C1}\ \CALC{C7}
+
+\begin{rev}{R2 — rekomendacja końcowa}
+The authors should substantially revise the manuscript's structure, strengthen the literature review, justify the mathematical formulations and complexity claims, and provide a more rigorous experimental evaluation.
+\end{rev}
+\odp Zmiany opisane wyżej obejmują wszystkie cztery obszary: strukturę (sekcje 2--5 na nowo), przegląd literatury, uzasadnienia formalne (lemat o karze, równania DP, tabela złożoności) oraz eksperyment (trzy warianty selekcji, liczba iteracji, rozbicie czasu, kilka ziaren). [D8: W trakcie rewizji znaleźliśmy błąd w obsłudze listy tabu dla wariantów QUBO sąsiedztw Dynasearch i Motzkina: zabroniony ruch powodował pominięcie iteracji zamiast restartu opisanego w tekście. Poprawiliśmy go i powtórzyliśmy wszystkie eksperymenty, więc liczby w tabelach różnią się od wersji pierwotnej.]
+
+% =====================================================================
+\section{Szkice nowych elementów artykułu}\label{sec:szkice}
+
+\subsection{Definicja PFSP (R2.2a--c)}\label{sec:def}
+
+\begin{pozmianie}
+We are given $n$ jobs $J=\{1,\dots,n\}$ and $m$ machines $M=\{1,\dots,m\}$. Every job visits the machines in the same order $1,2,\dots,m$, and job $j$ occupies machine $k$ for $p_{k,j}>0$ time units. A machine processes at most one job at a time, a job is processed by at most one machine at a time, and operations are not preempted. In the permutation variant all machines process the jobs in the same order, so a schedule is fully described by a permutation $\pi=(\pi(1),\dots,\pi(n))$, where $\pi(j)$ is the job at position $j$. In the three-field notation of Graham et al.\ the problem is written $F_m|prmu|\Cmax$: $F_m$ denotes a flow shop with $m$ machines, $prmu$ the permutation constraint, and $\Cmax$ the makespan objective. Let $C_{k,j}$ be the completion time of the job at position $j$ on machine $k$. Then
+\begin{align*}
+C_{1,1} &= p_{1,\pi(1)},\\
+C_{1,j} &= C_{1,j-1}+p_{1,\pi(j)}, && j=2,\dots,n,\\
+C_{k,1} &= C_{k-1,1}+p_{k,\pi(1)}, && k=2,\dots,m,\\
+C_{k,j} &= \max\{C_{k-1,j},\,C_{k,j-1}\}+p_{k,\pi(j)}, && k=2,\dots,m,\ j=2,\dots,n,
+\end{align*}
+and the goal is to find $\pi^*=\arg\min_{\pi\in\Pi_n}\Cmax(\pi)$, where $\Cmax(\pi)=C_{m,n}$ and $\Pi_n$ is the set of all permutations of $J$. The problem is NP-hard for $m\ge 3$ [Garey et al.\ 1976].
+\end{pozmianie}
+
+\subsection{Pseudokod iteracji hybrydowej (R1.1)}
+
+\begin{algorithm}[h]
+\caption{One iteration of the metaheuristic with a pluggable selection step (sketch)}
+\begin{algorithmic}[1]
+\Require current permutation $\pi$, neighborhood $\mathcal{N}\in\{\text{Adj},\text{Fib},\text{Dyn},\text{Mot}\}$, selector $S\in\{\text{DP},\text{QUBO-SA},\text{QUBO-QPU}\}$
+\State compute Head and Tail matrices of $\pi$ \Comment{CPU, $O(mn)$}
+\State evaluate gains $\delta_k$ of all candidate moves $k$ of $\mathcal{N}$ \Comment{CPU}
+\If{$S=\text{DP}$}
+  \State $X\gets$ exact selection by dynamic programming \Comment{CPU}
+\Else
+  \State build QUBO $f(\mathbf{x})=\sum_k\delta_k x_k+P\sum_{(k,l)\in E}x_kx_l$ \Comment{CPU}
+  \If{$S=\text{QUBO-SA}$}
+    \State $\mathbf{x}\gets$ lowest-energy sample of a classical SA sampler \Comment{CPU}
+  \Else
+    \State $\mathbf{x}\gets$ lowest-energy QPU sample (cached embedding) \Comment{network + QPU}
+  \EndIf
+  \State $X\gets\{k:x_k=1\}$; drop conflicting moves greedily \Comment{CPU}
+\EndIf
+\If{$X=\emptyset$} \State $X\gets\{\arg\min_k\delta_k\}$ \EndIf
+\State $\pi'\gets$ apply moves $X$ to $\pi$; compute $\Cmax(\pi')$ from scratch \Comment{CPU, $O(mn)$}
+\State \Return $\pi'$ to the acceptance rule of TS or SA
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Diagram przepływu CPU/QPU (R1.1, R1.5)}
+
+\begin{center}
+\begin{tikzpicture}[font=\sffamily\small,
+  box/.style={draw,rounded corners=2pt,align=center,minimum height=8mm,inner sep=4pt},
+  arr/.style={-{Latex[length=2mm]},thick}]
+\node[box,fill=NavyBlue!10] (meta) {TS / SA\\ acceptance};
+\node[box,fill=NavyBlue!10,right=8mm of meta] (eval) {Head+Tail,\\ gains $\delta_k$};
+\node[box,fill=NavyBlue!10,right=8mm of eval] (qubo) {build QUBO /\\ run DP};
+\node[box,fill=Orange!15,right=12mm of qubo] (net) {network,\\ Leap queue};
+\node[box,fill=Plum!15,right=8mm of net] (qpu) {programming,\\ sampling};
+\node[box,fill=NavyBlue!10,below=10mm of qubo] (dec) {decode, repair,\\ apply, $\Cmax$};
+\draw[arr] (meta)--(eval); \draw[arr] (eval)--(qubo); \draw[arr] (qubo)--(net);
+\draw[arr] (net)--(qpu);
+\draw[arr] (qpu.south) |- (dec.east);
+\draw[arr] (qubo)--node[right,font=\scriptsize]{DP / QUBO-SA}(dec);
+\draw[arr] (dec.west) -| (meta.south);
+\node[draw,dashed,gray,fit=(meta)(eval)(qubo)(dec),inner sep=4pt,label={[gray]above:CPU (local)}] {};
+\node[draw,dashed,gray,fit=(net)(qpu),inner sep=4pt,label={[gray]above:D-Wave Leap (remote)}] {};
+\end{tikzpicture}
+\end{center}
+Na rysunku do artykułu dopiszemy pod strzałkami zmierzone czasy z C3: czas usługi, czas dostępu do QPU i czas programowania.
+
+\subsection{Rysunek łuków: Motzkin i Dynasearch (R2 2.3, 2.4)}\label{sec:luki}
+
+\begin{center}
+\begin{tikzpicture}[font=\sffamily\scriptsize,x=7mm]
+\foreach \y/\lab in {0/Dynasearch: disjoint only,-2.4/Motzkin: disjoint or nested,-4.8/forbidden: crossing or shared endpoint} {
+  \node[anchor=west,font=\sffamily\small\bfseries] at (12.6,\y+0.3) {\lab};
+  \foreach \i in {1,...,12} { \node[draw,circle,inner sep=1.2pt,fill=white] (p\i) at (\i,\y) {}; \node[below=1pt] at (\i,\y) {\i}; }
+}
+% Dynasearch: [2,4], [6,10]
+\draw[thick,NavyBlue] (2,0.1) to[bend left=60] (4,0.1);
+\draw[thick,NavyBlue] (6,0.1) to[bend left=50] (10,0.1);
+% Motzkin: [2,11] containing [4,7] and [8,9]
+\draw[thick,OliveGreen] (2,-2.3) to[bend left=40] (11,-2.3);
+\draw[thick,OliveGreen] (4,-2.3) to[bend left=60] (7,-2.3);
+\draw[thick,OliveGreen] (8,-2.3) to[bend left=70] (9,-2.3);
+% forbidden: crossing [2,6] & [4,9]; shared endpoint [10,12] & [11,12]
+\draw[thick,BrickRed] (2,-4.7) to[bend left=55] (6,-4.7);
+\draw[thick,BrickRed,dashed] (4,-4.7) to[bend left=55] (9,-4.7);
+\draw[thick,BrickRed] (10,-4.7) to[bend left=60] (12,-4.7);
+\draw[thick,BrickRed,dashed] (11,-4.7) to[bend left=70] (12,-4.7);
+\end{tikzpicture}
+\end{center}
+Każdy łuk $(i,j)$ zamienia zadania na pozycjach $i$ i $j$, a zadania między nimi zostają na miejscu. W wersji do artykułu dodamy mały panel ,,przed/po'' dla jednego łuku, o który prosi recenzent.
+
+\subsection{Lemat o karze (R2 3, penalty)}\label{sec:lemat}
+
+\begin{pozmianie}
+\textbf{Lemma 1.} Let $f(\mathbf{x})=\sum_{k}\delta_k x_k+P\sum_{(k,l)\in E}x_kx_l$, where $E$ is the set of conflicting pairs, and let $P>\max_k|\delta_k|$. Then every minimizer of $f$ is conflict-free. The same holds for $g(\mathbf{x})=\sum_k\delta_kx_k+P\,(\sum_kx_k-1)^2$ and the constraint $\sum_k x_k=1$.
+
+\emph{Proof.} Let $\mathbf{x}$ contain a conflicting pair and let $x_k=1$ for a variable $k$ of that pair. Setting $x_k=0$ changes $f$ by $-\delta_k-P\,d_k(\mathbf{x})$, where $d_k(\mathbf{x})\ge 1$ is the number of selected variables in conflict with $k$. Hence the change is at most $|\delta_k|-P<0$, and $\mathbf{x}$ is not a minimizer. For $g$, the all-zero vector has value $P>\min_k\delta_k$, which is the value of the best one-hot vector, and removing one variable from a vector with $s\ge 2$ ones changes $g$ by $-\delta_k-P(2s-3)\le|\delta_k|-P<0$. $\square$
+\end{pozmianie}
+
+Wniosek do tekstu: wystarczy $P=\max_k|\delta_k|+\varepsilon$. Obecne $P=\sum_k|\delta_k|+1$ jest poprawne, ale zbyt duże, a większa kara pogarsza rozdzielczość współczynników na QPU (F6, C5).
+
+\subsection{Tabela złożoności (R2 2.3, 2.4, 3)}\label{sec:zlozonosc}
+
+\begin{center}\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+ & candidates $K$ & gains $\delta_k$ & DP selection & nonzero $Q_{kl}$, $k<l$ & QUBO build\\
+\midrule
+Adjacent  & $n-1$ & $O(mn)$ & $O(n)$ (argmin) & $(n-1)(n-2)/2$ & $O(n^2)$\\
+Fibonacci & $n-1$ & $O(mn)$ & $O(n)$ & $n-2$ & $O(n)$\\
+Dynasearch & $n(n-1)/2$ & $O(mn^3)$ & $O(n^2)$ & $O(n^4)$ (overlapping) & $O(n^4)$\\
+Motzkin & $\le n(n-1)/2$ & $O(mn^3)$ & $O(n^3)$ & $O(K^2)$ (crossing/shared) & $O(K^2)$\\
+\bottomrule
+\end{tabular}
+\end{center}
+W tabeli celowo nie ma kolumny z kosztem rozwiązania QUBO, bo dla QPU nie da się go uczciwie podać asymptotycznie. Dla QPU w osobnej tabeli podajemy zmierzone czasy (C3), a dla klasycznego solvera liczbę przemiatań i odczytów. Zastosowanie wybranych ruchów i obliczenie $\Cmax$ od zera kosztuje $O(n+mn)$ dla każdego sąsiedztwa. Wiersz Adjacent zakłada Head+Tail, co wymaga poprawki F8 w kodzie.
+
+\subsection{Proponowane nowe pozycje bibliografii (R2.G2, R2.1a--b)}\label{sec:lit}
+
+Wszystkie DOI trzeba przed wpisaniem sprawdzić w Crossref, zgodnie z naszą zasadą. Pozycji nie weryfikowałem. Lista jest propozycją do wyboru.
+
+\begin{itemize}
+\item \textbf{PFSP, podstawy:} Johnson (1954), \emph{Naval Res.\ Logist.\ Q.} (dwie maszyny); Garey, Johnson, Sethi (1976), \emph{Math.\ Oper.\ Res.} (NP-trudność); Graham, Lawler, Lenstra, Rinnooy Kan (1979), \emph{Ann.\ Discrete Math.} (notacja trójpolowa); Pinedo, \emph{Scheduling: Theory, Algorithms, and Systems} (Springer).
+\item \textbf{Przeglądy:} Framinan, Gupta, Leisten (2004), \emph{J.\ Oper.\ Res.\ Soc.}; Ruiz, Maroto (2005), \emph{Eur.\ J.\ Oper.\ Res.}
+\item \textbf{Metody dokładne:} Ignall, Schrage (1965), \emph{Oper.\ Res.} (B\&B); Lageweg, Lenstra, Rinnooy Kan (1978), \emph{Oper.\ Res.}; Ladhari, Haouari (2005), \emph{Comput.\ Oper.\ Res.}; Stafford (1988), \emph{J.\ Oper.\ Res.\ Soc.} (modele MILP).
+\item \textbf{Heurystyki i metaheurystyki:} Nawaz, Enscore, Ham (1983), \emph{Omega} (NEH); Osman, Potts (1989), \emph{Omega} (SA); Nowicki, Smutnicki (1996), \emph{Eur.\ J.\ Oper.\ Res.} (TS); Grabowski, Wodecki (2004), \emph{Comput.\ Oper.\ Res.} (TS); Ruiz, Stützle (2007), \emph{Eur.\ J.\ Oper.\ Res.} (iterated greedy).
+\item \textbf{Sąsiedztwa złożone:} Potts, van de Velde (1995, raport techniczny, Dynasearch); Congram, Potts, van de Velde (2002), \emph{INFORMS J.\ Comput.}; Ahuja, Ergun, Orlin, Punnen (2002), \emph{Discrete Appl.\ Math.} (VLSN).
+\item \textbf{QUBO:} Kochenberger et al.\ (2014), \emph{J.\ Comb.\ Optim.}; Glover, Kochenberger, Du (2019), \emph{4OR} (tutorial QUBO).
+\item \textbf{Wyżarzanie kwantowe i osadzanie:} Kadowaki, Nishimori (1998), \emph{Phys.\ Rev.\ E}; Johnson et al.\ (2011), \emph{Nature}; Choi (2008), \emph{Quantum Inf.\ Process.}; Cai, Macready, Roy (2014), arXiv (minorminer); Boothby, King, Roy (2016), \emph{Quantum Inf.\ Process.} (osadzenia klikowe).
+\item \textbf{Szeregowanie na wyżarzaczach:} Venturelli, Marchand, Rojo (2015), arXiv (job shop); Ikeda, Nakamura, Humble (2019), \emph{Sci.\ Rep.} (nurse scheduling); Carugno, Ciavotta, Zaccaria (2022), \emph{Sci.\ Rep.} (job shop na D-Wave); Kurowski et al.\ (2023), \emph{Eur.\ J.\ Oper.\ Res.} (QAOA, job shop).
+\item \textbf{Usunąć lub poprawić:} \texttt{dynasearch\_Campos} (zła praca, F12); \texttt{Bozejko2015} (D6).
+\item \textbf{Dodać:} preprint SSRN 7411334 (R2.G3).
+\end{itemize}
+
+\end{document}

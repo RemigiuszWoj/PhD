@@ -1,0 +1,39 @@
+\setlength{\tabcolsep}{3pt}
+
+\begin{tabular}{@{}c c c cccc@{}}
+\textbf{Method} & \textbf{Type} & \textbf{Neighborhood} & 
+\multicolumn{3}{c}{\textbf{Instances}} & \textbf{AVG} \\
+\cline{4-6}
+& & & tai20\_5 & tai20\_10 & tai20\_20 & \\
+\hline
+
+\multirow{8}{*}{ILS}
+& \multirow{4}{*}{Classic}
+& adj   & 5.22 & 14.86 & 27.35 & 15.81 \\
+& & fib   & 18.04 & 25.61 & 34.42 & 26.02 \\
+& & dyn   & {\bfseries 3.39} & 11.44 & {\bfseries 22.64} & {\bfseries 12.49} \\
+& & mot   & 3.58 & {\bfseries 11.32} & 23.05 & 12.65 \\
+
+& \multirow{4}{*}{Quantum}
+& q-adj & 25.01 & 38.08 & 44.36 & 35.82 \\
+& & q-fib & 23.74 & 35.42 & 42.48 & 33.88 \\
+& & q-dyn & 22.67 & 35.18 & 43.20 & 33.69 \\
+& & q-mot & 19.64 & 34.26 & 40.79 & 31.57 \\
+
+\hline
+
+\multirow{8}{*}{SA}
+& \multirow{4}{*}{Classic}
+& adj   & 17.24 & 31.02 & 38.05 & 28.77 \\
+& & fib   & 18.42 & 30.22 & 36.88 & 28.51 \\
+& & dyn   & 6.18 & 14.68 & 24.83 & 15.23 \\
+& & mot   & 8.39 & 17.61 & 25.49 & 17.16 \\
+
+& \multirow{4}{*}{Quantum}
+& q-adj & 25.09 & 37.73 & 43.93 & 35.58 \\
+& & q-fib & 23.88 & 35.74 & 42.16 & 33.93 \\
+& & q-dyn & 21.99 & 36.54 & 42.11 & 33.54 \\
+& & q-mot & 22.25 & 32.51 & 42.24 & 32.34 \\
+
+\hline
+\end{tabular}

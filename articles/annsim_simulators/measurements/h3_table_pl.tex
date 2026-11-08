@@ -1,5 +1,5 @@
 \begin{table}[t]
-\caption{Tabela porównuje średnią znormalizowaną energię QUBO (0 to optimum) 84 obwodów H3 z dwóch dni. $|\Delta E|$ to średnia różnica od Siriusa na obwód, a sam Sirius różni się między dniami o 0{,}006--0{,}008.}
+\caption{Średnia znormalizowana energia QUBO $E$ (0 to optimum) z 84 histogramów na głębokość, ze średnią bezwzględną różnicą $|\Delta E|$ od Siriusa z tego samego dnia (dla Siriusa między dniami), liczbą histogramów zawierających ruch optymalny i średnią liczbą jedynek w próbce. Trzy ostatnie kolumny dotyczą qsim dla symulatorów, a dla prób bazowych i próbnika Bernoulliego dopasowanego do każdego histogramu podają wartości oczekiwane.}
 \label{tab:h3}
 \centering
 \small
@@ -11,11 +11,17 @@ $p$ & Źródło & $E$ qsim & $E$ Qulacs & $|\Delta E|$ & optimum w próbce & jed
  & S1 (bez szumu) & 0{,}199 & 0{,}200 & 0{,}081 & 46/84 & 4{,}69 \\
  & S2 & 0{,}214 & 0{,}214 & 0{,}096 & 43/84 & 4{,}95 \\
  & S3 & 0{,}199 & 0{,}198 & 0{,}081 & 47/84 & 4{,}75 \\
+ & pusty ruch & \multicolumn{2}{c}{0{,}026} & 0{,}092 & --- & 0 \\
+ & próbnik jednostajny & \multicolumn{2}{c}{0{,}259} & 0{,}141 & 49/84 & 5{,}50 \\
+ & Bernoulli, dopasowany & \multicolumn{2}{c}{0{,}118} & 0{,}006 & 83/84 & 3{,}20 \\
 \midrule
 2 & Sirius & \multicolumn{2}{c}{0{,}177} & 0{,}008 & 71/84 & 4{,}25 \\
  & S1 (bez szumu) & 0{,}082 & 0{,}082 & 0{,}100 & 82/84 & 2{,}26 \\
  & S2 & 0{,}182 & 0{,}182 & 0{,}054 & 65/84 & 4{,}55 \\
  & S3 & 0{,}182 & 0{,}183 & 0{,}055 & 70/84 & 4{,}57 \\
+ & pusty ruch & \multicolumn{2}{c}{0{,}026} & 0{,}151 & --- & 0 \\
+ & próbnik jednostajny & \multicolumn{2}{c}{0{,}259} & 0{,}092 & 49/84 & 5{,}50 \\
+ & Bernoulli, dopasowany & \multicolumn{2}{c}{0{,}173} & 0{,}008 & 75/84 & 4{,}25 \\
 \bottomrule
 \end{tabular}
 \end{table}

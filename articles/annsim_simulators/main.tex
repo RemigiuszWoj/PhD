@@ -1,38 +1,49 @@
-% ANNSIM 2027 draft (gate-model simulators vs IQM Sirius). Anonymous for double-blind review.
-% Final version: SCS template (scspaperproc, 5-12 pages); this draft uses plain article for portability.
-\documentclass[11pt]{article}
-\usepackage[T1]{fontenc}
-\usepackage[utf8]{inputenc}
-\usepackage[margin=2.5cm]{geometry}
+% ANNSIM 2027 submission (gate-model simulators vs IQM Sirius). Anonymous for double-blind review.
+% SCS template from the ANNSIM 2026 author kit (scspaperproc, 5-12 pages); class files are unchanged.
+\documentclass{scspaperproc}
+
+\usepackage{latexsym}
+\usepackage{graphicx}
+\usepackage{mathptmx}
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
-\usepackage{graphicx}
-\usepackage{url}
-\usepackage[hidelinks,pdfauthor={},pdftitle={}]{hyperref}
+\usepackage{placeins}
+\usepackage[pdftex,colorlinks=true,urlcolor=blue,citecolor=black,anchorcolor=black,linkcolor=black,bookmarks=false]{hyperref}
+\usepackage{hyphenat}
+\sloppy
+\usepackage[english]{babel}
+\hypersetup{pdftitle={ANNSIM 2027 Proceedings Paper}, pdfauthor={}, pdfsubject={ANNSIM 2027 Conference}}
 \newcommand{\tofill}[1]{\textbf{[#1]}}
 
+\begin{document}
+
+\SCSpagesetup{Anonymous}
+\def\SCSconferencename{Annual Modeling and Simulation Conference}
+\def\SCSconferenceacro{ANNSIM'27}
+\def\SCSpublicationyear{2027}
+\def\SCSconferenceeditors{\tofill{editors}}
+\def\SCSconferencedates{May 17-21}
+\def\SCSconferencevenue{Wroc{\l}aw University of Science and Technology, Wroc{\l}aw, Poland}
+
+\author{}
 \title{How Faithful Are Quantum Circuit Simulators? Nine Simulators and Three
 Noise Scenarios against a 16-Qubit Star Processor}
-\author{Anonymous}
-\date{}
 
-\begin{document}
 \maketitle
 
-\begin{abstract}
+\section*{Abstract}
 Simulators carry most of the development of algorithms for noisy quantum processors, but whether they
-predict what a device does is rarely tested on the task the simulation stands for. We feed nine freely
-available circuit simulators with the calibration of IQM Sirius, a 16-qubit processor with a star-shaped
-topology, and compare their predictions with the device on fixed-angle QAOA that selects moves in iterated
-local search for the permutation flow shop problem. Three noise scenarios range from a noiseless circuit
-through depolarizing gate and readout errors to added relaxation during gates. The engines that can run a
-scenario agree with one another within sampling noise, so the choice among them is a matter of cost: only
-trajectory simulators reach all 16 qubits with noise, and Qulacs does so fastest. On whole search runs, the
-simulators with relaxation reproduce the schedules of the device within its own run-to-run spread. On
-single circuits they do not: the simulated output distributions differ from the measured ones about ten
-times more than the device differs from itself between two days, and at depth one the device even
-outperforms the noiseless simulation, which points to relaxation of idle qubits that no scenario models.
-\end{abstract}
+predict what a device does is rarely tested on the task the simulation stands for. We give nine freely
+available circuit simulators the calibration of IQM Sirius, a star-shaped 16-qubit processor, and compare
+them with the device on fixed-angle QAOA that selects moves in iterated local search for the permutation
+flow shop problem, under three noise scenarios. Engines that can run a scenario agree within sampling
+noise, so the choice among them is a matter of cost, and only trajectory simulators reach all 16 qubits
+with noise. On whole search runs, the simulators with relaxation reproduce the schedules of the device
+within its own run-to-run spread. On single circuits they miss the measured distributions by about ten
+times the day-to-day variation of the device, which points to relaxation of idle qubits that no scenario
+models.
+
+\textbf{Keywords:} noisy quantum processors, QAOA, permutation flow shop, benchmarking, star topology
 
 \section{Introduction}
 
@@ -277,19 +288,20 @@ run all 16 qubits with noise at the lowest cost, replay the 153 device runs with
 $n = 50$ to $500$ in scenario S2.
 
 \begin{table}[t]
-\caption{Hardware data used as reference.}
+\caption{Hardware data used as reference, all collected in 2026. The H2 runs are listed for
+completeness and are not used here.}
 \label{tab:hw}
 \centering
 \small
 \begin{tabular}{llll}
 \toprule
-Device & Experiment & Scope & Status \\
+Device & Experiment & Scope & Date \\
 \midrule
-IQM Sirius & ILS, $p = 1$, 10 s, 4096 shots & 12 classes ($n = 20$--$500$), inst.\ 0--3; 225 runs & done (7--14 Oct 2026) \\
-IQM Sirius & ILS, $p = 2, 3$ (H2) & $n = 20$, inst.\ 0--3; 96 runs & done (Nov 2026), not used here \\
-IQM Sirius & window histograms (H3), two days & tai20, inst.\ 0, $p = 1, 2$ & done (6--7 Nov 2026) \\
-IBM Heron (ibm\_fez) & one move per run, $p = 1$ & tai20\_5, inst.\ 0--9 & done (Aug 2026) \\
-IQM Garnet, Emerald & one move per run, $p = 1$ & tai20\_5, inst.\ 0 & done (Sept--Oct 2026) \\
+IQM Sirius & ILS, $p = 1$, 10 s & 12 classes ($n = 20$--$500$), inst.\ 0--3; 225 runs & 7--14 Oct \\
+IQM Sirius & ILS, $p = 2, 3$ (H2) & $n = 20$, inst.\ 0--3; 96 runs & Nov \\
+IQM Sirius & histograms (H3), two days & tai20, inst.\ 0, $p = 1, 2$ & 6--7 Nov \\
+IBM Heron (ibm\_fez) & one move per run, $p = 1$ & tai20\_5, inst.\ 0--9 & Aug \\
+IQM Garnet, Emerald & one move per run, $p = 1$ & tai20\_5, inst.\ 0 & Sept--Oct \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -391,6 +403,7 @@ of Sirius.}
 
 \input{measurements/t6_table}
 
+\FloatBarrier
 \section{Discussion and Conclusions}
 
 For a study like this one, any trajectory simulator predicts the outcome of the
@@ -410,6 +423,6 @@ class at two depths, and beyond $n = 20$ the run-level comparison covers only
 scenario S2 and runs of a single move. The next step is a scenario with idle noise built from the
 timing of the compiled circuits and tested against the same histograms.
 
-\bibliographystyle{plain}
+\bibliographystyle{scsproc}
 \bibliography{references}
 \end{document}

@@ -1,48 +1,59 @@
-% ANNSIM 2027 — szkic po polsku (symulatory bramkowe a IQM Sirius). Wersja anonimowa.
-% Wersja końcowa: szablon SCS (scspaperproc, 5–12 stron); szkic w klasie article.
-\documentclass[11pt]{article}
-\usepackage[T1]{fontenc}
-\usepackage[utf8]{inputenc}
-\usepackage[polish]{babel}
-\usepackage[margin=2.5cm]{geometry}
+% ANNSIM 2027 — wersja polska (symulatory bramkowe a IQM Sirius). Wersja anonimowa.
+% Szablon SCS z zestawu ANNSIM 2026 (scspaperproc, 5–12 stron); pliki klasy bez zmian.
+\documentclass{scspaperproc}
+
+\usepackage{latexsym}
+\usepackage{graphicx}
+\usepackage{mathptmx}
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
-\usepackage{graphicx}
-\usepackage{url}
-\usepackage[hidelinks,pdfauthor={},pdftitle={}]{hyperref}
+\usepackage{placeins}
+\usepackage[pdftex,colorlinks=true,urlcolor=blue,citecolor=black,anchorcolor=black,linkcolor=black,bookmarks=false]{hyperref}
+\usepackage{hyphenat}
+\sloppy
+\usepackage[polish]{babel}
+\hypersetup{pdftitle={ANNSIM 2027 Proceedings Paper}, pdfauthor={}, pdfsubject={ANNSIM 2027 Conference}}
 \newcommand{\tofill}[1]{\textbf{[#1]}}
+% the template title font (raw ptmb) has no Polish letters; same size and weight in T1 Times
+\makeatletter\renewcommand\title[1]{\gdef\@title{\bfseries\fontsize{12}{14}\selectfont\MakeUppercase{#1}}}\makeatother
 
+\begin{document}
+
+\SCSpagesetup{Anonim}
+\def\SCSconferencename{Annual Modeling and Simulation Conference}
+\def\SCSconferenceacro{ANNSIM'27}
+\def\SCSpublicationyear{2027}
+\def\SCSconferenceeditors{\tofill{redaktorzy}}
+\def\SCSconferencedates{May 17-21}
+\def\SCSconferencevenue{Wroc{\l}aw University of Science and Technology, Wroc{\l}aw, Poland}
+
+\author{}
 \title{Na ile wiernie symulatory obwodów kwantowych przewidują sprzęt? Dziewięć
 symulatorów i trzy scenariusze szumu wobec 16-kubitowego procesora o topologii
 gwiazdy}
-\author{Anonim}
-\date{}
 
-\begin{document}
 \maketitle
 
-\begin{abstract}
+\section*{Streszczenie}
 Symulatory niosą większość pracy nad algorytmami dla zaszumionych procesorów
 kwantowych, ale rzadko sprawdza się, czy przewidują zachowanie urządzenia
 w zadaniu, które symulacja zastępuje. Dziewięć darmowych symulatorów obwodów
 dostaje kalibrację IQM Sirius, 16-kubitowego procesora o topologii gwiazdy,
-i porównujemy ich przewidywania z urządzeniem na QAOA o stałych kątach, które
-wybiera ruchy w iteracyjnym przeszukiwaniu lokalnym dla permutacyjnego
-problemu przepływowego. Trzy scenariusze szumu prowadzą od obwodu bez szumu
-przez błędy depolaryzujące bramek i odczytu do dodanej relaksacji w czasie
-bramek. Silniki, które obsługują dany scenariusz, zgadzają się ze sobą
-w granicach szumu próbkowania, więc wybór między nimi jest kwestią kosztu:
-tylko symulatory trajektoriowe obejmują z szumem wszystkie 16 kubitów,
-a najszybciej robi to Qulacs. Na całych przebiegach przeszukiwania symulatory
-z relaksacją odtwarzają uszeregowania urządzenia w granicach jego własnego
-rozrzutu między przebiegami. Na pojedynczych obwodach już nie: rozkłady
-z symulacji różnią się od zmierzonych mniej więcej dziesięć razy bardziej niż
-urządzenie samo od siebie między dwoma dniami, a przy głębokości jeden
-urządzenie wypada nawet lepiej niż symulacja bez szumu, co wskazuje na
-relaksację kubitów w bezczynności, której nie modeluje żaden scenariusz.
-\end{abstract}
+i porównujemy je z urządzeniem na QAOA o stałych kątach, które wybiera ruchy
+w iteracyjnym przeszukiwaniu lokalnym dla permutacyjnego problemu
+przepływowego, w trzech scenariuszach szumu. Silniki, które obsługują dany
+scenariusz, zgadzają się w granicach szumu próbkowania, więc wybór między nimi
+jest kwestią kosztu, a z szumem wszystkie 16 kubitów obejmują tylko symulatory
+trajektoriowe. Na całych przebiegach przeszukiwania symulatory z relaksacją
+odtwarzają uszeregowania urządzenia w granicach jego własnego rozrzutu. Na
+pojedynczych obwodach chybiają zmierzonych rozkładów mniej więcej dziesięć
+razy bardziej, niż urządzenie różni się samo od siebie między dniami, co
+wskazuje na relaksację kubitów w bezczynności, której nie modeluje żaden
+scenariusz.
 
-\section{Wstęp}
+\textbf{Słowa kluczowe:} zaszumione procesory kwantowe, QAOA, permutacyjny problem przepływowy, benchmarking, topologia gwiazdy
+
+\section{Wst\k{e}p}
 
 Symulatory wykonują większość pracy przy urządzeniach kwantowych ery
 NISQ~\cite{preskill2018}: czas procesora jest rzadki i drogi, więc algorytmy
@@ -294,19 +305,21 @@ wszystkie 16 kubitów, odtwarzają 153 przebiegi urządzenia dla $n = 50$ do
 $500$ w scenariuszu S2.
 
 \begin{table}[t]
-\caption{Dane sprzętowe użyte jako odniesienie.}
+\caption{Dane sprzętowe użyte jako odniesienie, wszystkie zebrane w 2026~r. Przebiegi H2
+podajemy dla kompletności; w tej pracy ich nie używamy.}
 \label{tab:hw}
 \centering
 \small
+\setlength{\tabcolsep}{4pt}
 \begin{tabular}{llll}
 \toprule
-Urządzenie & Eksperyment & Zakres & Stan \\
+Urządzenie & Eksperyment & Zakres & Data \\
 \midrule
-IQM Sirius & ILS, $p = 1$, 10 s, 4096 shotów & 12 klas ($n = 20$--$500$), inst.\ 0--3; 225 przebiegów & zrobione (7--14.10.2026) \\
-IQM Sirius & ILS, $p = 2, 3$ (H2) & $n = 20$, inst.\ 0--3; 96 przebiegów & zrobione (XI 2026), tu nieużyte \\
-IQM Sirius & histogramy okien (H3), dwa dni & tai20, inst.\ 0, $p = 1, 2$ & zrobione (6--7.11.2026) \\
-IBM Heron (ibm\_fez) & jeden ruch na przebieg, $p = 1$ & tai20\_5, inst.\ 0--9 & zrobione (VIII 2026) \\
-IQM Garnet, Emerald & jeden ruch na przebieg, $p = 1$ & tai20\_5, inst.\ 0 & zrobione (IX--X 2026) \\
+IQM Sirius & ILS, $p = 1$, 10 s & 12 klas ($n = 20$--$500$), inst.\ 0--3; 225 przebiegów & 7--14.10 \\
+IQM Sirius & ILS, $p = 2, 3$ (H2) & $n = 20$, inst.\ 0--3; 96 przebiegów & XI \\
+IQM Sirius & histogramy (H3), dwa dni & tai20, inst.\ 0, $p = 1, 2$ & 6--7.11 \\
+IBM Heron (ibm\_fez) & jeden ruch na przebieg, $p = 1$ & tai20\_5, inst.\ 0--9 & VIII \\
+IQM Garnet, Emerald & jeden ruch na przebieg, $p = 1$ & tai20\_5, inst.\ 0 & IX--X \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -412,6 +425,7 @@ jeden wątek). Linie kropkowane oznaczają limit 300\,s i 16 kubitów Siriusa.}
 
 \input{measurements/t6_table_pl}
 
+\FloatBarrier
 \section{Dyskusja i wnioski}
 
 W badaniu takim jak to każdy symulator trajektoriowy przewiduje wynik
@@ -435,6 +449,6 @@ Kolejnym krokiem jest scenariusz z szumem bezczynności zbudowany
 z harmonogramu skompilowanych obwodów i sprawdzony na tych samych
 histogramach.
 
-\bibliographystyle{plain}
+\bibliographystyle{scsproc}
 \bibliography{references}
 \end{document}

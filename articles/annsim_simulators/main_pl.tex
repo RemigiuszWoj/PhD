@@ -344,7 +344,12 @@ z relaksacją nie da się odróżnić od Siriusa dla żadnego z dwóch symulator
 ograniczenia różni się o mniej niż pół punktu procentowego, czyli dużo mniej
 niż dwa przebiegi samego urządzenia. Bez relaksacji qsim daje istotnie gorsze
 uszeregowania niż urządzenie, a Qulacs wskazuje ten sam kierunek, choć bez
-istotności. \tofill{etap 3: jedno lub dwa zdania o $n = 50$--$500$.}
+istotności. Na większych instancjach ($n = 50$ do $500$, 153 przebiegi urządzenia)
+scenariusz S2 obu symulatorów daje uszeregowania o około 0,4 punktu procentowego gorsze niż
+urządzenie. Różnica jest mała, ale systematyczna, pochodzi z sąsiedztw gęstych i maleje ze
+wzrostem $n$. Urządzenie wykonało w tych przebiegach jeden ruch, więc na największych
+instancjach długość uszeregowania niewiele odbiega od początkowej, a zgodność mówi więcej
+o budżecie niż o symulatorach.
 
 Na pojedynczych obwodach tej zgodności nie ma. Urządzenie dobrze odtwarza samo
 siebie, bo średnia energia obwodu zmienia się między dniami o mniej niż
@@ -424,7 +429,8 @@ więc większość kubitów czeka przez większość obwodu.
 Te wnioski mają granice. Symulacje przebiegów korzystają z jednej migawki
 kalibracji, wszystkie modele szumu traktują rezonator jak kubit, dane na
 poziomie obwodów obejmują jedną klasę instancji przy dwóch głębokościach,
-a porównanie przebiegów powyżej $n = 20$ opiera się na \tofill{etap 3}.
+a powyżej $n = 20$ porównanie przebiegów obejmuje tylko scenariusz S2 i przebiegi
+z jednym ruchem.
 Kolejnym krokiem jest scenariusz z szumem bezczynności zbudowany
 z harmonogramu skompilowanych obwodów i sprawdzony na tych samych
 histogramach.

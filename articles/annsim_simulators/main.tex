@@ -324,7 +324,11 @@ relaxation cannot be told apart from Sirius for either simulator
 bound differs by less than half a percentage point, well inside the spread
 between two runs of the device. Without relaxation, qsim gives significantly
 worse schedules than the device, and Qulacs points the same way without reaching
-significance. \tofill{stage 3: one or two sentences on $n = 50$--$500$.}
+significance. On the larger instances ($n = 50$ to $500$, 153 device runs), S2 gives
+schedules about 0.4 percentage points worse than the device for both simulators. The gap is
+small but consistent, comes from the dense neighborhoods and shrinks with $n$. The device made
+a single move in each of these runs, so on the largest instances the makespan stays close to
+the starting one and the agreement says more about the budget than about the simulators.
 
 Single circuits do not show this agreement. The device reproduces itself
 closely, since the mean energy of a circuit changes by less than 0.01 between
@@ -402,8 +406,8 @@ so most qubits wait during most of the circuit.
 
 These conclusions have limits. The run-level simulations use one calibration
 snapshot, all noise models treat the resonator as a qubit, the circuit-level data cover one instance
-class at two depths, and the run-level comparison beyond $n = 20$ rests on
-\tofill{stage 3}. The next step is a scenario with idle noise built from the
+class at two depths, and beyond $n = 20$ the run-level comparison covers only
+scenario S2 and runs of a single move. The next step is a scenario with idle noise built from the
 timing of the compiled circuits and tested against the same histograms.
 
 \bibliographystyle{plain}

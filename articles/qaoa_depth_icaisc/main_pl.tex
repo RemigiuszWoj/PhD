@@ -21,26 +21,16 @@ prawdziwym komputerze kwantowym}
 
 \begin{abstract}
 Kwantowe przeszukiwanie sąsiedztwa wybiera ruch w szeregowaniu, próbkując
-obwód QAOA i zachowując najlepszą próbkę. Wcześniejsze prace o sąsiedztwach
-dla permutacyjnego problemu przepływowego na komputerach bramkowych używały
-jednej warstwy QAOA, a pytanie, ilu warstw takie sąsiedztwo potrzebuje,
-pozostaje otwarte. Zmieniamy liczbę warstw $p$ od 1 do 10 w czterech
-sąsiedztwach (Adjacent, Fibonacci, Dynasearch i Motzkin) przy kątach
-stałych. Mierzymy, jak często obwód losuje ruch optymalny i jak dobre
-uszeregowania znajduje iteracyjne przeszukiwanie lokalne na instancjach
-Taillarda z 20 zadaniami. Bez szumu jedna warstwa jest za słaba dla
-sąsiedztw Dynasearch i Motzkina, a dwie warstwy prawie zawsze znajdują ruch
-optymalny i wygrywają z jedną warstwą przy szesnastokrotnie większej liczbie
-shotów. W sąsiedztwach Adjacent i Fibonacciego żadna głębokość nie jest
-istotnie lepsza od losowania jednostajnego. Przy symulowanym szumie
-sprzętowym dwie warstwy nadal są najlepsze, ponieważ każda kolejna dokłada
-wiele bramek dwukubitowych. Przeszukiwanie uruchamiamy też na IQM Sirius,
-fizycznym 16-kubitowym nadprzewodzącym komputerze kwantowym dostępnym przez
-chmurę. Tam kolejne warstwy nie dają zysku, a trzy istotnie pogarszają
-wyniki sąsiedztwa Dynasearch.
-W symulacji głębokość do dwóch warstw jest więc warta więcej niż shoty, ale
-ten zysk nie przenosi się na Siriusa. Powyżej dwóch warstw dobór kątów ma
-większe znaczenie niż głębokość.
+obwód QAOA. Zmieniamy liczbę warstw QAOA $p$ od 1 do 10 w czterech
+sąsiedztwach dla permutacyjnego problemu przepływowego przy kątach stałych,
+na instancjach Taillarda z 20 zadaniami. Bez szumu dwie warstwy prawie zawsze
+znajdują ruch optymalny w sąsiedztwach Dynasearch i Motzkina i wygrywają
+z jedną warstwą przy szesnastokrotnie większej liczbie shotów. Przy
+symulowanym szumie dwie warstwy nadal są najlepsze. Na IQM Sirius, fizycznym
+nadprzewodzącym komputerze kwantowym, kolejne warstwy nie dają zysku, a trzy
+istotnie pogarszają wyniki sąsiedztwa Dynasearch. W symulacji głębokość do
+dwóch warstw jest warta więcej niż shoty, ale ten zysk nie przenosi się na
+Siriusa.
 \keywords{QAOA \and głębokość obwodu \and problem przepływowy \and przeszukiwanie sąsiedztwa \and kąty stałe \and sprzęt kwantowy}
 \end{abstract}
 
@@ -507,7 +497,7 @@ dobierana dla każdego okna.
 
 \begin{credits}
 \subsubsection{Użycie narzędzi AI.} Autorzy korzystali z dużego modelu
-językowego jako asystenta przy pisaniu tekstu i kodu; koncepcja badań,
+językowego jako asystenta przy pisaniu tekstu i kodu. Koncepcja badań,
 eksperymenty, wyniki i ich interpretacja są w całości dziełem autorów.
 
 \subsubsection{Konflikt interesów.} Autorzy nie mają konfliktu interesów

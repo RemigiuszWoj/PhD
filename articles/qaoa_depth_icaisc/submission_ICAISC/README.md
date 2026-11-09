@@ -4,7 +4,9 @@
 **Termin:** 15.11.2026 (strona podaje „Paper submission deadline”); **wysyłka planowana do 13.11.2026**.
 Powiadomienie 28.02.2027, wersja finalna 25.03.2027 (tylko LaTeX).
 
-**STAN 06.11.2026 (wieczór): NIE WYSŁANE.** Po 8 rundach krytyka (EN/PL, wersja PL napisana od nowa
+**WYSŁANE 09.11.2026 wieczorem: Paper 12373** (system icaiscsystem.icaisc.eu; kategoria „Various Problems of Artificial Intelligence”, słowo kluczowe „Artificial intelligence in scheduling and optimization”, LLM: writing aid + other; pliki: ICAISC2027_anonymous.pdf + zrodla_z_nazwiskami.zip z main.pdf). Decyzja od 28.02.2027.
+
+**Wcześniej, 06.11.2026 (wieczór): NIE WYSŁANE.** Po 8 rundach krytyka (EN/PL, wersja PL napisana od nowa
 zgodnie z EN) tekst wprowadzony; `abstrakt.txt` odświeżony (09.11: 117 słów / 697 znaków; formularz ICAISC przyjmuje max 700 znaków);
 `overleaf_source.zip` przebudowany. 12 stron EN (06.11: 6 skrótów; 07.11: wzory wydzielone, „quantum processor” zamiast „device”, 12 kolejnych skrótów, rysunki bez zmian; PL wyrównana treściowo z EN, 13 stron; wersja z nazwiskami 13 przez blok autorów; 09.11: uwagi promotora — prostszy abstrakt 216 słów, PRD „· 100%”, „1% do 26%”, łagodniejsze oświadczenie o AI; fizyczny komputer IQM Sirius wyeksponowany, także w tytule „…, Tested on a Real Quantum Computer” i słowie kluczowym „quantum hardware”; 4 drobne skróty, EN nadal 12 stron; „Disclosure of Interests” w credits, Rys. 4 niższy z legendą 6 pt (min. Springera), EN 12 stron; abstrakt skrócony do 697 znaków = limit pola formularza 700 znaków, ten sam w artykule i formularzu; średnik w oświadczeniu AI zamieniony na kropkę),
 pdfinfo puste, fonty osadzone, bez Type 3.

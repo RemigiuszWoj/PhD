@@ -122,6 +122,32 @@ def summary(counts: dict, e: np.ndarray) -> dict:
             "found": bool(opt.any()), "w": float((c * w).sum())}
 
 
+def coin(e: np.ndarray, q: float) -> tuple[float, float]:
+    """Independent bits with P(1) = q: expected normalised energy and chance to sample the optimum in SHOTS."""
+    K = int(np.log2(len(e)))
+    x = (np.arange(len(e))[:, None] >> np.arange(K)) & 1
+    pr = np.prod(np.where(x == 1, q, 1 - q), axis=1)
+    lo, hi = e.min(), e.max()
+    return float((pr * (e - lo)).sum() / (hi - lo)), float(1 - (1 - pr[np.isclose(e, lo)].sum()) ** SHOTS)
+
+
+def baselines(dev, hw, E, days):
+    """Per device histogram: empty move, uniform sampler (q = 1/2) and the Bernoulli sampler with q fitted to
+    the share of ones of that histogram (in sample) and of the other day's histogram (out of sample)."""
+    out = []
+    for (k, d), r in dev.items():
+        e, h = E[k], hw[(k, d)]
+        K = int(np.log2(len(e)))
+        other = hw[(k, days[1] if d == days[0] else days[0])]
+        lo, hi = e.min(), e.max()
+        e_uni, f_uni = coin(e, 0.5)
+        e_coin, f_coin = coin(e, h["w"] / K)
+        out.append({"key": k, "day": d, "p": r["p"], "K": K, "e_hw": h["e"], "w_hw": h["w"],
+                    "e_empty": float((e[0] - lo) / (hi - lo)), "e_uniform": e_uni, "found_uniform": f_uni,
+                    "e_coin": e_coin, "found_coin": f_coin, "e_coin_oos": coin(e, other["w"] / K)[0]})
+    return out
+
+
 def analyse():
     import gzip
 
@@ -170,11 +196,27 @@ def analyse():
                     f"| {m(g, lambda r: r['hit_sim']):.4f} | {m(g, lambda r: r['hit_hw']):.4f} "
                     f"| {sum(r['found_sim'] for r in g)}/{sum(r['found_hw'] for r in g)} of {len(g)} "
                     f"| {m(g, lambda r: r['w_sim']):.2f} | {m(g, lambda r: r['w_hw']):.2f} |")
+    base = baselines(dev, hw, E, days)
+    lines += ["", "Baselines on the device histograms (expected values; 'coin' = independent bits with the share of "
+              "ones fitted to the histogram itself, 'coin oos' = fitted to the other day):", "",
+              "| p | E hw | E empty | abs dE empty | E uniform | abs dE uniform | opt found uniform | E coin "
+              "| abs dE coin | opt found coin | abs dE coin oos | r(coin oos, hw) |",
+              "|---|---|---|---|---|---|---|---|---|---|---|---|"]
+    for p in (1, 2):
+        g = [b for b in base if b["p"] == p]
+        lines.append(
+            f"| {p} | {m(g, lambda b: b['e_hw']):.3f} | {m(g, lambda b: b['e_empty']):.3f} "
+            f"| {m(g, lambda b: abs(b['e_empty'] - b['e_hw'])):.3f} | {m(g, lambda b: b['e_uniform']):.3f} "
+            f"| {m(g, lambda b: abs(b['e_uniform'] - b['e_hw'])):.3f} | {sum(b['found_uniform'] for b in g):.1f} "
+            f"| {m(g, lambda b: b['e_coin']):.3f} | {m(g, lambda b: abs(b['e_coin'] - b['e_hw'])):.3f} "
+            f"| {sum(b['found_coin'] for b in g):.1f} | {m(g, lambda b: abs(b['e_coin_oos'] - b['e_hw'])):.4f} "
+            f"| {np.corrcoef([b['e_coin_oos'] for b in g], [b['e_hw'] for b in g])[0, 1]:.3f} |")
     if errors:
         lines += ["", f"{len(errors)} simulations failed: " + "; ".join(sorted({r['error'][:80] for r in errors}))]
     md = OUT.with_name("h3_replay.md")
     md.write_text("\n".join(lines) + "\n")
     OUT.with_name("h3_replay_tvd.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+    OUT.with_name("h3_baselines.jsonl").write_text("".join(json.dumps(b) + "\n" for b in base))
     print("\n".join(lines))
 
 

@@ -23,7 +23,7 @@
 \def\SCSconferencename{Annual Modeling and Simulation Conference}
 \def\SCSconferenceacro{ANNSIM'27}
 \def\SCSpublicationyear{2027}
-\def\SCSconferenceeditors{\tofill{redaktorzy}}
+\def\SCSconferenceeditors{A. Bany Abdelnabi, J. Jabbour, S. Mustafiz, and R. Idzikowski}
 \def\SCSconferencedates{May 17-21}
 \def\SCSconferencevenue{Wroc{\l}aw University of Science and Technology, Wroc{\l}aw, Poland}
 
@@ -55,8 +55,7 @@ co jest zgodne z niemodelowaną relaksacją bezczynnych kubitów.
 
 \section{Wst\k{e}p}
 
-Duża część pracy nad algorytmami dla zaszumionych urządzeń kwantowych średniej
-skali~\cite{preskill2018} odbywa się programowo: czas procesora jest rzadki
+Duża część pracy nad algorytmami dla zaszumionych urządzeń kwantowych średniej skali~\cite{preskill2018} odbywa się w oprogramowaniu: czas procesora jest rzadki
 i drogi, więc algorytmy projektuje się, stroi i często ocenia w symulacji,
 a urządzenie wykonuje tylko końcowy eksperyment. Symulator jest przydatny
 o tyle, o ile przewiduje zachowanie urządzenia, a jego wierność sprawdza się
@@ -111,8 +110,8 @@ ruchu to problem kwadratowej optymalizacji binarnej bez ograniczeń
 własność bloków ścieżki krytycznej nie wyklucza jako niepoprawiających:
 przekątna zawiera zmianę długości uszeregowania każdej zamiany, dokładną dla
 pojedynczej zamiany i przybliżoną dla zbioru zamian, a kara większa niż
-dowolny zysk zabrania par konfliktowych. Adjacent wybiera dokładnie jedną
-zamianę sąsiednich zadań, więc jego kara sprzęga każdą parę zmiennych;
+dowolny zysk zabrania par konfliktowych. Adjacent wybiera dokładnie jedną zamianę sąsiednich zadań, z karą na każdej
+parze zmiennych;
 Fibonacci wybiera dowolny zbiór nienakładających się zamian sąsiednich;
 Dynasearch zamienia końce nienakładających się
 przedziałów~\cite{congram2002dynasearch}; a Motzkin dopuszcza też przedziały
@@ -131,7 +130,7 @@ i 1, tai20\_10 instancja 0, okna sześciu pozycji z samymi zamianami
 poprawiającymi), które są tu także instancjami testowymi; przebiegi urządzenia
 używają jednego zestawu kątów na sąsiedztwo i głębokość, a obwody Adjacent
 w eksperymencie histogramowym drugiego zestawu, strojonego dla większych okien.
-Budżet 10\,s czasu ściennego przeszukiwanie sprawdza po każdym ruchu; przy
+Przeszukiwanie sprawdza budżet 10\,s czasu ściennego po każdym ruchu; przy
 $n = 20$ jeden ruch na urządzeniu trwa od 4 do 15\,s, więc przeszukiwanie
 wykonuje od jednego do trzech ruchów, a przy $n \ge 50$ jeden.
 
@@ -187,8 +186,7 @@ z szumem przy co najwyżej 17 kubitach.
 Aer to warstwa symulacji Qiskita~\cite{javadi2024}. Oferuje gęsty wektor
 stanu i macierz gęstości, stany iloczynowe macierzy oraz metody
 stabilizatorowe, a szum przypina do pojedynczych instrukcji przez model
-szumu. Z wektorem stanu Aer losuje jedną zaszumioną realizację obwodu na shot,
-więc w zasadzie obejmuje pełne 17 kubitów skompilowanego obwodu dla Siriusa.
+szumu. Z wektorem stanu Aer losuje jedną zaszumioną realizację obwodu na shot, co w zasadzie pozwala mu objąć wszystkie 17 kubitów skompilowanego obwodu dla Siriusa.
 Adapter IQM dla Qiskita~\cite{iqmclient} kompiluje obwody do natywnych bramek
 PRX, CZ i MOVE i buduje fałszywe backendy z architektury i profilu błędów.
 Używamy go tylko do kompilacji; wszystkie kanały szumu pochodzą z naszego
@@ -199,8 +197,8 @@ Cirq~\cite{cirq} to framework Google do zapisu i kompilacji obwodów; qsim to
 jego wydajny symulator wektora stanu w C++. Isakov i in.~\cite{isakov2021qsim}
 opisują, jak qsim symuluje obwody z szumem jako trajektorie kwantowe, losując
 wynik każdego kanału w czasie każdego wykonania, oraz jak opóźniony iloczyn
-skalarny obniża koszt symulacji przy słabym szumie. Każde powtórzenie wykonuje
-obwód od nowa, więc koszt rośnie z liczbą shotów. Adapter IQM dla Cirqa, dziś
+skalarny obniża koszt symulacji przy słabym szumie. Ponieważ każde powtórzenie wykonuje obwód od nowa, koszt rośnie z liczbą
+shotów. Adapter IQM dla Cirqa, dziś
 część klienta IQM, odwzorowuje obwody na architektury IQM.
 
 \paragraph{Qulacs.}
@@ -236,7 +234,7 @@ usługi chmurowej Braket ogranicza to przebiegi z szumem do małych okien.
 QuTiP~\cite{johansson2013qutip,lambert2024qutip5} symuluje otwarte układy
 kwantowe przez równania master. Jego pakiet obwodów modeluje szum tylko na
 poziomie impulsów sterujących~\cite{li2022qutipqip}; obwody na poziomie bramek
-nie mają kanałów szumu, więc QuTiP wykonuje tylko obwody bez szumu.
+nie mają kanałów szumu, więc uruchamiamy go bez szumu.
 
 \begin{table}[t]
 \caption{Metody z szumem każdego symulatora według jego dokumentacji; zmierzone
@@ -278,10 +276,9 @@ wyjaśnia, aż do zera tam, gdzie sama relaksacja przekracza zmierzony błąd.
 23 października dotyczy to 11 z 16 par CZ (mediana 0,0206 wobec 0,0167), więc
 S3 jest pesymistyczny dla bramek w odtworzeniach przebiegów, a 6 i 7 listopada
 tylko dwóch z 16 par CZ. Żaden scenariusz nie modeluje bezczynnych kubitów, bo
-wyeksportowane listy bramek nie niosą harmonogramu, więc S3 nie ogranicza
-całego szumu. Symulatory szumu DDSIM zwracają złe rozkłady nawet przy
-wszystkich prawdopodobieństwach szumu ustawionych na zero, więc DDSIM liczy
-tylko S1 zwykłym symulatorem.
+wyeksportowane listy bramek nie niosą harmonogramu. S3 nie jest zatem górnym ograniczeniem całego
+szumu. Symulatory szumu DDSIM zwracają złe rozkłady nawet przy
+wszystkich prawdopodobieństwach szumu ustawionych na zero, dlatego DDSIM liczy tylko S1 zwykłym symulatorem.
 
 \paragraph{Dwa tory.}
 W torze A każdy symulator wykonuje ten sam obwód skompilowany przez
@@ -289,7 +286,7 @@ qiskit-iqm, wyeksportowany jako lista bramek natywnych z bramką MOVE zapisaną
 jako zamiana między kubitem a rezonatorem, z kanałem dwukubitowym o wierności
 MOVE, więc każda różnica pochodzi z silnika i jego kanałów. W torze B ten sam
 obwód logiczny przechodzi przez dwa kompilatory (adaptery IQM dla Qiskita
-i Cirqa) i wykonuje się w qsim w S2, więc różnice pochodzą z kompilacji; tor
+i Cirqa) i wykonuje się w qsim w S2, co wyodrębnia wpływ kompilacji; tor
 obejmuje 90 okien od 12 do 15 zmiennych, gdzie obwody są najdłuższe. Trzeci
 kompilator, rozszerzenie IQM dla TKET~\cite{sivarajah2020tket}, nie przyjmuje
 urządzeń z rezonatorem.
@@ -390,7 +387,7 @@ same obwody z tą samą liczbą bramek CZ co adapter dla Qiskita, ale z 25 do
 w 49 oknach po kompilacji Cirqa i w 62 po kompilacji Qiskita przy $p = 2$
 (dokładny test McNemara~\cite{mcnemar1947}, $P = 0{,}02$, czyli 0,06 po
 poprawce Holma na trzy głębokości), a przy $p = 1$ i $p = 3$ obie kompilacje
-się nie różnią. Tor B ani więc nie pokazuje, ani nie wyklucza wpływu
+się nie różnią. Tor B nie pokazuje zatem ani nie wyklucza wpływu
 dodatkowych bramek MOVE w S2.
 
 Na całych przebiegach ILS z budżetem ruchów urządzenia
@@ -456,14 +453,13 @@ przewiduje energię obwodu z dokładnością do 0,009 i 0,014, czyli 1,4 do 1,7
 zmienności urządzenia między dniami i cztery do jedenastu razy dokładniej niż
 którykolwiek scenariusz, a od obwodu do obwodu podąża za urządzeniem
 z korelacją 0,98 i 0,96, wobec 0,85 i 0,66 dla S1. Ten sam próbnik dopasowany
-do histogramów symulowanych odtwarza ich średnie energie z dokładnością do
-0,012--0,022, więc na tej skali średnia energia każdego histogramu wynika
+do histogramów symulowanych odtwarza ich średnie energie z dokładnością do 0,012--0,022. Na tej skali średnia energia każdego histogramu wynika
 głównie z liczby jedynek, a opisane wyżej chybienia to głównie chybienia
 w udziale jedynek. Urządzenie nie wypada lepiej niż własny dopasowany próbnik
 przy $p = 1$ i wypada nieco gorzej przy $p = 2$, więc w energii jego próbki nie
 niosą informacji o QUBO poza udziałem jedynek. To samo dotyczy obwodu bez
 szumu, którego średnia energia jest w granicach 0,003 od własnego próbnika
-przy $p = 1$ i o 0,008 gorsza przy $p = 2$, więc przy tych stałych kątach QAOA
+przy $p = 1$ i o 0,008 gorsza przy $p = 2$: przy tych stałych kątach QAOA
 obniża średnią energię tylko przez udział jedynek.
 
 Przy $p = 1$ bity są też bliskie niezależności: histogram urządzenia różni się
@@ -524,7 +520,7 @@ konfiguracji, a prawy panel pokazuje średnią różnicę z 95\,\% przedziałem 
 \centering
 \includegraphics[width=0.8\textwidth]{figures/h3_energy_pl.pdf}
 \caption{Średnia energia każdego obwodu histogramowego na Siriusie i w qsim
-w S1 i S2, jeden punkt na obwód i dzień. Szary pas pokazuje $\pm 0{,}007$,
+w S1--S3, jeden punkt na obwód i dzień. Szary pas pokazuje $\pm 0{,}007$,
 średnią różnicę między dwoma dniami na Siriusie.}
 \label{fig:h3}
 \end{figure}
@@ -557,14 +553,14 @@ S3 na obwodach trwających od 5 do 25\,$\mu$s.
 
 Te wnioski mają granice. Symulacje przebiegów korzystają z kalibracji
 z 23 października, tydzień do dwóch po przebiegach urządzenia, a histogramy
-z kalibracji z tego samego dnia, przy czym koherencja rezonatora zmieniła się
-między tymi migawkami nawet dziewięciokrotnie, więc zgodność przebiegów w S3
+z kalibracji z tego samego dnia. Koherencja rezonatora zmieniła się między tymi migawkami
+nawet dziewięciokrotnie, a zgodność przebiegów w S3
 może zależeć od użytej migawki. Wszystkie modele szumu traktują rezonator jak
 kubit, a MOVE jak zamianę, co pomija wyciek poza podprzestrzeń obliczeniową.
 Dane na poziomie obwodów obejmują jedną instancję każdej z trzech klas
 z $n = 20$ przy dwóch głębokościach, dane na poziomie przebiegów to przebiegi
 z jednym do trzech ruchów, a powyżej $n = 20$ obejmują tylko scenariusz S2.
-Koszty to czasy jednego wątku CPU, więc backendy GPU i wielowątkowość
+Koszty to czasy jednego wątku CPU; backendy GPU i wielowątkowość
 pozostają poza zakresem pracy. Kolejnym krokiem jest scenariusz z szumem
 bezczynności zbudowany z harmonogramu skompilowanych obwodów i sprawdzony na
 tych samych histogramach.

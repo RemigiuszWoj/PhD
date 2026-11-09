@@ -18,14 +18,14 @@ from .t6 import MEAS, OUT as T6
 
 FIGS = MEAS.parent / "figures"
 CAP_S = 300.0
-SIRIUS_QUBITS = 16
+MAX_QUBITS = 16                     # largest window at n = 20 (K = 15) plus the resonator
 # program: (label, colour, marker); colours are slots 1-7 of the validated categorical palette
 PROGRAMS = {"aer": ("Qiskit Aer", "#2a78d6", "o"), "cirq": ("Cirq / qsim", "#eb6834", "s"),
             "qulacs": ("Qulacs", "#1baf7a", "^"), "qibo": ("Qibo", "#eda100", "D"),
             "braket": ("Braket", "#e87ba4", "v"), "pennylane": ("PennyLane", "#008300", "P"),
             "cudaq": ("CUDA-Q", "#6250d6", "X")}
 # engine: (program, method label, dashed)
-ENGINES = {"aer_sv": ("aer", "trajectories", False), "qsim": ("cirq", "qsim", False),
+ENGINES = {"aer_sv": ("aer", "trajectories", False), "qsim": ("cirq", "trajectories", False),
            "qulacs_loop": ("qulacs", "shot loop", False), "qulacs": ("qulacs", "NoiseSimulator", True),
            "qibo": ("qibo", "trajectories", False),
            "aer_dm": ("aer", "DM", False), "cirq_dm": ("cirq", "DM", False), "qulacs_dm": ("qulacs", "DM", False),
@@ -41,15 +41,21 @@ BROKEN = {("aer_sv", "S3"): "Aer error \"Kraus is empty\" from K = 5",
 
 
 TXT = {
-    "en": {"caption": r"The table gives the largest window $K$ that runs under 300\,s per circuit, the time at "
-                      r"$K = 11$ in S2 and the peak memory ($p = 1$, one thread). The dagger marks a library error "
-                      r"or a wrong distribution, and --- marks an unsupported scenario.",
+    "en": {"caption": r"Largest window $K$ that runs within 300\,s per circuit (density matrices, DM, also within "
+                      r"13 qubits), median time over three windows at $K = 11$ in S2 for all 4096 shots, and peak "
+                      r"resident memory (RSS) in S2 ($p = 1$, one thread). The dagger marks a library error or a "
+                      r"wrong distribution, and --- an unsupported scenario or a run over the limit; in S1, Braket, "
+                      r"PennyLane and CUDA-Q use their statevector simulators; DDSIM and QuTiP run S1 only, up to "
+                      r"$K = 16$.",
            "head": r"Program & Method & \multicolumn{3}{c}{max.\ $K$} & $t$ [s], S2, $K = 11$ & RSS S2 [MB] \\",
            "methods": {}, "traj": "trajectories", "dm": "density matrix", "y": "time per circuit [s]",
            "x": "qubits (window size K + resonator)", "cap": "cap 300 s"},
-    "pl": {"caption": r"Tabela podaje największe okno $K$, które mieści się w 300\,s na obwód, czas przy $K = 11$ "
-                      r"w S2 i szczytową pamięć ($p = 1$, jeden wątek). Krzyżyk oznacza błąd biblioteki lub zły "
-                      r"rozkład, a --- oznacza scenariusz bez obsługi.",
+    "pl": {"caption": r"Największe okno $K$, które mieści się w 300\,s na obwód (macierze gęstości, DM, także "
+                      r"w 13 kubitach), mediana czasu z trzech okien przy $K = 11$ w S2 dla wszystkich 4096 shotów "
+                      r"i szczytowa pamięć rezydentna (RSS) w S2 ($p = 1$, jeden wątek). Krzyżyk oznacza błąd "
+                      r"biblioteki lub zły rozkład, a --- scenariusz bez obsługi lub przekroczenie limitu; w S1 "
+                      r"Braket, PennyLane i CUDA-Q używają symulatorów wektora stanu, a DDSIM i QuTiP liczą tylko "
+                      r"S1, do $K = 16$.",
            "head": r"Program & Metoda & \multicolumn{3}{c}{maks.\ $K$} & $t$ [s], S2, $K = 11$ & RSS S2 [MB] \\",
            "methods": {"trajectories": "trajektorie", "shot loop": "pętla po shotach"}, "traj": "trajektorie",
            "dm": "macierz gęstości", "y": "czas na obwód [s]", "x": "kubity (rozmiar okna K + rezonator)",
@@ -94,7 +100,7 @@ def plot(g, path, lang):
                 ax.plot([g[(e, s)][K]["n_qubits"] for K in ks], [g[(e, s)][K]["t_median"] for K in ks],
                         ls=ls, lw=1.5, color=colour, marker=marker, ms=5, label=label)
             ax.axhline(CAP_S, color="0.6", lw=0.8, ls=":")
-            ax.axvline(SIRIUS_QUBITS, color="0.6", lw=0.8, ls=":")
+            ax.axvline(MAX_QUBITS, color="0.6", lw=0.8, ls=":")
             ax.set_yscale("log")
             ax.set_xticks(range(5, 18, 2))
             ax.set_title(f"{title}, {s}", fontsize=10)
@@ -110,7 +116,7 @@ def plot(g, path, lang):
         axes[row, 1].legend([handles[k] for k in order], order, fontsize=7, loc="upper left",
                             bbox_to_anchor=(1.02, 1), frameon=False)
     axes[0, 0].annotate(T["cap"], (5, CAP_S), xytext=(0, 3), textcoords="offset points", fontsize=7, color="0.4")
-    axes[0, 0].annotate("Sirius", (SIRIUS_QUBITS, 1e-2), xytext=(-3, 0), textcoords="offset points", fontsize=7,
+    axes[0, 0].annotate("K = 15", (MAX_QUBITS, 1e-2), xytext=(-3, 0), textcoords="offset points", fontsize=7,
                         color="0.4", ha="right")
     fig.savefig(path.with_suffix(".pdf"), bbox_inches="tight")
     fig.savefig(path.with_suffix(".png"), dpi=300, bbox_inches="tight")
@@ -125,7 +131,7 @@ def cell(g, e, s):
 
 def t_median(g, e, K):
     r = g.get((e, "S2"), {}).get(K)
-    return f"{r['t_median']:.3g}" if r and r.get("ok") else None
+    return f"{r['t_median']:#.3g}".rstrip(".") if r and r.get("ok") else None
 
 
 def rss_s2(g, e):

@@ -21,7 +21,7 @@
 \def\SCSconferencename{Annual Modeling and Simulation Conference}
 \def\SCSconferenceacro{ANNSIM'27}
 \def\SCSpublicationyear{2027}
-\def\SCSconferenceeditors{\tofill{editors}}
+\def\SCSconferenceeditors{A. Bany Abdelnabi, J. Jabbour, S. Mustafiz, and R. Idzikowski}
 \def\SCSconferencedates{May 17-21}
 \def\SCSconferencevenue{Wroc{\l}aw University of Science and Technology, Wroc{\l}aw, Poland}
 
@@ -103,8 +103,8 @@ that the block property of the critical path does not rule out as
 non-improving: the
 diagonal holds the makespan change of each swap, which is exact for a single
 swap and an approximation for a set of swaps, and a penalty larger than any
-gain forbids conflicting pairs. Adjacent selects exactly one
-swap of neighboring jobs, so its penalty couples every pair of variables;
+gain forbids conflicting pairs. Adjacent selects exactly one swap of neighboring jobs, with a penalty on every
+pair of variables;
 Fibonacci selects any set of non-overlapping neighboring swaps; Dynasearch
 swaps the endpoints of non-overlapping intervals~\cite{congram2002dynasearch};
 and Motzkin also admits nested intervals and penalizes only crossings and
@@ -176,8 +176,8 @@ simulation at up to 17 qubits.
 Aer is the simulation layer of Qiskit~\cite{javadi2024}. It offers dense
 statevector and density-matrix methods, matrix product states and stabilizer
 methods, and attaches noise to individual instructions through a noise model.
-With a statevector, Aer samples one noisy realization of the circuit per shot,
-so in principle it can reach the full 17 qubits of a compiled Sirius circuit.
+With a statevector, Aer samples one noisy realization of the circuit per shot, which in principle lets it reach all 17 qubits of a compiled Sirius
+circuit.
 The IQM adapter for Qiskit~\cite{iqmclient} compiles circuits to the native
 PRX, CZ and MOVE gates and builds fake backends from an architecture and an
 error profile. We use it for compilation only; all noise channels come from
@@ -188,8 +188,8 @@ Cirq~\cite{cirq} is Google's framework for writing and compiling circuits;
 qsim is its high-performance C++ statevector simulator. Isakov et
 al.~\cite{isakov2021qsim} describe how qsim simulates noisy circuits as quantum
 trajectories, choosing the outcome of every channel at random during each run,
-and how a delayed inner product cuts the cost of low-noise simulation. Each
-repetition re-runs the circuit, so the cost grows with the number of shots.
+and how a delayed inner product cuts the cost of low-noise simulation. Because each repetition re-runs the circuit, the cost grows with the number of
+shots.
 IQM's Cirq adapter, now part of the IQM client, maps circuits to IQM
 architectures.
 
@@ -225,8 +225,7 @@ windows.
 \paragraph{QuTiP.}
 QuTiP~\cite{johansson2013qutip,lambert2024qutip5} simulates open quantum
 systems through master equations. Its circuit package models noise only at the
-level of control pulses~\cite{li2022qutipqip}; its gate-level circuits carry no
-noise channels, so it runs only noiseless circuits.
+level of control pulses~\cite{li2022qutipqip}; its gate-level circuits carry no noise channels, and we run it without noise.
 
 \begin{table}[t]
 \caption{Noisy methods of each simulator according to its documentation; the
@@ -268,10 +267,10 @@ that relaxation leaves unexplained, down to zero where relaxation alone
 exceeds the measured error. On 23 October this holds for 11 of the 16 CZ
 loci (median 0.0206 against 0.0167), so S3 is pessimistic for the gates of the
 run-level replays, whereas on 6 and 7 November it holds for only two of 16 CZ
-loci. None of the scenarios models idle qubits, since the exported gate
-lists carry no schedule, so S3 does not bound the total noise. The
+loci. None of the scenarios models idle qubits, because the exported gate lists
+carry no schedule. S3 is thus not an upper bound on the total noise. The
 noise-aware simulators of DDSIM return wrong distributions even with all
-noise probabilities set to zero, so DDSIM runs S1 only, with its plain
+noise probabilities set to zero, and DDSIM runs S1 only, with its plain
 simulator.
 
 \paragraph{Two tracks.}
@@ -280,7 +279,7 @@ exported as a list of native gates with MOVE written as a swap between a qubit
 and the resonator that carries a two-qubit channel of the MOVE fidelity, so
 any difference comes from the engine and its channels. In track B the same
 logical circuit passes through two compilers (the IQM adapters for Qiskit and
-Cirq) and runs in qsim under S2, so differences come from compilation; it
+Cirq) and runs in qsim under S2, which isolates the effect of compilation; it
 covers the 90 windows of 12 to 15 variables, where the circuits are longest. A
 third compiler, the IQM extension of TKET~\cite{sivarajah2020tket}, does not
 accept devices with a resonator.
@@ -444,14 +443,13 @@ other, it predicts the energy of a circuit within 0.009 and 0.014, 1.4 to 1.7
 times the day-to-day variation of the device and four to eleven times closer
 than any scenario, and it follows the device from circuit to circuit with a
 correlation of 0.98 and 0.96, against 0.85 and 0.66 for S1. The same sampler fitted to the simulated histograms reproduces their mean
-energies within 0.012 to 0.022, so on this scale the mean energy of any
+energies within 0.012 to 0.022. On this scale, the mean energy of any
 histogram follows mostly from its number of ones, and the misses above are
 mainly misses in the share of ones. The device does no better than its own
 fitted sampler at $p = 1$ and slightly worse at $p = 2$, so in energy its
 samples carry no information about the QUBO beyond their share of ones. The
 same holds for the noiseless circuit, whose mean energy is within 0.003 of its
-own fitted sampler at $p = 1$ and 0.008 worse at $p = 2$, so at these fixed
-angles QAOA lowers the mean energy only through the share of ones.
+own fitted sampler at $p = 1$ and 0.008 worse at $p = 2$: at these fixed angles, QAOA lowers the mean energy only through the share of ones.
 
 At $p = 1$ the bits are also close
 to independent: a device histogram differs from the product of its own
@@ -510,8 +508,8 @@ mean difference with its 95\,\% interval over the 12 instances.}
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.8\textwidth]{figures/h3_energy.pdf}
-\caption{Mean energy of each histogram circuit on Sirius and on qsim in S1 and
-S2, one point per circuit and day. The gray band shows $\pm 0.007$, the mean
+\caption{Mean energy of each histogram circuit on Sirius and on qsim in S1 to
+S3, one point per circuit and day. The gray band shows $\pm 0.007$, the mean
 difference between the two days on Sirius.}
 \label{fig:h3}
 \end{figure}
@@ -543,13 +541,13 @@ as S3 (40\,\% of the bits in both) and more than S3 on circuits of 5 to
 
 These conclusions have limits. The run-level simulations use the calibration
 of 23 October, one to two weeks after the device runs, while the histograms use the
-calibration of the same day, and the coherence of the resonator changed by up
-to a factor of nine between these snapshots, so the run-level agreement in S3
+calibration of the same day. The coherence of the resonator changed by up to a
+factor of nine between these snapshots, and the run-level agreement in S3
 may depend on the snapshot used. All noise models treat the resonator as a
 qubit and MOVE as a swap, which ignores leakage. The circuit-level data cover
 one instance of each of the three classes with $n = 20$ at two depths, the
 run-level data consist of runs of one to three moves, and beyond $n = 20$ they
-cover only scenario S2. Costs are single-threaded CPU times, so GPU back-ends
+cover only scenario S2. Costs are single-threaded CPU times; GPU back-ends
 and multithreading are outside the scope. The next step is a scenario with
 idle noise built from the timing of the compiled circuits and tested against
 the same histograms.

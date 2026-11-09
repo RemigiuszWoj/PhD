@@ -29,29 +29,29 @@
 
 \author{}
 \title{Na ile wiernie symulatory obwodów kwantowych przewidują sprzęt? Dziewięć
-symulatorów i trzy scenariusze szumu na 16-kubitowym procesorze o topologii
-gwiazdy}
+symulatorów i trzy scenariusze szumu sprawdzone na fizycznym 16-kubitowym
+procesorze o topologii gwiazdy}
 
 \maketitle
 
 \section*{Streszczenie}
 Algorytmy dla zaszumionych procesorów kwantowych powstają głównie w symulacji,
-a symulatory rzadko sprawdza się na urządzeniu w zadaniu, które zastępują.
+a symulatory rzadko sprawdza się na prawdziwym sprzęcie w zadaniu, które zastępują.
 Uruchamiamy dziewięć darmowych symulatorów obwodów na obwodach algorytmu QAOA
 o stałych kątach, które wybierają ruchy w iteracyjnym przeszukiwaniu lokalnym
 dla permutacyjnego problemu przepływowego, skompilowanych dla IQM Sirius,
-16-kubitowego procesora o topologii gwiazdy. Siedem z nich dostaje kalibrację
-urządzenia w trzech scenariuszach szumu, a dwa najszybsze porównujemy
-z urządzeniem. Poza czterema defektami oprogramowania silniki zgadzają się
+16-kubitowego procesora o topologii gwiazdy. Siedem z nich dostaje jego kalibrację
+w trzech scenariuszach szumu, a dwa najszybsze porównujemy
+z fizycznym procesorem. Poza czterema defektami oprogramowania silniki zgadzają się
 w granicach szumu próbkowania. Na przeszukiwaniach z jednym do trzech ruchów
 symulatory z relaksacją nie wykazują wykrywalnego obciążenia średniej jakości
 uszeregowań, ale pojedyncze przebiegi odbiegają bardziej niż powtórzone
-przebiegi urządzenia. Na pojedynczych obwodach o głębokości jeden scenariusze
+przebiegi na sprzęcie. Na pojedynczych obwodach o głębokości jeden scenariusze
 przewidują zbyt wiele jedynek, a ich błąd energii rośnie z długością obwodu od
-zmienności urządzenia między dniami do ponad dwudziestokrotności tej wartości,
+zmienności sprzętu między dniami do ponad dwudziestokrotności tej wartości,
 co jest zgodne z niemodelowaną relaksacją bezczynnych kubitów.
 
-\textbf{Słowa kluczowe:} zaszumione procesory kwantowe, QAOA, permutacyjny problem przepływowy, benchmarking, topologia gwiazdy
+\textbf{Słowa kluczowe:} zaszumione procesory kwantowe, sprzęt kwantowy, IQM Sirius, QAOA, permutacyjny problem przepływowy, benchmarking, topologia gwiazdy
 
 \section{Wst\k{e}p}
 
@@ -75,9 +75,11 @@ przepływowego~\cite{anon2026a,anon2026b,anon2026c}. Siedem symulatorów dostaje
 te same dane kalibracyjne i trzy scenariusze szumu o rosnącej szczegółowości.
 Oddzielamy wpływ silnika symulacji od wpływu kompilatora, mierzymy koszt
 każdego symulatora i miejsce, w którym przestaje działać, a dwa najszybsze
-porównujemy z urządzeniem zarówno na pojedynczych obwodach, jak i na końcowym
+porównujemy z przebiegami na fizycznym procesorze, dostępnym przez usługę
+chmurową IQM Resonance, zarówno na pojedynczych obwodach, jak i na końcowym
 uszeregowaniu, przyjmując zgodność urządzenia z samym sobą za odniesienie
-każdego porównania z urządzeniem.
+każdego porównania z urządzeniem. Dalej \emph{urządzenie} to zawsze ten
+fizyczny procesor, nigdy emulator ani fałszywy backend.
 
 Wcześniejsze porównania symulatorów mierzą szybkość na wektorze stanu bez
 szumu~\cite{jamadagni2024bench} albo dostarczają obwodów
@@ -291,11 +293,11 @@ obejmuje 90 okien od 12 do 15 zmiennych, gdzie obwody są najdłuższe. Trzeci
 kompilator, rozszerzenie IQM dla TKET~\cite{sivarajah2020tket}, nie przyjmuje
 urządzeń z rezonatorem.
 
-\paragraph{Odniesienie sprzętowe.}
-Porównania na poziomie przebiegów odtwarzają przebiegi iteracyjnego
-przeszukiwania lokalnego na Siriusie przy $p = 1$ opisane
-w~\cite{anon2026b}: 225 przebiegów na 12 klasach Taillarda ($n = 20$ do $500$,
-instancje 0--3), zebranych 7--14 października 2026. Dwanaście dalszych
+\paragraph{Przebiegi na fizycznym procesorze.}
+Porównania wykorzystują 225 przebiegów ILS i 168 histogramów po 4096 shotów
+zmierzonych na Siriusie. Przebiegi przy $p = 1$ opisano w~\cite{anon2026b};
+obejmują 12 klas Taillarda ($n = 20$
+do $500$, instancje 0--3) i zebrano je 7--14 października 2026. Dwanaście dalszych
 przebiegów z 7 października, które awaria klienta zamieniła w przeszukiwania
 klasyczne, odrzucono, a cztery z nich powtórzono. Porównania na poziomie
 obwodów korzystają z eksperymentu histogramowego, który wykonuje 42 obwody
@@ -367,6 +369,15 @@ MOVE, co przesuwa rozkłady o TVD od 0,016 do 0,044 na trzech oknach
 testowych. Poza tymi defektami silnik zmienia koszt przewidywania, a nie samo
 przewidywanie, a ponieważ każdy silnik stosuje te same kanały do tego samego
 obwodu, ta zgodność weryfikuje implementacje, a nie je waliduje.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/t6_cost_pl.pdf}
+\caption{Czas na obwód w funkcji liczby kubitów wraz z rezonatorem ($p = 1$,
+jeden wątek). Linie kropkowane oznaczają limit 300\,s i największe okno przy
+$n = 20$ ($K = 15$, 16 kubitów).}
+\label{fig:cost}
+\end{figure}
 
 Ten koszt pokazują rysunek~\ref{fig:cost} i tabela~\ref{tab:t6}. Symulatory
 macierzy gęstości kończą się na 8 do 12 zmiennych, na limicie czasu albo na 13
@@ -474,15 +485,6 @@ i S3 trafiają średnią energię wszystkich obwodów, ale od obwodu do obwodu
 podążają za urządzeniem z korelacją tylko 0,39 i 0,37 (0,72 i 0,83 przy
 $p = 1$).
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=\textwidth]{figures/t6_cost_pl.pdf}
-\caption{Czas na obwód w funkcji liczby kubitów wraz z rezonatorem ($p = 1$,
-jeden wątek). Linie kropkowane oznaczają limit 300\,s i największe okno przy
-$n = 20$ ($K = 15$, 16 kubitów).}
-\label{fig:cost}
-\end{figure}
-
 \input{measurements/t6_table_pl}
 
 \begin{table}[t]
@@ -507,7 +509,7 @@ Motzkin & 134 / 144 & 134 / 214 \\
 \centering
 \includegraphics[width=\textwidth]{figures/t5_prd_pl.pdf}
 \caption{PRD każdego przebiegu ILS na symulatorze wobec jego przebiegu na
-urządzeniu ($n = 20$, $p = 1$). Szary pas na wykresach rozrzutu pokazuje
+sprzęcie Sirius ($n = 20$, $p = 1$). Szary pas na wykresach rozrzutu pokazuje
 $\pm 2{,}2$\,pp, średnią bezwzględną różnicę dwóch przebiegów Siriusa w jednej
 konfiguracji, a prawy panel pokazuje średnią różnicę z 95\,\% przedziałem po
 12 instancjach.}
@@ -530,7 +532,7 @@ w S1--S3, jeden punkt na obwód i dzień. Szary pas pokazuje $\pm 0{,}007$,
 \section{Dyskusja i wnioski}
 
 W tym zadaniu qsim i Qulacs z relaksacją nie wykazują wykrywalnego obciążenia
-średniej jakości uszeregowań urządzenia przy $n = 20$, choć nie odtwarzają jego
+średniej jakości uszeregowań fizycznego procesora Sirius przy $n = 20$, choć nie odtwarzają jego
 pojedynczych przebiegów, a w tym scenariuszu qsim jest najszybszym programem
 od 11 zmiennych. Przeszukiwanie zachowuje najlepszą z 4096 próbek, więc każde
 obciążenie w stronę zera mu pomaga, a S3 dodaje takie obciążenie przez

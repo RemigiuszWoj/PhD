@@ -27,24 +27,24 @@
 
 \author{}
 \title{How Faithful Are Quantum Circuit Simulators? Nine Simulators and Three
-Noise Scenarios on a 16-Qubit Star Processor}
+Noise Scenarios Checked Against a Physical 16-Qubit Star Processor}
 
 \maketitle
 
 \section*{Abstract}
-Algorithm development for noisy quantum processors happens largely in simulation, yet simulators are
-rarely checked against the device on the task they stand in for. We run nine free circuit
+Algorithm development for noisy quantum processors happens mostly in simulation, yet simulators are
+rarely checked against real hardware on the task they stand in for. We run nine free circuit
 simulators on fixed-angle quantum approximate optimization circuits that select moves in iterated
 local search for the permutation flow shop problem, compiled for IQM Sirius, a star-shaped 16-qubit
-processor. Seven take the device calibration under three noise scenarios, and the two fastest are
-compared with the device. Apart from four software defects, the engines agree within
+processor. Seven take its calibration under three noise scenarios, and the two fastest are
+compared with the physical processor. Apart from four software defects, the engines agree within
 sampling noise. On searches of one to three moves, the simulators with relaxation show no detectable
-bias in mean schedule quality, but single runs deviate more than repeated device runs. On single
+bias in mean schedule quality, but single runs deviate more than repeated hardware runs. On single
 depth-one circuits, the scenarios predict too many ones, and their energy error grows with circuit
-length from the device's day-to-day variation to over twenty times that, consistent with
+length from the hardware's day-to-day variation to over twenty times that, consistent with
 unmodeled relaxation of idle qubits.
 
-\textbf{Keywords:} noisy quantum processors, QAOA, permutation flow shop, benchmarking, star topology
+\textbf{Keywords:} noisy quantum processors, quantum hardware, IQM Sirius, QAOA, permutation flow shop, benchmarking, star topology
 
 \section{Introduction}
 
@@ -69,9 +69,11 @@ problem~\cite{anon2026a,anon2026b,anon2026c}. Seven simulators receive the same
 calibration data and three noise scenarios of increasing detail. We separate
 the effect of the simulation engine from that of the compiler, measure what
 each simulator costs and where it stops working, and compare the two fastest
-with the device both on single circuits and on the final schedule, using the
+with runs on the physical processor, accessed through the IQM Resonance cloud
+service, both on single circuits and on the final schedule, using the
 agreement of the device with itself as the reference for every comparison
-with the device.
+with the device. In the rest of the paper, \emph{the device} always means this
+physical processor, never an emulator or a fake backend.
 
 Earlier comparisons of simulators measure speed on noiseless
 statevectors~\cite{jamadagni2024bench} or provide benchmark
@@ -284,10 +286,11 @@ covers the 90 windows of 12 to 15 variables, where the circuits are longest. A
 third compiler, the IQM extension of TKET~\cite{sivarajah2020tket}, does not
 accept devices with a resonator.
 
-\paragraph{Hardware references.}
-The run-level comparisons replay iterated local search runs on Sirius at
-$p = 1$ reported in~\cite{anon2026b}: 225 runs on 12 Taillard classes
-($n = 20$ to $500$, instances 0--3), collected on 7--14 October 2026. Twelve
+\paragraph{Runs on the physical processor.}
+In total, the comparisons use 225 iterated local search runs and 168
+histograms of 4096 shots measured on Sirius. The runs, at $p = 1$, were
+reported in~\cite{anon2026b}; they cover 12 Taillard classes
+($n = 20$ to $500$, instances 0--3) and were collected on 7--14 October 2026. Twelve
 further runs of 7 October, which a client failure had turned into classical
 searches, were discarded, and four of them were repeated. The circuit-level
 comparisons use a histogram experiment, which runs the 42 circuits of the
@@ -496,7 +499,7 @@ Motzkin & 134 / 144 & 134 / 214 \\
 \begin{figure}[t]
 \centering
 \includegraphics[width=\textwidth]{figures/t5_prd.pdf}
-\caption{PRD of each ILS run on a simulator against its device run ($n = 20$,
+\caption{PRD of each ILS run on a simulator against its run on the Sirius hardware ($n = 20$,
 $p = 1$). The gray band in the scatter panels shows $\pm 2.2$\,pp, the mean
 absolute difference between two Sirius runs of one configuration, and the right panel shows the
 mean difference with its 95\,\% interval over the 12 instances.}
@@ -519,7 +522,7 @@ difference between the two days on Sirius.}
 \section{Discussion and Conclusions}
 
 For this workload, qsim and Qulacs with relaxation show no detectable bias in
-the mean schedule quality of the device at $n = 20$, although they do not reproduce its
+the mean schedule quality of the physical Sirius processor at $n = 20$, although they do not reproduce its
 individual runs, and in this scenario qsim is the fastest program from 11
 variables on. The search keeps the best of 4096 samples, so any bias towards
 zero helps it, and S3 adds such a bias through amplitude damping; without

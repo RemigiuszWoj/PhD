@@ -1,6 +1,6 @@
 """Build overleaf/main.tex (supervisor's layout) from response_to_reviewers.tex.
 
-Red: revised text of the manuscript (the "Before" text is not printed).
+Revised text of the manuscript is quoted below each response (the "Before" text is not printed).
 Green: answers and notes to be completed after the repeated experiments.
 Run from response/: python3 overleaf/make_overleaf.py
 """
@@ -13,7 +13,7 @@ intro = intro.replace('\\section*{Response to the reviewers}\n', '')
 intro = re.sub(r'\\todo\{2--3 sentences[^}]*\}', r'\\upd{[Two or three sentences on the main changes will be added after the repeated experiments.]}', intro)
 intro = intro.replace(
     "Each point quotes the comment in italics. Our response follows directly below it and states where the manuscript was changed.",
-    "Each point quotes the comment in italics. Our response follows directly below it and states where the manuscript was changed; the revised text of the manuscript is quoted in red.")
+    "Each point quotes the comment in italics. Our response follows directly below it and states where the manuscript was changed; the revised text of the manuscript is quoted below the response.")
 intro = re.sub(r'Below, the comments of each reviewer are divided into numbered points: R1\.1--R1\.6 for Reviewer~\\#1 and R2\.\\,\\dots\\ for Reviewer~\\#2, following the structure of the review\. ',
                'Below, the comments of each reviewer are quoted point by point, following the structure of the review. ', intro)
 r1, r2 = rest.split('\\section*{Answers to the Reviewer \\#2 remarks}', 1)

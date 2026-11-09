@@ -1,0 +1,9 @@
+QuTiP (qutip 5.3.1, qutip-qip 0.4.x) pulse-level demo, 26.10.2026 ~23:25, one thread, M4 Pro.
+Circuit: logical QAOA circuit of tai20_5|0|fibonacci|1|small|1 (K = 4, p = 1; RZZ as CNOT-RZ-CNOT),
+processor qutip_qip.device.SCQubits (linear chain of 3-level transmons, cross-resonance CNOT) -- NOT the
+Sirius star; T1/T2 below are round values, not the Sirius calibration.
+
+SCQubits, no decoherence : TVD to ideal 0.0030, P_opt 0.0199 (ideal 0.0198), leakage 0.0000,  0.8 s
+SCQubits, T1=30us T2=15us: TVD to ideal 0.0786, P_opt 0.0467 (ideal 0.0198), leakage 0.0000, 45.2 s
+(for reference: S3 on the compiled star circuit, Aer DM: P_opt 0.0501)
+Script: scratchpad qutip_pulse.py (not in the repo).

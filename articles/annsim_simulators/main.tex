@@ -1,0 +1,561 @@
+% ANNSIM 2027 submission (gate-model simulators vs IQM Sirius). Anonymous for double-blind review.
+% SCS template from the ANNSIM 2026 author kit (scspaperproc, 5-12 pages); class files are unchanged.
+\documentclass{scspaperproc}
+
+\usepackage{latexsym}
+\usepackage{graphicx}
+\usepackage{mathptmx}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{placeins}
+\usepackage[pdftex,colorlinks=true,urlcolor=blue,citecolor=black,anchorcolor=black,linkcolor=black,bookmarks=false]{hyperref}
+\usepackage{hyphenat}
+\sloppy
+\usepackage[english]{babel}
+\hypersetup{pdftitle={ANNSIM 2027 Proceedings Paper}, pdfauthor={}, pdfsubject={ANNSIM 2027 Conference}}
+\newcommand{\tofill}[1]{\textbf{[#1]}}
+
+\begin{document}
+
+\SCSpagesetup{Anonymous}
+\def\SCSconferencename{Annual Modeling and Simulation Conference}
+\def\SCSconferenceacro{ANNSIM'27}
+\def\SCSpublicationyear{2027}
+\def\SCSconferenceeditors{A. Bany Abdelnabi, J. Jabbour, S. Mustafiz, and R. Idzikowski}
+\def\SCSconferencedates{May 17-21}
+\def\SCSconferencevenue{Wroc{\l}aw University of Science and Technology, Wroc{\l}aw, Poland}
+
+\author{}
+\title{How Faithful Are Quantum Circuit Simulators? Nine Simulators and Three
+Noise Scenarios Checked Against the Physical 16-Qubit IQM Sirius}
+
+\maketitle
+
+\section*{Abstract}
+Algorithm development for noisy quantum processors happens mostly in simulation, yet simulators are
+rarely checked against real hardware on the task they stand in for. We run nine free circuit
+simulators on fixed-angle quantum approximate optimization circuits that select moves in iterated
+local search for the permutation flow shop problem, compiled for IQM Sirius, a star-shaped 16-qubit
+processor. Seven take its calibration under three noise scenarios, and the two fastest are
+compared with the physical processor. Apart from four software defects, the engines agree within
+sampling noise. On searches of one to three moves, the simulators with relaxation show no detectable
+bias in mean schedule quality, but single runs deviate more than repeated hardware runs. On single
+depth-one circuits, the scenarios predict too many ones, and their energy error grows with circuit
+length from the hardware's day-to-day variation to over twenty times that, consistent with
+unmodeled relaxation of idle qubits.
+
+\textbf{Keywords:} noisy quantum processors, quantum hardware, IQM Sirius, QAOA, permutation flow shop, benchmarking, star topology
+
+\section{Introduction}
+
+Much of the algorithmic work on noisy intermediate-scale quantum
+devices~\cite{preskill2018} is done in software: processor time is scarce and
+expensive, so algorithms are designed, tuned and often evaluated in
+simulation, and the device runs only the final experiment. A simulator is
+useful only to the extent that it predicts what the device does, yet its
+fidelity is usually checked on synthetic benchmarks~\cite{li2023qasmbench} or
+on its speed~\cite{jamadagni2024bench}, not on the outcome of the task the
+simulation stands for. A second gap concerns the hardware: star-shaped
+processors, in which every qubit couples to a central resonator and a
+dedicated MOVE operation transfers a qubit state into it, are recent, and the software ecosystems support them
+unevenly~\cite{gnatowski2026routing}.
+
+This paper runs nine freely available circuit simulators on circuits compiled
+for a 16-qubit star processor, IQM Sirius, on a workload whose outcome we can
+score: the quantum approximate optimization algorithm
+(QAOA)~\cite{farhi2014qaoa} with fixed angles~\cite{wurtz2021fixed}, selecting moves in iterated
+local search for the permutation flow shop
+problem~\cite{anon2026a,anon2026b,anon2026c}. Seven simulators receive the same
+calibration data and three noise scenarios of increasing detail. We separate
+the effect of the simulation engine from that of the compiler, measure what
+each simulator costs and where it stops working, and compare the two fastest
+with runs on the physical processor, accessed through the IQM Resonance cloud
+service, both on single circuits and on the final schedule, using the
+agreement of the device with itself as the reference for every comparison
+with the device. In the rest of the paper, \emph{the device} always means this
+physical processor, never an emulator or a fake backend.
+
+Earlier comparisons of simulators measure speed on noiseless
+statevectors~\cite{jamadagni2024bench} or provide benchmark
+circuits~\cite{li2023qasmbench}. Noise models built from device
+characterization have been compared with hardware runs of small
+circuits~\cite{georgopoulos2021noise,dahlhauser2021noisy}, and QAOA on a
+superconducting processor has been compared with noisy simulation of the same
+circuits~\cite{harrigan2021qaoa}. In the terms of simulation
+validation~\cite{sargent2013vv}, the agreement among engines is a
+verification of their implementations, and the comparison with the device is
+an operational validation. Compared with these studies, we feed many
+simulators the same calibration, target a star processor, and validate on the
+outcome of an optimization task. The simulators agree with each other, and
+with relaxation they also agree in the mean with short searches on the
+device, but not with what a single circuit measures: at depth one the device returns nearly independent bits
+with far fewer ones than any scenario predicts, and the more two-qubit gates a
+circuit has, the larger the deficit.
+
+\section{Background}
+
+\paragraph{Workload.}
+The workload is quantum neighborhood search for the permutation flow shop
+problem on the Taillard instances~\cite{taillard1993}. Iterated local search
+(ILS)~\cite{lourenco2003} starts from the identity permutation and moves to the
+best permutation it finds in a neighborhood of swaps, with a tabu list of ten
+moves. Choosing that move is a quadratic unconstrained binary
+optimization (QUBO) problem~\cite{lucas2014ising} over candidate swaps, those
+that the block property of the critical path does not rule out as
+non-improving: the
+diagonal holds the makespan change of each swap, which is exact for a single
+swap and an approximation for a set of swaps, and a penalty larger than any
+gain forbids conflicting pairs. Adjacent selects exactly one swap of neighboring jobs, with a penalty on every
+pair of variables;
+Fibonacci selects any set of non-overlapping neighboring swaps; Dynasearch
+swaps the endpoints of non-overlapping intervals~\cite{congram2002dynasearch};
+and Motzkin also admits nested intervals and penalizes only crossings and
+shared endpoints. A 20-job permutation needs more variables than the device
+holds, so the search splits it into windows that overlap by one half (17
+positions for Adjacent and Fibonacci, 6 for Dynasearch and Motzkin), which
+gives QUBOs of 1 to 15 variables at $n = 20$ and up to 16 at $n \ge 50$. Each
+window is solved with QAOA at depth $p$, and the lowest-energy sample of 4096
+shots selects its swaps~\cite{anon2026b,anon2026c}; all windows of a move run
+as one job. Adjacent keeps the best of the window proposals, and the other
+neighborhoods take the union of the swaps chosen in all windows and drop
+those that conflict across window boundaries. The angles were found offline
+on noiseless statevectors of windows of three instances with $n = 20$ (tai20\_5
+instances 0 and 1, tai20\_10 instance 0, windows of six positions with
+improving swaps only), which are also test instances here;
+the device runs use one schedule per neighborhood and depth, and the Adjacent
+circuits of the histogram experiment use a second schedule tuned for larger
+windows. The 10\,s wall-time budget of a search is checked after each move;
+at $n = 20$ one move on the device takes 4 to 15\,s, so a search makes one to
+three moves, and at $n \ge 50$ it makes one.
+
+\paragraph{Star processor.}
+IQM Sirius couples its qubits to a computational resonator. A two-qubit
+interaction moves the state of one qubit into the resonator, applies a
+controlled-Z (CZ) gate with the other qubit and moves the state back, so one $R_{ZZ}$ interaction of
+QAOA compiles to two CZ and about two MOVE gates, and all two-qubit gates of a
+circuit run one after another. Table~\ref{tab:calib} lists the calibration
+that defines the noise models; a window of $K$ variables compiles to $K + 1$
+qubits, the last one being the resonator.
+
+\begin{table}[t]
+\caption{IQM Sirius calibration on 23 October 2026 (stages 1 to 3) and on
+6 and 7 November 2026 (histogram replays); medians over the 16 operational
+qubits or their loci.}
+\label{tab:calib}
+\centering
+\small
+\begin{tabular}{lrrr}
+\toprule
+Quantity & 23 Oct & 6 Nov & 7 Nov \\
+\midrule
+PRX (phased $x$ rotation) average gate fidelity & 0.9989 & 0.9988 & 0.9989 \\
+CZ fidelity (qubit--resonator) & 0.9833 & 0.9813 & 0.9832 \\
+MOVE fidelity & 0.9903 & 0.9903 & 0.9899 \\
+Readout error $0\!\to\!1$ / $1\!\to\!0$ & 0.009 / 0.027 & 0.007 / 0.028 & 0.009 / 0.032 \\
+$T_1$ / $T_2$ of the qubits [$\mu$s] & 30.0 / 10.9 & 29.6 / 10.9 & 25.6 / 10.5 \\
+$T_1$ / $T_2$ of the resonator [$\mu$s] & 7.5 / 3.1 & 16.6 / 28.0 & 12.7 / 25.8 \\
+Gate duration PRX / CZ / MOVE [ns] & 40 / 104 / 64 & 40 / 104 / 64 & 40 / 104 / 64 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Noise channels.}
+A depolarizing channel with parameter $\lambda$ replaces the state with the
+maximally mixed one with weight $\lambda$; a gate of average fidelity $F$ on
+$d$-dimensional systems gives $\lambda = d(1 - F)/(d - 1)$. Amplitude and phase
+damping model energy relaxation ($T_1$) and dephasing ($T_2$) during a gate, and
+a confusion matrix per qubit models readout errors. Simulators apply these
+channels either exactly on a density matrix or by sampling one Kraus branch
+per shot as quantum trajectories~\cite{dalibard1992mcwf}, which costs one
+statevector simulation per shot but keeps the memory of a pure state.
+
+\section{Simulators}
+
+Table~\ref{tab:sims} summarizes the programs and what they offer for noisy
+simulation at up to 17 qubits.
+
+\paragraph{Qiskit Aer.}
+Aer is the simulation layer of Qiskit~\cite{javadi2024}. It offers dense
+statevector and density-matrix methods, matrix product states and stabilizer
+methods, and attaches noise to individual instructions through a noise model.
+With a statevector, Aer samples one noisy realization of the circuit per shot, which in principle lets it reach all 17 qubits of a compiled Sirius
+circuit.
+The IQM adapter for Qiskit~\cite{iqmclient} compiles circuits to the native
+PRX, CZ and MOVE gates and builds fake backends from an architecture and an
+error profile. We use it for compilation only; all noise channels come from
+our own model (Section~\ref{sec:method}).
+
+\paragraph{Cirq with qsim.}
+Cirq~\cite{cirq} is Google's framework for writing and compiling circuits;
+qsim is its high-performance C++ statevector simulator. Isakov et
+al.~\cite{isakov2021qsim} describe how qsim simulates noisy circuits as quantum
+trajectories, choosing the outcome of every channel at random during each run,
+and how a delayed inner product cuts the cost of low-noise simulation. Because each repetition re-runs the circuit, the cost grows with the number of
+shots.
+IQM's Cirq adapter, now part of the IQM client, maps circuits to IQM
+architectures.
+
+\paragraph{Qulacs.}
+Qulacs~\cite{suzuki2021qulacs} is a C++ simulator with a Python interface built
+for speed on small and medium circuits. It models noise as probabilistic gates
+(single- and two-qubit depolarizing, dephasing and bit-flip noise) and as
+general completely positive maps given by Kraus operators, which covers
+amplitude damping, and it also holds density matrices. We use it in two ways:
+its built-in NoiseSimulator, and a shot loop that runs one noisy statevector
+per shot.
+
+\paragraph{MQT DDSIM.}
+DDSIM represents states and operations as decision diagrams, which compress
+the redundancy of many circuits~\cite{zulehner2019ddsim}. Its noise-aware mode
+simulates decoherence and gate errors either stochastically or
+deterministically on decision diagrams for density matrices~\cite{grurl2020noise}.
+
+\paragraph{Qibo.}
+Qibo~\cite{efthymiou2022qibo} is a framework for simulation with hardware
+acceleration on CPUs and GPUs. Its statevector simulation samples unitary
+noise channels and resets as trajectories, while amplitude damping requires
+density matrices, whose memory grows as $4^n$.
+
+\paragraph{CUDA-Q, PennyLane and Braket.}
+CUDA-Q~\cite{kim2023cudaq}, NVIDIA's platform for hybrid quantum--classical
+programs, PennyLane~\cite{bergholm2018pennylane}, which centers on
+differentiable programs, and the software development kit of Amazon
+Braket~\cite{braket} simulate noise on density matrices on the CPU; without an
+NVIDIA GPU or Braket's paid cloud service, this limits noisy runs to small
+windows.
+
+\paragraph{QuTiP.}
+QuTiP~\cite{johansson2013qutip,lambert2024qutip5} simulates open quantum
+systems through master equations. Its circuit package models noise only at the
+level of control pulses~\cite{li2022qutipqip}; its gate-level circuits carry no noise channels, and we run it without noise.
+
+\begin{table}[t]
+\caption{Noisy methods of each simulator according to its documentation; the
+measured limits are in Table~\ref{tab:t6}. Stim~\cite{gidney2021stim} simulates
+only Clifford circuits, so it cannot run QAOA.}
+\label{tab:sims}
+\centering
+\small
+\begin{tabular}{llll}
+\toprule
+Simulator & Noisy method & IQM compiler & License \\
+\midrule
+Qiskit Aer & trajectories, density matrix & qiskit-iqm & Apache-2.0 \\
+Cirq + qsim & trajectories, density matrix & IQM client (Cirq) & Apache-2.0 \\
+Qulacs & probabilistic gates, Kraus, density matrix & --- & MIT \\
+MQT DDSIM & decision diagrams & --- & MIT \\
+Qibo & unitary trajectories, density matrix & --- & Apache-2.0 \\
+CUDA-Q (CPU) & density matrix & --- & Apache-2.0 \\
+PennyLane & density matrix & --- & Apache-2.0 \\
+Braket (local) & density matrix & --- & Apache-2.0 \\
+QuTiP & master equation (pulses) & --- & BSD-3 \\
+Stim & stabilizer only & --- & Apache-2.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Methodology}
+\label{sec:method}
+
+\paragraph{Noise scenarios.}
+All simulators use the same calibration, the snapshot of 23 October in the
+three stages and that of the recording day for the histograms, and three
+scenarios. In S1
+the circuit runs without noise. In S2 every gate carries a depolarizing
+channel matched to its measured fidelity and every qubit its own asymmetric
+readout confusion matrix. S3 applies amplitude and phase damping over the
+median duration of each gate (with $T_2$ capped at $2T_1$) and gives the depolarizing channel only the infidelity
+that relaxation leaves unexplained, down to zero where relaxation alone
+exceeds the measured error. On 23 October this holds for 11 of the 16 CZ
+loci (median 0.0206 against 0.0167), so S3 is pessimistic for the gates of the
+run-level replays, whereas on 6 and 7 November it holds for only two of 16 CZ
+loci. None of the scenarios models idle qubits, because the exported gate lists
+carry no schedule. S3 is thus not an upper bound on the total noise. The
+noise-aware simulators of DDSIM return wrong distributions even with all
+noise probabilities set to zero, and DDSIM runs S1 only, with its plain
+simulator.
+
+\paragraph{Two tracks.}
+In track A every simulator runs the same circuit compiled by qiskit-iqm,
+exported as a list of native gates with MOVE written as a swap between a qubit
+and the resonator that carries a two-qubit channel of the MOVE fidelity, so
+any difference comes from the engine and its channels. In track B the same
+logical circuit passes through two compilers (the IQM adapters for Qiskit and
+Cirq) and runs in qsim under S2, which isolates the effect of compilation; it
+covers the 90 windows of 12 to 15 variables, where the circuits are longest. A
+third compiler, the IQM extension of TKET~\cite{sivarajah2020tket}, does not
+accept devices with a resonator.
+
+\paragraph{Runs on the physical processor.}
+In total, the comparisons use 225 iterated local search runs and 168
+histograms of 4096 shots measured on Sirius. The runs, at $p = 1$, were
+reported in~\cite{anon2026b}; they cover 12 Taillard classes
+($n = 20$ to $500$, instances 0--3) and were collected on 7--14 October 2026. Twelve
+further runs of 7 October, which a client failure had turned into classical
+searches, were discarded, and four of them were repeated. The circuit-level
+comparisons use a histogram experiment, which runs the 42 circuits of the
+first move of instance 0 of the three classes with $n = 20$, each at $p = 1$
+and $p = 2$, on two days (6 and 7 November 2026), 4096 shots each. The simulators
+replay the compiled circuits that ran on the device, with the calibration of
+the same day.
+
+\paragraph{Metrics.}
+For single circuits we compare the mean QUBO energy of the samples, normalized
+so that 0 is the optimum and 1 the worst assignment, whether the optimal move
+is sampled at all, and the mean number of ones per sample. Because the
+penalties dominate the energy range, the empty move with every variable at
+zero already scores 0.026 on this scale. The total variation distance (TVD)
+is computed as well, but with 4096 shots over up to $2^{15}$ outcomes it
+mostly measures sampling noise. The hardware floor is the difference between
+the two days of the histogram experiment. For whole runs we compare the percentage relative
+deviation (PRD) of the makespan from the Taillard lower bound after as many
+moves as the device made, in percentage points (pp). The 72 run pairs with
+$n = 20$ cover 12 instances in four neighborhoods and 24 extra runs of six
+configurations, Dynasearch and Motzkin on instance 0 of each class, each
+with a single move; these repeats give the floor, since two device runs of
+the same configuration differ by 2.2\,pp on average. Each simulated run uses
+its own random seed. We apply the Wilcoxon signed-rank
+test~\cite{wilcoxon1945} to the runs (ties dropped) and to the 12 instance
+means, with Holm's correction~\cite{holm1979} over the four
+simulator--scenario cells, and compute a bootstrap interval~\cite{efron1993bootstrap}
+of the mean difference over the instances; $P$ denotes a $p$-value throughout. Cost is
+wall time per circuit and peak memory.
+
+\paragraph{Stages and software.}
+The study runs in three stages. First, every simulator is installed and tested
+on one window. Second, all simulators that can run a scenario do so on the
+windows of instances 0--3 of the three classes with $n = 20$: 161 windows that
+contain an improving move, of which 71 hold at most 11 variables and fit the
+density-matrix simulators (CUDA-Q and PennyLane complete 29 and 49 of them).
+Third, qsim and the shot loop of Qulacs replay the device runs, the 72 with
+$n = 20$ in S2 and S3 and the 153 with $n = 50$ to $500$, which include 12
+runs of three repeated configurations with $n = 50$, in S2. All
+simulators run on one CPU thread of an Apple M4 Pro with 24\,GB of memory,
+with 4096 shots, a fixed seed per window in the first two stages and a seed
+per run, derived from the run key, in the third; the cost study stops at 300\,s
+per circuit and at 13 qubits for density matrices, while the replays of the
+device runs have no limit. The versions are Qiskit 2.6.1 with Aer 0.18.2,
+qiskit-iqm from IQM client 35.0.3, Cirq 1.7.0 with qsimcirq 0.22.1 and IQM
+client 36.0.0, Qulacs 0.6.14, MQT DDSIM 2.7.0, Qibo 0.3.6, CUDA-Q 0.16.0,
+PennyLane 0.45.1, Braket SDK 1.127.5, QuTiP 5.3.1 with qutip-qip 0.4.2 and
+Stim 1.16.0. Circuits, calibration snapshots, histograms and scripts will be
+released with the final version of the paper.
+
+\section{Results}
+
+Every simulator that supports a scenario reproduces the same distributions on
+the windows of at most 11 variables that it completes (all 71 for most
+engines). The exact methods differ from the
+reference, the density matrix of Aer, by a TVD below $10^{-11}$ without
+relaxation (below $10^{-5}$ for qsim, which computes in single precision) and
+below $10^{-7}$ with it, and each sampled method stays inside the 95th
+percentile of the shot-noise floor in 65 to 70 windows, where 67 are expected
+by chance. CUDA-Q, PennyLane and the shot loop of Qulacs ran the noisy
+scenarios at $p = 1$ only, and readout errors are applied to the outcomes in
+the same way for every engine. There are four exceptions, three in the
+libraries and one in the compiler stack. The noise-aware simulators of DDSIM
+2.7.0 return wrong distributions at zero noise and crash on larger windows. The statevector method of Aer 0.18.2 stops
+with the error ``Kraus is empty'' in S3 from five variables on. The
+NoiseSimulator of Qulacs 0.6.14 never applies amplitude damping. The fake
+Sirius backend of qiskit-iqm drops the MOVE error, which shifts the
+distributions by a TVD of 0.016 to 0.044 on three test windows. Apart from these defects, the engine changes the cost of a
+prediction, not the prediction, and since every engine applies the same
+channels to the same circuit, this agreement verifies the implementations
+rather than validating them.
+
+Figure~\ref{fig:cost} and Table~\ref{tab:t6} show that cost. The
+density-matrix simulators stop at 8 to 12 variables, at the time limit or at
+13 qubits, while the trajectory methods reach 14 to 16 variables in S2. In S2
+Qulacs is the fastest program from seven variables on, and its shot loop runs
+about twice as fast as qsim at 15 variables; its NoiseSimulator is slightly
+faster still but needs gigabytes of memory and gets S3 wrong. With relaxation
+the order reverses: qsim runs up to eight times faster than the Qulacs shot
+loop, the gap growing from parity at four variables, and reaches 15 variables
+against 13. The trajectories of Qibo cannot run S3 and in S2 are over 1000 times
+slower than the Qulacs shot loop at four variables and four times slower at
+15.
+
+Compilation is a separate source of difference. The IQM adapter
+for Cirq compiles the same circuits with the same number of CZ gates as the
+adapter for Qiskit but with 25 to 61\,\% more MOVE gates
+(Table~\ref{tab:compilers}). On the 90 windows of 12 to 15 variables, the
+lowest-energy sample is the optimal move in 49 windows after the Cirq
+compilation and in 62 after the Qiskit one at $p = 2$ (exact McNemar
+test~\cite{mcnemar1947}, $P = 0.02$, or 0.06 after Holm's correction over the
+three depths), while at $p = 1$ and $p = 3$ the two compilations do not
+differ. Track B therefore neither shows nor excludes an effect of the
+additional MOVE gates in S2.
+
+On whole ILS runs with the move budget of the device (Figure~\ref{fig:prd},
+Table~\ref{tab:t5}), the scenario with relaxation matches Sirius in the mean
+for both simulators. The mean PRD differs by 0.13 and 0.43\,pp, and neither
+difference is significant. Their 95\,\% intervals over instances, $[-1.2, 1.7]$
+and $[-0.7, 1.8]$\,pp, exclude biases larger than about 2\,pp but not smaller
+ones, and the $t$-intervals of the 12 instance means agree. The
+agreement concerns the bias only. On the six repeated configurations, the only
+ones with a device floor, a simulated run in S3 differs from a device run of
+the same configuration by 3.5 to 3.8\,pp on average, 60 to 75\,\% more than two
+device runs differ from each other, and the mean of the five simulated runs
+differs from the mean of the five device runs by up to 6.6\,pp. Over all 72
+pairs the mean absolute difference is 2.2 to 2.4\,pp, because the 42
+configurations that ran once differ by only 1.3\,pp. The simulated runs
+scatter no more than the device runs (pooled standard deviation 1.9 to 2.2
+against 2.6\,pp), so the excess comes from offsets of up to 6.6\,pp in both
+directions between configurations, which cancel in the mean. Without relaxation qsim gives worse schedules than the device
+($+1.78$\,pp; $P < 0.001$ over runs, but 0.06 over instance means after
+correction), and Qulacs points the same way without reaching significance.
+The device made one move in 48 of the 72 runs, two in 23 and three in one, so
+these runs test the first moves of a search rather than its long course. On
+the 153 runs with $n = 50$ to $500$, in which the device made a single move,
+S2 gives schedules 0.44 and 0.37\,pp worse than the device for qsim and
+Qulacs (Wilcoxon $P < 10^{-5}$; mean absolute difference 0.60 and 0.59\,pp);
+on the three repeated configurations, where two device runs differ by
+0.55\,pp, the simulators differ by 1.3 to 1.8\,pp.
+The gap comes from Dynasearch and Motzkin (0.4 to 1.0\,pp, against almost zero
+for Adjacent and Fibonacci), whose device moves improve the PRD most (2.3\,pp
+on average, against 0.7 and 1.6\,pp), so in S2 the simulated move recovers only
+about 60 to 85\,\% of the improvement of the device move in these
+neighborhoods. The gap is largest at $n = 50$ (0.79 and 0.58\,pp) and almost
+gone at $n = 500$ (0.04 and 0.06\,pp), but one move improves a 500-job schedule
+by only 0.7\,pp, against 2.7\,pp at $n = 50$.
+
+Single circuits do not show this agreement. The mean energy of a circuit
+changes by 0.006 to 0.008 on average between the two days, but every
+simulator in every scenario misses the device by six to fifteen times as much
+(Figure~\ref{fig:h3}, Table~\ref{tab:h3}). The miss depends on circuit
+length. On the Fibonacci circuits at $p = 1$, the shortest with 14 CZ gates on average,
+S3 stays within 1.1 times the day-to-day variation and the device returns as
+many ones as the noiseless circuit, while on the Dynasearch circuits, with
+131 CZ gates on average, every scenario misses by more than 20 times. Over the 84
+histograms at $p = 1$, the share of ones on the device falls below S3 by 0.03
+for circuits whose CZ and MOVE gates take less than 5\,$\mu$s in sequence
+and by 0.18 for those that take more than 25\,$\mu$s. At $p = 1$ the device scores better
+than the noiseless simulation: it samples the optimal move in 79 of 84
+histograms, against 46 in S1, and its samples contain fewer ones.
+
+The advantage of the device says more about the energy scale than about
+the circuits. The empty move scores 0.026,
+better than any sampler, while a uniform sampler scores 0.259 and still
+contains the optimum in 49 histograms, more than the noiseless circuit (46); the optimal move sets 1.6 variables to
+one on average. Any bias towards zero therefore lowers the mean energy and
+raises the chance of sampling the optimum. A sampler that draws every bit
+independently, with the share of ones fitted to each device histogram, comes
+close to the device: its expected energy is 0.118 at $p = 1$ (device 0.118)
+and 0.173 at $p = 2$ (device 0.177). Fitted on one day and tested on the
+other, it predicts the energy of a circuit within 0.009 and 0.014, 1.4 to 1.7
+times the day-to-day variation of the device and four to eleven times closer
+than any scenario, and it follows the device from circuit to circuit with a
+correlation of 0.98 and 0.96, against 0.85 and 0.66 for S1. The same sampler fitted to the simulated histograms reproduces their mean
+energies within 0.012 to 0.022. On this scale, the mean energy of any
+histogram follows mostly from its number of ones, and the misses above are
+mainly misses in the share of ones. The device does no better than its own
+fitted sampler at $p = 1$ and slightly worse at $p = 2$, so in energy its
+samples carry no information about the QUBO beyond their share of ones. The
+same holds for the noiseless circuit, whose mean energy is within 0.003 of its
+own fitted sampler at $p = 1$ and 0.008 worse at $p = 2$: at these fixed angles, QAOA lowers the mean energy only through the share of ones.
+
+At $p = 1$ the bits are also close
+to independent: a device histogram differs from the product of its own
+per-bit frequencies by a TVD of 0.30, close to the 0.26 that sampling alone
+produces, whereas the noiseless histograms differ from theirs by 0.57; at
+$p = 2$ the noiseless circuit is itself nearly independent (0.35 against 0.39
+on the device). A single share of ones for all bits reproduces the mean energy,
+not the distribution. Readout errors, three to four times as likely from one
+to zero as the reverse (Table~\ref{tab:calib}), cannot explain the deficit,
+since S2 and S3 include them. At $p = 2$ the
+scenarios S2 and S3 match the mean energy over all circuits but follow the
+device from circuit to circuit with a correlation of only 0.39 and 0.37 (0.72
+and 0.83 at $p = 1$).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/t6_cost.pdf}
+\caption{Time per circuit against the number of qubits including the resonator
+($p = 1$, one thread). The dotted lines mark the 300\,s limit and the largest
+window at $n = 20$ ($K = 15$, 16 qubits).}
+\label{fig:cost}
+\end{figure}
+
+\input{measurements/t6_table}
+
+\begin{table}[t]
+\caption{Median CZ and MOVE gate counts per window after compilation ($p = 1$,
+161 windows).}
+\label{tab:compilers}
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+Neighborhood & qiskit-iqm (CZ / MOVE) & IQM Cirq (CZ / MOVE) \\
+\midrule
+Adjacent & 72 / 72 & 72 / 92 \\
+Fibonacci & 16 / 16 & 16 / 20 \\
+Dynasearch & 164 / 178 & 164 / 286 \\
+Motzkin & 134 / 144 & 134 / 214 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/t5_prd.pdf}
+\caption{PRD of each ILS run on a simulator against its run on the Sirius hardware ($n = 20$,
+$p = 1$). The gray band in the scatter panels shows $\pm 2.2$\,pp, the mean
+absolute difference between two Sirius runs of one configuration, and the right panel shows the
+mean difference with its 95\,\% interval over the 12 instances.}
+\label{fig:prd}
+\end{figure}
+
+\input{measurements/t5_table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.8\textwidth]{figures/h3_energy.pdf}
+\caption{Mean energy of each histogram circuit on Sirius and on qsim in S1 to
+S3, one point per circuit and day. The gray band shows $\pm 0.007$, the mean
+difference between the two days on Sirius.}
+\label{fig:h3}
+\end{figure}
+
+\input{measurements/h3_table}
+
+\section{Discussion and Conclusions}
+
+For this workload, qsim and Qulacs with relaxation show no detectable bias in
+the mean schedule quality of the physical Sirius processor at $n = 20$, although they do not reproduce its
+individual runs, and in this scenario qsim is the fastest program from 11
+variables on. The search keeps the best of 4096 samples, so any bias towards
+zero helps it, and S3 adds such a bias through amplitude damping; without
+it, in S2, the simulated schedules are 1.3 to 1.8\,pp worse than those of the
+device. The agreement may therefore rest on the sign of the bias rather
+than on a faithful noise model, and it covers runs of only one to three
+moves. It does not come from agreement on single circuits, where the
+simulators fail: on the circuits of the first move, S3 samples the optimal
+move far less often than the device (47 against 79 of 84 histograms). At depth one the device returns nearly independent bits with
+about 32\,\% ones, against 43 to 45\,\% in every scenario, and the deficit
+grows with the length of the circuit. This is consistent with relaxation of
+idle qubits, which none of our scenarios includes. A median Dynasearch circuit at
+$p = 1$ runs its 164 CZ and 178 MOVE gates one after another for at least
+28\,$\mu$s, close to $T_1$ and more than twice $T_2$ of the qubits,
+while most qubits wait. One observation does not fit this explanation: at
+$p = 2$, with circuits twice as long, the device returns about as many ones
+as S3 (40\,\% of the bits in both) and more than S3 on circuits of 5 to
+25\,$\mu$s.
+
+These conclusions have limits. The run-level simulations use the calibration
+of 23 October, one to two weeks after the device runs, while the histograms use the
+calibration of the same day. The coherence of the resonator changed by up to a
+factor of nine between these snapshots, and the run-level agreement in S3
+may depend on the snapshot used. All noise models treat the resonator as a
+qubit and MOVE as a swap, which ignores leakage. The circuit-level data cover
+one instance of each of the three classes with $n = 20$ at two depths, the
+run-level data consist of runs of one to three moves, and beyond $n = 20$ they
+cover only scenario S2. Costs are single-threaded CPU times; GPU back-ends
+and multithreading are outside the scope. The next step is a scenario with
+idle noise built from the timing of the compiled circuits and tested against
+the same histograms.
+
+\FloatBarrier
+\bibliographystyle{scsproc}
+\bibliography{references}
+\end{document}

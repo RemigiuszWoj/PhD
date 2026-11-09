@@ -1,0 +1,10 @@
+Qiskit Aer "QuantumError: Kraus is empty" in the statevector method (0.17.2 and 0.18.2), 27.10.2026 ~03:10.
+Circuit: tai20_5|0|motzkin|1|small|1, compiled (13 qubits, MOVE as swap), scenario S3 (noise.py).
+Minimal noise model that fails: errors on "swap" at two loci only, both on the resonator (index 12):
+  QB2|COMPR1 : thermal_relaxation_error(T1=13.8us, T2=18.5us, 64ns) x thermal(COMPR1) -- T2 > T1, so Aer
+               builds it as a Kraus channel (3 error circuits)
+  QB3|COMPR1 : thermal x thermal composed with depolarizing_error(4.5e-4, 2) (144 error circuits)
+Each alone runs; both together fail. All 11 swap loci with the same error object run. density_matrix runs.
+Same failure with one kraus_error per locus (Kraus(err.to_quantumchannel())) and with MOVE as a labelled
+UnitaryGate instead of swap. Not tried: a reduced standalone repro outside the harness.
+Effect on the campaign: aer_sv S3 fails in 55 of 71 windows (p = 1); aer_dm S3 is fine.

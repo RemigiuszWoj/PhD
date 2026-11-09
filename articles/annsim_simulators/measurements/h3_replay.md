@@ -1,0 +1,26 @@
+# H3: simulator vs Sirius on the circuits that ran (4096 shots each, same-day calibration)
+
+84 circuits x 2 days. Device day 1 vs day 2: mean TVD 0.385, mean |dE| 0.007, mean |d hit| 0.0032.
+E = mean normalised QUBO energy (0 optimum, 1 worst); hit = share of shots on the optimum; w = mean Hamming weight; floor = the same quantity between the two device days.
+
+| engine | sc. | p | TVD | TVD floor | E sim | E hw | abs dE | dE floor | hit sim | hit hw | opt found sim/hw | w sim | w hw |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| qsim | S1 | 1 | 0.618 | 0.337 | 0.199 | 0.118 | 0.081 | 0.006 | 0.0123 | 0.0222 | 46/79 of 84 | 4.69 | 3.20 |
+| qsim | S1 | 2 | 0.732 | 0.433 | 0.082 | 0.177 | 0.100 | 0.008 | 0.0312 | 0.0189 | 82/71 of 84 | 2.26 | 4.25 |
+| qsim | S2 | 1 | 0.596 | 0.337 | 0.214 | 0.118 | 0.096 | 0.006 | 0.0136 | 0.0222 | 43/79 of 84 | 4.95 | 3.20 |
+| qsim | S2 | 2 | 0.564 | 0.433 | 0.182 | 0.177 | 0.054 | 0.008 | 0.0228 | 0.0189 | 65/71 of 84 | 4.55 | 4.25 |
+| qsim | S3 | 1 | 0.568 | 0.337 | 0.199 | 0.118 | 0.081 | 0.006 | 0.0147 | 0.0222 | 47/79 of 84 | 4.75 | 3.20 |
+| qsim | S3 | 2 | 0.568 | 0.433 | 0.182 | 0.177 | 0.055 | 0.008 | 0.0231 | 0.0189 | 70/71 of 84 | 4.57 | 4.25 |
+| qulacs_loop | S1 | 1 | 0.617 | 0.337 | 0.200 | 0.118 | 0.083 | 0.006 | 0.0120 | 0.0222 | 46/79 of 84 | 4.70 | 3.20 |
+| qulacs_loop | S1 | 2 | 0.733 | 0.433 | 0.082 | 0.177 | 0.100 | 0.008 | 0.0315 | 0.0189 | 82/71 of 84 | 2.25 | 4.25 |
+| qulacs_loop | S2 | 1 | 0.594 | 0.337 | 0.214 | 0.118 | 0.096 | 0.006 | 0.0135 | 0.0222 | 42/79 of 84 | 4.94 | 3.20 |
+| qulacs_loop | S2 | 2 | 0.565 | 0.433 | 0.182 | 0.177 | 0.054 | 0.008 | 0.0226 | 0.0189 | 69/71 of 84 | 4.55 | 4.25 |
+| qulacs_loop | S3 | 1 | 0.570 | 0.337 | 0.198 | 0.118 | 0.081 | 0.006 | 0.0146 | 0.0222 | 53/79 of 84 | 4.75 | 3.20 |
+| qulacs_loop | S3 | 2 | 0.566 | 0.433 | 0.183 | 0.177 | 0.055 | 0.008 | 0.0239 | 0.0189 | 66/71 of 84 | 4.57 | 4.25 |
+
+Baselines on the device histograms (expected values; 'coin' = independent bits with the share of ones fitted to the histogram itself, 'coin oos' = fitted to the other day):
+
+| p | E hw | E empty | abs dE empty | E uniform | abs dE uniform | opt found uniform | E coin | abs dE coin | opt found coin | abs dE coin oos | r(coin oos, hw) |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 0.118 | 0.026 | 0.092 | 0.259 | 0.141 | 49.0 | 0.118 | 0.006 | 82.9 | 0.0087 | 0.977 |
+| 2 | 0.177 | 0.026 | 0.151 | 0.259 | 0.092 | 49.0 | 0.173 | 0.008 | 75.0 | 0.0141 | 0.957 |

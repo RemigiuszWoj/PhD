@@ -1,0 +1,222 @@
+% Szkic po polsku (konferencja do ustalenia): symulatory wyżarzania a D-Wave Advantage. Wersja anonimowa.
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[polish]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage[hidelinks,pdfauthor={},pdftitle={}]{hyperref}
+\newcommand{\tofill}[1]{\textbf{[#1]}}
+
+\title{Czy symulator może zastąpić wyżarzacz kwantowy? Symulacja klasyczna,
+kwantowe Monte Carlo i dokładna dynamika wobec D-Wave Advantage
+w przeszukiwaniu sąsiedztwa}
+\author{Anonim}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\tofill{Szkic: streszczenie powstanie po wynikach.}
+\end{abstract}
+
+\section{Wstęp}
+
+Wyżarzacze kwantowe rozwiązują problemy kwadratowej optymalizacji binarnej
+bez ograniczeń (QUBO), powoli wyłączając pole poprzeczne~\cite{kadowaki1998,albash2018aqc},
+a komercyjne urządzenia z tysiącami kubitów są
+dostępne~\cite{johnson2011manufactured}. Dostęp do nich jest limitowany, więc
+w czasie prac badacze często zastępują urządzenie symulatorem: klasycznym
+symulowanym wyżarzaniem, symulowanym wyżarzaniem kwantowym metodą Monte Carlo
+po całkach po trajektoriach albo, dla bardzo małych układów, dokładną
+dynamiką. Wcześniejsze prace porównywały takie symulatory z urządzeniami
+D-Wave na losowych szkłach spinowych i pytały, czy urządzenie zachowuje się
+jak wyżarzacz kwantowy, czy klasyczny~\cite{boixo2014evidence,ronnow2014speedup}.
+Praktyk zadaje węższe pytanie: jeśli symulator zastąpi urządzenie wewnątrz
+algorytmu optymalizacji, czy algorytm dojdzie do tego samego wyniku?
+
+Odpowiadamy na nie dla konkretnego zadania: przeszukiwania sąsiedztwa
+w permutacyjnym problemie przepływowym, w którym wyżarzacz kwantowy wybiera
+ruch iteracyjnego przeszukiwania lokalnego, rozwiązując okienkowe
+QUBO~\cite{wojewodzki2026windowed,wojewodzki2026bpasts}. Duży zbiór przebiegów
+na D-Wave Advantage już istnieje, więc porównanie nie wymaga nowego czasu
+urządzenia. Te same QUBO uruchamiamy na kilku symulatorach w trzech
+scenariuszach o rosnącym realizmie, porównujemy osiągane długości
+uszeregowania z wynikami urządzenia i podajemy koszt każdego symulatora.
+\tofill{Jedno zdanie z głównym wynikiem po zakończeniu badań.}
+
+\section{Tło}
+
+\paragraph{Zadanie.}
+Iteracyjne przeszukiwanie lokalne~\cite{lourenco2003} dla permutacyjnego
+problemu przepływowego na instancjach Taillarda~\cite{taillard1993} przechodzi
+do najlepszej permutacji w wykładniczym sąsiedztwie: Adjacent,
+Fibonacciego~\cite{bozejko2026new}, Dynasearch albo
+Motzkina~\cite{wojewodzki2026soco}. Ruch jest rozwiązaniem
+QUBO~\cite{lucas2014ising,glover2019}, którego zmienne wybierają zamiany; dla
+dużych permutacji przeszukiwanie rozkłada problem na nakładające się okna
+i rozwiązuje każde na wyżarzaczu~\cite{wojewodzki2026windowed}. Wcześniejsze
+prace stosowały urządzenia D-Wave także do szeregowania
+jednomaszynowego~\cite{bozejko2022distributed}.
+
+\paragraph{Urządzenie.}
+D-Wave Advantage (system 4.1, topologia Pegasus) programuje współczynniki
+Isinga $h_i$ i $J_{ij}$ problemu na nadprzewodzących kubitach strumieniowych.
+Zmienna logiczna, której sprzężenia nie mieszczą się w grafie sprzętu, staje
+się łańcuchem fizycznych kubitów spiętych silnym sprzężeniem
+ferromagnetycznym, czyli zanurzeniem minorowym~\cite{choi2008minor}; łańcuchy
+mogą się zrywać i wtedy rozwiązanie wymaga naprawy. Zaprogramowane
+współczynniki obarczone są zintegrowanymi błędami sterowania, czyli
+gaussowskimi odchyleniami $h$ i $J$ o części systematycznej
+i losowej~\cite{dwaveice}, a urządzenie wyżarza w skończonej temperaturze.
+Nowsze eksperymenty pokazują koherentną dynamikę kwantową w programowalnych
+łańcuchach Isinga~\cite{king2022coherent}.
+
+\section{Symulatory}
+
+\paragraph{Dokładny stan podstawowy.}
+Dla okien do około dwudziestu zmiennych pełne przeszukanie daje optimum
+każdego QUBO. Pokazuje, co zwróciłby idealny wyżarzacz, i służy jako
+odniesienie dla pozostałych.
+
+\paragraph{Symulowane wyżarzanie.}
+Symulowane wyżarzanie~\cite{kirkpatrick1983sa} próbkuje rozkład Boltzmanna
+przy malejącej temperaturze krokami Metropolisa. Klasyczne próbniki
+D-Wave~\cite{dwavesamplers} implementują je, razem z przeszukiwaniem tabu, dla
+tego samego formatu problemu co urządzenie, co czyni je naturalnym
+klasycznym zamiennikiem.
+
+\paragraph{Symulowane wyżarzanie kwantowe.}
+Symulowane wyżarzanie kwantowe próbkuje model Isinga w polu poprzecznym metodą
+Monte Carlo po całkach po trajektoriach: układ kwantowy odwzorowuje się na
+klasyczny z dodatkowym wymiarem czasu urojonego złożonym z warstw Trottera,
+a pole poprzeczne maleje w czasie przebiegu~\cite{santoro2002qa,martonak2002pimc}.
+Metoda odtwarza statystykę równowagową wyżarzania kwantowego, a nie jego
+dynamikę w czasie rzeczywistym, i była punktem odniesienia przy ocenie
+wczesnych urządzeń D-Wave~\cite{boixo2014evidence}. OpenJij~\cite{openjij}
+udostępnia zarówno symulowane wyżarzanie, jak i symulowane wyżarzanie
+kwantowe z konfigurowalnymi harmonogramami.
+
+\paragraph{Dokładna dynamika.}
+QuTiP~\cite{johansson2013qutip,lambert2024qutip5} całkuje równanie
+Schr\"{o}dingera albo równanie master hamiltonianu wyżarzania wzdłuż zadanego
+harmonogramu, uwzględniając dekoherencję wprost. Koszt rośnie wykładniczo
+z liczbą kubitów, więc stosujemy go tylko na kilku małych oknach.
+
+\paragraph{Metody inspirowane kwantowo.}
+Symulowana bifurkacja~\cite{goto2019sb} i cyfrowy wyżarzacz~\cite{aramon2019da}
+rozwiązują QUBO dynamiką inspirowaną układami fizycznymi. Nie symulują
+wyżarzacza kwantowego, a część z nich jest komercyjna, ale często go
+zastępują; traktujemy je jako opcjonalne punkty odniesienia.
+
+\begin{table}[t]
+\caption{Symulatory wyżarzania. Dwie ostatnie kolumny pochodzą z naszych pomiarów.}
+\label{tab:sims}
+\centering
+\small
+\begin{tabular}{lllcc}
+\toprule
+Symulator & Co liczy & Dostępność & maks.\ zmiennych & s / okno \\
+\midrule
+Pełne przeszukanie & dokładny stan podstawowy & własny kod & \tofill{?} & \tofill{?} \\
+dwave-samplers (SA, tabu) & wyżarzanie klasyczne & otwarty & \tofill{?} & \tofill{?} \\
+OpenJij (SA, SQA) & wyżarzanie klasyczne i kwantowe Monte Carlo & otwarty & \tofill{?} & \tofill{?} \\
+QuTiP & dokładna dynamika (układ otwarty) & otwarty & \tofill{?} & \tofill{?} \\
+Bifurkacja, cyfrowy wyżarzacz & heurystyki inspirowane kwantowo & częściowo komercyjne & \tofill{?} & \tofill{?} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Metodyka}
+
+\paragraph{Scenariusze.}
+W A1 symulator zwraca dokładny stan podstawowy każdego okna. W A2 wykonuje
+dynamikę wyżarzania bez błędów sterowania: symulowane wyżarzanie i symulowane
+wyżarzanie kwantowe z harmonogramem dopasowanym do urządzenia (czas
+wyżarzania, temperatura efektywna) oraz dokładną dynamikę na małych oknach. A3
+dodaje błędy sterowania urządzenia jako gaussowskie zaburzenia $h$ i $J$
+i rozwiązuje problem przez to samo zanurzenie minorowe co urządzenie, więc
+łańcuchy mogą się zrywać.
+
+\paragraph{Porównanie z urządzeniem.}
+Przebiegi na urządzeniu nie zapisały pełnych zbiorów próbek, więc porównanie
+działa na poziomie całych przebiegów: każdy symulator zastępuje urządzenie
+wewnątrz iteracyjnego przeszukiwania lokalnego na tych samych instancjach
+i oknach, z tą samą liczbą wywołań wyżarzacza co na urządzeniu, a względne
+odchylenie długości uszeregowania od dolnego ograniczenia Taillarda
+porównujemy testem znaków par i $\tau$ Kendalla po instancjach. Jeśli
+pozwoli czas wyżarzacza, mały bieg z zapisem zbiorów próbek wybranych okien
+da porównanie na poziomie rozkładów \tofill{?}.
+
+\section{Plan eksperymentów}
+
+Badanie przebiega w trzech etapach: każdy symulator na jednym oknie;
+wszystkie na instancjach z $n = 20$; najwierniejsze na pełnym zbiorze
+($n = 20$ do $500$), na który stać symulowane wyżarzanie i symulowane
+wyżarzanie kwantowe.
+
+\begin{table}[t]
+\caption{Dane z D-Wave użyte jako odniesienie (D-Wave Advantage, system 4.1, Pegasus).}
+\label{tab:hw}
+\centering
+\small
+\begin{tabular}{ll}
+\toprule
+Pozycja & Wartość \\
+\midrule
+Przebiegi (ILS / SA) & 5650 (3250 / 2400), maj--sierpień 2026 \\
+Instancje & $n = 20$: 5200 przebiegów; $n = 50$: 200; $n = 100$: 100; $n = 200$: 100; $n = 500$: 50 \\
+Sąsiedztwa & Adjacent, Fibonacci, Dynasearch, Motzkin; warianty podstawowe i rozszerzone~\cite{wojewodzki2026windowed} \\
+Wywołania wyżarzacza & 24\,317 (11 maja -- 8 sierpnia 2026) \\
+Czas dostępu do QPU & łącznie 753 s \\
+Rozmiar problemu na wywołanie & mediana 16 zmiennych, maksimum 220 \\
+Zapisane dla przebiegu & historia długości uszeregowania, najlepsza permutacja, statystyki wywołań (bez zbiorów próbek) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Wyniki}
+
+\tofill{Szkic: powstanie po trzech etapach.}
+
+\begin{figure}[t]
+\centering
+\fbox{\parbox[c][3.5cm][c]{0.9\textwidth}{\centering \tofill{Figura: względne
+odchylenie długości uszeregowania, symulator wobec D-Wave, jeden punkt na
+instancję, dla A1, A2 (SA, SQA) i A3.}}}
+\caption{Zgodność z urządzeniem na poziomie przebiegów.}
+\label{fig:prd}
+\end{figure}
+
+\begin{table}[t]
+\caption{Mediana względnego odchylenia [\%] przy tej samej liczbie wywołań wyżarzacza co na urządzeniu ($n = 20$).}
+\label{tab:prd}
+\centering
+\small
+\begin{tabular}{lccccc}
+\toprule
+Sąsiedztwo & D-Wave & A1 dokładnie & A2 SA & A2 SQA & A3 SQA + błędy \\
+\midrule
+Adjacent & \tofill{?} & \tofill{?} & \tofill{?} & \tofill{?} & \tofill{?} \\
+Fibonacci & \tofill{?} & \tofill{?} & \tofill{?} & \tofill{?} & \tofill{?} \\
+Dynasearch & \tofill{?} & \tofill{?} & \tofill{?} & \tofill{?} & \tofill{?} \\
+Motzkin & \tofill{?} & \tofill{?} & \tofill{?} & \tofill{?} & \tofill{?} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Dyskusja}
+\tofill{Szkic: który symulator może zastąpić urządzenie i do czego;
+ograniczenia: brak zbiorów próbek z urządzenia, model błędów z dokumentacji,
+jedna generacja urządzenia.}
+
+\section{Wnioski}
+\tofill{Szkic.}
+
+\bibliographystyle{plain}
+\bibliography{references}
+\end{document}

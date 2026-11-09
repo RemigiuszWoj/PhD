@@ -1,0 +1,215 @@
+% Draft (venue to be decided): annealing simulators vs D-Wave Advantage. Anonymous.
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage[hidelinks,pdfauthor={},pdftitle={}]{hyperref}
+\newcommand{\tofill}[1]{\textbf{[#1]}}
+
+\title{Can Simulators Stand In for a Quantum Annealer? Classical, Quantum
+Monte Carlo and Exact Simulation against D-Wave Advantage in Neighborhood
+Search}
+\author{Anonymous}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\tofill{Draft: the abstract is written after the results.}
+\end{abstract}
+
+\section{Introduction}
+
+Quantum annealers solve quadratic unconstrained binary optimization (QUBO)
+problems by slowly turning off a transverse field~\cite{kadowaki1998,albash2018aqc},
+and commercial devices with thousands of qubits are available~\cite{johnson2011manufactured}.
+Access to them is metered, so researchers often replace the device with a
+simulator during development: classical simulated annealing, simulated quantum
+annealing by path-integral Monte Carlo, or, for very small systems, the exact
+dynamics. Earlier studies compared such simulators with D-Wave devices on
+random spin glasses and asked whether the device behaves like a quantum or a
+classical annealer~\cite{boixo2014evidence,ronnow2014speedup}. Practitioners ask
+a narrower question: if a simulator replaces the device inside an optimization
+algorithm, does the algorithm reach the same result?
+
+We answer it for a concrete workload: neighborhood search for the permutation
+flow shop problem, where a quantum annealer selects the move of iterated local
+search by solving a windowed
+QUBO~\cite{wojewodzki2026windowed,wojewodzki2026bpasts}. A large set of runs on
+D-Wave Advantage already exists, so the comparison needs no new hardware time.
+We run the same QUBOs on several simulators under three scenarios of
+increasing realism, compare the makespans they reach with those of the device
+and report the cost of each simulator. \tofill{One sentence with the main
+finding once the results are in.}
+
+\section{Background}
+
+\paragraph{Workload.}
+Iterated local search~\cite{lourenco2003} for the permutation flow shop
+problem on the Taillard instances~\cite{taillard1993} moves to the best
+permutation in an exponential neighborhood: Adjacent, Fibonacci~\cite{bozejko2026new},
+Dynasearch or Motzkin~\cite{wojewodzki2026soco}. The move is the solution of a
+QUBO~\cite{lucas2014ising,glover2019} whose variables select swaps; for large
+permutations the search decomposes the problem into overlapping windows and
+solves each on the annealer~\cite{wojewodzki2026windowed}. Earlier work used
+D-Wave devices for single-machine scheduling as well~\cite{bozejko2022distributed}.
+
+\paragraph{The device.}
+D-Wave Advantage (system 4.1, Pegasus topology) programs the Ising
+coefficients $h_i$ and $J_{ij}$ of the problem on superconducting flux qubits.
+A logical variable whose couplings do not fit the hardware graph becomes a
+chain of physical qubits held together by a strong ferromagnetic coupling, a
+minor embedding~\cite{choi2008minor}; chains can break, and the solution then
+needs repair. The programmed coefficients carry integrated control errors,
+Gaussian deviations of $h$ and $J$ with a systematic and a random
+part~\cite{dwaveice}, and the device anneals at a finite temperature. Recent
+experiments show coherent quantum dynamics in programmable Ising
+chains~\cite{king2022coherent}.
+
+\section{Simulators}
+
+\paragraph{Exact ground state.}
+For windows of up to about twenty variables, enumeration gives the optimum of
+every QUBO. It shows what a perfect annealer would return and is the
+reference for the others.
+
+\paragraph{Simulated annealing.}
+Simulated annealing~\cite{kirkpatrick1983sa} samples the Boltzmann
+distribution at a decreasing temperature with Metropolis updates. D-Wave's
+own classical samplers~\cite{dwavesamplers} implement it, together with tabu
+search, for the same problem format as the device, which makes it the
+natural classical stand-in.
+
+\paragraph{Simulated quantum annealing.}
+Simulated quantum annealing samples the transverse-field Ising model by
+path-integral Monte Carlo: the quantum system maps to a classical one with an
+extra imaginary-time dimension of Trotter slices, and the transverse field is
+lowered during the run~\cite{santoro2002qa,martonak2002pimc}. It reproduces the
+equilibrium statistics of quantum annealing, not its real-time dynamics, and it
+was the reference against which early D-Wave devices were
+judged~\cite{boixo2014evidence}. OpenJij~\cite{openjij} provides both simulated
+annealing and simulated quantum annealing with configurable schedules.
+
+\paragraph{Exact dynamics.}
+QuTiP~\cite{johansson2013qutip,lambert2024qutip5} integrates the
+Schr\"{o}dinger or master equation of the annealing Hamiltonian along a given
+schedule, which includes decoherence explicitly. The cost grows exponentially
+with the number of qubits, so we use it on a few small windows only.
+
+\paragraph{Quantum-inspired solvers.}
+Simulated bifurcation~\cite{goto2019sb} and the digital
+annealer~\cite{aramon2019da} solve QUBOs with dynamics inspired by physical
+systems. They do not simulate a quantum annealer, and part of them is
+commercial, but they are common replacements for it; we consider them as
+optional baselines.
+
+\begin{table}[t]
+\caption{Annealing simulators. The last two columns come from our measurements.}
+\label{tab:sims}
+\centering
+\small
+\begin{tabular}{lllcc}
+\toprule
+Simulator & What it computes & Availability & max variables & s / window \\
+\midrule
+Enumeration & exact ground state & own code & \tofill{?} & \tofill{?} \\
+dwave-samplers (SA, tabu) & classical annealing & open source & \tofill{?} & \tofill{?} \\
+OpenJij (SA, SQA) & classical and quantum Monte Carlo annealing & open source & \tofill{?} & \tofill{?} \\
+QuTiP & exact (open-system) dynamics & open source & \tofill{?} & \tofill{?} \\
+Simulated bifurcation, digital annealer & quantum-inspired heuristics & partly commercial & \tofill{?} & \tofill{?} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Methodology}
+
+\paragraph{Scenarios.}
+In A1 the simulator returns the exact ground state of each window. In A2 it
+runs annealing dynamics without control errors: simulated annealing and
+simulated quantum annealing with a schedule matched to the device (anneal time,
+effective temperature), and exact dynamics on small windows. A3 adds the
+device's control errors as Gaussian perturbations of $h$ and $J$ and solves the
+problem through the same minor embedding as the device, so chains can break.
+
+\paragraph{Comparison with the device.}
+The device runs did not store full sample sets, so the comparison works at the
+level of whole runs: each simulator replaces the device inside iterated local
+search on the same instances and windows, with the same number of annealer
+calls the device made, and we compare the relative deviation of the makespan
+from the Taillard lower bound with a paired sign test and Kendall's $\tau$
+over instances. If annealer time allows, a small run that stores the sample
+sets of selected windows gives a distribution-level comparison \tofill{?}.
+
+\section{Experimental Setup}
+
+The study runs in three stages: every simulator on one window; all of them on
+the instances with $n = 20$; the most faithful ones on the full set
+($n = 20$ to $500$), which simulated annealing and simulated quantum annealing
+can afford.
+
+\begin{table}[t]
+\caption{D-Wave data used as reference (D-Wave Advantage system 4.1, Pegasus).}
+\label{tab:hw}
+\centering
+\small
+\begin{tabular}{ll}
+\toprule
+Item & Value \\
+\midrule
+Runs (ILS / SA) & 5650 (3250 / 2400), May--August 2026 \\
+Instances & $n = 20$: 5200 runs; $n = 50$: 200; $n = 100$: 100; $n = 200$: 100; $n = 500$: 50 \\
+Neighborhoods & Adjacent, Fibonacci, Dynasearch, Motzkin; basic and enhanced variants~\cite{wojewodzki2026windowed} \\
+Annealer calls & 24\,317 (11 May -- 8 August 2026) \\
+QPU access time & 753 s in total \\
+Problem size per call & median 16 variables, maximum 220 \\
+Stored per run & makespan history, best permutation, call statistics (no sample sets) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Results}
+
+\tofill{Draft: written after the three stages.}
+
+\begin{figure}[t]
+\centering
+\fbox{\parbox[c][3.5cm][c]{0.9\textwidth}{\centering \tofill{Figure: relative
+deviation of the makespan, simulator versus D-Wave, one point per instance, for
+A1, A2 (SA, SQA) and A3.}}}
+\caption{Run-level agreement with the device.}
+\label{fig:prd}
+\end{figure}
+
+\begin{table}[t]
+\caption{Median relative deviation [\%] at the same number of annealer calls as the device ($n = 20$).}
+\label{tab:prd}
+\centering
+\small
+\begin{tabular}{lccccc}
+\toprule
+Neighborhood & D-Wave & A1 exact & A2 SA & A2 SQA & A3 SQA + errors \\
+\midrule
+Adjacent & \tofill{?} & \tofill{?} & \tofill{?} & \tofill{?} & \tofill{?} \\
+Fibonacci & \tofill{?} & \tofill{?} & \tofill{?} & \tofill{?} & \tofill{?} \\
+Dynasearch & \tofill{?} & \tofill{?} & \tofill{?} & \tofill{?} & \tofill{?} \\
+Motzkin & \tofill{?} & \tofill{?} & \tofill{?} & \tofill{?} & \tofill{?} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Discussion}
+\tofill{Draft: which simulator can stand in for the device and for what;
+limitations: no sample sets from the device, error model from documentation,
+one device generation.}
+
+\section{Conclusions}
+\tofill{Draft.}
+
+\bibliographystyle{plain}
+\bibliography{references}
+\end{document}

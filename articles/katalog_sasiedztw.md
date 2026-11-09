@@ -34,10 +34,10 @@ Czwarta oś, poza inwolucjami: **okno de Montmorta** — w oknie każde zadanie 
 | 4 | **Fibonacci** | rozłączne zamiany sąsiadów | F(n + 1), ~1,618ⁿ | trójdiagonalne | mamy |
 | 5 | **tribonacci / k-bonacci** | rozłączne zamiany końców przedziałów długości ≤ k, środek zablokowany | k-bonacci, ~1,839ⁿ (k = 3) | pasmowe, ≈ (k − 1)n zmiennych | **ICAPS 14.12.2026** |
 | 6 | **Dynasearch** | rozłączne przedziały dowolnej długości | 2ⁿ⁻¹ | parowe (gęste) | mamy |
-| 7 | **Motzkin** | łuki bez krzyżowań, zagnieżdżanie wolno | liczby Motzkina, ~3ⁿ | parowe | mamy |
+| 7 | **Motzkin** | łuki bez krzyżowań, zagnieżdżanie wolno | liczby Motzkina, ~3ⁿ | parowe | mamy; punkt startu IJCAI 11.01.2027 |
 | 8 | ≤ c krzyżowań | jak Motzkin + do c przecięć łuków | między Motzkinem a inwolucjami | parowe | później — możliwa nowa rodzina (sprawdzić OEIS) |
 | 9 | Inwolucje | dowolne rozłączne zamiany | liczby inwolucji (szybciej niż wykładniczo) | parowe, konflikt = wspólny koniec | później |
-| 10 | **Hamming z zamian** | ≤ d/2 rozłącznych zamian na dowolną odległość | n = 20, d = 4: 14 726 | parowe + ograniczenie liczności (zmienne pomocnicze) | **Zakopane 15.11.2026** |
+| 10 | **Hamming z zamian** | ≤ d/2 rozłącznych zamian na dowolną odległość | n = 20, d = 4: 14 726 | parowe + ograniczenie liczności (zmienne pomocnicze) | 2027 (kandydat ICCCI) |
 | 11 | Hamming pełny | dowolna permutacja w odległości ≤ d (z cyklami) | Σ C(n, j)·!j | przypisaniowe, n² zmiennych | później, trudne |
 | 11b | Hamming „repermutacja” (wariant z ROADMAP) | wybór d pozycji i optymalne ich przestawienie | — | przypisaniowe, ~d² zmiennych | wariant do rozważenia |
 | 12 | **Okno de Montmorta** | rozłączne okna, w każdym deranżacja (każde zadanie zmienia miejsce) | k = 3: c(n) = c(n−1) + c(n−2) + 2c(n−3), wzrost dokładnie 2ⁿ | zmienna = (okno, deranżacja), konflikt = nachodzące okna | nowe, obiecujące (zawiera wstawienia) |
@@ -95,8 +95,10 @@ symulatorze, głębokość obwodu po kompilacji na fałszywych backendach (IBM, 
 
 | Termin | Konferencja | Treść |
 |---|---|---|
-| 15.11.2026 | ICAISC 2027, Zakopane (recenzja dwustronnie ślepa) | Hamming z zamian (#10) |
-| 7.12 / 14.12.2026 | ICAPS 2027 (A*) | hierarchia k-bonacci (#4–#6) w zapisie macierzowym (rozłączne kwadraty) |
-| 18.12.2026 | ANNSIM 2027 (przewodniczący: promotor), 4 strony | głębokość QAOA p przy szumie (sąsiedztwa gęste) |
-| 11.01.2027 | IJCAI 2027 (A*) | zapas dla k-bonacci, jeśli nie zdążymy na ICAPS |
-| 2027 | — | inwolucje i ≤ c krzyżowań (#8–#9), okno de Montmorta (#12), job shop |
+| 15.11.2026 | ICAISC 2027, Zakopane (recenzja dwustronnie ślepa) | studium przypadku parametru p (głębokość QAOA) — nie sąsiedztwo |
+| 7.12 / 14.12.2026 | ICAPS 2027 (A*) | oś k: Fibonacci → tribonacci → k-bonacci → Dynasearch (#4–#6) |
+| 18.12.2026 | ANNSIM 2027 (przewodniczący: promotor), 4 strony | Taillard: komputer kwantowy (dane sirius) vs symulatory — nie sąsiedztwo |
+| 11.01.2027 | IJCAI 2027 (A*) | wstępnie oś c: Motzkin → ≤ c krzyżowań → inwolucje (#7–#9) |
+| 2027 | — | Hamming (#10–#11b, kandydat ICCCI), okno de Montmorta (#12), job shop |
+
+Decyzja 23.10.2026. ICAPS i IJCAI to dwie różne prace, IJCAI nie jest już zapasem dla k-bonacci.

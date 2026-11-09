@@ -114,25 +114,25 @@ Tabu search (TS)~\cite{glover1989tabu} moves in every iteration to the best admi
 Simulated annealing (SA)~\cite{kirkpatrick1983optimization,OsmanPotts1989} accepts worse solutions with a probability that decreases during the search. In our implementation the neighborhood procedure returns its best move, as in TS, and the Metropolis rule decides whether the search moves to it: a move that changes the makespan by $\Delta=C_{\max}^{\text{new}}-C_{\max}^{\text{cur}}$ is always accepted if $\Delta\le 0$ and is accepted with probability $\exp(-\Delta/T)$ otherwise. The temperature $T$ is a control parameter of the algorithm, measured in the units of the makespan. It has no relation to a physical temperature, nor to the physics of the quantum annealer used later in the paper. After every iteration the temperature is lowered geometrically, $T\leftarrow\max(\alpha T,\,T_{\text{final}})$, from the initial value $T_{\text{init}}$, where $\alpha\in(0,1)$ is the cooling rate and $T_{\text{final}}$ the lowest temperature. With this schedule the temperature reaches $T_{\text{final}}$ after $\lceil\ln(T_{\text{final}}/T_{\text{init}})/\ln\alpha\rceil$ iterations, and from then on SA accepts almost no worse moves. Reheating is a modification of the standard cooling rule that is meant to let a long run leave a local optimum after this point: if the best solution has not improved for $t_{\text{stag}}$ milliseconds, the temperature is multiplied by a factor $r>1$, but not above $T_{\text{init}}$, and the stagnation clock starts again. SA keeps the best solution found and stops when the budget $t_{\max}$ is used up. Both metaheuristics call the same neighborhood procedure, so they use the same selection step and differ only in how they accept the selected move.
 \end{revblock}
 
-\begin{algorithm*}[t]
-\ifrevmarks\color{red}\fi
+\begin{algorithm}[t]
+\ifrevmarks\color{red}\fi\footnotesize
 \caption{\rev{One iteration of the neighborhood procedure.}}\label{alg:iteration}
 \begin{algorithmic}[1]
-\Require permutation $\pi$, neighborhood $\mathcal{N}\in\{$Adjacent, Fibonacci, Dynasearch, Motzkin$\}$, solver $S\in\{$DP, Gurobi, Simulator, QPU$\}$
+\Require permutation $\pi$, neighborhood $\mathcal{N}$, solver $S\in\{$DP, Gurobi, Simulator, QPU$\}$
 \State compute the Head and Tail matrices of $\pi$ \Comment{CPU}
-\State compute the gains $\delta_k$ of all candidate moves of $\mathcal{N}$ \Comment{CPU}
+\State compute the gains $\delta_k$ of the moves of $\mathcal{N}$ \Comment{CPU}
 \If{$S=$ DP}
-  \State $X\gets$ optimal compatible set of moves by dynamic programming \Comment{CPU}
+  \State $X\gets$ best compatible set of moves by DP \Comment{CPU}
 \Else
   \State build the QUBO model $f$ of $\mathcal{N}$ \Comment{CPU}
   \State $\mathbf{x}\gets$ solution of $f$ found by $S$ \Comment{CPU; QPU via Leap}
-  \State $X\gets\{k : x_k=1\}$; remove conflicting moves greedily \Comment{CPU}
+  \State $X\gets\{k : x_k=1\}$ without conflicts (greedy) \Comment{CPU}
 \EndIf
-\If{$X=\emptyset$} apply the rule for an empty selection (Sections~\ref{sec:neigh} and~\ref{sec:setup}) \EndIf
-\State $\pi'\gets\pi$ with the moves of $X$ applied; compute $C_{\max}(\pi')$ by \eqref{eq:C11}--\eqref{eq:Ckj} \Comment{CPU}
+\If{$X=\emptyset$} apply the empty-selection rule (Sect.~\ref{sec:setup}) \EndIf
+\State $\pi'\gets\pi$ with the moves of $X$; $C_{\max}(\pi')$ by \eqref{eq:C11}--\eqref{eq:Ckj} \Comment{CPU}
 \State \Return $\pi'$ and $C_{\max}(\pi')$ to TS or SA
 \end{algorithmic}
-\end{algorithm*}
+\end{algorithm}
 
 \begin{figure*}[t]
 \centering
@@ -184,9 +184,9 @@ V(i)&=\min\{V(i-1),\,V(i-2)+\delta_i\}, \nonumber\\
 The first term covers the sets without swap $i$. The second term covers the sets with swap $i$, which cannot contain swap $i-1$. The best set of the whole neighborhood has the total gain $V(n-1)$ and is recovered by tracing these choices back from $i=n-1$. This recurrence is the dynamic program of Dynasearch~\cite{Congram2002} restricted to adjacent swaps, and it takes $O(n)$ time after the $O(mn)$ evaluation of all gains. For TS the recurrence keeps the $\tau+1$ best sets in every state instead of one, which raises its cost to $O(n\tau)$. The empty set is not returned, so if no set improves the schedule, the best non-empty set is applied.
 \end{revblock}
 
-\begin{figure*}[t]
+\begin{figure}[t]
 \centering
-\begin{tikzpicture}[font=\sffamily\scriptsize,x=6.5mm]
+\begin{tikzpicture}[font=\sffamily\scriptsize,x=5.6mm,y=9mm]
 % (a) jedna zamiana: przed i po
 \node[anchor=west,font=\sffamily\small\bfseries] at (-0.6,1.25) {(a)};
 \foreach \i/\j in {1/A,2/B,3/C,4/D,5/E,6/F,7/G} {
@@ -202,23 +202,23 @@ The first term covers the sets without swap $i$. The second term covers the sets
 \node[draw,circle,inner sep=1.2pt,minimum size=4.2mm,fill=blue!70!black!20] at (6,-1.4) {B};
 \node[anchor=west] at (7.6,-1.4) {after the swap $(2,6)$};
 % (b)-(d)
-\foreach \y/\lab/\nm in {-3.4/Dynasearch: disjoint/(b),-5.6/Motzkin: disjoint or nested/(c),-7.8/crossing or shared endpoint/(d)} {
-  \node[anchor=west,font=\sffamily\small\bfseries] at (-0.6,\y+0.9) {\nm};
-  \node[anchor=west,font=\sffamily\small] at (12.6,\y+0.3) {\lab};
+\foreach \y/\lab/\nm in {-3.8/Dynasearch: disjoint/(b),-6.4/Motzkin: disjoint or nested/(c),-9.0/crossing or shared endpoint/(d)} {
+  \node[anchor=west,font=\sffamily\small\bfseries] at (-0.6,\y+1.5) {\nm};
+  \node[anchor=west,font=\sffamily\scriptsize] at (0.4,\y+1.5) {\lab};
   \foreach \i in {1,...,12} { \node[draw,circle,inner sep=1.2pt,fill=white] at (\i,\y) {}; \node[below=1pt] at (\i,\y) {\i}; }
 }
-\draw[thick,blue!70!black] (2,-3.3) to[bend left=60] (4,-3.3);
-\draw[thick,blue!70!black] (6,-3.3) to[bend left=50] (10,-3.3);
-\draw[thick,green!45!black] (2,-5.5) to[bend left=40] (11,-5.5);
-\draw[thick,green!45!black] (4,-5.5) to[bend left=60] (7,-5.5);
-\draw[thick,green!45!black] (8,-5.5) to[bend left=70] (9,-5.5);
-\draw[thick,red!65!black] (2,-7.7) to[bend left=55] (6,-7.7);
-\draw[thick,red!65!black,dashed] (4,-7.7) to[bend left=55] (9,-7.7);
-\draw[thick,red!65!black] (10,-7.7) to[bend left=60] (12,-7.7);
-\draw[thick,red!65!black,dashed] (11,-7.7) to[bend left=70] (12,-7.7);
+\draw[thick,blue!70!black] (2,-3.7) to[bend left=60] (4,-3.7);
+\draw[thick,blue!70!black] (6,-3.7) to[bend left=50] (10,-3.7);
+\draw[thick,green!45!black] (2,-6.3) to[bend left=40] (11,-6.3);
+\draw[thick,green!45!black] (4,-6.3) to[bend left=60] (7,-6.3);
+\draw[thick,green!45!black] (8,-6.3) to[bend left=70] (9,-6.3);
+\draw[thick,red!65!black] (2,-8.9) to[bend left=55] (6,-8.9);
+\draw[thick,red!65!black,dashed] (4,-8.9) to[bend left=55] (9,-8.9);
+\draw[thick,red!65!black] (10,-8.9) to[bend left=60] (12,-8.9);
+\draw[thick,red!65!black,dashed] (11,-8.9) to[bend left=70] (12,-8.9);
 \end{tikzpicture}
 \caption{\rev{Swaps as arcs over job positions. (a)~The swap $(i,j)$ exchanges the jobs at positions $i$ and $j$ and leaves the jobs between them in place; (b)~Dynasearch allows only disjoint arcs, (c)~Motzkin also nested arcs, and (d)~crossing arcs and arcs with a shared endpoint are not allowed.}}\label{fig:moves}
-\end{figure*}
+\end{figure}
 
 \subsection{\rev{Dynasearch}}
 \begin{revblock}
@@ -245,22 +245,27 @@ G(L,R)=\min\Bigl\{&G(L+1,R),\\
 In this recurrence either position $L$ is not swapped, or it is swapped with a position $k$, which splits the remaining positions into the inside $L+1,\dots,k-1$ and the outside $k+1,\dots,R$. The table has $O(n^2)$ entries, each computed in $O(n)$ time, so this recurrence runs in $O(n^3)$ time. With the $O(mn^3)$ evaluation of all $n(n-1)/2$ gains, one step of the Motzkin neighborhood costs $O(mn^3)$. As in Dynasearch, if no set improves the schedule, the single swap with the smallest gain is applied.
 \end{revblock}
 
-\begin{table*}
-\caption{\rev{Size and cost of the move selection for $n$ jobs and $m$ machines. $K$ is the number of QUBO variables and $|E|$ the number of nonzero quadratic coefficients; for Dynasearch and Motzkin both are upper bounds, reached when no candidate is removed, and the values in brackets are for $n=20$.}}\label{tab:sizes}
-\centering\small\ifrevmarks\color{red}\fi
+\begin{table}
+\caption{\rev{Size and cost of the move selection for $n$ jobs and $m$ machines. $K$ is the number of QUBO variables and $|E|$ the number of nonzero quadratic coefficients; for Dynasearch and Motzkin both are upper bounds, reached when no candidate is removed, and the values in brackets are for $n=20$. DP is the cost of the dynamic program and $Q$ the cost of building the QUBO matrix.}}\label{tab:sizes}
+\centering\footnotesize\ifrevmarks\color{red}\fi
+\setlength{\tabcolsep}{3pt}
 \begin{tabular}{@{}lccccc@{}}
 \toprule
- & $K$ & gains $\delta_k$ & DP selection & $|E|$ & building $Q$\\
+ & $K$ & gains $\delta_k$ & DP & $|E|$ & $Q$\\
 \midrule
-Adjacent   & $n-1$ (19) & $O(mn)$ & $O(n)$ & $\binom{n-1}{2}$ (171; 100\%) & $O(n^2)$\\
-Fibonacci  & $n-1$ (19) & $O(mn)$ & $O(n)$ & $n-2$ (18; 10.5\%) & $O(n)$\\
-Dynasearch & $\binom{n}{2}$ (190) & $O(mn^3)$ & $O(n^2)$ & $\binom{K}{2}-\binom{n}{4}$ (13\,110; 73\%) & $O(n^4)$\\
-Motzkin    & $\binom{n}{2}$ (190) & $O(mn^3)$ & $O(n^3)$ & $\binom{n}{4}+3\binom{n}{3}$ (8\,265; 46\%) & $O(n^4)$\\
+Adjacent   & $n-1$ & $O(mn)$ & $O(n)$ & $\binom{n-1}{2}$ & $O(n^2)$\\
+           & (19) & & & (171; 100\%) & \\[2pt]
+Fibonacci  & $n-1$ & $O(mn)$ & $O(n)$ & $n-2$ & $O(n)$\\
+           & (19) & & & (18; 10.5\%) & \\[2pt]
+Dynasearch & $\binom{n}{2}$ & $O(mn^3)$ & $O(n^2)$ & $\binom{K}{2}-\binom{n}{4}$ & $O(n^4)$\\
+           & (190) & & & (13\,110; 73\%) & \\[2pt]
+Motzkin    & $\binom{n}{2}$ & $O(mn^3)$ & $O(n^3)$ & $\binom{n}{4}+3\binom{n}{3}$ & $O(n^4)$\\
+           & (190) & & & (8\,265; 46\%) & \\
 \bottomrule
 \end{tabular}
 
-\smallskip\footnotesize Applying the selected moves and computing the new makespan costs $O(mn)$ for every neighborhood. The table has no column for solving the QUBO model, because this cost depends on the solver (Section~\ref{sec:qubo}).
-\end{table*}
+\smallskip\footnotesize\raggedright Applying the selected moves and computing the new makespan costs $O(mn)$ for every neighborhood. The table has no column for solving the QUBO model, because this cost depends on the solver (Section~\ref{sec:qubo}).
+\end{table}
 
 \section{\rev{QUBO Formulations of the Move Selection}}\label{sec:qubo}
 \begin{revblock}

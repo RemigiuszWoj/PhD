@@ -54,18 +54,18 @@ The main drawback of the paper is its presentation that relies mainly on textual
 \end{rc}
 \answer{We agree that the description relied too much on text. The revised manuscript contains the pseudocode of one iteration of the hybrid algorithm (Algorithm~1), which marks the steps executed on the local CPU and the step executed on the QPU, and a diagram of the data flow between the two (Fig.~1). A second figure (Fig.~2) shows the moves of the Dynasearch and Motzkin neighborhoods as arcs over job positions.}
 \change{Section 3, new Algorithm 1}{\textit{(no counterpart in the original manuscript)}}{\textbf{Algorithm 1.} One iteration of the neighborhood procedure.\par\begin{algorithmic}[1]
-\Require permutation $\pi$, neighborhood $\mathcal{N}\in\{$Adjacent, Fibonacci, Dynasearch, Motzkin$\}$, solver $S\in\{$DP, Gurobi, Simulator, QPU$\}$
+\Require permutation $\pi$, neighborhood $\mathcal{N}$, solver $S\in\{$DP, Gurobi, Simulator, QPU$\}$
 \State compute the Head and Tail matrices of $\pi$ \Comment{CPU}
-\State compute the gains $\delta_k$ of all candidate moves of $\mathcal{N}$ \Comment{CPU}
+\State compute the gains $\delta_k$ of the moves of $\mathcal{N}$ \Comment{CPU}
 \If{$S=$ DP}
-  \State $X\gets$ optimal compatible set of moves by dynamic programming \Comment{CPU}
+  \State $X\gets$ best compatible set of moves by DP \Comment{CPU}
 \Else
   \State build the QUBO model $f$ of $\mathcal{N}$ \Comment{CPU}
   \State $\mathbf{x}\gets$ solution of $f$ found by $S$ \Comment{CPU; QPU via Leap}
-  \State $X\gets\{k : x_k=1\}$; remove conflicting moves greedily \Comment{CPU}
+  \State $X\gets\{k : x_k=1\}$ without conflicts (greedy) \Comment{CPU}
 \EndIf
-\If{$X=\emptyset$} apply the rule for an empty selection (Sections~4 and~6) \EndIf
-\State $\pi'\gets\pi$ with the moves of $X$ applied; compute $C_{\max}(\pi')$ by (1)--(4) \Comment{CPU}
+\If{$X=\emptyset$} apply the empty-selection rule (Sect.~6) \EndIf
+\State $\pi'\gets\pi$ with the moves of $X$; $C_{\max}(\pi')$ by (1)--(4) \Comment{CPU}
 \State \Return $\pi'$ and $C_{\max}(\pi')$ to TS or SA
 \end{algorithmic}}
 \change{Section 3, new Fig.~1}{\textit{(no counterpart in the original manuscript)}}{\begin{center}\begin{tikzpicture}[font=\sffamily\small,
@@ -405,9 +405,9 @@ G(L,R)=\min\Bigl\{&G(L+1,R),\\
 \end{aligned}
 \end{equation}
 In this recurrence either position $L$ is not swapped, or it is swapped with a position $k$, which splits the remaining positions into the inside $L+1,\dots,k-1$ and the outside $k+1,\dots,R$. The table has $O(n^2)$ entries, each computed in $O(n)$ time, so this recurrence runs in $O(n^3)$ time. With the $O(mn^3)$ evaluation of all $n(n-1)/2$ gains, one step of the Motzkin neighborhood costs $O(mn^3)$. As in Dynasearch, if no set improves the schedule, the single swap with the smallest gain is applied.}
-\change{new Table 1}{\textit{(no counterpart in the original manuscript)}}{\textbf{Table 1.} Size and cost of the move selection for $n$ jobs and $m$ machines. $K$ is the number of QUBO variables and $|E|$ the number of nonzero quadratic coefficients; for Dynasearch and Motzkin both are upper bounds, reached when no candidate is removed, and the values in brackets are for $n=20$.\par\smallskip{\small \begin{tabular}{@{}lccccc@{}}
+\change{new Table 1}{\textit{(no counterpart in the original manuscript)}}{\textbf{Table 1.} Size and cost of the move selection for $n$ jobs and $m$ machines. $K$ is the number of QUBO variables and $|E|$ the number of nonzero quadratic coefficients; for Dynasearch and Motzkin both are upper bounds, reached when no candidate is removed, and the values in brackets are for $n=20$. DP is the cost of the dynamic program and $Q$ the cost of building the QUBO matrix.\par\smallskip{\small \begin{tabular}{@{}lccccc@{}}
 \toprule
- & $K$ & gains $\delta_k$ & DP selection & $|E|$ & building $Q$\\
+ & $K$ & gains $\delta_k$ & DP & $|E|$ & $Q$\\
 \midrule
 Adjacent   & $n-1$ (19) & $O(mn)$ & $O(n)$ & $\binom{n-1}{2}$ (171; 100\%) & $O(n^2)$\\
 Fibonacci  & $n-1$ (19) & $O(mn)$ & $O(n)$ & $n-2$ (18; 10.5\%) & $O(n)$\\

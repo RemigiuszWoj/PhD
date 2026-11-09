@@ -137,8 +137,8 @@ def fig3(e1_all, lang):
     e4 = defaultdict(list)
     for r in rows("e4_window_noise.jsonl"):
         e4[(r["neigh"], r["table"], r["p"], r["mode"])].append(r)
-    lab = {"en": ("noiseless", "noisy (calibrated)", "noisy (thermal, inst. 0)", "best of 4096 optimal"),
-           "pl": ("bez szumu", "z szumem (skalibrowany)", "z szumem (termiczny, inst. 0)", "najlepsza z 4096 optymalna")}[lang]
+    lab = {"en": ("noiseless", "noisy (calibrated)", "noisy (thermal)", "best of 4096 optimal"),
+           "pl": ("bez szumu", "z szumem (skalibrowany)", "z szumem (termiczny)", "najlepsza z 4096 optymalna")}[lang]
     fig, axes = plt.subplots(1, 4, figsize=(WIDTH, 1.8), sharey=True)
     for ax, nb in zip(axes, NB):
         tb = best[nb]
@@ -188,7 +188,7 @@ def load_e5():
 
 def fig4(e5, lang):
     t = TXT[lang]
-    fig, (a1, a2) = plt.subplots(1, 2, figsize=(WIDTH, 2.1))
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(WIDTH, 2.0))
     for nb in NB:
         for shots, ls in ((256, "--"), (4096, "-")):
             ps = list(range(0, 11))
@@ -204,7 +204,7 @@ def fig4(e5, lang):
         ax.set_ylabel(yl)
         ax.set_xticks(range(0, 11, 2))
     h, l = a1.get_legend_handles_labels()
-    fig.legend(h, l, fontsize=5.5, frameon=False, ncol=4, loc="upper center")
+    fig.legend(h, l, fontsize=6, frameon=False, ncol=4, loc="upper center")
     fig.tight_layout(pad=0.3, rect=(0, 0, 1, 0.84))
     fig.savefig(HERE / f"fig4_moves_{lang}.pdf")
     plt.close(fig)
@@ -308,7 +308,7 @@ def tab3(e5):
         lines.append(r"\addlinespace[1pt]")
     body = "\n".join(lines[:-1])
     for lang, labs in (("en", {"ideal": "noiseless", "noisy": "noisy sim.", "sirius": "Sirius"}),
-                       ("pl", {"ideal": "bez szumu", "noisy": "z szumem", "sirius": "Sirius"})):
+                       ("pl", {"ideal": "bez szumu", "noisy": "sym. z szumem", "sirius": "Sirius"})):
         out = body
         for k, v in labs.items():
             out = out.replace(f"{{LAB_{k}}}", v)

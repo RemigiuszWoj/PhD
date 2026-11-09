@@ -8,11 +8,12 @@
 \usepackage{multirow}
 \usepackage[hidelinks,pdfauthor={},pdftitle={}]{hyperref}
 
-\emergencystretch=1em
+\emergencystretch=2em
 \begin{document}
 
 \title{Głębokość czy shoty? Liczba warstw QAOA w kwantowym przeszukiwaniu
-sąsiedztwa dla permutacyjnego problemu przepływowego}
+sąsiedztwa dla permutacyjnego problemu przepływowego z testem na
+prawdziwym komputerze kwantowym}
 \titlerunning{Głębokość czy shoty?}
 \author{Anonim}
 \institute{Anonim}
@@ -20,28 +21,27 @@ sąsiedztwa dla permutacyjnego problemu przepływowego}
 
 \begin{abstract}
 Kwantowe przeszukiwanie sąsiedztwa wybiera ruch w szeregowaniu, próbkując
-obwód QAOA i zachowując próbkę o najniższej energii. Wcześniejsze prace o sąsiedztwach dla permutacyjnego problemu przepływowego na komputerach
-bramkowych używały jednej warstwy QAOA, a pytanie, ilu warstw takie
-sąsiedztwo potrzebuje, pozostaje otwarte. Zmieniamy głębokość $p$ od 1 do 10
-w czterech sąsiedztwach (Adjacent, Fibonacci, Dynasearch i Motzkin) przy
-kątach stałych skalibrowanych na trzech rodzajach okien treningowych.
-Mierzymy prawdopodobieństwo wylosowania ruchu optymalnego i długość uszeregowania w iteracyjnym przeszukiwaniu lokalnym na instancjach
-Taillarda z 20 zadaniami. Bez szumu $p = 1$ jest w dwóch sąsiedztwach gorsze
-od losowania jednostajnego. Przy $p = 2$ najlepsza z 4096 próbek jest
-optymalna prawie w każdym oknie sąsiedztw Dynasearch i Motzkina, a przy 256
-shotach mediana odchylenia od dolnego ograniczenia spada z 24\% przy
-losowaniu jednostajnym do 15\%, poniżej jednej warstwy z 4096 shotami.
-W sąsiedztwach Adjacent i Fibonacciego żadna głębokość nie poprawia istotnie
-długości uszeregowania względem losowania jednostajnego. Na symulowanym
-16-kubitowym procesorze o topologii gwiazdy ze skalibrowanym szumem bramek
-odsetek trafień w sąsiedztwach Dynasearch i Motzkina jest najwyższy przy $p = 2$.
-Każda kolejna warstwa dokłada około 150 bramek CZ i zbliża go z powrotem do
-poziomu losowania jednostajnego. Na prawdziwym procesorze $p = 1$ nie jest
-lepsze od losowania jednostajnego, dwie warstwy nie dają zysku, a trzy
-istotnie pogarszają wyniki sąsiedztwa Dynasearch. Powyżej dwóch warstw
-pochodzenie kątów ma większe znaczenie niż głębokość, a średnia
-energia, którą minimalizuje kalibracja, słabo przewiduje trafianie optimum.
-\keywords{QAOA \and głębokość obwodu \and problem przepływowy \and przeszukiwanie sąsiedztwa \and kąty stałe}
+obwód QAOA i zachowując najlepszą próbkę. Wcześniejsze prace o sąsiedztwach
+dla permutacyjnego problemu przepływowego na komputerach bramkowych używały
+jednej warstwy QAOA, a pytanie, ilu warstw takie sąsiedztwo potrzebuje,
+pozostaje otwarte. Zmieniamy liczbę warstw $p$ od 1 do 10 w czterech
+sąsiedztwach (Adjacent, Fibonacci, Dynasearch i Motzkin) przy kątach
+stałych. Mierzymy, jak często obwód losuje ruch optymalny i jak dobre
+uszeregowania znajduje iteracyjne przeszukiwanie lokalne na instancjach
+Taillarda z 20 zadaniami. Bez szumu jedna warstwa jest za słaba dla
+sąsiedztw Dynasearch i Motzkina, a dwie warstwy prawie zawsze znajdują ruch
+optymalny i wygrywają z jedną warstwą przy szesnastokrotnie większej liczbie
+shotów. W sąsiedztwach Adjacent i Fibonacciego żadna głębokość nie jest
+istotnie lepsza od losowania jednostajnego. Przy symulowanym szumie
+sprzętowym dwie warstwy nadal są najlepsze, ponieważ każda kolejna dokłada
+wiele bramek dwukubitowych. Przeszukiwanie uruchamiamy też na IQM Sirius,
+fizycznym 16-kubitowym nadprzewodzącym komputerze kwantowym dostępnym przez
+chmurę. Tam kolejne warstwy nie dają zysku, a trzy istotnie pogarszają
+wyniki sąsiedztwa Dynasearch.
+W symulacji głębokość do dwóch warstw jest więc warta więcej niż shoty, ale
+ten zysk nie przenosi się na Siriusa. Powyżej dwóch warstw dobór kątów ma
+większe znaczenie niż głębokość.
+\keywords{QAOA \and głębokość obwodu \and problem przepływowy \and przeszukiwanie sąsiedztwa \and kąty stałe \and sprzęt kwantowy}
 \end{abstract}
 
 \section{Wstęp}
@@ -92,7 +92,8 @@ na więcej shotów, i wyznaczamy najlepszą głębokość przy modelu szumu bram
 skalibrowanym na 16-kubitowym procesorze o topologii gwiazdy. Mierzymy też długość uszeregowania w iteracyjnym przeszukiwaniu
 lokalnym na instancjach Taillarda z 20 zadaniami. Punktami odniesienia są
 losowanie jednostajne ($p = 0$) i klasyczne przeszukiwanie sąsiedztwa. Na
-koniec uruchamiamy ILS na procesorze IQM Sirius przy $p = 2$ i $p = 3$
+koniec uruchamiamy ILS na fizycznym komputerze kwantowym, 16-kubitowym
+nadprzewodzącym IQM Sirius, przy $p = 2$ i $p = 3$
 i porównujemy te przebiegi z przebiegami przy $p = 1$ z wcześniejszej
 kampanii~\cite{wojewodzki2026aciids}.
 
@@ -286,7 +287,8 @@ tylko na pierwszej instancji każdej grupy przy $p = 1$, 3 i 6 (Adjacent: 1 i 3,
 nie nakłada szumu na bramki MOVE ani na bezczynne kubity, choć zmierzony
 błąd bramki MOVE wynosi około 1\%, a gęsta warstwa zawiera mniej więcej tyle
 bramek MOVE co CZ, więc tryb skalibrowany jest optymistyczny dla głębokich
-obwodów. Na poziomie sprzętowym obwody wykonuje sam Sirius.
+obwodów. Na poziomie sprzętowym obwody uruchamiamy na fizycznym komputerze
+kwantowym IQM Sirius przez usługę chmurową IQM Resonance.
 
 Badanie okien odczytuje rozkład QAOA dla pojedynczych okien. Przechwytujemy
 okna pierwszego ruchu ILS z permutacji identycznościowej i z dwóch losowych
@@ -325,14 +327,14 @@ liniowy od jednego do trzech.
 Jakość mierzymy procentowym odchyleniem od dolnego ograniczenia Taillarda
 $LB$,
 \begin{equation}
-  \mathrm{PRD} = 100\,\frac{C_{\max} - LB}{LB} ,
+  \mathrm{PRD} = \frac{C_{\max} - LB}{LB} \cdot 100\% ,
 \end{equation}
 uśredniamy je po przebiegach
 instancji i bierzemy medianę po instancjach. Dwa ustawienia porównujemy
 dwustronnym testem znaków dla par po instancjach, który pomija remisy,
 a różnicę uznajemy za istotną na poziomie 5\% bez poprawki na liczbę porównań.
-Górne ograniczenia podane dla tych instancji~\cite{taillard1993} leżą od 1 do
-26\% powyżej $LB$ (mediana 8\%), więc PRD około 9\% jest już blisko nich.
+Górne ograniczenia podane dla tych instancji~\cite{taillard1993} leżą od 1\% do
+26\% powyżej $LB$ (mediana 8\%), więc PRD około 9\% jest blisko nich.
 
 \section{Wyniki}
 
@@ -380,7 +382,7 @@ z permutacji identycznościowej, te wiersze oceniają okna z rys.~\ref{fig:e4}
 długością uszeregowania. Sama permutacja identycznościowa ma medianę PRD 40\%,
 więc tabela pokazuje, co dają jeden do trzech ruchów, i nie można jej
 porównywać z tabelą~\ref{tab:e5}. Na symulatorze z szumem Dynasearch przy $p = 2$
-wygrywa z $p = 1$ prawie na każdej instancji. Na Siriusie Dynasearch przy $p = 1$ radzi sobie mniej więcej tak jak losowanie jednostajne. Na Siriusie zysk z $p = 2$ się nie utrzymuje.
+wygrywa z $p = 1$ prawie na każdej instancji. Na prawdziwym komputerze kwantowym Dynasearch przy $p = 1$ radzi sobie mniej więcej tak jak losowanie jednostajne. Na Siriusie zysk z $p = 2$ się nie utrzymuje.
 W sąsiedztwach liniowych dwie i trzy warstwy prawie nie zmieniają mediany
 PRD. W gęstych druga warstwa nie daje zysku, a trzecia pogarsza medianę.
 Dynasearch przy $p = 3$ jest
@@ -451,7 +453,8 @@ Sąsiedztwo & $S$ & $p=0$ & $p=1$ & $p=2$ & $p=3$ & $p=6$ & $p=10$ & klasyczne \
 \end{table}
 
 \begin{table}[t]
-\caption{Mediana PRD [\%] na 12 instancjach przy $S = 4096$ (wiersze
+\caption{Mediana PRD [\%] na 12 instancjach, w symulacji i na fizycznym
+komputerze kwantowym Sirius, przy $S = 4096$ (wiersze
 symulowane: tabela z małych okien i tyle ruchów, ile Sirius wykonał przy
 $p = 1$; Adjacent na Siriusie przy $p \ge 2$: tabela z dużych okien; --: nie
 uruchamiano).}
@@ -485,12 +488,11 @@ optimów, a ILS radzi sobie z nim co najmniej tak dobrze jak z QAOA.
 W symulacji odpowiedź na pytanie z tytułu jest więc taka, że do dwóch warstw
 opłaca się zwiększać głębokość, a powyżej nich, w każdym razie bez szumu,
 liczbę shotów, ponieważ w sąsiedztwach gęstych druga warstwa daje więcej niż
-szesnastokrotne zwiększenie liczby shotów. Na Siriusie kolejne warstwy
-jednak nie pomagają, a nawet jedna warstwa nie jest lepsza od losowania
-jednostajnego. Zysk z głębokości widoczny w symulacji nie przenosi się na
-ten procesor kwantowy. Powyżej dwóch warstw kąty mają większe znaczenie niż głębokość, a kalibracja
-na średnią energię nie celuje w najlepszą próbkę, choć przeszukiwanie lokalne
-korzysta wyłącznie z niej.
+szesnastokrotne zwiększenie liczby shotów. Na prawdziwym komputerze kwantowym Sirius kolejne
+warstwy jednak nie pomagają, a nawet jedna warstwa nie jest lepsza od losowania
+jednostajnego, więc zysk z głębokości widoczny w symulacji nie przenosi się
+na Siriusa. Powyżej dwóch warstw kąty mają większe znaczenie niż głębokość, a kalibracja
+na średnią energię nie celuje w najlepszą próbkę, którą zachowuje przeszukiwanie lokalne.
 
 Badanie obejmuje tylko instancje z 20 zadaniami i kąty stałe oraz porównuje
 głębokość z shotami wyłącznie bez szumu. Energia okna jest przy tym dokładna
@@ -504,9 +506,8 @@ na przykład funkcją celu CVaR~\cite{barkoutsos2020cvar}, a głębokość będz
 dobierana dla każdego okna.
 
 \subsubsection{Użycie narzędzi AI.} Autorzy korzystali z dużego modelu
-językowego przy redagowaniu i poprawianiu części tekstu, pisaniu skryptów
-eksperymentów i składzie tekstu; badania, ich wyniki i ich interpretacja
-są w całości dziełem autorów.
+językowego jako asystenta przy pisaniu tekstu i kodu; koncepcja badań,
+eksperymenty, wyniki i ich interpretacja są w całości dziełem autorów.
 
 \bibliographystyle{splncs04}
 \bibliography{references}

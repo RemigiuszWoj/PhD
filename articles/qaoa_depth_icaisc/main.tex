@@ -11,7 +11,8 @@
 \begin{document}
 
 \title{Depth or Shots? The Number of QAOA Layers in Quantum Neighborhood
-Search for the Permutation Flow Shop Problem}
+Search for the Permutation Flow Shop Problem, Tested on a Real Quantum
+Computer}
 \titlerunning{Depth or Shots?}
 \author{Anonymous}
 \institute{Anonymous}
@@ -19,27 +20,24 @@ Search for the Permutation Flow Shop Problem}
 
 \begin{abstract}
 Quantum neighborhood search selects a scheduling move by sampling a QAOA
-circuit and keeping the lowest-energy sample. Earlier gate-based neighborhood
-studies of the permutation flow shop problem used one QAOA layer, and how
-many layers such a neighborhood needs is open. We vary the depth $p$ from 1
-to 10 in four neighborhoods (Adjacent, Fibonacci, Dynasearch and Motzkin)
-with fixed angles calibrated on three kinds of training windows. We measure
-the probability of sampling the optimal move and the
-makespan of iterated local search on Taillard instances with 20 jobs. Without noise, $p = 1$ is worse than uniform sampling
-in two neighborhoods. At $p = 2$ the best of 4096 samples is optimal in
-almost every window of Dynasearch and Motzkin, and with 256 shots the median
-deviation from the lower bound falls from 24\% under uniform sampling
-to 15\%, below one layer with 4096 shots. In Adjacent and Fibonacci no depth
-significantly improves the makespan over uniform sampling. On a simulated
-16-qubit star processor with calibrated gate noise the hit rate of
-Dynasearch and Motzkin peaks at $p = 2$. Every further layer adds about 150
-CZ gates and pushes it back toward uniform sampling. On the real processor,
-$p = 1$ does no better than uniform sampling, two layers bring no gain, and
-three make Dynasearch significantly worse.
-Beyond two layers the source of the angles matters more than the depth, and
-the mean energy
-minimized in calibration is a poor proxy for hitting the optimum.
-\keywords{QAOA \and circuit depth \and flow shop \and neighborhood search \and fixed angles}
+circuit and keeping the best sample. Earlier gate-based neighborhood studies
+of the permutation flow shop problem used a single QAOA layer, and it is open
+how many layers such a neighborhood needs. We vary the number of layers $p$
+from 1 to 10 in four neighborhoods (Adjacent, Fibonacci, Dynasearch and
+Motzkin) with fixed angles. We measure how often the circuit samples the
+optimal move and how good the schedules found by iterated local search are
+on Taillard instances with 20 jobs. Without noise, one layer is too weak for
+Dynasearch and Motzkin, while two layers almost always find the optimal move
+and beat one layer with sixteen times as many shots. In Adjacent and
+Fibonacci no depth does significantly better than uniform sampling. With
+simulated hardware noise two layers are still best, because every further
+layer adds many two-qubit gates. We also run the search on IQM Sirius, a physical 16-qubit
+superconducting quantum computer accessed through the cloud. There, extra
+layers bring no gain, and three layers make Dynasearch significantly worse. In
+simulation depth up to two layers is therefore worth more than shots, but
+this gain does not carry over to Sirius. Beyond two layers the choice of
+angles matters more than the depth.
+\keywords{QAOA \and circuit depth \and flow shop \and neighborhood search \and fixed angles \and quantum hardware}
 \end{abstract}
 
 \section{Introduction}
@@ -89,8 +87,8 @@ more layers or more shots are the better use of a fixed search time and determin
 the best depth under a gate noise model calibrated on a 16-qubit star
 processor. We also measure the makespan of iterated
 local search on Taillard instances with 20 jobs, with uniform sampling
-($p = 0$) and the classical neighborhood search as references. Finally, we
-run ILS on the IQM Sirius processor at $p = 2$ and $p = 3$ and compare these
+($p = 0$) and the classical neighborhood search as references. Finally, we run ILS on a physical quantum computer, the 16-qubit
+superconducting IQM Sirius, at $p = 2$ and $p = 3$ and compare these
 runs with the $p = 1$ runs of an earlier campaign~\cite{wojewodzki2026aciids}.
 
 \section{Related Work}
@@ -281,8 +279,8 @@ instance of each group at $p = 1$, 3 and 6 (Adjacent: 1 and 3, since its
 big-window table ends at $p = 5$). Neither mode applies noise to the MOVE
 gates or to idle qubits, although a MOVE gate has a measured error of about
 1\% and a dense layer holds about as many MOVE as CZ gates, so the
-calibrated mode is optimistic for deep circuits. On the hardware level the
-circuits run on Sirius itself.
+calibrated mode is optimistic for deep circuits. On the hardware level the circuits run on the physical IQM Sirius quantum
+computer through the IQM Resonance cloud service.
 
 The window study reads the QAOA distribution of single windows. We capture
 the windows of the first ILS move from the identity and from two random
@@ -320,14 +318,13 @@ linear run makes one to three.
 We measure quality by the deviation from the Taillard lower bound $LB$ in
 percent,
 \begin{equation}
-  \mathrm{PRD} = 100\,\frac{C_{\max} - LB}{LB} ,
+  \mathrm{PRD} = \frac{C_{\max} - LB}{LB} \cdot 100\% ,
 \end{equation}
 average it over the runs of an instance and take the median over instances.
 We compare two settings with a two-sided paired sign test over instances,
 which ignores ties, and call a difference significant at the 5\% level
 without correcting for the number of comparisons. The upper bounds reported for these
-instances~\cite{taillard1993} lie 1 to 26\% above $LB$ (median 8\%), so a PRD
-of about 9\% is already close to them.
+instances~\cite{taillard1993} lie 1\% to 26\% above $LB$ (median 8\%), so a PRD of about 9\% is close to them.
 
 \section{Results}
 
@@ -373,7 +370,8 @@ Because every dense run in Table~\ref{tab:hw} makes a single move from the
 identity, these rows judge the windows of Fig.~\ref{fig:e4} by the makespan.
 The identity itself lies at a median PRD of 40\%, so the table shows what one
 to three moves achieve and cannot be compared with Table~\ref{tab:e5}. On the noisy simulator
-Dynasearch at $p = 2$ beats $p = 1$ on almost every instance. On Sirius, Dynasearch at $p = 1$ does about as well as uniform
+Dynasearch at $p = 2$ beats $p = 1$ on almost every instance. On the real quantum computer, Dynasearch at $p = 1$ does about as well as
+uniform
 sampling. The gain of $p = 2$ does not survive on Sirius. In the
 linear neighborhoods two and three layers leave the median PRD almost
 unchanged. In the dense ones the second layer brings no gain and the third
@@ -443,7 +441,8 @@ Neighborhood & $S$ & $p=0$ & $p=1$ & $p=2$ & $p=3$ & $p=6$ & $p=10$ & classical 
 \end{table}
 
 \begin{table}[t]
-\caption{Median PRD [\%] on the 12 instances with $S = 4096$ (simulated rows:
+\caption{Median PRD [\%] on the 12 instances, simulated and on the physical
+Sirius quantum computer, with $S = 4096$ (simulated rows:
 small-window table and the moves Sirius made at $p = 1$; Adjacent on Sirius at
 $p \ge 2$: big-window table; --: not run).}
 \label{tab:hw}
@@ -475,12 +474,11 @@ neighborhoods a window holds so few variables that uniform sampling already
 finds most optima, and ILS does at least as well with it as with QAOA.
 In simulation the answer to the title question is therefore depth up to two
 layers, and without noise shots beyond them, since in the dense neighborhoods the second
-layer is worth more than sixteen times as many shots. On Sirius, however,
+layer is worth more than sixteen times as many shots. On the real Sirius quantum computer, however,
 extra layers do not help, and even one layer does no better than uniform
-sampling. The gain from depth seen in simulation does not carry over to this
-quantum processor. Beyond two layers the angles matter more than the depth, and
-calibrating them for the mean energy does not target the best sample, which
-is all that local search uses.
+sampling, so the gain from depth seen in simulation does not carry over to
+Sirius. Beyond two layers the angles matter more than the depth, and
+calibrating them for the mean energy does not target the best sample that local search keeps.
 
 The study covers only 20 jobs and fixed angles, it
 compares depth with shots only without noise, and the window energy is exact
@@ -495,10 +493,9 @@ calibrate the angles for the hit rate, for
 instance with the CVaR objective~\cite{barkoutsos2020cvar}, and choose the
 depth per window.
 
-\subsubsection{Use of AI Tools.} The authors used a large language model to
-help draft and edit parts of the text, write the experiment scripts and
-typeset the paper; the research, its results and their
-interpretation are entirely the authors' own.
+\subsubsection{Use of AI Tools.} The authors used a large language model as
+a writing and programming assistant; the research design, the experiments,
+the results and their interpretation are entirely the authors' own.
 
 \bibliographystyle{splncs04}
 \bibliography{references}

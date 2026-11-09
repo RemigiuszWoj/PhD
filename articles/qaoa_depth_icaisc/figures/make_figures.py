@@ -188,7 +188,7 @@ def load_e5():
 
 def fig4(e5, lang):
     t = TXT[lang]
-    fig, (a1, a2) = plt.subplots(1, 2, figsize=(WIDTH, 2.1))
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(WIDTH, 2.0))
     for nb in NB:
         for shots, ls in ((256, "--"), (4096, "-")):
             ps = list(range(0, 11))
@@ -204,7 +204,7 @@ def fig4(e5, lang):
         ax.set_ylabel(yl)
         ax.set_xticks(range(0, 11, 2))
     h, l = a1.get_legend_handles_labels()
-    fig.legend(h, l, fontsize=5.5, frameon=False, ncol=4, loc="upper center")
+    fig.legend(h, l, fontsize=6, frameon=False, ncol=4, loc="upper center")
     fig.tight_layout(pad=0.3, rect=(0, 0, 1, 0.84))
     fig.savefig(HERE / f"fig4_moves_{lang}.pdf")
     plt.close(fig)

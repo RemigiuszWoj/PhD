@@ -1,0 +1,4 @@
+Track B, S2 (Aer density matrix, readout applied): qiskit-iqm vs cirq-iqm compilation of the same logical circuit
+tai20_5|0|fibonacci|1|small|1 K= 4: MOVE qiskit 4 vs cirq 4 (CZ 4 both); TVD 0.0099 (over energy levels 0.0099); P_opt ideal 1.98e-02, qiskit 4.47e-02, cirq 4.11e-02; TVD to ideal: qiskit 0.0818, cirq 0.0770
+tai20_5|0|dynasearch|3|small|1 K= 9: MOVE qiskit 72 vs cirq 92 (CZ 72 both); TVD 0.0433 (over energy levels 0.0418); P_opt ideal 6.22e-04, qiskit 1.68e-03, cirq 1.74e-03; TVD to ideal: qiskit 0.2130, cirq 0.2331
+tai20_5|0|motzkin|1|small|1 K=12: MOVE qiskit 102 vs cirq 154 (CZ 102 both); TVD 0.0501 (over energy levels 0.0434); P_opt ideal 3.66e-04, qiskit 1.81e-04, cirq 1.88e-04; TVD to ideal: qiskit 0.2984, cirq 0.3222

@@ -1,0 +1,23 @@
+tai20_5|0|dynasearch|0|small|1: K=15, 7273 energy levels; P_opt ideal 4.52e-06
+  S2 aer_sv : 4096 shots, P_opt 0.00e+00, mean E  3812.76, TVD_E to ideal 0.503
+  S2 qsim   : 4096 shots, P_opt 0.00e+00, mean E  3820.03, TVD_E to ideal 0.493
+  S2 qulacs : 4096 shots, P_opt 0.00e+00, mean E  3845.00, TVD_E to ideal 0.503
+  S2 qibo   : 4096 shots, P_opt 0.00e+00, mean E  3869.50, TVD_E to ideal 0.503
+  S2 TVD_E aer_sv vs qsim: 0.528
+  S2 TVD_E aer_sv vs qulacs: 0.533
+  S2 TVD_E aer_sv vs qibo: 0.546
+  S2 TVD_E qsim vs qulacs: 0.543
+  S2 TVD_E qsim vs qibo: 0.537
+  S2 TVD_E qulacs vs qibo: 0.534
+  S2 floor for one engine vs exact (pooled as proxy): median 0.398, p95 0.404; two independent 4096-shot samples ~ sqrt(2) x that
+  S3 qsim   : 4096 shots, P_opt 0.00e+00, mean E  3016.96, TVD_E to ideal 0.465
+  S3 qulacs : 4096 shots, P_opt 0.00e+00, mean E  3119.61, TVD_E to ideal 0.463
+  S3 TVD_E qsim vs qulacs: 0.504
+  S3 floor for one engine vs exact (pooled as proxy): median 0.337, p95 0.343; two independent 4096-shot samples ~ sqrt(2) x that
+mean QUBO energy +- standard error (4096 shots), K = 15:
+  S2 aer_sv :   3812.8 +-  31.0
+  S2 qsim   :   3820.0 +-  31.1
+  S2 qulacs :   3845.0 +-  31.8
+  S2 qibo   :   3869.5 +-  32.0
+  S3 qsim   :   3017.0 +-  25.8
+  S3 qulacs :   3119.6 +-  26.3   (qulacs S3 = NoiseSimulator, known wrong)

@@ -6,6 +6,9 @@
 %% For accepted papers enable option "accepted" to deanonymize
 %% your manuscript 
 % \usepackage[accepted]{bpasts}
+%% TikZ before bpasts: bpasts redefines \year, which TikZ reads while loading
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,decorations.pathreplacing}
 \usepackage[]{bpasts}
 
 
@@ -17,15 +20,24 @@
 \usepackage{flushend}
 \usepackage[colorlinks=true, allcolors=bpastsblue, pdfborder={0 0 0}]{hyperref}
 \usepackage{xcolor}
+%% Revision marks (BPASTS-05673-2026): changed text is red; set \revmarksfalse for the final version
+\newif\ifrevmarks \revmarksfalse
+\newcommand{\rev}[1]{\ifrevmarks\textcolor{red}{#1}\else#1\fi}
+\newenvironment{revblock}{\ifrevmarks\color{red}\fi}{}
+%% Green: text that will be rewritten after the repeated experiments
+\newcommand{\revupd}[1]{\ifrevmarks\textcolor{green!50!black}{#1}\else#1\fi}
+\newenvironment{updblock}{\ifrevmarks\color{green!50!black}\fi}{}
 \usepackage{siunitx} 
 \usepackage{booktabs} 
 
 \usepackage{multirow}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% HEADER OF THE ARTICLE (Change all fields)
-\abtitle{Classical and Quantum Neighborhoods Evaluation in PFSP}
-\title{Classical and Quantum Neighborhoods Evaluation in Iterated Local Search and Simulated Annealing for the Permutation Flow Shop Problem}
+\abtitle{\rev{Quantum and Classical Annealing for Neighborhood Search in PFSP}}
+\title{\rev{Quantum and Classical Annealing for Very Large-Scale Neighborhood Search in the Permutation Flow Shop Problem}}
 
 \abauthor{Wojewódzki, Bożejko}
 \author{Remigiusz Wojewódzki \email{remigiusz.wojewodzki@gmail.com} $^{1}$Wojciech Bożejko$^{2}$\email{wojciech.bozejko@pwr.edu.pl}}
@@ -36,10 +48,10 @@ Wrocław University of Science and Technology, Wrocław, Poland}
 
 
 \Abstract{
-This paper presents a comparison of classical neighborhood structures, analyzed from an implementation perspective in metaheuristics, with their hybrid classical--quantum counterparts. The study is conducted for the Permutation Flow Shop Scheduling Problem (PFSP), where classical neighborhood structures are executed entirely on a classical computing architecture (CPU), while their quantum counterparts are implemented in a hybrid manner, combining classical computations with the use of a real Quantum Processing Unit (QPU). The optimization objective is to minimize the makespan, i.e., the total completion time of all jobs on all machines, denoted as $C_{\max}$. Four classical neighborhood structures are considered: \emph{Adjacent}, \emph{Fibonacci}, \emph{Dynasearch}, and \emph{Motzkin}, along with their quantum counterparts formulated as Quadratic Unconstrained Binary Optimization (QUBO) models, namely: \emph{Quantum Adjacent}, \emph{Quantum Fibonacci}, \emph{Quantum Dynasearch}, and \emph{Quantum Motzkin}. The considered structures differ in terms of move generation mechanisms within the permutation space and computational complexity. The paper provides a detailed characterization of each neighborhood structure and its corresponding QUBO formulation. The proposed models are implemented in \texttt{Python} using the \texttt{dimod} library and experimentally validated on standard Taillard benchmark instances, using both classical CPU-based computations and a real QPU, enabling the assessment of the quality of the obtained solutions.
+\rev{Compound neighborhoods for the permutation flow shop problem apply several compatible moves in one step, and choosing these moves is itself an optimization problem. We study this move selection step for four neighborhoods, Adjacent, Fibonacci, Dynasearch and Motzkin, used inside tabu search and simulated annealing to minimize the makespan. For each neighborhood the selection can be solved exactly by dynamic programming, and we also write it as a quadratic unconstrained binary optimization (QUBO) model. We give penalty weights that make every minimizer of these models feasible, the structure of their coefficient matrices and the cost of building them, and we keep the model separate from the solver: the same QUBO model can be solved by a classical algorithm or sampled on a quantum annealer. In the experiments the move selection is performed in four ways on Taillard instances with 20 jobs under equal wall-clock budgets: by dynamic programming, and by solving the QUBO model exactly with the Gurobi solver, approximately with a classical simulated annealing sampler, or by sampling on a real quantum processing unit (QPU), the D-Wave Advantage\_system6 quantum annealer, accessed through the Leap cloud service. Solving the models on a classical computer gives worse schedules than dynamic programming in most variants, because one call of a QUBO solver takes up to thousands of times longer, so the search performs fewer iterations within the same budget. On the QPU the schedules are worse still, because most of a call is spent outside the processor, on finding the minor embedding and in the network and queue of the cloud service, so the dense models allow about one call within ten seconds.}
 }
 
-\Keywords{Flow shop scheduling; QUBO; Quantum computing; D-Wave; Neighborhood; Metaheuristics; Motzkin numbers; Fibonacci numbers}
+\Keywords{\rev{Permutation flow shop; Neighborhood search; Dynamic programming; QUBO; Quantum annealing; Very large-scale neighborhood search; D-Wave}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EDITOR SECTION (Do not change)
@@ -52,269 +64,352 @@ This paper presents a comparison of classical neighborhood structures, analyzed 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% BODY OF THE ARTICLE
 
-\section{Introduction}
+\section{Introduction}\label{sec:intro}
 
-The Permutation Flow Shop Scheduling Problem (PFSP) is a classical combinatorial optimization problem, in which $n$ jobs must be processed on $m$ machines in the same sequence on each machine. The objective is to minimize the makespan $C_{\max}$, i.e., the completion time of the last job on the last machine. It is well-known that the problem is NP-hard for $m \ge 3$, rendering exact methods computationally inefficient for large instances and motivating the use of metaheuristic approaches~\cite{ref_bozejko_parallel}.
+\begin{revblock}
+In the permutation flow shop scheduling problem (PFSP), $n$ jobs are processed on $m$ machines, every job visits the machines in the same order, and every machine processes the jobs in the same sequence. The goal is a sequence that minimizes the makespan $C_{\max}$, the completion time of the last job on the last machine. Johnson~\cite{Johnson1954} gave a polynomial algorithm for two machines, and Garey, Johnson and Sethi~\cite{Garey1976} proved the problem NP-hard for $m\ge 3$. In the three-field notation of Graham et al.~\cite{Graham1979} it is written $F_m|prmu|C_{\max}$. It is one of the most studied scheduling problems, reviewed by Ruiz and Maroto~\cite{RuizMaroto2005}, and the instances of Taillard~\cite{ref_taillard} are the standard benchmark for its solution methods.
 
-In the context of metaheuristic algorithms, a \emph{neighborhood} of a solution $\pi$ is defined as the set of solutions reachable from $\pi$ by a single permissible modification~\cite{vanlaarhoven1992}. The structure and size of the neighborhood determine both the quality of the solutions obtained and the computational cost of a single iteration. Simple neighborhoods, such as adjacent swaps, allow for a high number of iterations per unit of time, but explore the solution space in a limited scope. More complex neighborhoods, such as Dynasearch or Motzkin, enable larger modifications of the permutation but require higher computational effort per step~\cite{WojewodzkiBozejko2026,Motzkin_PWR}.
+Exact methods for the PFSP are mainly branch-and-bound algorithms~\cite{Gmys2020} and mixed-integer programming models~\cite{Tseng2004}. They prove optimality for small and medium instances, but their running time grows quickly with the number of jobs and machines, so large instances are solved heuristically. The constructive heuristic NEH~\cite{NEH1983} is still a common starting point. Improvement methods are mostly metaheuristics based on local search, such as simulated annealing~\cite{OsmanPotts1989}, tabu search~\cite{taillard1990some,NowickiSmutnicki1996,GrabowskiWodecki2004} and iterated greedy~\cite{RuizStutzle2007}.
 
-Quantum computing provides an alternative paradigm for solving combinatorial optimization problems. Quantum annealers, such as the D-Wave system, solve Quadratic Unconstrained Binary Optimization (QUBO) problems, which can encode a wide range of optimization and constraint satisfaction tasks~\cite{dwave_handbook}. The key idea of this work is to transform the neighborhood move selection — i.e., the decision of which swaps to perform — into a QUBO problem. The quantum annealer then enables the selection of the best permissible combination of swaps in a single optimization step, potentially considering a significantly larger number of combinations than classical greedy or dynamic approaches.
+A local-search metaheuristic moves from a solution $\pi$ to a solution in its neighborhood, the set of solutions reachable from $\pi$ by one admissible modification. The neighborhood decides how much one step can improve the solution and how much the step costs. Simple neighborhoods, such as the swap of two adjacent jobs, are cheap to evaluate but change the sequence only locally. Compound neighborhoods apply several compatible moves in one step and may contain exponentially many solutions. Dynasearch~\cite{Congram2002} searches such a neighborhood of independent swaps exactly by dynamic programming, and it belongs to the wider family of very large-scale neighborhood search methods~\cite{Ahuja2002}. The Fibonacci~\cite{WojewodzkiBozejko2026} and Motzkin~\cite{Motzkin_PWR_EXIT,Motzkin_PWR} neighborhoods are compound neighborhoods of the same kind, and their numbers of move sets are given by the Fibonacci and Motzkin numbers.
 
+A quantum annealer samples low-energy states of an Ising model~\cite{Kadowaki1998,Johnson2011}. The Ising model is equivalent to quadratic unconstrained binary optimization (QUBO), in which many combinatorial problems can be written~\cite{lucas2014ising,Glover2019}. A QUBO model can also be solved by classical algorithms, so writing a problem as a QUBO does not by itself mean using a quantum computer. To run on the processor, the graph of the model must be minor-embedded into the sparse graph of the hardware, and one binary variable may then occupy a chain of several physical qubits~\cite{Cai2014}. Applications to scheduling mostly encode the whole schedule as one QUBO, for example for the job shop~\cite{Venturelli2015}, and such encodings have been solved on the hardware only for small instances~\cite{dwave_handbook}. Kurowski et al.~\cite{Kurowski2020} combined an annealer with a classical heuristic for the job shop, and Bożejko et al.~\cite{Bozejko2022ICCS} applied distributed quantum annealing on D-Wave to the single-machine total weighted tardiness problem.
 
-This paper emphasizes the transformation of classical neighborhood structures into their corresponding QUBO-based formulations and provides an experimental comparison of classical and hybrid neighborhoods using a real QPU. The study aims to assess the potential of quantum acceleration in solving scheduling problems. While~\cite{Motzkin_PWR} and~\cite{WojewodzkiBozejko2026} introduced the classical Motzkin and Fibonacci neighborhoods, the present work makes three distinct contributions: (i)~it formulates all four classical neighborhoods as QUBO problems executable on a quantum annealer, (ii)~it provides the first empirical comparison of classical and quantum variants under identical wall-clock time budgets on real QPU hardware, and (iii)~it identifies and quantifies the sources of the performance gap between classical and quantum approaches.
+In this paper the annealer works inside a metaheuristic instead of replacing it. The metaheuristic runs on a classical computer, and in every iteration only the move selection step, the choice of a set of mutually compatible moves, is written as a QUBO model and sent to a real quantum processing unit (QPU), the D-Wave Advantage\_system6 annealer accessed through the Leap cloud service. We call such an algorithm hybrid. Three terms are kept apart throughout the paper. The \emph{neighborhood} is the set of admissible move sets. The \emph{selection model} is the optimization problem that picks one of these sets, written either as a dynamic program or as a QUBO model. The \emph{solver} is the method that solves this model: the dynamic program on the CPU or, for the QUBO model, the exact solver Gurobi, a classical simulated annealing sampler or sampling on the QPU. For all four neighborhoods studied here, dynamic programming solves the selection problem exactly in polynomial time. A quantum annealer therefore cannot return a better selection than the classical procedure. At best it returns the same set, and noise, minor embedding and a finite number of samples may lead it to a worse one. For the compound neighborhoods both procedures also minimize the sum of individually evaluated move gains, which only approximates the change of the makespan. Our question is therefore not whether the annealer selects better moves, but how much solution quality and time it costs to delegate an exactly solvable selection step to a remote QPU, and where this cost comes from.
 
-\section{Problem Definition}
-\paragraph{Permutation Flow Shop Problem.}
-Given a matrix of processing times $P = [p_{k,j}]_{m \times n}$, where $k=1,\dots,m$ denotes a machine and $j=1,\dots,n$ denotes a job, while a permutation $\pi$ determines the jobs performed in the same order on all machines.
+The contribution of the paper is as follows. We write the move selection of the Adjacent, Fibonacci, Dynasearch and Motzkin neighborhoods as QUBO models, give penalty weights that make every minimizer feasible, and state the number of variables, the number of nonzero quadratic coefficients and the cost of building each model. We give the dynamic programs that solve the same selection problems exactly, with their complexity. We then compare four ways of selecting the move inside tabu search and simulated annealing under equal wall-clock budgets on Taillard instances with 20 jobs: the dynamic program, and the QUBO model solved exactly by Gurobi, approximately by a classical simulated annealing sampler, and on the real D-Wave QPU. Solving the same QUBO model on a classical computer separates the cost of the model from the cost of the quantum processor, and we discuss which parts of a QPU call slow the hybrid variants down. The Fibonacci and Motzkin neighborhoods and their classical selection were introduced in~\cite{WojewodzkiBozejko2026,Motzkin_PWR_EXIT,Motzkin_PWR}; the QUBO models and their comparison with the dynamic programs are new in this paper.
 
-Properties of permutations and the relationships between them can be analyzed using positive definite functions on permutation groups. This provides theoretical foundations for studying dependencies between job sequences~\cite{Bozejko2015}.
+The preprint~\cite{WojewodzkiBozejkoSSRN} builds on the QUBO models of the present paper. It modifies them and splits the Dynasearch and Motzkin models into overlapping windows that are solved one after another, which lets it run instances with up to 500 jobs. The present paper keeps every model whole, so that the QPU solves exactly the selection problem that dynamic programming solves, and studies the cost of this delegation on instances with 20 jobs.
+\end{revblock}
 
-Let $C_{k,j}$ denote the completion time of job $j$ executed in the order $\pi$ on machine $k$. The following relationship therefore holds:
+\section{Problem Definition}\label{sec:problem}
+\begin{revblock}
+We are given a set of $n$ jobs $J=\{1,\dots,n\}$ and a set of $m$ machines $M=\{1,\dots,m\}$. Every job visits the machines in the order $1,2,\dots,m$, and job $j$ occupies machine $k$ for $p_{k,j}>0$ time units. All jobs are available at time zero, a machine processes at most one job at a time, a job is processed by at most one machine at a time, and an operation cannot be interrupted. In the permutation flow shop all machines process the jobs in the same order. A schedule is therefore described by one permutation $\pi=(\pi(1),\dots,\pi(n))$ of $J$, where $\pi(j)$ is the job at position $j$ of the common sequence, and $\Pi_n$ denotes the set of all $n!$ such permutations. In the three-field notation of Graham et al.~\cite{Graham1979} the problem is $F_m|prmu|C_{\max}$: the first field denotes a flow shop with $m$ machines, the second the permutation constraint, and the third the makespan objective.
 
-\begin{equation}\label{eq_c_1j_C_k1}
-    C_{1,j} = C_{1,j-1} + p_{1,\pi(j)},\quad
-    C_{k,1} = C_{k-1,1} + p_{k,\pi(1)},
+Let $C_{k,j}$ denote the completion time of the job at position $j$ on machine $k$. The completion times follow from the recurrence
+\begin{align}
+C_{1,1} &= p_{1,\pi(1)}, \label{eq:C11}\\
+C_{1,j} &= C_{1,j-1}+p_{1,\pi(j)}, \quad j=2,\dots,n, \label{eq:C1j}\\
+C_{k,1} &= C_{k-1,1}+p_{k,\pi(1)}, \quad k=2,\dots,m, \label{eq:Ck1}\\
+C_{k,j} &= \max\{C_{k-1,j},\,C_{k,j-1}\}+p_{k,\pi(j)}, \nonumber\\
+&\qquad k=2,\dots,m,\ j=2,\dots,n. \label{eq:Ckj}
+\end{align}
+The makespan of $\pi$ is $C_{\max}(\pi)=C_{m,n}$, the completion time of the last job on the last machine, and the problem is to find
+\begin{equation}\label{eq:obj}
+\pi^* = \arg\min_{\pi\in\Pi_n} C_{\max}(\pi).
 \end{equation}
+The recurrence computes $C_{\max}(\pi)$ in $O(mn)$ time.
+\end{revblock}
 
-\begin{equation}\label{eq_c_kj}
-\begin{aligned}
-C_{k,j} &= \max\{C_{k,j-1},\, C_{k-1,j}\} + p_{k,\pi(j)}, \\
-        &\text{for } k=1,\dots,m,\; j=1,\dots,n.
-\end{aligned}
-\end{equation}
+\section{\rev{Search Methods}}\label{sec:search}
+\begin{revblock}
+Of the methods reviewed in Section~\ref{sec:intro}, we use two local-search metaheuristics that are common for the PFSP, tabu search and simulated annealing. Both start from the identity permutation $\pi=(1,2,\dots,n)$, stop when the wall-clock time budget $t_{\max}$, given in milliseconds, is used up, and return the best permutation found. The budget is checked before every iteration, so an iteration that has already started is completed even if the budget expires in the meantime. The same symbol $t_{\max}$ is used in all tables and figures. In every iteration both methods call the same neighborhood procedure, shown in Algorithm~\ref{alg:iteration} and Fig.~\ref{fig:flow}, which returns the selected move.
 
-The value of the objective function equals $C_{\max} = C_{m,n}$, i.e., the completion time of the last job on the last machine. Hence, the PFSP reduces to finding a permutation $\pi$ that minimizes $C_{\max}$.
+\paragraph{Tabu search.}
+Tabu search (TS)~\cite{glover1989tabu} moves in every iteration to the best admissible solution returned by the neighborhood procedure, even if it is worse than the current one. A tabu list keeps an identifier of every executed move for $\tau$ iterations (the tabu tenure) and forbids repeating it, which keeps the search from cycling back to recently visited solutions. A tabu move is still accepted if it satisfies the aspiration criterion, that is, if it gives a solution better than the best one found so far. With DP selection, the Adjacent and Fibonacci procedures return their $\tau+1$ best moves, and the search takes the best of them that is not tabu, so a non-tabu move is always available. The Dynasearch and Motzkin procedures and all variants that solve a QUBO model, with Gurobi, with the simulator or on the QPU, return a single move. If this move is tabu and does not satisfy the aspiration criterion, the search restarts from a random permutation, which is added to the tabu list. The method has no separate perturbation phase, and the restart is its only diversification step. Tabu search is a standard method for the PFSP~\cite{taillard1990some,NowickiSmutnicki1996,GrabowskiWodecki2004}.
+\end{revblock}
 
+\begin{revblock}
+\paragraph{Simulated annealing.}
+Simulated annealing (SA)~\cite{kirkpatrick1983optimization,OsmanPotts1989} accepts worse solutions with a probability that decreases during the search. In our implementation the neighborhood procedure returns its best move, as in TS, and the Metropolis rule decides whether the search moves to it: a move that changes the makespan by $\Delta=C_{\max}^{\text{new}}-C_{\max}^{\text{cur}}$ is always accepted if $\Delta\le 0$ and is accepted with probability $\exp(-\Delta/T)$ otherwise. The temperature $T$ is a control parameter of the algorithm, measured in the units of the makespan. It has no relation to a physical temperature, nor to the physics of the quantum annealer used later in the paper. After every iteration the temperature is lowered geometrically, $T\leftarrow\max(\alpha T,\,T_{\text{final}})$, from the initial value $T_{\text{init}}$, where $\alpha\in(0,1)$ is the cooling rate and $T_{\text{final}}$ the lowest temperature. With this schedule the temperature reaches $T_{\text{final}}$ after $\lceil\ln(T_{\text{final}}/T_{\text{init}})/\ln\alpha\rceil$ iterations, and from then on SA accepts almost no worse moves. Reheating is a modification of the standard cooling rule that is meant to let a long run leave a local optimum after this point: if the best solution has not improved for $t_{\text{stag}}$ milliseconds, the temperature is multiplied by a factor $r>1$, but not above $T_{\text{init}}$, and the stagnation clock starts again. SA keeps the best solution found and stops when the budget $t_{\max}$ is used up. Both metaheuristics call the same neighborhood procedure, so they use the same selection step and differ only in how they accept the selected move.
+\end{revblock}
 
-\paragraph{Iterated Local Search}(ILS)~\cite{lourenco2003iterated} combines local search with a tabu list to avoid cyclic revisiting of the same solutions. In each iteration, the algorithm identifies the best neighboring solution and checks whether the corresponding move is on the tabu list~\cite{glover1989tabu}. A move is accepted despite being tabu if it satisfies the \emph{aspiration criterion}, i.e., it leads to a solution better than the current best.
+\begin{algorithm*}[t]
+\ifrevmarks\color{red}\fi
+\caption{\rev{One iteration of the neighborhood procedure.}}\label{alg:iteration}
+\begin{algorithmic}[1]
+\Require permutation $\pi$, neighborhood $\mathcal{N}\in\{$Adjacent, Fibonacci, Dynasearch, Motzkin$\}$, solver $S\in\{$DP, Gurobi, Simulator, QPU$\}$
+\State compute the Head and Tail matrices of $\pi$ \Comment{CPU}
+\State compute the gains $\delta_k$ of all candidate moves of $\mathcal{N}$ \Comment{CPU}
+\If{$S=$ DP}
+  \State $X\gets$ optimal compatible set of moves by dynamic programming \Comment{CPU}
+\Else
+  \State build the QUBO model $f$ of $\mathcal{N}$ \Comment{CPU}
+  \State $\mathbf{x}\gets$ solution of $f$ found by $S$ \Comment{CPU; QPU via Leap}
+  \State $X\gets\{k : x_k=1\}$; remove conflicting moves greedily \Comment{CPU}
+\EndIf
+\If{$X=\emptyset$} apply the rule for an empty selection (Sections~\ref{sec:neigh} and~\ref{sec:setup}) \EndIf
+\State $\pi'\gets\pi$ with the moves of $X$ applied; compute $C_{\max}(\pi')$ by \eqref{eq:C11}--\eqref{eq:Ckj} \Comment{CPU}
+\State \Return $\pi'$ and $C_{\max}(\pi')$ to TS or SA
+\end{algorithmic}
+\end{algorithm*}
 
-The tabu list stores forbidden moves for $\tau$ consecutive iterations (\emph{tabu tenure}, \texttt{tabu\_tenure}). For the \emph{Adjacent} and \emph{Fibonacci} neighborhoods, the algorithm selects the $\tau + 1$ best moves and chooses the first non-tabu move, ensuring the search can continue even with a full tabu list. For the remaining neighborhoods — \emph{Dynasearch}, \emph{Motzkin}, and their quantum counterparts — any conflict with the tabu list triggers a random restart: a new permutation is generated to replace the current solution, and its identifier is added to the tabu list.
+\begin{figure*}[t]
+\centering
+\begin{tikzpicture}[font=\sffamily\small,
+  box/.style={draw,rounded corners=2pt,align=center,minimum height=8mm,inner sep=4pt},
+  arr/.style={-{Latex[length=2mm]},thick}]
+\node[box,fill=blue!8] (meta) {TS / SA\\ acceptance};
+\node[box,fill=blue!8,right=5mm of meta] (eval) {Head+Tail,\\ gains $\delta_k$};
+\node[box,fill=blue!8,right=5mm of eval] (qubo) {build QUBO\\ or run DP};
+\node[box,fill=orange!20,right=5mm of qubo] (emb) {minor\\ embedding};
+\node[box,fill=orange!20,right=10mm of emb] (net) {network,\\ Leap queue};
+\node[box,fill=violet!15,right=5mm of net] (qpu) {programming,\\ sampling};
+\node[box,fill=blue!8,below=10mm of qubo] (dec) {decode, repair,\\ apply, $C_{\max}$};
+\draw[arr] (meta)--(eval); \draw[arr] (eval)--(qubo); \draw[arr] (qubo)--(emb);
+\draw[arr] (emb)--(net); \draw[arr] (net)--(qpu);
+\draw[arr] (qpu.south) |- (dec.east);
+\draw[arr] (qubo)--node[left,font=\scriptsize,align=right]{DP, Gurobi,\\ Simulator}(dec);
+\draw[arr] (dec.west) -| (meta.south);
+\node[draw,dashed,gray,fit=(meta)(eval)(qubo)(emb)(dec),inner sep=4pt,label={[gray]above:local CPU}] {};
+\node[draw,dashed,gray,fit=(net)(qpu),inner sep=4pt,label={[gray]above:D-Wave Leap{,} Advantage\_system6 (remote)}] {};
+\draw[decorate,decoration={brace,amplitude=5pt,mirror},thick,orange!70!black]
+  ([yshift=-7mm]emb.south west) -- node[below=6pt,font=\scriptsize,align=center]{one QPU call}([yshift=-7mm]qpu.south east);
+\end{tikzpicture}
+\caption{\rev{Data flow in one iteration of the hybrid algorithm. The minor embedding is computed on the local CPU but belongs to the cost of one QPU call; with the dynamic program, Gurobi or the simulator the iteration stays on the local CPU.}}\label{fig:flow}
+\end{figure*}
 
-The algorithm runs within a time budget $t_{\max}$ (in milliseconds) and returns the best-found solution along with the history of improvements in $C_{\max}$ and timestamps of each enhancement.
+\section{\rev{Neighborhood Structures}}\label{sec:neigh}
+\begin{revblock}
+All four neighborhoods are built from swaps. A swap $(i,j)$ with $i<j$ exchanges the jobs at positions $i$ and $j$, and the jobs between them stay in place (Fig.~\ref{fig:moves}a). The neighborhoods differ in which sets of swaps may be applied together. For a swap $(i,j)$ let $\delta_{ij}=C_{\max}(\pi')-C_{\max}(\pi)$ denote its gain, where $\pi'$ is $\pi$ after the swap, so a negative gain improves the schedule. We compute the gains with the Head+Tail technique~\cite{taillard1990some}. It combines the completion times of the unchanged prefix (heads) with the longest paths from the unchanged suffix to the end of the schedule (tails), so only the positions from $i$ to $j$ are recomputed, and one gain costs $O(m(j-i+1))$ time. The gain of a set of swaps is approximated by the sum of their gains. After the selection, the chosen swaps are applied and the makespan of the new permutation is computed from scratch with \eqref{eq:C11}--\eqref{eq:Ckj}. Every set allowed by one neighborhood is allowed by the next, so the neighborhoods form the chain Adjacent $\subset$ Fibonacci $\subset$ Dynasearch $\subset$ Motzkin. Counting the empty set, for $n$ positions they contain $n$, $F_{n+1}$, $2^{n-1}$ and $M_n$ move sets, where $F_k$ is the $k$-th Fibonacci number ($F_1=F_2=1$) and $M_n$ the $n$-th Motzkin number. For $n=20$ jobs the Adjacent neighborhood thus contains 20 move sets, the Fibonacci neighborhood 10\,946, the Dynasearch neighborhood 524\,288 and the Motzkin neighborhood more than 50 million, so the larger neighborhoods cannot be searched by listing their move sets one by one, and the best set has to be found by dynamic programming or through a QUBO model.
+\end{revblock}
 
-
-\paragraph{Simulated Annealing}(SA)~\cite{kirkpatrick1983optimization} is a local search metaheuristic inspired by the annealing process in metallurgy. In each iteration, the algorithm generates a neighboring solution and accepts it unconditionally if it improves the objective function, or with Boltzmann probability $\exp(-\Delta/T)$ if it worsens it, where $\Delta = C_{\max}^{\text{new}} - C_{\max}^{\text{cur}}$ is the change in the objective function and $T$ is the current temperature. This mechanism allows the search to escape local minima, with the likelihood of accepting worsening moves decreasing as the temperature drops.
-
-The temperature is geometrically reduced after each iteration according to $T \leftarrow \max(T \cdot \alpha,\, T_{\min})$, where $\alpha \in (0,1)$ is the cooling rate, and $T_{\min} = T_{\text{final}} \cdot f$ is a lower bound set by the floor parameter $f \ge 1$. To prevent stagnation, a reheating mechanism is implemented: if no improvement in the best solution is observed for at least $t_{\text{stag}}$ milliseconds, the temperature is multiplied by a factor $r > 1$ and restored to at most $T_{\text{init}}$. The algorithm runs within the time budget $t_{\max}$ (in milliseconds) and returns the best-found solution upon termination.
-
-
-
-\paragraph{Neighborhood structures.}
-Following~\cite{vanlaarhoven1992}, a \emph{neighborhood} of a solution $x$ is the set of solutions obtained by an admissible modification of $x$. It determines how the solution space is explored and exploited during the search. The choice of the neighborhood structure determines the search pattern in the solution space, balancing exploration and exploitation for a given space.
-
-\subsection{Adjacent}
-The \emph{adjacent} neighborhood is defined as the set of permutations obtained by swapping two consecutive jobs in a permutation $\pi = (\pi_1, \pi_2, \dots, \pi_n)$. For each position $j = 1, \dots, n-1$, a single neighboring solution is generated by exchanging elements $\pi_j$ and $\pi_{j+1}$, resulting in a total of $n-1$ neighboring solutions. This neighborhood is inherently local, as each modification affects only a small fragment of the schedule.
-
-The evaluation of neighboring solutions, expressed in terms of the objective function value $C_{\max}$, is performed using the Head+Tail technique~\cite{taillard1990some}, which eliminates the need to recompute the entire schedule for each permutation. In particular, for a considered swap, completion times are computed only for the two modified positions, and the result is then combined with previously computed values for the prefix (Head) and suffix (Tail). This approach enables capturing the impact of the modification on both the preceding and subsequent parts of the schedule without requiring full reconstruction.
-
-This approach enables the evaluation of the entire neighborhood in time $O(m \cdot n)$, where $m$ denotes the number of machines and $n$ the number of jobs, representing a significant improvement over the naive approach. The \emph{adjacent} neighborhood is commonly used in local search algorithms as an intensification mechanism, allowing for gradual improvement of the solution through small, incremental modifications.
-
+\subsection{\rev{Adjacent}}
+\begin{revblock}
+The Adjacent neighborhood contains the $n-1$ permutations obtained by one swap of neighboring positions $(i,i+1)$, $i=1,\dots,n-1$. With Head+Tail all $n-1$ gains $\delta_i=\delta_{i,i+1}$ cost $O(mn)$ time in total, and a scan finds the best swap in $O(n)$ time. The neighborhood changes the permutation only locally, and it is the baseline for the compound neighborhoods below.
+\end{revblock}
 
 \subsection{Fibonacci}
-The \emph{Fibonacci} neighborhood is a generalization of the classical \emph{adjacent} neighborhood~\cite{WojewodzkiBozejko2026} and consists in performing multiple adjacent swaps simultaneously, provided that these operations do not overlap. This means that if a swap is applied at position $j$, then a swap at position $j+1$ is not allowed. As a result, a neighboring solution is obtained by applying a set of independent swaps to the original permutation.
-
-The name of the neighborhood stems from the fact that the number of all possible sets of non-overlapping swaps for a permutation of length $n$ corresponds to the $(n+1)$-th Fibonacci number, which implies an exponential growth of the solution space. In practice, instead of exhaustive enumeration, an efficient procedure is used to select the optimal (or a subset of the best) combinations of moves. The evaluation of individual swaps is performed using the Head+Tail technique, which allows the computation of the objective function increment for each candidate swap in time $O(m \cdot n)$.
-
-Subsequently, the problem of selecting an optimal subset of non-conflicting swaps is formulated as a dynamic programming problem, in which a binary decision is made at each position whether to apply or skip a given move, subject to the non-overlapping constraint. This approach enables the identification of the optimal combination of swaps in linear time with respect to the number of positions, while capturing the global impact of multiple modifications. The \emph{Fibonacci} neighborhood allows for larger transformations of the permutation compared to single swaps, thereby improving the ability of the algorithm to escape local minima and enhancing the overall search efficiency.
-
-
-\subsection{Motzkin Neighborhood (Non-Crossing Endpoint Swaps)}
-The \emph{Motzkin} neighborhood~\cite{Motzkin_PWR, Motzkin_PWR_EXIT, motzkin1948} defines a set of permutations. Each move consists of swapping only the endpoints of a task segment $[i..j]$, while the middle part of the segment remains unchanged. All index pairs $(i,j)$ are considered, and the incremental change in the objective function ($\Delta$) is computed using the Head+Tail technique, enabling efficient assessment of the swap's impact on the total completion time.
-
-Selection of a subset of swaps that collectively minimizes the sum of $\Delta$ values is performed using dynamic programming, subject to strict constraints: swaps cannot cross each other or share segment endpoints, while fully nested swaps are allowed (an inner swap may be entirely contained within an outer swap). This formulation ensures that interactions between swaps are properly considered and prevents conflicts in the resulting permutation.
-
-If dynamic programming does not select any swaps, the algorithm can optionally apply a single least-cost swap. The resulting permutation is then updated, the new completion time ($C_{\max}$) is computed, and the set of applied swaps is returned. This neighborhood allows exploration of larger moves in the solution space than simple adjacent swaps, improving the algorithm's ability to escape local minima and enhancing the overall search efficiency, with a computational complexity of $O(n^3)$.
-
-
-\subsection{Dynasearch}
-The \emph{Dynasearch} neighborhood~\cite{dynasearch_Campos} defines a set of permutations generated by swapping the endpoints of task segments within subsequences of a permutation. For each subsequence, the algorithm computes the incremental change in the objective function ($\Delta$) for endpoint swaps using precomputed \texttt{Head} and \texttt{Tail} matrices, enabling rapid assessment of each swap's impact on the total completion time ($C_{\max}$).
-
-The selection of an optimal set of non-overlapping subsequences is performed using dynamic programming, which minimizes the sum of the $\Delta$ values. All possible intervals $(i,j)$ are considered, with an optional maximum length constraint $L_{\max}$, and only non-overlapping combinations are accepted, allowing multiple moves to be applied simultaneously without conflicts.
-
-If the dynamic programming procedure does not select any moves, the algorithm can optionally apply a single swap with the smallest $\Delta$ to ensure progress. After executing the swaps, the new permutation is generated, the updated completion time is calculated, and the set of applied swaps is returned. This approach enables efficient exploration of the neighborhood, with a total computational complexity of $O(n^3)$, while keeping the computational cost manageable through the use of \texttt{Head/Tail} matrices and dynamic selection of non-overlapping segments.
-
-\section{QUBO Formulations}
-The QUBO (\emph{Quadratic Unconstrained Binary Optimization}) formulation is a standard framework for modeling combinatorial problems as a quadratic function of binary variables~\cite{lucas2014ising,dwave_handbook}. In this framework, each decision is represented by a variable taking a value of 0 or 1, and the objective function includes both linear and quadratic terms corresponding to the costs and interactions between decisions. The general form is:
-\begin{equation}
-    \min_{\mathbf{x}\in\{0,1\}^n} \mathbf{x}^\top Q\,\mathbf{x},
-    \label{eq:qubo_general}
+\begin{revblock}
+The Fibonacci neighborhood~\cite{WojewodzkiBozejko2026} applies any set of adjacent swaps that do not overlap. If the swap $(i,i+1)$ is applied, the swaps $(i-1,i)$ and $(i+1,i+2)$ are not. Counting the empty set, there are $F_{n+1}$ such sets for $n$ positions. The best set is found by dynamic programming. Let $\delta_i$ be the gain of the swap $(i,i+1)$, and let $\mathcal{S}_i$ be the family of admissible sets that contain only swaps from $\{1,\dots,i\}$, including the empty set. For $i=0,\dots,n-1$ we define the value function
+\begin{equation}\label{eq:fibV}
+V(i)=\min_{S\in\mathcal{S}_i}\ \sum_{k\in S}\delta_k .
 \end{equation}
-where $Q$ is an upper-triangular matrix encoding linear costs on the diagonal and quadratic interaction penalties off-diagonal.
+$V(i)$ is the smallest total gain of an admissible set that changes only the first $i+1$ positions. The empty set has total gain $0$, so $V(i)\le 0$. The values of $V$ follow from the recurrence
+\begin{align}
+V(0)&=0, \quad V(1)=\min\{0,\,\delta_1\}, \label{eq:fib0}\\
+V(i)&=\min\{V(i-1),\,V(i-2)+\delta_i\}, \nonumber\\
+&\qquad i=2,\dots,n-1. \label{eq:fibrec}
+\end{align}
+The first term covers the sets without swap $i$. The second term covers the sets with swap $i$, which cannot contain swap $i-1$. The best set of the whole neighborhood has the total gain $V(n-1)$ and is recovered by tracing these choices back from $i=n-1$. This recurrence is the dynamic program of Dynasearch~\cite{Congram2002} restricted to adjacent swaps, and it takes $O(n)$ time after the $O(mn)$ evaluation of all gains. For TS the recurrence keeps the $\tau+1$ best sets in every state instead of one, which raises its cost to $O(n\tau)$. The empty set is not returned, so if no set improves the schedule, the best non-empty set is applied.
+\end{revblock}
 
-Solving a QUBO problem involves finding a binary vector that minimizes~\eqref{eq:qubo_general}. QUBO formulations are particularly well-suited to quantum annealing hardware~\cite{dwave_handbook}, which physically minimizes an Ising Hamiltonian equivalent to~\eqref{eq:qubo_general}. Due to their universal quadratic form, many combinatorial problems — including scheduling~\cite{lucas2014ising}, the maximum independent set, and the traveling salesman problem — can be naturally encoded in this way.
+\begin{figure*}[t]
+\centering
+\begin{tikzpicture}[font=\sffamily\scriptsize,x=6.5mm]
+% (a) jedna zamiana: przed i po
+\node[anchor=west,font=\sffamily\small\bfseries] at (-0.6,1.25) {(a)};
+\foreach \i/\j in {1/A,2/B,3/C,4/D,5/E,6/F,7/G} {
+  \node[draw,circle,inner sep=1.2pt,minimum size=4.2mm,fill=white] at (\i,0) {\j};
+  \node[below=2.5pt] at (\i,-0.2) {\i};
+}
+\draw[thick,blue!70!black] (2,0.25) to[bend left=50] (6,0.25);
+\node[anchor=west] at (7.6,0) {before};
+\foreach \i/\j in {1/A,2/F,3/C,4/D,5/E,6/B,7/G} {
+  \node[draw,circle,inner sep=1.2pt,minimum size=4.2mm,fill=white] (q\i) at (\i,-1.4) {\j};
+}
+\node[draw,circle,inner sep=1.2pt,minimum size=4.2mm,fill=blue!70!black!20] at (2,-1.4) {F};
+\node[draw,circle,inner sep=1.2pt,minimum size=4.2mm,fill=blue!70!black!20] at (6,-1.4) {B};
+\node[anchor=west] at (7.6,-1.4) {after the swap $(2,6)$};
+% (b)-(d)
+\foreach \y/\lab/\nm in {-3.4/Dynasearch: disjoint/(b),-5.6/Motzkin: disjoint or nested/(c),-7.8/crossing or shared endpoint/(d)} {
+  \node[anchor=west,font=\sffamily\small\bfseries] at (-0.6,\y+0.9) {\nm};
+  \node[anchor=west,font=\sffamily\small] at (12.6,\y+0.3) {\lab};
+  \foreach \i in {1,...,12} { \node[draw,circle,inner sep=1.2pt,fill=white] at (\i,\y) {}; \node[below=1pt] at (\i,\y) {\i}; }
+}
+\draw[thick,blue!70!black] (2,-3.3) to[bend left=60] (4,-3.3);
+\draw[thick,blue!70!black] (6,-3.3) to[bend left=50] (10,-3.3);
+\draw[thick,green!45!black] (2,-5.5) to[bend left=40] (11,-5.5);
+\draw[thick,green!45!black] (4,-5.5) to[bend left=60] (7,-5.5);
+\draw[thick,green!45!black] (8,-5.5) to[bend left=70] (9,-5.5);
+\draw[thick,red!65!black] (2,-7.7) to[bend left=55] (6,-7.7);
+\draw[thick,red!65!black,dashed] (4,-7.7) to[bend left=55] (9,-7.7);
+\draw[thick,red!65!black] (10,-7.7) to[bend left=60] (12,-7.7);
+\draw[thick,red!65!black,dashed] (11,-7.7) to[bend left=70] (12,-7.7);
+\end{tikzpicture}
+\caption{\rev{Swaps as arcs over job positions. (a)~The swap $(i,j)$ exchanges the jobs at positions $i$ and $j$ and leaves the jobs between them in place; (b)~Dynasearch allows only disjoint arcs, (c)~Motzkin also nested arcs, and (d)~crossing arcs and arcs with a shared endpoint are not allowed.}}\label{fig:moves}
+\end{figure*}
 
-\subsection{Quantum Adjacent}
-The \emph{Quantum Adjacent} neighborhood represents the quantum counterpart of the classical adjacent-swap neighborhood, formulated as a QUBO problem. Each binary variable $x_i \in \{0,1\}$ corresponds to a single swap of elements at positions $(i, i+1)$, and the parameter $\delta_i$ denotes the increment in the objective function $C_{\max}$ resulting from performing this swap, computed using the Head+Tail technique. Unlike the classical version, where the entire neighborhood is explored to select the best move, the quantum approach encodes the selection of exactly one swap as a Hamiltonian minimization with a penalty term:
+\subsection{\rev{Dynasearch}}
+\begin{revblock}
+The Dynasearch neighborhood~\cite{Congram2002} applies a set of swaps whose segments are pairwise disjoint (Fig.~\ref{fig:moves}b): the swaps $(i,j)$ and $(k,l)$ with $i<k$ can be applied together only if $j<k$. A segment may have any length, so there are $n(n-1)/2$ candidate swaps. One gain costs $O(m(j-i+1))$ time, and since $\sum_{i<j}(j-i+1)=O(n^3)$, all gains cost $O(mn^3)$. Let $D(j)$ be the smallest sum of gains over admissible sets inside positions $1,\dots,j$. Then
 \begin{equation}
-    H = \sum_{i=0}^{n-2} \delta_i\, x_i
-        + P \!\left(\sum_{i=0}^{n-2} x_i - 1\right)^{\!2},
-    \label{eq:qubo_adj}
+\begin{aligned}
+D(0)&=0,\\
+D(j)&=\min\Bigl\{D(j-1),\ \min_{1\le i<j}\bigl[D(i-1)+\delta_{ij}\bigr]\Bigr\},\\
+&\qquad j=1,\dots,n.
+\end{aligned}\label{eq:dyna}
 \end{equation}
-where $P = 2\max_i|\delta_i|+1$ is a penalty weight that enforces the constraint of selecting exactly one swap.
+In this recurrence either no swap ends at position $j$, or the swap $(i,j)$ ends there and the swaps to the left of $i$ are chosen optimally. This recurrence takes $O(n^2)$ time, so the evaluation of the gains dominates, and one step of the neighborhood costs $O(mn^3)$. Counting the empty set, the neighborhood contains $2^{n-1}$ move sets. If no set improves the schedule, the single swap with the smallest gain is applied, so that the search always moves.
+\end{revblock}
 
-Expanding the square and exploiting the idempotency of binary variables ($x_i^2 = x_i$), the full Hamiltonian takes a quadratic form with linear terms $Q_{ii} = \delta_i - P$ and quadratic terms $Q_{ij} = 2P$ for $i < j$. The QUBO matrix $Q$ is symmetric and dense, and the number of binary variables is $n-1$, corresponding to the size of the classical neighborhood. The computational complexity of constructing the $Q$ matrix is $O(n^2)$, while the permutation itself is updated by applying the single swap indicated by the QUBO solution.
-
-
-\subsection{Quantum Fibonacci}
-The \emph{Quantum Fibonacci} neighborhood generalizes the classical Fibonacci neighborhood by formulating the selection of a set of non-overlapping adjacent swaps as a QUBO problem. A binary variable $x_i \in \{0,1\}$ corresponds to a swap of positions $(i, i+1)$, and $\delta_i$ represents the resulting increment in $C_{\max}$. Two swaps, $i$ and $i+1$, are mutually exclusive since they share the element at position $i+1$; this constraint is enforced via a quadratic penalty term. The Hamiltonian takes a chain-like form:
+\subsection{\rev{Motzkin}}
+\begin{revblock}
+The Motzkin neighborhood~\cite{Motzkin_PWR_EXIT,Motzkin_PWR} also allows nested swaps. Two swaps $(i,j)$ and $(k,l)$ with $i<k$ can be applied together if their segments are disjoint ($j<k$) or nested ($l<j$), and they cannot if they cross ($k<j<l$) or share an endpoint (Fig.~\ref{fig:moves}c and~\ref{fig:moves}d). Swaps on four different positions exchange disjoint pairs of jobs, so they commute, and the result of a disjoint or nested set does not depend on the order of its swaps. Two swaps with a shared endpoint move three jobs along a cycle, and the result depends on the order, so such pairs are excluded. Crossing swaps would also commute, but they are excluded by the definition of the neighborhood. The non-crossing sets of swaps on $n$ positions correspond one-to-one to Motzkin paths of length $n$, which gives their number $M_n$~\cite{motzkin1948} and allows an exact interval dynamic program. Let $G(L,R)$ be the smallest sum of gains over admissible sets inside positions $L,\dots,R$, with $G(L,R)=0$ for $L\ge R$. Then
 \begin{equation}
-    H = \sum_{i=0}^{n-2} \delta_i\, x_i
-        + P \sum_{i=0}^{n-3} x_i\, x_{i+1},
-    \label{eq:qubo_fib}
+\begin{aligned}
+G(L,R)=\min\Bigl\{&G(L+1,R),\\
+&\min_{L<k\le R}\bigl[\delta_{Lk}+G(L+1,k-1)+G(k+1,R)\bigr]\Bigr\}.
+\end{aligned}\label{eq:motz}
 \end{equation}
-where $P = \sum_i |\delta_i| + 1$ ensures that the penalty for violating the constraint dominates the benefit of performing a swap.
+In this recurrence either position $L$ is not swapped, or it is swapped with a position $k$, which splits the remaining positions into the inside $L+1,\dots,k-1$ and the outside $k+1,\dots,R$. The table has $O(n^2)$ entries, each computed in $O(n)$ time, so this recurrence runs in $O(n^3)$ time. With the $O(mn^3)$ evaluation of all $n(n-1)/2$ gains, one step of the Motzkin neighborhood costs $O(mn^3)$. As in Dynasearch, if no set improves the schedule, the single swap with the smallest gain is applied.
+\end{revblock}
 
-The resulting QUBO matrix has a tridiagonal structure: $Q_{ii} = \delta_i$ (linear cost) and $Q_{i,i+1} = P$ (penalty for conflicting adjacent swaps). The combinatorial structure of feasible swap sets corresponds to Fibonacci numbers: the number of possible non-overlapping selections from $n-1$ positions is $F_{n+1}$, which motivates the neighborhood’s name. The construction of the QUBO matrix has complexity $O(n)$ in terms of variables and nonzero coefficients, making this formulation particularly efficient for both classical solvers and quantum hardware.
+\begin{table*}
+\caption{\rev{Size and cost of the move selection for $n$ jobs and $m$ machines. $K$ is the number of QUBO variables and $|E|$ the number of nonzero quadratic coefficients; for Dynasearch and Motzkin both are upper bounds, reached when no candidate is removed, and the values in brackets are for $n=20$.}}\label{tab:sizes}
+\centering\small\ifrevmarks\color{red}\fi
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+ & $K$ & gains $\delta_k$ & DP selection & $|E|$ & building $Q$\\
+\midrule
+Adjacent   & $n-1$ (19) & $O(mn)$ & $O(n)$ & $\binom{n-1}{2}$ (171; 100\%) & $O(n^2)$\\
+Fibonacci  & $n-1$ (19) & $O(mn)$ & $O(n)$ & $n-2$ (18; 10.5\%) & $O(n)$\\
+Dynasearch & $\binom{n}{2}$ (190) & $O(mn^3)$ & $O(n^2)$ & $\binom{K}{2}-\binom{n}{4}$ (13\,110; 73\%) & $O(n^4)$\\
+Motzkin    & $\binom{n}{2}$ (190) & $O(mn^3)$ & $O(n^3)$ & $\binom{n}{4}+3\binom{n}{3}$ (8\,265; 46\%) & $O(n^4)$\\
+\bottomrule
+\end{tabular}
 
-The algorithm solves the QUBO formulation, selects the non-overlapping swaps that minimize the Hamiltonian, updates the permutation accordingly, and computes the resulting completion time $C_{\max}$. If no swaps are selected, the algorithm can optionally apply a single swap with the smallest $\delta_i$.
+\smallskip\footnotesize Applying the selected moves and computing the new makespan costs $O(mn)$ for every neighborhood. The table has no column for solving the QUBO model, because this cost depends on the solver (Section~\ref{sec:qubo}).
+\end{table*}
 
-
-\subsection{Quantum Motzkin}
-The \emph{Quantum Motzkin} neighborhood formulates the selection of endpoint swaps of permutation segments as a QUBO problem, following Motzkin rules. Each binary variable $x_k \in \{0,1\}$ corresponds to swapping the endpoints of a segment $[i_k..j_k]$, i.e., exchanging $\pi[i_k] \leftrightarrow \pi[j_k]$ while keeping the middle part unchanged. The associated cost $\delta_k = C_{\max}(\pi \text{ after swap } k) - C_{\max}(\pi)$ is computed using the Head and Tail matrices in $O(m \cdot (j_k - i_k + 1))$ per pair, giving a total complexity of $O(m \cdot n^3)$ for all candidates. Pairs with $\delta_k \ge 0$ are discarded before building the QUBO matrix, as the solver will never select non-improving moves.
-
-Two swaps $k = (i_k, j_k)$ and $l = (i_l, j_l)$ conflict if:
+\section{\rev{QUBO Formulations of the Move Selection}}\label{sec:qubo}
+\begin{revblock}
+A QUBO model asks for a binary vector $\mathbf{x}\in\{0,1\}^K$ that minimizes
 \begin{equation}
-\mathrm{conflict}(k,l) =
-\begin{cases}
-1 & \text{if } \{i_k, j_k\} \cap \{i_l, j_l\} \neq \emptyset \\
-  & \quad (\text{shared endpoint}), \\
-1 & \text{if } i_k < i_l < j_k < j_l \;\vee\; i_l < i_k < j_l < j_k \\
-  & \quad (\text{crossing segments}), \\
-0 & \text{otherwise} \\
-  & \quad (\text{disjoint or nested}).
-\end{cases}
+f(\mathbf{x})=\sum_{k=1}^{K}Q_{kk}x_k+\sum_{k<l}Q_{kl}x_kx_l=\mathbf{x}^\top Q\,\mathbf{x}
 \end{equation}
-
-Disjoint pairs ($j_k < i_l$) and nested pairs ($i_k < i_l < j_l < j_k$) are \emph{permissible} and are not penalized. The QUBO Hamiltonian is defined as:
+\cite{Glover2019}. We use the upper-triangular convention of the \texttt{dimod} library: the linear coefficients lie on the diagonal of $Q$, every quadratic coefficient appears once, with $k<l$, and $Q_{kl}=0$ for $k>l$. Because $x_k^2=x_k$, every quadratic function of binary variables can be written in this form up to a constant. In our models the decision variable $x_k=1$ means that candidate move $k$ is selected, the linear coefficient carries the gain $\delta_k$ of this move, and the quadratic coefficients penalize pairs of moves that cannot be applied together. The substitution $x_k=(1+s_k)/2$ turns $f$ into the energy of an Ising model,
 \begin{equation}
-    H(x) = \sum_{k} \delta_k\, x_k
-          + P \!\sum_{\substack{k < l \\ \mathrm{conflict}(k,l)=1}} x_k\, x_l,
-    \label{eq:qubo_motz}
+E(\mathbf{s})=\sum_k h_ks_k+\sum_{k<l}J_{kl}s_ks_l+\text{const},
 \end{equation}
-where $P = \sum_k |\delta_k| + 1$ ensures that the penalty for any conflict dominates the total gain from any subset of swaps. The QUBO matrix $Q$ is upper-triangular with diagonal elements $Q_{kk} = \delta_k$ and off-diagonal elements $Q_{kl} = P$ for conflicting pairs; nested or disjoint pairs have $Q_{kl} = 0$.
+where $\mathbf{s}\in\{-1,1\}^K$, with $J_{kl}=Q_{kl}/4$ and $h_k=Q_{kk}/2+\sum_{l\ne k}Q_{\min(k,l),\max(k,l)}/4$. A quantum annealer realizes $E$ as its problem Hamiltonian~\cite{Kadowaki1998,Johnson2011}, so a low-energy spin state read from the processor corresponds to a binary vector with a low value of $f$. We use the word Hamiltonian only for this physical model and denote the QUBO objective by $f$. The QUBO model does not depend on the solver: it can be solved by classical algorithms, for example by simulated annealing, or sampled on a QPU, and Section~\ref{sec:setup} describes the solver used in our experiments.
 
-After solving the QUBO, selected indices $x_k = 1$ undergo a greedy validation: conflicting pairs are removed to guarantee feasibility in case of suboptimal sampler outcomes. If no swap is selected, the algorithm falls back to applying a single swap with minimal $\delta_k < 0$. The chosen endpoint swaps are then applied to the permutation (sorted in ascending order of $i_k$), and the new $C_{\max}$ is recomputed from scratch for verification. The number of binary variables is $K = O(n^2)$, and building the QUBO matrix requires $O(K^2)$ time.
+All four models have the form $f(\mathbf{x})=\sum_k\delta_kx_k+P\cdot(\text{penalty})$, where the penalty is zero exactly for admissible selections. The following lemma gives a sufficient penalty weight.
 
+\textbf{Lemma 1.} Let $E$ be the set of incompatible pairs of moves and $f(\mathbf{x})=\sum_k\delta_kx_k+P\sum_{(k,l)\in E}x_kx_l$. If $P>\max_k|\delta_k|$, every minimizer of $f$ selects a compatible set of moves, and the minimizers of $f$ are exactly the compatible sets with the smallest sum of gains. Likewise, if $P>\max_k|\delta_k|$, every minimizer of $g(\mathbf{x})=\sum_k\delta_kx_k+P\bigl(\sum_kx_k-1\bigr)^2$ selects exactly one move.
 
-\subsection{Quantum Dynasearch}
-The \emph{Quantum Dynasearch} neighborhood translates the Dynasearch mechanism into the quantum paradigm, encoding the selection of a set of non-overlapping endpoint swaps as a QUBO problem. Each binary variable $x_k \in \{0,1\}$ represents the swap of the first and last elements of a segment $[i_k..j_k]$:
-$\pi[i_k..j_k] \to [\pi_{j_k}, \pi_{i_k+1}, \ldots, \pi_{j_k-1}, \pi_{i_k}]$.  
-The incremental cost $\delta_k = \Delta C_{\max}$ resulting from swap $k$ is computed using the Head and Tail matrices. Two segments $(i_1,j_1)$ and $(i_2,j_2)$ are considered overlapping if $\max(i_1,i_2) \le \min(j_1,j_2)$; in this case, both overlap and nesting are \emph{forbidden}. The QUBO Hamiltonian combines swap costs with penalties for conflicts:
+\emph{Proof.} Let $\mathbf{x}$ select an incompatible pair, and let $k$ be a selected move of this pair. Setting $x_k=0$ changes $f$ by $-\delta_k-P\,d_k$, where $d_k\ge 1$ is the number of selected moves incompatible with $k$, so the change is at most $|\delta_k|-P<0$ and $\mathbf{x}$ is not a minimizer. On compatible selections $f$ equals the sum of gains, which proves the first claim. For $g$, the zero vector has the value $P>\min_k\delta_k$, the value of the best one-hot vector. If $\mathbf{x}$ selects $s\ge 2$ moves, dropping a selected move $k$ changes $g$ by $-\delta_k-P(2s-3)\le|\delta_k|-P<0$. $\square$
+
+Any weight above this bound gives the same minimizers, so $P$ does not change the model, but it changes its numerical scale. The QPU accepts coefficients only in a bounded range, and the sampler rescales the whole model to fit it. A large $P$ therefore compresses the differences between the gains into a small part of the range, where they compete with the analog control errors of the device~\cite{dwave_handbook}. For classical samplers a large $P$ makes every step out of a feasible state expensive, which slows the search down~\cite{Glover2019}. The weights used in our experiments, $P=2\max_i|\delta_i|+1$ for the Adjacent model and $P=\sum_k|\delta_k|+1$ for the other models, satisfy Lemma~1, but the second one is up to $K$ times larger than necessary.
+\end{revblock}
+
+\subsection{\rev{QUBO formulation of the Adjacent selection}}
+\begin{revblock}
+The Adjacent selection chooses one swap of neighboring positions. The variable $x_i=1$ selects the swap $(i,i+1)$, $i=1,\dots,n-1$, with the gain $\delta_i$, and the model
 \begin{equation}
-    H = \sum_{k} \delta_k\, x_k
-        + P \!\sum_{\substack{k < l \\ \mathrm{overlap}(k,l)}} x_k\, x_l,
-    \label{eq:qubo_dyna}
+g(\mathbf{x})=\sum_{i=1}^{n-1}\delta_ix_i+P\Bigl(\sum_{i=1}^{n-1}x_i-1\Bigr)^2
 \end{equation}
-where $P = \sum_k |\delta_k| + 1$ ensures that the non-overlapping constraint dominates.
+selects exactly one swap when $P>\max_i|\delta_i|$ (Lemma~1); we used $P=2\max_i|\delta_i|+1$. Expanding the square with $x_i^2=x_i$ gives $Q_{ii}=\delta_i-P$ and $Q_{ij}=2P$ for $i<j$, plus the constant $P$. Every pair of variables is coupled, so the graph of the model is complete, with $(n-1)(n-2)/2$ quadratic coefficients (171 for $n=20$). Building $Q$ takes $O(n^2)$ time after the $O(mn)$ evaluation of the gains, and applying the selected swap and computing the new makespan takes $O(mn)$ time. The cost of solving the model depends on the solver. A scan finds the best swap in $O(n)$ time, so this model measures the cost of a QPU call rather than offering a faster selection.
+\end{revblock}
 
-The QUBO matrix $Q$ is defined with diagonal elements $Q_{kk} = \delta_k$ (linear cost) and off-diagonal elements $Q_{kl} = P$ for overlapping segment pairs. The number of binary variables is $K = O(n^2)$ (up to $n(n-1)/2$ segment pairs), and the number of nonzero quadratic coefficients is $O(n^4)$ for a dense conflict graph, motivating the use of a parameter $L_{\max}$ to limit segment lengths in classical implementations. Computing $\delta_k$ for all segment pairs requires $O(m \cdot n^3)$ time due to the precomputed Head and Tail matrices.
-
-After solving the QUBO, the algorithm selects non-overlapping segments minimizing $H$, applies the corresponding endpoint swaps, and computes the resulting completion time $C_{\max}$. If no swaps are selected, the algorithm may optionally apply a single swap with minimal $\delta_k$ to ensure progress in the search.
-
-
-\section{Experimental Setup}
-The experiment was conducted in the test environment defined in~\cite{WojewodzkiBozejko2026}, as follows. All experiments were conducted on a MacBook Pro with an M4 Pro processor, 24~GB of RAM, running macOS 26.3.1(a) and Python~3.11.
-
-\paragraph{Benchmarks.}
-Taillard instances~\cite{ref_taillard} of varying $(n,m)$ (e.g., $n\in\{20\}$, $m\in\{10,20\}$). Each run is constrained by a wall-clock time budget (e.g., 100~ms). Seeds are fixed for reproducibility. Classical neighborhoods were executed entirely on the local hardware described above. Quantum neighborhoods were evaluated in a hybrid manner: the QUBO matrix was constructed locally and subsequently submitted to the D-Wave Leap cloud service via the \texttt{DWaveSampler} with \texttt{EmbeddingComposite}. Each quantum neighborhood call incurs additional network latency and embedding overhead, which substantially increases the wall-clock time per iteration relative to the classical variants. Access to the QPU is furthermore subject to queue times imposed by the Leap cloud platform, rendering the quantum execution time non-deterministic and dependent on current system load. This asymmetry must be accounted for when interpreting the convergence results.
-
-\paragraph{Parameters.}
-The following parameter values were used in the experiments:
-\begin{itemize}
-  \item ILS: $\tau_{\text{tabu}} = 10$
-  \item SA: $T_{\text{init}}=1000$, $T_{\text{final}}=1$, $\alpha=0.95$,
-        reheating factor $r = 1.5$, stagnation threshold $500$~(ms).
-\end{itemize}
-
-
-\paragraph{Metrics.}
-Solution quality is measured by the Relative Percentage Deviation (RPD)
-from the best-known optimum:
+\subsection{\rev{QUBO formulation of the Fibonacci selection}}
+\begin{revblock}
+The variables are those of the Adjacent model, but any set of non-overlapping swaps may be selected. The swaps $i$ and $i+1$ share position $i+1$, so every such pair is penalized:
 \begin{equation}
-  \mathrm{RPD} = \frac{C_{\max} - C^{*}}{C^{*}} \times 100\%,
+f(\mathbf{x})=\sum_{i=1}^{n-1}\delta_ix_i+P\sum_{i=1}^{n-2}x_ix_{i+1}.
 \end{equation}
-where $C^{*}$ denotes the best-known makespan for a given instance.
-Convergence over time is illustrated by plots of $C_{\max}$ vs.\ wall-clock
-time. The choice of metrics was primarily aimed at assessing the impact of
-neighborhood structures on solution quality, rather than absolute
-algorithmic performance.
+In the upper-triangular convention $Q$ has the gains on its diagonal and $P$ on its first superdiagonal, so it is bidiagonal, and the graph of the model is a path with $n-2$ edges (18 for $n=20$, about 10\% of all pairs). By Lemma~1 the minimizers of $f$ are the optimal sets found by the dynamic program \eqref{eq:fibV}--\eqref{eq:fibrec}. We used $P=\sum_i|\delta_i|+1$, which satisfies the lemma. All $n-1$ candidates enter the model, and building $Q$ takes $O(n)$ time.
+\end{revblock}
 
+\subsection{\rev{QUBO formulation of the Dynasearch selection}}
+\begin{revblock}
+We write the Dynasearch selection, the choice of a set of swaps with disjoint segments, as a QUBO model. The variable $x_k=1$ selects the swap of the endpoints of the segment $[i_k,j_k]$, with the gain $\delta_k$. Two swaps overlap if $\max(i_k,i_l)\le\min(j_k,j_l)$, which covers crossing and nested segments and segments with a shared endpoint, and every overlapping pair is penalized:
+\begin{equation}
+f(\mathbf{x})=\sum_k\delta_kx_k+P\sum_{k<l,\ \mathrm{overlap}(k,l)}x_kx_l.
+\end{equation}
+Before the model is built, candidates with $\delta_k\ge 0$ are removed. This does not change the optimum, because dropping such a move from a compatible set keeps the set compatible and does not increase its sum of gains. Without the filter the model has $K=n(n-1)/2$ variables, and since only the $\binom{n}{4}$ disjoint pairs are compatible, it has $\binom{K}{2}-\binom{n}{4}$ quadratic coefficients. For $n=20$ this gives 190 variables and 13\,110 of the 17\,955 pairs (73\%), and the share of coupled pairs tends to $2/3$ as $n$ grows, so the model is dense. The filter reduces these numbers by an amount that depends on the instance and on the current permutation. We used $P=\sum_k|\delta_k|+1$ over the remaining candidates. Building $Q$ takes $O(K^2)=O(n^4)$ time after the $O(mn^3)$ evaluation of the gains.
+\end{revblock}
 
+\subsection{\rev{QUBO formulation of the Motzkin selection}}
+\begin{revblock}
+The variables are the endpoint swaps of the Dynasearch model, again without candidates with $\delta_k\ge 0$. Two swaps $k$ and $l$ are incompatible if they share an endpoint, $\{i_k,j_k\}\cap\{i_l,j_l\}\ne\emptyset$, or if they cross, $i_k<i_l<j_k<j_l$ or $i_l<i_k<j_l<j_k$; disjoint and nested pairs are compatible. The model
+\begin{equation}
+f(\mathbf{x})=\sum_k\delta_kx_k+P\sum_{k<l,\ \mathrm{conflict}(k,l)}x_kx_l
+\end{equation}
+has $\delta_k$ on the diagonal of $Q$ and $P$ at the positions of incompatible pairs. Without the filter there are $\binom{n}{4}$ crossing pairs and $3\binom{n}{3}$ pairs with a shared endpoint, which for $n=20$ gives at most 8\,265 of the 17\,955 pairs (46\%); the share tends to $1/3$ as $n$ grows. We used $P=\sum_k|\delta_k|+1$. Building $Q$ takes $O(K^2)=O(n^4)$ time after the $O(mn^3)$ evaluation of the gains.
+\end{revblock}
 
+\section{\rev{Experimental Setup}}\label{sec:setup}
+\begin{revblock}
+\paragraph{Hardware and software.} The metaheuristics, the evaluation of the gains, the dynamic programs, the construction of the QUBO models, Gurobi and the simulator ran on a MacBook Pro with an Apple M4 Pro processor and 24~GB of RAM, under macOS 26.3.1 and Python 3.11. The QUBO models were built with the \texttt{dimod} library. The experiments with the dynamic programs, Gurobi and the simulator ran on 8 November 2026, and the experiments on the QPU on 9 November 2026.
+
+\paragraph{Solvers.} The move is selected in four ways, shown as the four groups of rows in Tables~\ref{tab:results_100}--\ref{tab:results_10000}. In the rows ``Classical DP'' the dynamic programs of Section~\ref{sec:neigh} select the move, and for the Adjacent neighborhood a scan of all swaps does. In the other rows the QUBO model of Section~\ref{sec:qubo} is built and solved. In the rows ``Gurobi'', Gurobi 13.0.3 solved it exactly, with one thread and a zero optimality gap, so every call returned a minimizer of the model. In the rows ``Simulator'', it was solved by \texttt{SimulatedAnnealingSampler} of the \texttt{dwave-samplers} library (version 1.7.0, part of the Ocean SDK), a classical simulated annealing heuristic in C++ that runs on the CPU and does not simulate quantum hardware. Every call performed 1000 reads, each starting from a random state and making 1000 sweeps of single-variable Metropolis updates with a geometric schedule of the inverse temperature, whose range the library sets from the coefficients of the model. The seed of every call was drawn from the random number generator of the run. In the rows ``QPU'', the models were sampled on the D-Wave Advantage\_system6 quantum annealer, with the Pegasus topology, through the Leap cloud service, with the \texttt{DWaveSampler} of the Ocean SDK (\texttt{dwave-system} 1.34.0). All results in the rows ``QPU'' come from runs on this physical processor, and no part of them was simulated. A new connection to the service was opened at every call. Every model sent to the QPU was passed to an \texttt{EmbeddingComposite}, which computes a minor embedding with the \texttt{minorminer} heuristic~\cite{Cai2014} at every call and does not reuse it. Every QPU call requested 1000 samples, and the annealing time, the chain strength and the spin-reversal setting were left at the default values of the solver and of the Ocean SDK. The solution returned by Gurobi and the sample with the lowest energy returned by the simulator or the QPU were decoded into a set of moves, and moves that conflict with each other were removed greedily, so the applied set was always admissible. If the decoded set was empty, the Adjacent variant applied the swap with the smallest gain, and the other variants applied it only if its gain was negative; otherwise the permutation did not change. For every QPU call we recorded the time of the connection, the time of finding the embedding, the QPU access time reported by the solver and the total wall-clock time of the call, and Section~\ref{sec:results} reports these components.
+
+\paragraph{Instances and runs.} We used the first 30 Taillard instances~\cite{ref_taillard}, ten for each size with $n=20$ and $m\in\{5,10,20\}$. Every combination of metaheuristic, neighborhood and solver was run once on each instance, with the random seed 0 and the budget $t_{\max}=10\,000$~ms. The results for the shorter budgets $t_{\max}\in\{100,500,1000,2000,5000\}$~ms were read from the same run: at the start of the first iteration at which the elapsed time had reached a budget, we stored the best permutation found so far. The budget is checked only before an iteration, so this is exactly the result of a run with the shorter budget that makes the same random choices. TS used the tabu tenure $\tau=10$. SA used $T_{\text{init}}=1000$, $T_{\text{final}}=1$ and $\alpha=0.95$, so its temperature reaches $T_{\text{final}}$ after 135 iterations, and reheating with $r=1.5$ and $t_{\text{stag}}=500$~ms. The segments of Dynasearch and Motzkin were not limited in length. These values were set in advance and not tuned.
+
+\paragraph{Metric.} Each table entry is the mean relative percentage deviation $\mathrm{RPD}=100\%\cdot(C_{\max}-LB)/LB$ over the ten instances of one size, where $LB$ is the lower bound published for the instance by Taillard~\cite{ref_taillard}. The lower bound is below the best known makespan, so RPD overstates the distance to the best known solutions, but it is the same reference for all variants. Convergence is shown as $C_{\max}$ against wall-clock time.
+\end{revblock}
 
 \begin{table}
-\caption{Average RPD~[\%] from the optimum, $t_{\mathrm{ms}}=100$~ms}
+\caption{\rev{Mean RPD~[\%] from the lower bound, $t_{\max}=100$~ms}}
 \label{tab:results_100}
+\centering\small\ifrevmarks\color{red}\fi
 \input{tables/results_tl100}
 \end{table}
 
 
 \begin{table}
-\caption{Average RPD~[\%] from the optimum, $t_{\mathrm{ms}}=500$~ms}
+\caption{\rev{Mean RPD~[\%] from the lower bound, $t_{\max}=500$~ms}}
 \label{tab:results_500}
+\centering\small\ifrevmarks\color{red}\fi
 \input{tables/results_tl500}
 \end{table}
 
 \begin{table}
-\caption{Average RPD~[\%] from the optimum, $t_{\mathrm{ms}}=1000$~ms}
+\caption{\rev{Mean RPD~[\%] from the lower bound, $t_{\max}=1000$~ms}}
 \label{tab:results_1000}
+\centering\small\ifrevmarks\color{red}\fi
 \input{tables/results_tl1000}
 \end{table}
 
 \begin{table}
-\caption{Average RPD~[\%] from the optimum, $t_{\mathrm{ms}}=2000$~ms}
+\caption{\rev{Mean RPD~[\%] from the lower bound, $t_{\max}=2000$~ms}}
 \label{tab:results_2000}
+\centering\small\ifrevmarks\color{red}\fi
 \input{tables/results_tl2000}
 \end{table}
 
 \begin{table}
-\caption{Average RPD~[\%] from the optimum, $t_{\mathrm{ms}}=5000$~ms}
+\caption{\rev{Mean RPD~[\%] from the lower bound, $t_{\max}=5000$~ms}}
 \label{tab:results_5000}
+\centering\small\ifrevmarks\color{red}\fi
 \input{tables/results_tl5000}
 \end{table}
 
 \begin{table}
-\caption{Average RPD~[\%] from the optimum, $t_{\mathrm{ms}}=10000$~ms}
+\caption{\rev{Mean RPD~[\%] from the lower bound, $t_{\max}=10\,000$~ms}}
 \label{tab:results_10000}
+\centering\small\ifrevmarks\color{red}\fi
 \input{tables/results_tl10000}
 \end{table}
 
 
-\section{Results and Discussion}
-Tables~\ref{tab:results_100}--\ref{tab:results_10000} report average RPD values for all neighborhood structures across three Taillard instances and six time limits. The results clearly demonstrate that the choice of neighborhood structure has a decisive impact on the effectiveness of metaheuristic methods for the PFSP.
+\section{\rev{Results and Discussion}}\label{sec:results}
+\begin{revblock}
+Tables~\ref{tab:results_100}--\ref{tab:results_10000} give the mean RPD of every variant for the six budgets.
+
+\paragraph{Classical DP.} Dynasearch and Motzkin give the best schedules for every budget and every instance size, in both metaheuristics, and TS is better than SA for every neighborhood. One DP selection in these neighborhoods costs $O(mn^3)$ time, but one step improves the schedule much more than an adjacent swap. TS with the Fibonacci neighborhood gives the same result for every budget. The tabu list forbids only the repetition of the same set of swaps, and the search cycles among a few permutations reached by different sets.
+
+\paragraph{Simulated annealing.} The RPD of every SA variant with DP selection is the same for all six budgets. The results for all budgets come from one run, so SA found its best solution within the first 100~ms and did not improve it later. SA starts from the identity permutation and applies the best move of the neighborhood, so it descends to the first local optimum. There the best move worsens the schedule. When the Metropolis rule accepts it, the reverse move improves the schedule by the same amount, and the search returns to the same local optimum. The temperature reaches $T_{\text{final}}$ within 135 iterations. Reheating multiplies it by $r=1.5$ after 500~ms without improvement, but the following iterations lower it back to $T_{\text{final}}$ within eight steps, so in our runs reheating had no visible effect. Figure~\ref{fig:conv_sa_tai20_20} shows that with the DP selection the SA curves become flat within the first hundred milliseconds, while the simulator and the QPU still improve the schedule after several seconds.
+\end{revblock}
 
 \begin{figure}
 \begin{center}
-\includegraphics[width=0.99\linewidth]{img/algo=sa_file=tai20_20_inst=5_tl=5000ms_n20_m20_multi_1.png}
+\includegraphics[width=0.99\linewidth]{img/conv_sa_tai20_20_inst5.pdf}
 \end{center}
-\caption{Convergence comparison for SA algorithm on instance tai20\_20, $n=20$, $m=20$, time limit $t_{\mathrm{ms}}=5000$~ms.}
+\caption{\rev{Best makespan found by SA on instance tai026 ($n=20$, $m=20$) with the four solvers. The vertical line marks $t_{\max}=10\,000$~ms.}}
 \label{fig:conv_sa_tai20_20}
 \end{figure}
 
+\begin{revblock}
+\paragraph{QUBO models solved classically.} The variants that solve the QUBO models on a classical computer separate the effect of the model from the effect of the processor. Lemma~1 in Section~\ref{sec:qubo} shows that the best solution of every model is exactly the move set chosen by the dynamic program, and in our tests Gurobi returned move sets with the same sum of gains as the dynamic program, so the model itself loses nothing. The cost lies in solving it. One call of Gurobi takes from below 1~ms for the Fibonacci model to about 25~ms for the Adjacent model, and one call of the simulator with 1000 reads takes 0.2 to 0.65~s, while the dynamic program needs at most a few milliseconds. With Gurobi, TS with the Dynasearch and Motzkin neighborhoods comes within one percentage point of the DP selection at $t_{\max}=10\,000$~ms, and with the simulator it stays further behind.
 
-\paragraph{Classical neighborhoods.}
-Among classical variants, \emph{Dynasearch} and \emph{Motzkin} in the ILS configuration consistently achieve the lowest RPD values across all time limits and instances. The advantage grows with the computational budget, confirming that operations covering larger permutation fragments enable more effective exploration of the solution space. At $t_{\mathrm{ms}}=100$~ms, $\mathrm{dyn}_{\mathrm{ILS}}$ achieves an average RPD of 13.48\%, compared to 19.49\% for $\mathrm{adj}_{\mathrm{ILS}}$; at $t_{\mathrm{ms}}=10000$~ms these values are 11.53\% and 12.74\%, respectively. ILS consistently outperforms SA across all neighborhoods, highlighting the importance of controlled diversification via the tabu list.
+In TS the QUBO variants also handle tabu moves differently. They return a single move and restart from a random permutation when this move is tabu, whereas the Adjacent and Fibonacci procedures with DP selection take the best non-tabu move among their $\tau+1$ best moves. For the Fibonacci neighborhood the restarts break the cycle described above, and Gurobi and the simulator both give better schedules than the DP selection. In SA the simulator gives better schedules than the DP selection for the Adjacent and Fibonacci neighborhoods, most likely because its suboptimal samples act as random perturbations that move the search away from the local optimum. In most SA runs with the Dynasearch model and in some with the Motzkin model the simulator is no longer called after the search reaches a local optimum, because no candidate with a negative gain is left and the model is empty.
 
-
-\paragraph{SA stagnation.}
-A notable observation is that RPD values for all SA variants --- $\mathrm{adj}_{\mathrm{SA}}$, $\mathrm{fib}_{\mathrm{SA}}$, $\mathrm{dyn}_{\mathrm{SA}}$, and $\mathrm{mot}_{\mathrm{SA}}$ --- remain identical across all six time limits (compare Tables~\ref{tab:results_100} and~\ref{tab:results_10000}). This is a direct consequence of the cooling schedule: with parameters $T_{\mathrm{init}}=1000$ and $\alpha=0.95$, the algorithm exhausts its temperature range well within the shortest budget, after which it behaves as a deterministic local search and can no longer accept deteriorating moves. Figure~\ref{fig:conv_sa_tai20_20} illustrates this effect: all SA curves plateau within the first few hundred milliseconds, regardless of the 5000~ms time limit. Future work should tune $\alpha$ and $T_{\mathrm{final}}$ relative to the actual time budget.
+\paragraph{QPU.} In every variant except SA with the Fibonacci neighborhood, where the DP selection itself stagnates, the real QPU, Advantage\_system6, gives the worst schedules at $t_{\max}=10\,000$~ms. The processor takes little of this time. The median QPU access time of one call, which covers programming the processor and 1000 reads, is 0.11 to 0.16~s, while the whole call takes about 2~s for the Adjacent and Fibonacci models and 8 to 11~s for the Dynasearch and Motzkin models. Most of the remaining time goes to finding the minor embedding on the local CPU, 5 to 8~s in the median for the dense models, and to the network and the queue of the Leap service, 1.5 to 2.3~s. Within the budget TS and SA therefore perform 5 or 6 calls with the Adjacent and Fibonacci models and a single call with the Dynasearch and Motzkin models, against thousands of iterations with the DP selection. Figure~\ref{fig:conv_ils_tai20_5} shows this for TS on one instance: with the DP selection the curves fall within the first second, while the QPU variants of Dynasearch and Motzkin change the schedule once, at the end of the run. The samples of the dense models are also less accurate. For the Adjacent and Fibonacci models the lowest-energy sample was an optimum of the model in more than 99\% of the calls, but for the Dynasearch and Motzkin models only in about a quarter of the calls, and in 62\% and 36\% of the calls it violated the constraints, so the greedy repair had to remove moves.
+\end{revblock}
 
 \begin{figure}
 \begin{center}
-\includegraphics[width=0.99\linewidth]{img/algo=ils_file=tai20_5_inst=9_tl=500ms_n20_m5_multi.png}
+\includegraphics[width=0.99\linewidth]{img/conv_ils_tai20_5_inst9.pdf}
 \end{center}
-\caption{Convergence comparison for ILS algorithm on instance tai20\_5, $n=20$, $m=5$, time limit $t_{\mathrm{ms}}=500$~ms.}
+\caption{\rev{Best makespan found by TS on instance tai010 ($n=20$, $m=5$) with the four solvers. The vertical line marks $t_{\max}=10\,000$~ms.}}
 \label{fig:conv_ils_tai20_5}
 \end{figure}
 
-
-\paragraph{Quantum neighborhoods.}
-All quantum variants achieve substantially higher RPD than their classical counterparts. At $t_{\mathrm{ms}}=100$~ms, quantum RPD values range from 30\% to 36\%, versus 13--29\% for classical structures. At $t_{\mathrm{ms}}=10000$~ms, the best quantum variant ($\mathrm{q\text{-}mot}_{\mathrm{ILS}}$) achieves RPD of 18.44\%, while $\mathrm{dyn}_{\mathrm{ILS}}$ reaches 2.64\%. The gap arises primarily from the overhead of the D-Wave Leap cloud platform: each quantum neighborhood call incurs network latency, QPU queue time, and embedding cost, which drastically limits the number of iterations executable within a fixed budget. The available qubit count on the QPU additionally bounds the maximum tractable instance size. As the time limit increases, quantum variants improve steadily --- $\mathrm{q\text{-}fib}_{\mathrm{ILS}}$ improves from 34.02\% at 100~ms to 27.34\% at 10000~ms --- suggesting that QPU overhead becomes relatively less significant for longer runs. Among quantum structures, q-fib and q-mot consistently outperform q-adj and q-dyn, consistent with their richer QUBO combinatorial structure enabling a larger number of simultaneous swaps per annealing call. Figure~\ref{fig:conv_ils_tai20_5} illustrates the convergence gap between classical and quantum ILS variants: classical neighborhoods converge within the first few hundred milliseconds, while quantum variants (pink, purple) remain at substantially higher $C_{\max}$ values throughout the run.
-
-
-\paragraph{Limitations and future work.}
-The experiments were conducted exclusively on small instances ($n=20$), for which classical methods are highly effective and the potential benefits of quantum approaches are not yet fully apparent. The results should therefore be treated as preliminary. In particular, extending the study to larger instances ($n \ge 100$), where the combinatorial space grows exponentially and may justify the QPU communication overhead, is a natural next step. Further tuning of both classical (SA cooling schedule) and quantum parameters remains an open direction.
-
+\begin{revblock}
+\paragraph{Limitations.} The experiments were conducted only on instances with $n=20$. The size of the instances is limited by minor embedding rather than by the number of qubits alone. For $n=20$ the Adjacent and Fibonacci models have 19 variables, and the Dynasearch and Motzkin models up to 190 variables with up to 13\,110 and 8\,265 quadratic coefficients (Table~\ref{tab:sizes}). A dense model has to be embedded as a clique minor, in which every variable occupies a chain of physical qubits, and the chains grow with the number of variables~\cite{Cai2014}. In our runs the embedded Dynasearch and Motzkin models occupied up to 1991 and 1870 physical qubits, with chains of up to 30 and 22 qubits. Already for $n=50$ the unfiltered Dynasearch model would have 1\,225 variables and 519\,400 quadratic coefficients. In a test on the local CPU, the Dynasearch and Motzkin models for $n=50$ could not be embedded into the Advantage processor, which does not have enough qubits for the chains that these dense models need. A precomputed clique embedding, reused in every call, would remove most of the embedding time for the dense models. The SA parameters were set in advance and not tuned, and the results above show that they let SA stagnate. Larger instances need a decomposition of the models, which a separate study addresses~\cite{WojewodzkiBozejkoSSRN}.
+\end{revblock}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% ACKNOWLEDGEMENTS

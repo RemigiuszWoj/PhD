@@ -323,60 +323,31 @@ has $\delta_k$ on the diagonal of $Q$ and $P$ at the positions of incompatible p
 \begin{revblock}
 \paragraph{Hardware and software.} The metaheuristics, the evaluation of the gains, the dynamic programs, the construction of the QUBO models, Gurobi and the simulator ran on a MacBook Pro with an Apple M4 Pro processor and 24~GB of RAM, under macOS 26.3.1 and Python 3.11. The QUBO models were built with the \texttt{dimod} library. The experiments with the dynamic programs, Gurobi and the simulator ran on 8 November 2026, and the experiments on the QPU on 9 November 2026.
 
-\paragraph{Solvers.} The move is selected in four ways, shown as the four groups of rows in Tables~\ref{tab:results_100}--\ref{tab:results_10000}. In the rows ``Classical DP'' the dynamic programs of Section~\ref{sec:neigh} select the move, and for the Adjacent neighborhood a scan of all swaps does. In the other rows the QUBO model of Section~\ref{sec:qubo} is built and solved. In the rows ``Gurobi'', Gurobi 13.0.3 solved it exactly, with one thread and a zero optimality gap, so every call returned a minimizer of the model. In the rows ``Simulator'', it was solved by \texttt{SimulatedAnnealingSampler} of the \texttt{dwave-samplers} library (version 1.7.0, part of the Ocean SDK), a classical simulated annealing heuristic in C++ that runs on the CPU and does not simulate quantum hardware. Every call performed 1000 reads, each starting from a random state and making 1000 sweeps of single-variable Metropolis updates with a geometric schedule of the inverse temperature, whose range the library sets from the coefficients of the model. The seed of every call was drawn from the random number generator of the run. In the rows ``QPU'', the models were sampled on the D-Wave Advantage\_system6 quantum annealer, with the Pegasus topology, through the Leap cloud service, with the \texttt{DWaveSampler} of the Ocean SDK (\texttt{dwave-system} 1.34.0). All results in the rows ``QPU'' come from runs on this physical processor, and no part of them was simulated. A new connection to the service was opened at every call. Every model sent to the QPU was passed to an \texttt{EmbeddingComposite}, which computes a minor embedding with the \texttt{minorminer} heuristic~\cite{Cai2014} at every call and does not reuse it. Every QPU call requested 1000 samples, and the annealing time, the chain strength and the spin-reversal setting were left at the default values of the solver and of the Ocean SDK. The solution returned by Gurobi and the sample with the lowest energy returned by the simulator or the QPU were decoded into a set of moves, and moves that conflict with each other were removed greedily, so the applied set was always admissible. If the decoded set was empty, the Adjacent variant applied the swap with the smallest gain, and the other variants applied it only if its gain was negative; otherwise the permutation did not change. For every QPU call we recorded the time of the connection, the time of finding the embedding, the QPU access time reported by the solver and the total wall-clock time of the call, and Section~\ref{sec:results} reports these components.
+\paragraph{Solvers.} The move is selected in four ways, shown as the four groups of rows in Tables~\ref{tab:results_ts} and~\ref{tab:results_sa}. In the rows ``Classical DP'' the dynamic programs of Section~\ref{sec:neigh} select the move, and for the Adjacent neighborhood a scan of all swaps does. In the other rows the QUBO model of Section~\ref{sec:qubo} is built and solved. In the rows ``Gurobi'', Gurobi 13.0.3 solved it exactly, with one thread and a zero optimality gap, so every call returned a minimizer of the model. In the rows ``Simulator'', it was solved by \texttt{SimulatedAnnealingSampler} of the \texttt{dwave-samplers} library (version 1.7.0, part of the Ocean SDK), a classical simulated annealing heuristic in C++ that runs on the CPU and does not simulate quantum hardware. Every call performed 1000 reads, each starting from a random state and making 1000 sweeps of single-variable Metropolis updates with a geometric schedule of the inverse temperature, whose range the library sets from the coefficients of the model. The seed of every call was drawn from the random number generator of the run. In the rows ``QPU'', the models were sampled on the D-Wave Advantage\_system6 quantum annealer, with the Pegasus topology, through the Leap cloud service, with the \texttt{DWaveSampler} of the Ocean SDK (\texttt{dwave-system} 1.34.0). All results in the rows ``QPU'' come from runs on this physical processor, and no part of them was simulated. A new connection to the service was opened at every call. Every model sent to the QPU was passed to an \texttt{EmbeddingComposite}, which computes a minor embedding with the \texttt{minorminer} heuristic~\cite{Cai2014} at every call and does not reuse it. Every QPU call requested 1000 samples, and the annealing time, the chain strength and the spin-reversal setting were left at the default values of the solver and of the Ocean SDK. The solution returned by Gurobi and the sample with the lowest energy returned by the simulator or the QPU were decoded into a set of moves, and moves that conflict with each other were removed greedily, so the applied set was always admissible. If the decoded set was empty, the Adjacent variant applied the swap with the smallest gain, and the other variants applied it only if its gain was negative; otherwise the permutation did not change. For every QPU call we recorded the time of the connection, the time of finding the embedding, the QPU access time reported by the solver and the total wall-clock time of the call, and Section~\ref{sec:results} reports these components.
 
 \paragraph{Instances and runs.} We used the first 30 Taillard instances~\cite{ref_taillard}, ten for each size with $n=20$ and $m\in\{5,10,20\}$. Every combination of metaheuristic, neighborhood and solver was run once on each instance, with the random seed 0 and the budget $t_{\max}=10\,000$~ms. The results for the shorter budgets $t_{\max}\in\{100,500,1000,2000,5000\}$~ms were read from the same run: at the start of the first iteration at which the elapsed time had reached a budget, we stored the best permutation found so far. The budget is checked only before an iteration, so this is exactly the result of a run with the shorter budget that makes the same random choices. TS used the tabu tenure $\tau=10$. SA used $T_{\text{init}}=1000$, $T_{\text{final}}=1$ and $\alpha=0.95$, so its temperature reaches $T_{\text{final}}$ after 135 iterations, and reheating with $r=1.5$ and $t_{\text{stag}}=500$~ms. The segments of Dynasearch and Motzkin were not limited in length. These values were set in advance and not tuned.
 
 \paragraph{Metric.} Each table entry is the mean relative percentage deviation $\mathrm{RPD}=100\%\cdot(C_{\max}-LB)/LB$ over the ten instances of one size, where $LB$ is the lower bound published for the instance by Taillard~\cite{ref_taillard}. The lower bound is below the best known makespan, so RPD overstates the distance to the best known solutions, but it is the same reference for all variants. Convergence is shown as $C_{\max}$ against wall-clock time.
 \end{revblock}
 
-\begin{table}
-\caption{\rev{Mean RPD~[\%] from the lower bound, $t_{\max}=100$~ms}}
-\label{tab:results_100}
-\centering\small\ifrevmarks\color{red}\fi
-\input{tables/results_tl100}
-\end{table}
+\begin{table*}
+\caption{\rev{Mean RPD~[\%] from the lower bound for TS by solver, neighborhood, budget $t_{\max}$ and number of machines ($n=20$)}}
+\label{tab:results_ts}
+\centering\scriptsize\ifrevmarks\color{red}\fi
+\input{tables/results_ts}
+\end{table*}
 
-
-\begin{table}
-\caption{\rev{Mean RPD~[\%] from the lower bound, $t_{\max}=500$~ms}}
-\label{tab:results_500}
-\centering\small\ifrevmarks\color{red}\fi
-\input{tables/results_tl500}
-\end{table}
-
-\begin{table}
-\caption{\rev{Mean RPD~[\%] from the lower bound, $t_{\max}=1000$~ms}}
-\label{tab:results_1000}
-\centering\small\ifrevmarks\color{red}\fi
-\input{tables/results_tl1000}
-\end{table}
-
-\begin{table}
-\caption{\rev{Mean RPD~[\%] from the lower bound, $t_{\max}=2000$~ms}}
-\label{tab:results_2000}
-\centering\small\ifrevmarks\color{red}\fi
-\input{tables/results_tl2000}
-\end{table}
-
-\begin{table}
-\caption{\rev{Mean RPD~[\%] from the lower bound, $t_{\max}=5000$~ms}}
-\label{tab:results_5000}
-\centering\small\ifrevmarks\color{red}\fi
-\input{tables/results_tl5000}
-\end{table}
-
-\begin{table}
-\caption{\rev{Mean RPD~[\%] from the lower bound, $t_{\max}=10\,000$~ms}}
-\label{tab:results_10000}
-\centering\small\ifrevmarks\color{red}\fi
-\input{tables/results_tl10000}
-\end{table}
+\begin{table*}
+\caption{\rev{Mean RPD~[\%] from the lower bound for SA by solver, neighborhood, budget $t_{\max}$ and number of machines ($n=20$)}}
+\label{tab:results_sa}
+\centering\scriptsize\ifrevmarks\color{red}\fi
+\input{tables/results_sa}
+\end{table*}
 
 
 \section{\rev{Results and Discussion}}\label{sec:results}
 \begin{revblock}
-Tables~\ref{tab:results_100}--\ref{tab:results_10000} give the mean RPD of every variant for the six budgets.
+Tables~\ref{tab:results_ts} and~\ref{tab:results_sa} give the mean RPD of every variant for the six budgets.
 
 \paragraph{Classical DP.} Dynasearch and Motzkin give the best schedules for every budget and every instance size, in both metaheuristics, and TS is better than SA for every neighborhood. One DP selection in these neighborhoods costs $O(mn^3)$ time, but one step improves the schedule much more than an adjacent swap. TS with the Fibonacci neighborhood gives the same result for every budget. The tabu list forbids only the repetition of the same set of swaps, and the search cycles among a few permutations reached by different sets.
 

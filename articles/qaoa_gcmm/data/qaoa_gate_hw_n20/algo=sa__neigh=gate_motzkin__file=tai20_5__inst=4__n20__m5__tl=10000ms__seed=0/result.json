@@ -1,0 +1,64 @@
+{
+  "config": {
+    "algorithm": "sa",
+    "neighborhood": "gate_motzkin",
+    "instance_file": "data/tai20_5.txt",
+    "instance_number": 4,
+    "seed": 0,
+    "time_limit_ms": 10000,
+    "tabu_tenure": null,
+    "diversification": "mushroom"
+  },
+  "cmax_best": 1407,
+  "time_to_best_ms": 22955,
+  "total_time_ms": 22955,
+  "cmax_history": [
+    1431,
+    1407
+  ],
+  "time_history_ms": [
+    0,
+    22955
+  ],
+  "best_permutation": [
+    3,
+    2,
+    1,
+    0,
+    5,
+    4,
+    6,
+    11,
+    8,
+    9,
+    10,
+    7,
+    14,
+    13,
+    12,
+    15,
+    17,
+    16,
+    18,
+    19
+  ],
+  "instance_jobs": 20,
+  "instance_machines": 5,
+  "upper_bound": 1236,
+  "lower_bound": 1198,
+  "qpu_stats": {
+    "calls": 0,
+    "qpu_success": 0,
+    "fallback_quota": 0,
+    "fallback_embedding": 0,
+    "fallback_other": 0,
+    "simulator_calls": 0
+  },
+  "iterations": 1,
+  "tl_exceeded": true,
+  "overrun_ms": 12955,
+  "avg_iter_ms": 22955.0,
+  "neigh_time_ms": 22955,
+  "gap_percent": 17.445742904841403,
+  "used_qpu_fallback": false
+}

@@ -1,0 +1,72 @@
+{
+  "config": {
+    "algorithm": "sa",
+    "neighborhood": "gate_fibonacci",
+    "instance_file": "data/tai20_10.txt",
+    "instance_number": 4,
+    "seed": 0,
+    "time_limit_ms": 1000,
+    "tabu_tenure": null,
+    "diversification": "mushroom"
+  },
+  "cmax_best": 1760,
+  "time_to_best_ms": 765,
+  "total_time_ms": 1266,
+  "cmax_history": [
+    1944,
+    1838,
+    1815,
+    1792,
+    1785,
+    1760
+  ],
+  "time_history_ms": [
+    0,
+    85,
+    263,
+    639,
+    723,
+    765
+  ],
+  "best_permutation": [
+    2,
+    0,
+    3,
+    4,
+    5,
+    1,
+    7,
+    6,
+    8,
+    9,
+    11,
+    10,
+    12,
+    16,
+    14,
+    15,
+    13,
+    18,
+    17,
+    19
+  ],
+  "instance_jobs": 20,
+  "instance_machines": 10,
+  "upper_bound": 1419,
+  "lower_bound": 1325,
+  "qpu_stats": {
+    "calls": 0,
+    "qpu_success": 0,
+    "fallback_quota": 0,
+    "fallback_embedding": 0,
+    "fallback_other": 0,
+    "simulator_calls": 0
+  },
+  "iterations": 12,
+  "tl_exceeded": true,
+  "overrun_ms": 266,
+  "avg_iter_ms": 105.5,
+  "neigh_time_ms": 1266,
+  "gap_percent": 32.83018867924528,
+  "used_qpu_fallback": false
+}

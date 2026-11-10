@@ -1,0 +1,137 @@
+% Response to the reviewers, GCMM 2026, Paper 59.
+% Layout as in the BPASTS letter: (1) both reviews in full, (2) introduction,
+% (3) point-by-point answers with Before/After text of the manuscript.
+% Compile: pdflatex response_to_reviewers.tex
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{url}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\setlist{itemsep=1pt,topsep=2pt}
+
+% one reviewer comment (italic), followed by \answer
+\newenvironment{rc}[1]{\par\medskip\noindent\textbf{#1}\par\nopagebreak\noindent\itshape\ignorespaces}{\par}
+\newcommand{\answer}[1]{\par\smallskip\noindent\textbf{Response.} #1\par}
+% one change in the manuscript: where, previous text, revised text
+\newcommand{\change}[3]{\par\smallskip\noindent\textbf{Change in the manuscript (#1).}\par
+  {\leftskip=1.5em\noindent\textbf{Before:} #2\par\noindent\textbf{After:} #3\par}}
+\newcommand{\todo}[1]{\textcolor{red}{[#1]}}
+
+\begin{document}
+
+\begin{center}
+{\large\bf Response to the reviewers' comments}\\[2mm]
+``Gate-Model Quantum Neighborhood Search for the Permutation Flow Shop Problem via Fixed-Angle QAOA''\\[1mm]
+GCMM 2026, Paper 59
+\end{center}
+
+% =====================================================================
+\section*{Introduction}
+
+We thank both reviewers for their careful reading and for the concrete suggestions, which made the paper clearer and easier to reproduce. Below we answer every comment point by point. Each answer says what we changed and where, and quotes the old and the new text of the manuscript. As the notification requires, we also upload a copy of the revised manuscript in which all new or rewritten text is highlighted in blue.
+
+The main changes are the following. The timing of the gate-model runs is now reported as what it is: one move per run, measured after the 10~s budget had passed (Tables~2 and~3, Fig.~3 removed). A new Section~3.4 explains how a QAOA sample becomes a scheduling move. The methodology now gives the shots, the transpiler and layout settings, the absence of error mitigation, the frozen angles, the training set and the software versions. The reference list is ordered by first citation, the two references under review are replaced by verifiable sources, and eight recent works (2022--2026) are added. The paper also gains a data and code availability statement, defined abbreviations, consistent units and redrawn circuit figures. The abstract is rewritten.
+
+The revised paper keeps the length limit of 15 pages. To make room for the additions we removed Fig.~3, as Reviewer~2 suggested showing the QAOA result apart from the budget curves and Table~3 already gives it, and shortened a few passages that repeated the abstract or the conclusions.
+
+% =====================================================================
+\section*{Answers to the Reviewer \#1 remarks}
+
+\begin{rc}{R1.a}
+Scientific Quality: The objective is clearly stated and the compilation-depth analysis across four coupling maps is original. However, the literature review is dominated by source solder 10 years, and the novelty rests heavily on the authors' own QUBO formulations.
+\end{rc}
+\answer{We updated the literature review (see also comment~7). Of the 28 references, 14 now date from 2021--2026. The new works cover QAOA for scheduling by other groups (Kurowski et al.\ 2023 on the job shop problem, the CINTI~2024 study of hybrid quantum approximate algorithms for the flow shop), a recent review of QAOA (Blekos et al.\ 2024), parameter setting for weighted problems (Sureshbabu et al.\ 2024), a hardware comparison of QAOA with quantum annealing (Pelofske et al.\ 2024), utility-scale circuits on heavy-hex processors (Kim et al.\ 2023) and job-shop scheduling on a D-Wave annealer (Carugno et al.\ 2022). The older references that remain are the sources of the problem, the benchmark and the methods we use (Taillard, Garey et al., NEH, simulated annealing, iterated local search, dynasearch, QAOA itself).
+
+On novelty: we reuse the QUBOs on purpose, so that the solver is the only thing that differs between the annealing and the gate-model runs. We now say this explicitly and name the contribution of the paper.}
+\change{Section~2, end of the second paragraph}{The present work adopts these QUBO encodings without change and studies their behavior on gate-model hardware.}{The present work adopts these QUBO encodings without change and studies their behavior on gate-model hardware. We take the QUBOs over unchanged on purpose, so that the solver is the only thing that differs between the annealing and the gate-model runs; the contribution of this paper lies in the gate-model pipeline, in the depth analysis across coupling maps, and in the measurements on three processors.}
+
+\begin{rc}{R1.b}
+Research Methodology: \ldots However, reproducibility is limited: the number of shots, qubit layout, error-mitigation use, the optimized angles, the training-set size (an unavailable reference [20]).
+\end{rc}
+\answer{All of these are now given in the paper itself, so the reader no longer depends on reference~[20]. Every circuit is sampled with 4096 shots at $p=1$. The qubit layout is chosen by the Qiskit transpiler at optimization level~1 for each job. No error mitigation, dynamical decoupling or twirling was used. The frozen angles are listed for each neighborhood, and the training set is described; we re-ran the calibration from the stored settings and obtained the same angles. While checking the calibration we also found that the text promised a local refinement after the grid search, which the $p=1$ calibration did not perform, and announced a training-free baseline with the Wurtz--Lykov angles that the results never reported. We corrected both.}
+\change{Section~3.3, calibration}{\ldots is optimized on a classical statevector simulation by an exhaustive two-dimensional grid search over that range followed by local refinement, by minimizing the expected cost \ldots\ averaged over a small training set of representative QUBO instances of that neighborhood.}{\ldots is optimized on a classical statevector simulation by an exhaustive grid of $25\times13$ points over that range, by minimizing the expected cost \ldots\ averaged over a training set of windowed QUBOs of that neighborhood. The set comes from three Taillard instances (tai20\_5 nos.~0 and~1, tai20\_10 no.~0), each taken at the identity permutation and cut into windows of six positions with step three, which gives 21 QUBOs for Adjacent and Fibonacci and 11 for Dynasearch and Motzkin. Two of the training instances are also among the ten test instances, and because every run starts from the identity, their first moves meet the training windows; at $p=1$ the optimal angles are nearly constant across instances, so we do not expect this to bias the results. The resulting angles $(\gamma^\star,\beta^\star)$ are $(19\pi/24,7\pi/24)$ for Adjacent, $(21\pi/24,5\pi/24)$ for Fibonacci, $(17\pi/24,\pi/12)$ for Dynasearch and $(17\pi/24,\pi/8)$ for Motzkin.}
+\change{Section~3.3, baseline}{As a training-free baseline we also report the instance-independent $p=1$ angles given by the fixed-angle conjectures of Wurtz and Lykov [21].}{\ldots a property this design relies on, and which the fixed-angle conjectures of Wurtz and Lykov [18] support for regular graphs.}
+\change{Section~3.7, Hardware and software (new text at the end)}{---}{Every circuit is sampled with 4096 shots at $p=1$. On \texttt{ibm\_fez} the circuits are transpiled with the Qiskit preset pass manager at optimization level~1, which chooses the qubit layout for each job, and executed through the Qiskit Runtime \texttt{SamplerV2} primitive with default options, that is, without error mitigation, dynamical decoupling or twirling. On the IQM devices the circuits are transpiled at optimization level~1 and executed without error mitigation. The software is Python~3.11, \texttt{qiskit}~2.5.1 and \texttt{qiskit-ibm-runtime}~0.48.0 for IBM, and \texttt{qiskit}~2.1.2 with \texttt{iqm-client}~35.0.3 for IQM.}
+
+\begin{rc}{R1.c}
+Results and Discussion: The compilation results are clear and the authors are mentioned about the limitations However, Table 2 effectively carries one value per row with differences smaller than the standard deviations. The authors is advised to examine the results presented in Table 2 and to double-check them.
+\end{rc}
+\answer{We checked every value of Table~2 against the raw output of all 80 runs, and they agree to the second decimal. A row carries one value because every run completed exactly one move, so all budget columns described the same computation. Following the suggestion of Reviewer~2, Table~2 now has a single column ``after one move'' for each metaheuristic, beside the PRD of the identity start and the time of the move.
+
+The standard deviation in Table~2 is the spread over the ten instances, which differ in difficulty, and not measurement noise, so it is not the right yardstick for comparing neighborhoods. We now compare the neighborhoods instance by instance: Dynasearch beats Adjacent on eight of the ten instances, Fibonacci and Motzkin on seven, while the three multi-swap neighborhoods cannot be separated from one another. The check also showed that the old sentence about ILS and SA differing ``by hundredths'' held only for the means; single instances differ by up to 5.8 points. We corrected it.}
+\change{Table~2}{Six budget columns (100--10000~ms) with identical values for each neighborhood and metaheuristic.}{One value per neighborhood and metaheuristic, the PRD after one move ($\pm$ standard deviation), beside the PRD of the identity start ($27.90\pm9.8$) and the median wall-clock time of the move (16.4--33.2~s).}
+\change{Section~4.2}{For the other three neighborhoods the ILS and SA values differ by hundredths of a percentage point, which is sampling noise on the device rather than algorithmic behavior.}{For the other three neighborhoods the ILS and SA means differ by less than half a percentage point, while single instances differ by up to 5.8 points. With one move from the same start the two loops perform the same computation, so these differences come from sampling on the device. The standard deviation in Table~2 measures how much the instances differ, not measurement noise; compared instance by instance, Dynasearch beats Adjacent on eight of the ten instances, Fibonacci and Motzkin on seven, while the three multi-swap neighborhoods cannot be separated from one another at this sample size.}
+
+\begin{rc}{R1.1}
+Ordering of references. The list is alphabetical, but the instructions require the order of first appearance. In the text, the references appear in the following order: [18, 20] and [5], followed by [16], [7], [13], and so on.
+\end{rc}
+\answer{Corrected. The references are now numbered in the order of first citation, and ranges are printed as [4--6].}
+
+\begin{rc}{R1.2}
+Abbreviations (NISQ, ILS, SA and so on) are not defined
+\end{rc}
+\answer{Corrected. Every abbreviation is spelled out at first use, in the abstract and again in the main text: NISQ (noisy intermediate-scale quantum), ILS (iterated local search), SA (simulated annealing), QPU (quantum processing unit), CZ (controlled-Z) and MOVE (the qubit-resonator move operation). PFSP, QUBO, QAOA, PRD and LB were already defined.}
+
+\begin{rc}{R1.3}
+The abstract sentence (``The paper sets out\ldots'') is uninformative. Please provide a more detailed version.
+\end{rc}
+\answer{We rewrote the abstract along the requirements of the conference. It now states the question, the approach, the processors used and the main results with numbers, and the uninformative sentence is gone. It has 247 words.}
+\change{Abstract, last sentence}{The paper sets out the evaluation methodology, reports this execution, and states the open challenges that remain.}{On ten Taillard $20\times5$ instances one QAOA move lowers the mean relative deviation from the lower bound from 27.9\% to between 22.1\% and 25.0\%. Short circuits return the same makespan on a 156-qubit and a 16-qubit device, instance by instance. Queueing stretches one move to 10--288~s, so no run reached a second move within the 10~s budget, and all quantum variants stay far behind classical neighborhood evaluation. The results give a hardware-independent rule for choosing neighborhoods and a measured cost per move.}
+
+\begin{rc}{R1.4}
+There are no statements regarding the availability of code or data.
+\end{rc}
+\answer{We added a data and code availability statement before the references.}
+\change{new paragraph before the references}{---}{\textbf{Data and code availability.} The code of the framework, the calibrated angles and the measured results are available at \url{https://github.com/RemigiuszWoj/PhD}. The raw output of the four Crystal~20 runs in Table~4 was lost, and the values reported there are taken from the laboratory notes.}
+
+\begin{rc}{R1.5}
+The text in figures 1 and 2 is illegible; the font size needs to be increased.
+\end{rc}
+\answer{Corrected. Figures~1 and~2 are redrawn as vector graphics typeset in the font of the paper. All gate labels now have the size of the figure captions. Gates that act on disjoint qubits share a column, which makes the circuits narrower, so the figures no longer have to be scaled down.}
+
+\begin{rc}{R1.6}
+Units of measurement. The tables use the unit ``ms'', while the text mentions ``ten seconds'' and ``460 seconds.'' It would be appropriate to standardize these as ``10 s'' and ``460 s.'' Additionally, the notations ``10,000 ms'' (Table 3) and ``10000'' (Table 2) should be made consistent.
+\end{rc}
+\answer{Corrected. All times are now written in seconds with the symbol ``s'' (10~s, 460~s, 10--288~s, 3--7~s, 30~s), in the text and in the tables. Table~2 no longer has budget columns, and the caption of Table~3 states $t_{\max}=10$~s.}
+
+\begin{rc}{R1.7}
+a literature section: Only 6 papers are less 5 years old. It would be advisable to increase the number of papers in this section that are less than 5 years old. Two ``under review'' references ([18], [20]) cannot be verified. Perhaps these works should be replaced with other, more appropriate ones. For the paper [19], add the DOI. In papers [7], [11], [13], and [22], the DOIs are broken by line breaks; please check that the links work.
+\end{rc}
+\answer{We added eight works from 2022--2026, listed under R1.a, so 14 of the 28 references are now less than five years old. The reference under review in the Bulletin of the Polish Academy of Sciences ([18]) is removed. The other one ([20]) is now cited as its public preprint with a DOI (SSRN 7411334). The earlier Fibonacci-neighborhood work on a D-Wave annealer is now cited as its published version (Sci.\ Rep.\ 2026). The SOCO 2026 paper ([19]) now carries its DOI, which was hidden only in the blind version. Every DOI is now printed on one line, so a copied link stays valid. We resolved all 28 DOIs through doi.org.}
+
+% =====================================================================
+\section*{Answers to the Reviewer \#2 remarks}
+
+\begin{rc}{R2.0}
+The paper presents a promising application of fixed-angle QAOA to production scheduling. The experiments on real quantum processors are a strength. I recommend acceptance after the following revisions.
+\end{rc}
+\answer{We thank the reviewer and have made all the requested changes.}
+
+\begin{rc}{R2.1}
+Clarify the timing comparison in Tables 2--3 and Fig. 3. Each QAOA run on the IBM processor completed one move and exceeded the nominal 10-second limit. In Table 2, replace the six repeated QAOA values with one column labeled ``PRD after one move.'' In Table 3, mark the QAOA results as obtained after the deadline and state the time budget used for the classical and annealing results. In Fig. 3, show the QAOA result separately from the time-budget curves.
+\end{rc}
+\answer{We agree and made all three changes. Table~2 now reports one value per neighborhood and metaheuristic, labeled ``after one move'', next to the PRD of the identity start and the median wall-clock time of the move. In the comparison table (Table~3) the gate columns are marked with a dagger, and the caption states that the classical and annealing columns are taken at $t_{\max}=10$~s while the gate columns report one move, which took 10--288~s. Fig.~3 drew the gate result as a curve over budgets it never met. Once the result is shown apart from the curves, it is the same single number as in Table~3, so we removed the figure. The text no longer speaks of extrapolated budget columns.}
+\change{Section~4.2}{Every budget column therefore describes the same computation and carries the same value. We report them as such, marked as extrapolated from the measured column by that argument rather than measured independently.}{A run performs at least one move, so no shorter budget could admit a second move either. Table~2 therefore reports a single value per neighborhood, the PRD after one move, beside the PRD of the identity start and the median wall-clock time of the move.}
+\change{Caption of Table~3}{PRD [\%] on Taillard $20\times5$ at $t_{\max}=10\,000$\,ms, ten instances.}{PRD [\%] on Taillard $20\times5$, ten instances, classical and annealing columns at $t_{\max}=10$~s; gate QAOA$^{\dagger}$ after one move, which took 10--288~s.}
+\change{Section~4.3}{\ldots at the same budget, and Fig.~3 traces all four back-ends across the budget range.}{\ldots on the same instances; the classical and annealing columns are taken at the 10~s budget, and the gate columns after one move, which exceeded it.}
+
+\begin{rc}{R2.2}
+Clarify how a QAOA sample becomes a scheduling move. Sections 3.2 and 4.1 describe different selection rules. Please state whether the reported results use the most frequent bitstring or the sampled bitstring with the lowest QUBO energy. Explain how the selected swaps are applied to the current schedule and how the actual makespan is recomputed after the combined move. For overlapping windows, describe how their solutions are merged and how duplicate or conflicting swaps are resolved.
+\end{rc}
+\answer{The reviewer is right: Section~3.2 described an older readout rule. All reported results use the sampled bitstring with the lowest energy of the original QUBO; the code was changed to this rule before any of the hardware runs. We corrected Section~3.2 and added Section~3.4, which describes the whole path from a sample to a move: the readout, the merging of overlapping windows, the greedy repair that resolves conflicting and duplicate swaps, the application of the swaps and the recomputation of the makespan. The new section also states that the code falls back to the best single improving swap when no swap survives the repair, and that no reported move came from this fallback.}
+\change{Section~3.2}{Sampling the circuit and taking the most frequent bitstring yields the selected swap set, that is, the chosen neighborhood move.}{Sampling the circuit gives a set of bitstrings, each a candidate swap set; Section~3.4 explains how one of them becomes the move.}
+\change{new Section~3.4 ``From a sample to a move'' (replaces the readout paragraph of Section~4.1)}{A move reads out the circuit by sampling it and returning the sampled bitstring of lowest \emph{original}-QUBO energy. This energy-based readout is essential: \ldots}{Each circuit is sampled with 4096 shots, and we keep the sampled bitstring of lowest energy under the original QUBO~(1). The single most frequent bitstring of a $p=1$ state is usually the all-zeros assignment or a high-energy state with many ones, so it is a poor readout. The bits equal to one name the selected swap candidates. For the dense neighborhoods the permutation is cut into windows of six positions that overlap by half, all windows of a move are sent as one job, and the swaps selected in all windows are joined into one list. A greedy pass from left to right then restores feasibility: a Dynasearch swap $(i,j)$ is kept if it does not overlap the last kept swap, a Motzkin swap is kept if it neither crosses a kept swap nor shares an endpoint with it, and Fibonacci keeps adjacent swaps that do not share a position. The same pass drops a swap that two overlapping windows both selected. For Adjacent each window proposes at most one swap and the move takes the proposal with the smallest $\delta_k$, which is the minimizer of the global one-hot QUBO. The kept swaps touch disjoint positions, so they are applied at once, and the makespan of the new permutation is then computed from scratch in $O(nm)$ time rather than from the sum of the $\delta_k$. If no swap survives the repair, the method falls back to the best single improving swap; no move reported in Section~4 came from this fallback, since every reported Fibonacci, Dynasearch and Motzkin move changes four or more positions.}
+
+% =====================================================================
+\section*{Requirements of the Programme Committee}
+
+We also checked the revised paper against the manuscript requirements in the notification. The abstract has 247 words. The section structure follows the recommended one. There are 28 references in order of first citation, with four self-citations (14\%), all in English and all with a DOI. Software names and versions are given in Section~3.7, and data and code availability in a separate statement. Both authors and their affiliation are listed, and the corresponding author is marked. The use of generative AI is disclosed in a separate paragraph.
+
+\end{document}

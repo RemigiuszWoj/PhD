@@ -137,30 +137,32 @@ Simulated annealing (SA)~\cite{kirkpatrick1983optimization,OsmanPotts1989} accep
 \end{algorithmic}
 \end{algorithm}
 
-\begin{figure*}[t]
+\begin{figure}[t]
 \centering
-\begin{tikzpicture}[font=\sffamily\small,
-  box/.style={draw,rounded corners=2pt,align=center,minimum height=8mm,inner sep=4pt},
-  arr/.style={-{Latex[length=2mm]},thick}]
-\node[box,fill=blue!8] (meta) {TS / SA\\ acceptance};
-\node[box,fill=blue!8,right=5mm of meta] (eval) {Head+Tail,\\ gains $\delta_k$};
-\node[box,fill=blue!8,right=5mm of eval] (qubo) {build QUBO\\ or run DP};
-\node[box,fill=orange!20,right=5mm of qubo] (emb) {minor\\ embedding};
-\node[box,fill=orange!20,right=10mm of emb] (net) {network,\\ Leap queue};
-\node[box,fill=violet!15,right=5mm of net] (qpu) {programming,\\ sampling};
-\node[box,fill=blue!8,below=10mm of qubo] (dec) {decode, repair,\\ apply, $C_{\max}$};
-\draw[arr] (meta)--(eval); \draw[arr] (eval)--(qubo); \draw[arr] (qubo)--(emb);
+\begin{tikzpicture}[font=\sffamily\scriptsize,
+  box/.style={draw,rounded corners=2pt,align=center,minimum height=7mm,minimum width=19mm,inner sep=2pt},
+  arr/.style={-{Latex[length=1.6mm]},thick}]
+\node[box,fill=blue!8] (meta) at (0,0) {TS / SA\\ acceptance};
+\node[box,fill=blue!8] (eval) at (2.55,0) {Head+Tail,\\ gains $\delta_k$};
+\node[box,fill=blue!8] (qubo) at (5.1,0) {build QUBO\\ or run DP};
+\node[box,fill=orange!20] (emb) at (0,-1.5) {minor embedding\\ on local CPU};
+\node[box,fill=orange!20] (net) at (2.55,-1.5) {network,\\ Leap queue};
+\node[box,fill=violet!15] (qpu) at (5.1,-1.5) {programming,\\ sampling};
+\node[box,fill=blue!8] (dec) at (5.1,-2.95) {decode, repair,\\ apply, $C_{\max}$};
+\draw[arr] (meta)--(eval); \draw[arr] (eval)--(qubo);
+\draw[arr] (qubo.south west)--(emb.north east);
 \draw[arr] (emb)--(net); \draw[arr] (net)--(qpu);
-\draw[arr] (qpu.south) |- (dec.east);
-\draw[arr] (qubo)--node[left,font=\scriptsize,align=right]{DP, Gurobi,\\ Simulator}(dec);
-\draw[arr] (dec.west) -| (meta.south);
-\node[draw,dashed,gray,fit=(meta)(eval)(qubo)(emb)(dec),inner sep=4pt,label={[gray]above:local CPU}] {};
-\node[draw,dashed,gray,fit=(net)(qpu),inner sep=4pt,label={[gray]above:D-Wave Leap{,} Advantage\_system6 (remote)}] {};
-\draw[decorate,decoration={brace,amplitude=5pt,mirror},thick,orange!70!black]
-  ([yshift=-7mm]emb.south west) -- node[below=6pt,font=\scriptsize,align=center]{one QPU call}([yshift=-7mm]qpu.south east);
+\draw[arr] (qpu)--(dec);
+\draw[arr] (qubo.east)--++(3mm,0)|-node[pos=0.25,right,font=\sffamily\tiny,align=left]{DP,\\ Gurobi,\\ Simulator}(dec.east);
+\draw[arr] (dec.west)-|([xshift=-4mm]emb.west)|-(meta.west);
+\node[draw,dashed,gray,fit=(net)(qpu),inner sep=2pt] (rem) {};
+\node[gray,font=\sffamily\tiny,anchor=north west] at (rem.south west) {D-Wave Leap, Advantage\_system6 (remote)};
+\node[draw,orange!70!black,rounded corners=3pt,fit=(emb)(net)(qpu)(rem),inner sep=3pt] (call) {};
+\node[orange!70!black,font=\sffamily\tiny,anchor=south west] at (call.north west) {one QPU call};
+\node[gray,font=\sffamily\tiny,anchor=south west] at ([yshift=1pt]meta.north west) {local CPU};
 \end{tikzpicture}
 \caption{\rev{Data flow in one iteration of the hybrid algorithm. The minor embedding is computed on the local CPU but belongs to the cost of one QPU call; with the dynamic program, Gurobi or the simulator the iteration stays on the local CPU.}}\label{fig:flow}
-\end{figure*}
+\end{figure}
 
 \section{\rev{Neighborhood Structures}}\label{sec:neigh}
 \begin{revblock}

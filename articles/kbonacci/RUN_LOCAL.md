@@ -2,7 +2,7 @@
 
 Gałąź: `kbonacci-icaps`. Przygotowane i przetestowane w chmurze 01.11.2026, w kilku iteracjach przeglądu:
 162 testy pod Pythonem 3.11 (czyste środowisko z `requirements.txt`) i 3.13, testy dymne wszystkich skryptów.
-Plan i uzasadnienia: `articles/kbonacci/PLAN.md`, sekcje A.0 i A.
+Plan i uzasadnienia: `articles/kbonacci/PLAN_v2_archiwum.md`, sekcje A.0 i A.
 
 ## Zasady (nie zmieniać bez decyzji użytkownika)
 

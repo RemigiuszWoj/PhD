@@ -1,7 +1,8 @@
 % =====================================================================
-% SZKIC v1 (01.11.2026) -- wersja polska (robocza, do dyskusji z promotorem)
-% Odpowiada main.tex (EN). Protokół identyczny z poprzednimi pracami;
-% nowa jest tylko klasa sąsiedztw. Tabela 2 = PILOT, Tabela 3 = szkielet.
+% SZKIC v2 (11.11.2026) -- wersja polska (robocza, do dyskusji z promotorem)
+% Odpowiada main.tex (EN, v2); lista zmian v1 -> v2 w PLAN.md, punkt 9.
+% Protokół identyczny z poprzednimi pracami; nowa jest tylko klasa sąsiedztw.
+% Tabela 2 = PILOT, Tabela 3 = szkielet.
 % =====================================================================
 \documentclass[10pt,twocolumn]{article}
 \usepackage[margin=0.75in]{geometry}
@@ -9,13 +10,18 @@
 \usepackage[utf8]{inputenc}
 \usepackage[polish]{babel}
 \usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{xcolor}
 \usepackage[hidelinks]{hyperref}
 
-\newtheorem{proposition}{Twierdzenie}
+\newtheorem{proposition}{Stwierdzenie}
 \newtheorem{definition}{Definicja}
+\newtheorem{lemma}{Lemat}
+\newtheorem{theorem}{Twierdzenie}
+\theoremstyle{definition}
+\newtheorem{example}{Przykład}
 \newcommand{\todo}[1]{\textcolor{red}{[DO ZROBIENIA: #1]}}
 \newcommand{\N}{\mathcal{N}}
 
@@ -71,23 +77,28 @@ pracach~\cite{fibonacci_own,motzkin_own,windowed_own}. Jedynym czynnikiem
 eksperymentalnym jest sąsiedztwo, więc każdą nową liczbę można zestawić
 z wynikami już opublikowanymi.
 
-\paragraph{Wkład.}
-\begin{enumerate}
-  \item Sąsiedztwo $k$-bonacci $\N_k$ z łańcuchem zawierań
-        $\N_{\mathrm{adj}}\subset\N_2=\N_{\mathrm{fib}}\subset\N_3\subset
-        \dots\subset\N_n=\N_{\mathrm{dyn}}$. Podajemy dokładną liczność
-        i pokazujemy, że $k=\log_2 n+O(1)$ pokrywa stały ułamek Dynasearch.
-  \item Pozycyjne DP, które w czasie $O(nk)$ (po wyznaczeniu delt w czasie
-        $O(mnk^2)$) wybiera ruch o najlepszej przewidywanej zmianie makespanu,
-        czyli najmniejszej sumie delt; zgodne z filtrem blokowym. Dla $k=n$ jest to
-        nierekurencyjny Dynasearch.
-  \item Studium parametru $k$ na pełnym benchmarku Taillarda
-        ($n=20$--$500$) w ramach ILS i SA, przy sześciu budżetach czasu.
-        Obejmuje jakość, liczbę iteracji, strukturę ruchów i błąd
-        addytywności.
-  \item \todo{opcjonalnie: QUBO $k$-bonacciego na wyżarzaczu kwantowym
-        i komputerze bramkowym, protokół jak w~\cite{windowed_own}}
-\end{enumerate}
+Praca wnosi trzy rzeczy. Pierwszą jest sąsiedztwo $k$-bonacci $\N_k$
+z łańcuchem zawierań
+$\N_{\mathrm{adj}}\subset\N_2=\N_{\mathrm{fib}}\subset\N_3\subset
+\dots\subset\N_n=\N_{\mathrm{dyn}}$. Podajemy dokładną liczność $|\N_k|$
+i tempo wzrostu w postaci zamkniętej oraz pokazujemy, że udział ruchów
+Dynasearch zawartych w $\N_k$ jest bliski $\exp(-n/2^{k+1})$, więc
+$k=\log_2 n+O(1)$ pokrywa stały ułamek Dynasearch. Drugą jest ocena
+rodziny. Pozycyjne DP wybiera ruch o najlepszej przewidywanej zmianie
+makespanu w czasie $O(nk)$, po wyznaczeniu delt w czasie $O(mnk^2)$, a dla
+$k=n$ jest nierekurencyjnym Dynasearch. Dowodzimy, że filtr oparty na
+jednej ścieżce krytycznej nie gubi żadnej zamiany poprawiającej
+i ogranicza liczbę kandydatów przez $(m-1)(k-1)(k+2)/2$, niezależnie od
+$n$. Opisujemy też dokładnie, co optymalizuje DP: zmiana makespanu po
+ruchu złożonym jest maksimum po ścieżkach kratowych, DP zastępuje je sumą
+maksimów, a my podajemy warunki, przy których obie wielkości są równe,
+oraz warunki, przy których suma jest optymistyczna. Trzecią rzeczą jest
+studium parametru $k$ na pełnym benchmarku Taillarda ($n=20$--$500$) przy
+sześciu budżetach czasu. Obejmuje jakość rozwiązań, liczbę iteracji
+w budżecie, odległości wybieranych zamian i zmierzony błąd addytywności
+w funkcji $k$.
+\todo{opcjonalnie czwarty wkład: QUBO $k$-bonacciego na wyżarzaczu
+kwantowym i komputerze bramkowym, protokół jak w~\cite{windowed_own}}
 
 \section{Prace pokrewne}
 Dynasearch wprowadzono dla problemu jednomaszynowego~\cite{congram2002}.
@@ -96,14 +107,33 @@ a Grosso i in.~\cite{grosso2004} dodali wstawienia. W tym problemie zmiany
 kosztu niezależnych zamian się sumują, a w PFSP nie
 (rozdz.~\ref{sec:addytywnosc}). Ograniczanie zasięgu ruchu to znane
 narzędzie w problemach trasowania: Or-opt i sąsiedztwa
-granularne~\cite{toth2003}. \todo{sprawdzić, czy Sci Rep 2026 i IFAC 2025
-nie zawierają już tej hierarchii}
+granularne~\cite{toth2003}. Balzereit i in.~\cite{balzereit2024} badają
+przeszukiwanie lokalne z ograniczonym promieniem dla szeregowania na
+jednej maszynie z rodzinami przezbrojeń i analizują jego złożoność
+parametryzowaną promieniem. My badamy ten sam rodzaj kompromisu między
+promieniem a czasem dla sąsiedztwa złożonego w problemie przepływowym.
+\todo{sprawdzić, czy Sci Rep 2026 i IFAC 2025 nie zawierają już tej
+hierarchii}
+\todo{sąsiedztwa zamian o ograniczonej odległości dla jednomaszynowego
+problemu ważonych spóźnień na wyżarzaczu kwantowym bada równolegle grupa
+promotora (praca nieopublikowana); uzgodnić cytowanie i podział przed
+zgłoszeniem}
 
 \section{Problem i notacja}
 Mamy $n$ zadań wykonywanych na maszynach $1,\dots,m$ w tej samej
 kolejności $\pi$. Czasy zakończenia spełniają
 $C_{r,t}=\max(C_{r-1,t},C_{r,t-1})+p_{r,\pi(t)}$. Macierze Head/Tail
-pozwalają ocenić modyfikację odcinka $[i,j]$ w czasie $O(m(j-i+1))$.
+pozwalają ocenić modyfikację odcinka $[i,j]$ w czasie $O(m(j-i+1))$:
+$C_{\max}=\max_r\bigl(H'_{r,j}+T_{r,j+1}\bigr)$.
+
+Równoważnie $C_{\max}$ jest najdłuższą ścieżką w kracie operacji
+$m\times n$. \emph{Ścieżka} $P$ to ciąg komórek od $(1,1)$ do $(m,n)$,
+w którym każdy krok prowadzi o jedną komórkę w prawo albo w dół. Jej
+długość przy permutacji $\pi$ to
+$\ell_\pi(P)=\sum_{(r,t)\in P}p_{r,\pi(t)}$, a
+$C_{\max}(\pi)=\max_P\ell_\pi(P)$. Ścieżkę o największej długości
+nazywamy \emph{krytyczną}. Zbiór ścieżek nie zależy od $\pi$, zależą od
+niej tylko długości.
 
 \section{Sąsiedztwo $k$-bonacci}
 \begin{definition}
@@ -112,21 +142,116 @@ zamienia $\pi(i)$ z $\pi(j)$, a zadania $\pi(i+1),\dots,\pi(j-1)$ zostają
 na swoich miejscach. \emph{Ruch złożony} to zbiór ruchów elementarnych
 o parami rozłącznych przedziałach $[i,j]$.
 \end{definition}
-Przypadki szczególne: dla $k=2$ dopuszczalna jest tylko odległość $1$
-(Fibonacci), dla $k=3$ odległości $1$ i $2$ (tribonacci), a dla $k=n$
-dowolna odległość (Dynasearch).
+Dla $k=2$ zamieniane są tylko zadania sąsiednie, co daje sąsiedztwo
+Fibonacciego. Dla $k=3$ zamiana może też przeskoczyć jedno zadanie
+(tribonacci), a dla $k=n$ można zamienić dowolne dwa zadania, co daje
+Dynasearch.
 
-\begin{proposition}
-$|\N_k|=a_n$, gdzie $a_0=1$ oraz $a_p=\sum_{L=1}^{\min(k,p)}a_{p-L}$.
-Stąd $|\N_2|=F_{n+1}$, $|\N_n|=2^{n-1}$ i $|\N_k|=\Theta(\lambda_k^n)$,
-przy czym $2-\lambda_k=\lambda_k^{-k}$, czyli $\lambda_k=2-\Theta(2^{-k})$.
-\end{proposition}
-\begin{proof}[Szkic]
-Ruch złożony to pokrycie pozycji kafelkami długości $1$ (pozycja bez
-zmian) lub $L\in\{2,\dots,k\}$ (zamiana końców kafelka). Kafelek
-zaczynający się w $i$ to najmniejszy przedział od $i$, który ruch
-przeprowadza na siebie, więc różne pokrycia dają różne permutacje.
+\paragraph{Ruchy jako ustawienia wież.} Ruch złożony jest permutacją
+pozycji $\sigma$, więc można go narysować jako macierz permutacji:
+$n$ nieatakujących się wież na szachownicy $n\times n$, z wieżą w komórce
+$(t,\sigma(t))$. Każdy ruch elementarny jest transpozycją, a transpozycje
+jednego ruchu złożonego mają rozłączne nośniki, więc $\sigma$ jest
+inwolucją, a jej szachownica jest symetryczna względem głównej
+przekątnej. Dla $L\geq 2$ niech $S_L$ oznacza macierz jednostkową
+$L\times L$ z dwiema narożnymi jedynkami przeniesionymi do $(1,L)$
+i $(L,1)$, a $S_1=[1]$.
+
+\begin{lemma}\label{lem:bloki}
+$\sigma\in\N_k$ wtedy i tylko wtedy, gdy jej macierz permutacji jest
+blokowo-diagonalna, $P_\sigma=\mathrm{diag}(S_{L_1},\dots,S_{L_r})$, gdzie
+$L_1+\dots+L_r=n$ i każde $L_q\leq k$. Rozmiary bloków są wyznaczone
+przez $\sigma$ jednoznacznie.
+\end{lemma}
+\begin{proof}
+Zamiana $s(i,j)$ działa tylko na pozycjach $i..j$, więc jest blokiem
+$S_{j-i+1}$ położonym na przekątnej w wierszach $i..j$. Rozłączne
+przedziały dają rozłączne bloki, a pozycje nietknięte to bloki $S_1$.
+Odwrotnie, każdy blok $S_L$ dla $2\leq L\leq k$ jest jedną zamianą
+o odległości $L-1\leq k-1$. Bloku $S_L$ dla $L\geq 2$ nie da się
+podzielić, bo jego narożne wieże łączą wiersz $1$ z kolumną $L$, więc
+rozkład jest jednoznaczny.
 \end{proof}
+
+Rysunek~\ref{fig:plansze} pokazuje cztery przypadki. Zwiększanie $k$
+poszerza pasmo $|t-\sigma(t)|\leq k-1$, które mogą zajmować wieże, a dla
+$k=n$ pasmo pokrywa całą szachownicę. Struktura blokowa jest drugim
+ograniczeniem i samo pasmo jej nie wymusza: $3$-cykl $\sigma=(2,3,1)$
+mieści się w paśmie dla $k=3$, ale nie jest inwolucją. Sąsiedztwo
+Motzkina~\cite{motzkin_own} osłabia strukturę blokową inaczej: dopuszcza
+zamianę wewnątrz przedziału innej zamiany, o ile żadne dwa przedziały się
+nie krzyżują.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/fig_boards.pdf}
+\caption{Po jednym ruchu złożonym każdego sąsiedztwa dla $n=8$ jako
+ustawienie wież. Zacieniowane komórki tworzą pasmo
+$|t-\sigma(t)|\leq k-1$, a grube kwadraty oznaczają bloki
+z lematu~\ref{lem:bloki}.}
+\label{fig:plansze}
+\end{figure*}
+
+\paragraph{Liczność.} Lemat~\ref{lem:bloki} zamienia ruch złożony w ciąg
+rozmiarów bloków, czyli w pokrycie pozycji $1..n$ kafelkami długości od
+$1$ do $k$ (rys.~\ref{fig:kafelki}). Ustalenie długości $L$ pierwszego
+kafelka zostawia dowolny ruch na pozostałych $n-L$ pozycjach, co daje
+rekurencję $k$-bonacciego.
+
+\begin{proposition}\label{prop:licznosc}
+$|\N_k|=a_n$, gdzie $a_0=1$ oraz $a_p=\sum_{L=1}^{\min(k,p)}a_{p-L}$.
+Funkcja tworząca to $\sum_{p\geq 0}a_px^p=1/(1-x-x^2-\dots-x^k)$.
+Stąd $|\N_2|=F_{n+1}$, $|\N_n|=2^{n-1}$ i $|\N_k|=\Theta(\lambda_k^n)$,
+gdzie $\lambda_k$ jest największym pierwiastkiem rzeczywistym równania
+$x^k=x^{k-1}+\dots+x+1$. Ponadto $2-\lambda_k=\lambda_k^{-k}$ oraz
+\begin{equation}\label{eq:lambda}
+2-2^{1-k}\;\leq\;\lambda_k\;<\;2-2^{-k}.
+\end{equation}
+\end{proposition}
+\begin{proof}
+Rekurencja i funkcja tworząca wynikają z rozkładu według pierwszego
+kafelka, a różne pokrycia dają różne permutacje na mocy
+lematu~\ref{lem:bloki}. Mnożąc $x^k=(x^k-1)/(x-1)$ przez $x-1$,
+dostajemy $x^{k+1}-2x^k+1=0$, czyli $f(x):=x^k(2-x)=1$. Funkcja $f$
+rośnie na $[1,2k/(k+1)]$ od $f(1)=1$, a potem maleje do $f(2)=0$, więc
+$\lambda_k$ jest jej jedynym pierwiastkiem w $(1,2)$ i leży na gałęzi
+malejącej. Ponieważ $\lambda_k<2$, mamy
+$2-\lambda_k=\lambda_k^{-k}>2^{-k}$, co daje ograniczenie górne.
+Punkt $x_0=2-2^{1-k}$ leży na gałęzi malejącej, bo $2^k\geq k+1$, oraz
+$f(x_0)=2(1-2^{-k})^k\geq 2(1-k2^{-k})\geq 1=f(\lambda_k)$, zatem
+$x_0\leq\lambda_k$.
+\end{proof}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_tiling.pdf}
+\caption{(a) Ruch dla $k=3$ z rys.~\ref{fig:plansze} jako pokrycie
+kafelkami; strzałki łączą zamieniane zadania. (b) Pierwszy kafelek ma
+długość $L\in\{1,\dots,k\}$ i zostawia ruch na $n-L$ pozycjach.}
+\label{fig:kafelki}
+\end{figure}
+
+\paragraph{Hierarchia.} Ruch z $\N_k$ jest też ruchem z $\N_{k+1}$,
+a zawieranie jest ostre dla $k<n$. Razem z sąsiedztwami z wcześniejszych
+prac daje to łańcuch
+\begin{equation}\label{eq:lancuch}
+\N_{\mathrm{adj}}\subset\N_2=\N_{\mathrm{fib}}\subset\N_3\subset\dots
+\subset\N_n=\N_{\mathrm{dyn}}\subset\N_{\mathrm{mot}}\subset\mathcal I_n,
+\end{equation}
+gdzie $\mathcal I_n$ to zbiór wszystkich inwolucji
+(rys.~\ref{fig:lancuch}). Pierwsza część łańcucha poszerza pasmo, krok do
+Motzkina dopuszcza zagnieżdżone bloki, a ostatni krok dopuszcza zamiany
+krzyżujące się.
+\todo{sprawdzić, czy \cite{bozejko2026sr} albo praca IFAC 2025 podają już
+ten łańcuch; Fibonacci i Motzkin to wspólna praca z promotorem}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.8\textwidth]{figures/fig_chain.pdf}
+\caption{Łańcuch zawierań sąsiedztw zamian z licznościami dla $n=10$.
+Część zacieniowana to rodzina $k$-bonacci.}
+\label{fig:lancuch}
+\end{figure*}
 
 \begin{table}[t]
 \centering
@@ -145,25 +270,195 @@ udział, $n=500$ & $10^{-46}$ & $10^{-18}$ & $10^{-8}$ & 0,02 & 0,38 & 1 \\
 \end{tabular}
 \end{table}
 
-Udział $|\N_k|/|\N_n|$ to prawdopodobieństwo, że najdłuższa część losowej
-kompozycji $n$ nie przekracza $k$. Zgodnie z prawem najdłuższej serii jest
-ono skupione wokół $k=\log_2 n$. Dla $k=\lfloor\log_2 n\rfloor+2$ udział
-wynosi 0,79--0,89 przy $n=20$--$500$.
+\paragraph{Jaką część Dynasearch pokrywa $\N_k$?} Udział
+$|\N_k|/|\N_n|$ to prawdopodobieństwo, że najdłuższa część losowej
+kompozycji $n$ nie przekracza $k$, czyli że w $n-1$ rzutach symetryczną
+monetą nie ma serii $k$ kolejnych odstępów bez cięcia. Najdłuższa seria
+w $n$ rzutach ma długość około $\log_2 n$~\cite{schilling1990}, więc
+prawdopodobieństwo to skacze od wartości bliskich $0$ do bliskich $1$
+w okolicy $k=\log_2 n$ (rys.~\ref{fig:udzial}).
 
-\paragraph{Ocena i DP.} Wszystkie delty kosztują $O(mnk^2)$, a w przypadku
-Dynasearch $O(mn^3)$. Kandydatów filtrujemy tym samym testem granic bloków,
-którego użyto we wcześniejszych pracach~\cite{windowed_own}.
-\todo{decyzja o wariancie dokładnym (plan, \S14)} Pozycyjne DP ma postać
-$B[p]=\min\bigl(B[p-1],\ \min_{d} B[p-d-1]+\delta_{p-d,p}\bigr)$ i złożoność
-$O(nk)$. Gdy żaden ruch nie poprawia przewidywanego $C_{\max}$, wykonujemy
-najlepszą pojedynczą zamianę, tak jak w Dynasearch i Motzkinie.
+\begin{proposition}\label{prop:udzial}
+Dla ustalonego $k$ zachodzi $a_n=c_k\lambda_k^n\,(1+o(1))$, gdzie
+$c_k=(\lambda_k-1)/\bigl(2-(k+1)(2-\lambda_k)\bigr)$, a więc
+\begin{equation}\label{eq:udzial}
+\frac{|\N_k|}{|\N_n|}=2c_k\Bigl(\frac{\lambda_k}{2}\Bigr)^{n}(1+o(1)).
+\end{equation}
+Jeśli $k\to\infty$ i $n\to\infty$ przy ograniczonym $n/2^k$, to
+$|\N_k|/|\N_n|=\exp\bigl(-n/2^{k+1}\bigr)(1+o(1))$.
+\end{proposition}
+\begin{proof}[Szkic]
+Funkcja tworząca jest równa $(1-x)/(1-2x+x^{k+1})$. Jej biegunem
+o najmniejszym module jest pojedynczy biegun $x=1/\lambda_k$, bo
+pozostałe pierwiastki wielomianu $k$-bonacciego leżą wewnątrz koła
+jednostkowego~\cite{miles1960}. Residuum daje $c_k$. Ze
+stwierdzenia~\ref{prop:licznosc} mamy $\lambda_k/2=1-\lambda_k^{-k}/2$
+oraz $\lambda_k^{-k}=2^{-k}(1+O(k2^{-k}))$ na mocy~\eqref{eq:lambda},
+więc $(\lambda_k/2)^n=\exp\bigl(-n2^{-(k+1)}(1+o(1))\bigr)$,
+a $2c_k\to 1$.
+\end{proof}
+
+Dla $k=\lfloor\log_2 n\rfloor+2$ wykładnik $n/2^{k+1}$ leży między $1/8$
+a $1/4$, więc graniczny udział leży między $e^{-1/4}\approx 0{,}78$
+a $e^{-1/8}\approx 0{,}88$. Dokładne udziały dla $n=20$--$500$ wynoszą
+0,79--0,89. Każde zwiększenie $k$ o jeden zmniejsza wykładnik o połowę,
+natomiast przy stałym $k$ udział maleje wykładniczo z $n$.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.9\linewidth]{figures/fig_share.pdf}
+\caption{Udział ruchów Dynasearch zawartych w $\N_k$. Linie przerywane
+oznaczają $k=\lfloor\log_2 n\rfloor+2$.}
+\label{fig:udzial}
+\end{figure}
+
+\paragraph{Ocena.} Dla każdego kandydata $(i,j)$ liczymy
+$\delta_{ij}=C_{\max}(\pi\circ s(i,j))-C_{\max}(\pi)$ z macierzy Head
+i Tail. Kandydatów jest $(k-1)n-k(k-1)/2<n(k-1)$, a w Dynasearch
+$n(n-1)/2$. Kandydat o odległości $d$ kosztuje $O(md)$, więc wszystkie
+delty kosztują $O(mnk^2)$ zamiast $O(mn^3)$.
+
+\paragraph{Filtrowanie.} Własności blokowe~\cite{nowicki1996,grabowski2004}
+usuwają kandydatów, którzy nie mogą poprawić makespanu. Ustalmy jedną
+ścieżkę krytyczną $P^\ast$ i niech $U$ będzie zbiorem kolumn, w których
+$P^\ast$ schodzi na następną maszynę, więc $|U|\leq m-1$.
+
+\begin{proposition}\label{prop:filtr}
+Jeśli $[i,j]\cap U=\emptyset$, to $\delta_{ij}\geq 0$. W konsekwencji DP
+ograniczone do kandydatów z $[i,j]\cap U\neq\emptyset$ ma tę samą wartość
+optymalną co DP na wszystkich kandydatach, o ile ta wartość jest ujemna.
+Zostaje co najwyżej $(m-1)(k-1)(k+2)/2$ kandydatów, a jedna ocena $\N_k$
+kosztuje $O(mn+m^2k^3)$.
+\end{proposition}
+\begin{proof}
+Jeśli żadna kolumna z $[i,j]$ nie należy do $U$, ścieżka $P^\ast$
+przechodzi kolumny $i,\dots,j$ w jednym wierszu $r$. Zamiana permutuje
+zadania tych kolumn, więc suma $p_{r,\cdot}$ po nich się nie zmienia
+i $\ell(P^\ast)$ się nie zmienia. Nowy makespan wynosi zatem co najmniej
+$\ell(P^\ast)=C_{\max}(\pi)$. Kandydat z $\delta_{ij}\geq 0$ nigdy nie
+poprawia wartości DP, co daje drugą część. Ustalona kolumna leży w $d+1$
+przedziałach o odległości $d$, czyli w
+$\sum_{d=1}^{k-1}(d+1)=(k-1)(k+2)/2$ kandydatach. Macierze Head i Tail
+oraz $P^\ast$ kosztują $O(mn)$, a każda pozostała delta $O(mk)$.
+\end{proof}
+
+Wcześniejsze prace~\cite{windowed_own} używają prostszego testu, który
+uznaje pozycję za granicę, gdy ostatnia maszyna zaczyna zadanie zaraz po
+tym, jak poprzednia je skończy, i zostawia zamianę tylko wtedy, gdy
+granica leży w $[i,j]$. Ten test jest heurystyką: na optimach lokalnych
+odrzuca 2--6\% zamian poprawiających i zostawia od dwóch do pięciu razy
+więcej kandydatów niż filtr ze stwierdzenia~\ref{prop:filtr}
+\todo{liczby z scripts/check\_block\_filter.py; ostateczne sformułowanie
+po decyzji o filtrze}. Kampania główna zachowuje wcześniejszy test, żeby
+wyniki pozostały porównywalne, a filtr dokładny badamy w ablacji.
+
+\paragraph{Pozycyjne DP.} Niech $B[p]$ oznacza najmniejszą sumę delt
+ruchu złożonego ograniczonego do pozycji $1..p$. Na mocy
+lematu~\ref{lem:bloki} ostatni blok kończy się w $p$ i ma długość $1$
+albo $d+1\leq k$, więc
+\begin{equation}
+B[p]=\min\Bigl(B[p-1],\ \min_{1\le d\le k-1} B[p-d-1]+\delta_{p-d,p}\Bigr),
+\end{equation}
+przy $B[0]=0$, co wymaga $O(nk)$ czasu i pamięci. Gdy żaden ruch nie
+poprawia przewidywanego $C_{\max}$, wykonujemy najlepszą pojedynczą
+zamianę, tak jak w Dynasearch i Motzkinie.
 
 \section{Addytywność}\label{sec:addytywnosc}
-DP minimalizuje $\sum\delta_{ij}$, jednak w PFSP zmiana $C_{\max}$ pod
-wpływem ruchu złożonego nie jest sumą zmian cząstkowych. W ujęciu ścieżek
-kratowych $C'_{\max}=\max_P[\ell(P)+\sum_s\Delta_s(P)]$, więc zamiany
-oddziałują przez wybór ścieżki krytycznej. Każde sąsiedztwo złożone oparte
-na DP optymalizuje zatem zastępczą funkcję celu.
+DP minimalizuje $\sum_s\delta_s$. W problemach jednomaszynowych
+z addytywnym kosztem suma ta jest zmianą kosztu ruchu złożonego. W PFSP
+tak nie jest, a ten rozdział mówi dokładnie, co optymalizuje DP.
+
+Dla zamiany $s=(i,j)$ i ścieżki $P$ niech $R_t(P)$ oznacza zbiór maszyn,
+na których $P$ odwiedza kolumnę $t$, oraz niech
+\begin{equation}\label{eq:delta-sciezki}
+\Delta_s(P)=\!\!\sum_{r\in R_i(P)}\!\!\bigl(p_{r,\pi(j)}-p_{r,\pi(i)}\bigr)
++\!\!\sum_{r\in R_j(P)}\!\!\bigl(p_{r,\pi(i)}-p_{r,\pi(j)}\bigr)
+\end{equation}
+będzie zmianą długości $P$ wywołaną przez $s$.
+
+\begin{theorem}\label{thm:sciezki}
+Dla ruchu złożonego $S$ z parami rozłącznych zamian
+\begin{equation}\label{eq:rzeczywista}
+C_{\max}(\pi\circ S)=\max_P\Bigl[\ell_\pi(P)+\sum_{s\in S}\Delta_s(P)\Bigr],
+\end{equation}
+natomiast funkcją celu DP jest
+\begin{equation}\label{eq:przewidywana}
+C_{\max}(\pi)+\sum_{s\in S}\delta_s
+=\sum_{s\in S}\max_P\bigl[\ell_\pi(P)+\Delta_s(P)\bigr]-(|S|-1)\,C_{\max}(\pi).
+\end{equation}
+Obie wielkości są równe, jeśli jedna ścieżka jest krytyczna dla $\pi$,
+dla każdego $\pi\circ s$, $s\in S$, oraz dla $\pi\circ S$.
+\end{theorem}
+\begin{proof}
+Zbiór ścieżek jest ten sam dla każdej permutacji. Zamiana $s$ zmienia
+tylko zadania w kolumnach $i$ oraz $j$, więc zmienia $\ell(P)$
+o $\Delta_s(P)$. Różne zamiany z $S$ dotykają różnych kolumn, więc
+wzdłuż ustalonej ścieżki ich zmiany się sumują, co daje
+\eqref{eq:rzeczywista}. Równość~\eqref{eq:przewidywana} to
+\eqref{eq:rzeczywista} zastosowane do każdej pojedynczej zamiany. Jeśli
+ścieżka $P^\circ$ realizuje wszystkie maksima, to
+$\delta_s=\Delta_s(P^\circ)$ oraz
+$C_{\max}(\pi\circ S)-C_{\max}(\pi)=\sum_s\Delta_s(P^\circ)$.
+\end{proof}
+
+DP zamienia więc maksimum sum na sumę maksimów. Błąd ma prostą postać,
+gdy ruch rozetniemy w kolumnie. Niech $S_1$ zawiera zamiany na lewo od
+granicy między kolumnami $c$ i $c+1$, a $S_2$ zamiany na prawo od niej;
+$\delta_1$ i $\delta_2$ to zmiany przy zastosowaniu ich osobno,
+a $\Delta$ przy zastosowaniu razem (rys.~\ref{fig:sciezki}). Oznaczmy
+$w_r=H_{r,c}+T_{r,c+1}$, $a_r=H^{S_1}_{r,c}-H_{r,c}$
+oraz $b_r=T^{S_2}_{r,c+1}-T_{r,c+1}$.
+
+\begin{proposition}\label{prop:rozciecie}
+$C_{\max}(\pi\circ S_1\circ S_2)=\max_r\,(w_r+a_r+b_r)$ oraz
+$\delta_1+\min_r b_r\leq\Delta\leq\delta_1+\max_r b_r$. Jeśli jedna
+maszyna $r^\ast$ realizuje $\max_r w_r$, $\max_r(w_r+a_r)$
+i $\max_r(w_r+b_r)$, to $\Delta\geq\delta_1+\delta_2$: suma delt obiecuje
+co najmniej tyle poprawy, ile ruch faktycznie daje. Jeśli $r^\ast$
+realizuje też $\max_r(w_r+a_r+b_r)$, to $\Delta=\delta_1+\delta_2$.
+\end{proposition}
+\begin{proof}
+Wartości Head na lewo od granicy zależą tylko od $S_1$, a wartości Tail
+na prawo od niej tylko od $S_2$, więc pierwsza część wynika ze wzoru
+z rozdziału~3. Ograniczenia wynikają
+z $\max_r(w_r+a_r)=C_{\max}(\pi)+\delta_1$. Dla trzeciej części
+$C_{\max}(\pi)+\Delta\geq w_{r^\ast}+a_{r^\ast}+b_{r^\ast}
+=(C_{\max}(\pi)+\delta_1)+(C_{\max}(\pi)+\delta_2)-C_{\max}(\pi)$,
+a ostatnie założenie zamienia tę nierówność w równość.
+\end{proof}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_paths.pdf}
+\caption{Dwie zamiany $S_1$ i $S_2$ rozdzielone granicą. Ścieżki $P$
+i $Q$ przekraczają granicę na różnych maszynach, a makespan po obu
+zamianach jest maksimum po maszynie przekroczenia.}
+\label{fig:sciezki}
+\end{figure}
+
+Warunek z trzeciej części mówi, że ścieżka krytyczna przekracza granicę
+na tej samej maszynie przed każdą pojedynczą zamianą i po niej. Małe
+zmiany uszeregowania rzadko przesuwają to przekroczenie, co wyjaśnia,
+dlaczego DP jest przeważnie optymistyczne. Zdarzają się oba kierunki
+błędu, co pokazują dwie instancje z $n=4$ i zamianami $(1,2)$ oraz
+$(3,4)$.
+
+\begin{example}[suma optymistyczna]
+Niech $m=3$, a wiersze macierzy $p$ to $(2,1,1,1)$, $(1,2,2,1)$
+i $(2,1,1,2)$. Wtedy $C_{\max}=10$, każda zamiana osobno daje
+$\delta=-1$, a obie razem też dają $-1$, a nie $-2$.
+\end{example}
+\begin{example}[suma pesymistyczna]
+Niech $m=2$, a wiersze macierzy $p$ to $(1,2,1,2)$ i $(2,1,2,1)$. Wtedy
+$C_{\max}=7$, każda zamiana osobno daje $\delta=+1$, a obie razem dają
+$+1$, a nie $+2$.
+\end{example}
+
+Każde sąsiedztwo złożone dla PFSP oparte na DP (Fibonacci, Dynasearch,
+Motzkin, $k$-bonacci) optymalizuje zatem zastępczą funkcję celu. Dla
+$m=1$ jest ona dokładna, a stwierdzenie~\ref{prop:rozciecie} sugeruje, że
+błąd rośnie z liczbą maszyn, na których ścieżki mogą przekroczyć granicę,
+czyli z $m$.
 
 \section{Protokół eksperymentu}
 Protokół jest taki sam jak we wcześniejszych pracach~\cite{windowed_own}.
@@ -214,6 +509,16 @@ szumu. \todo{tabela walidacji} Przebieg kontrolny dwóch wcześniejszych
 sąsiedztw (Fibonacci i Dynasearch, dwie klasy, te same ziarna) sprawdza, czy
 maszyna odtwarza liczbę iteracji i jakość z wcześniejszej kampanii.
 \todo{liczby}
+
+\paragraph{Anatomia ruchu.} Drugi eksperyment dotyczy pojedynczych ruchów
+poza jakąkolwiek metaheurystyką. Dla każdej instancji z $n\leq 100$
+wykonujemy trzy zejścia z losowych permutacji i pobieramy stany wzdłuż
+każdego z nich (start, dwa stany wczesne i optimum lokalne), łącznie
+około 990 stanów. Na każdym stanie wyznaczamy najlepszy ruch złożony dla
+każdego $k$, więc wszystkie porównania między wartościami $k$ są
+sparowane. Zapisujemy przewidywaną i rzeczywistą zmianę makespanu,
+odległości wybranych zamian, liczbę kandydatów i czas oceny.
+\todo{rozszerzyć na $n=200$ dla $k\leq 16$}
 
 \paragraph{Protokół kwantowy.} Jak we wcześniejszych pracach kwantowych;
 zmienia się tylko sąsiedztwo. Na wyżarzaczu ruch $k$-bonacci to QUBO
@@ -279,10 +584,45 @@ a przy 1\,s pełne $k=n$ nadal wygrywa. Błąd addytywności rośnie z $k$:
 predykcja jest dokładna w 42\% ocen dla $k=2$ i w 10--12\% dla $k\geq 6$.
 \todo{zastąpić wynikami pełnej kampanii}
 
+\paragraph{Anatomia ruchu (wstępnie, filtr dokładny).}
+Rysunek~\ref{fig:addytywnosc} pokazuje błąd addytywności na pobranych
+stanach. Liczba maszyn wpływa na niego silniej niż $k$. Dla $m=5$ ruch
+daje 72--83\% przewidywanego zysku, a prognoza jest optymistyczna
+w 38--56\% stanów. Dla $m=20$ ruch daje 57\% przewidywanego zysku przy
+$k=2$ i 33\% przy $k=8$, a prognoza jest optymistyczna w 78--91\% stanów.
+Prognoza pesymistyczna zdarza się rzadko (1--7\%). Rzeczywisty zysk
+jednego ruchu mimo to rośnie z $k$: dla $100\times 10$ od 45 przy $k=2$
+przez 64 przy $k=8$ do 134 przy $k=n$. Jedna ocena trwa jednak 0,3\,ms
+przy $k=2$, 1,2\,ms przy $k=8$ i 105\,ms przy $k=n$, więc zysk na
+milisekundę spada z około 145 dla $k\leq 3$ do około 1 dla $k=n$. Zamiany
+wybierane przy $k=n$ mają krótką medianę odległości (3--11 dla
+$m\geq 10$) i długi ogon.
+\todo{powtórzyć po kampanii; dodać fig\_distances i fig\_cost albo
+przenieść ich liczby do tekstu}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.8\textwidth]{figures/fig_additivity.pdf}
+\caption{Addytywność na pobranych stanach przeszukiwania: część
+przewidywanego zysku, którą daje wybrany ruch (po lewej), i udział stanów
+z optymistyczną prognozą (po prawej).}
+\label{fig:addytywnosc}
+\end{figure*}
+
+\paragraph{Planowane analizy.} (i) Najlepsze $k$ dla każdej pary
+$(n,t_{\max})$ i to, czy jest wewnętrzne. (ii) Liczba iteracji w budżecie
+w funkcji $k$. (iii) Czy zysk na milisekundę z anatomii przewiduje
+najlepsze $k$ kampanii przy krótkich budżetach. (iv) Testy Wilcoxona
+$k$-bonacciego względem sąsiedztw odniesienia na średnich po instancjach,
+z korektą Holma, oraz test Friedmana z różnicą krytyczną Nemenyi po
+wszystkich $k$.
+
 \section{Wnioski}
 \todo{po pełnej kampanii}
 
-\begin{thebibliography}{9}\small
+\begin{thebibliography}{99}\small
+\bibitem{balzereit2024} K.~Balzereit, N.~Gr\"uttemeier, N.~Morawietz,
+D.~Reinhardt, S.~Windmann, P.~Wolf, arXiv:2409.00771, 2024.
 \bibitem{bozejko2026sr} W.~Bożejko, M.~Uchroński, M.~Wodecki, Sci.\ Rep.\ 2026.
 \bibitem{congram2002} R.K.~Congram, C.N.~Potts, S.L.~van de Velde, INFORMS J.\ Comput.\ 14(1), 2002.
 \bibitem{ergun2006} Ö.~Ergun, J.B.~Orlin, Oper.\ Res.\ Lett.\ 34(1), 2006.
@@ -290,8 +630,10 @@ predykcja jest dokładna w 42\% ocen dla $k=2$ i w 10--12\% dla $k\geq 6$.
 \bibitem{garey1976} M.R.~Garey, D.S.~Johnson, R.~Sethi, Math.\ Oper.\ Res.\ 1(2), 1976.
 \bibitem{grabowski2004} J.~Grabowski, M.~Wodecki, Comput.\ Oper.\ Res.\ 31(11), 2004.
 \bibitem{grosso2004} A.~Grosso, F.~Della Croce, R.~Tadei, Oper.\ Res.\ Lett.\ 32(1), 2004.
+\bibitem{miles1960} E.P.~Miles~Jr., Amer.\ Math.\ Monthly 67(8), 1960. \todo{zweryfikować w Crossref}
 \bibitem{motzkin_own} \todo{praca własna -- Motzkin, SOCO 2026}
 \bibitem{nowicki1996} E.~Nowicki, C.~Smutnicki, EJOR 91(1), 1996.
+\bibitem{schilling1990} M.F.~Schilling, College Math.\ J.\ 21(3), 1990. \todo{zweryfikować w Crossref}
 \bibitem{toth2003} P.~Toth, D.~Vigo, INFORMS J.\ Comput.\ 15(4), 2003.
 \bibitem{windowed_own} \todo{praca własna -- windowed QUBO}
 \end{thebibliography}

@@ -1,4 +1,4 @@
-"""Classical campaign of the k-bonacci paper (option MAXIMUM, PLAN.md A.4).
+"""Classical campaign of the k-bonacci paper (option MAXIMUM, PLAN_v2_archiwum.md A.4).
 
 Same runner, ILS/SA and constants as the previous papers (config.yaml:
 iterated_local_search / simulated_annealing; identity start; seeds 0-4; block

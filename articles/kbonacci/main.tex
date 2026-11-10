@@ -1,8 +1,10 @@
 % =====================================================================
-% DRAFT v1 (01.11.2026) -- k-bonacci neighborhoods for the PFSP
-% Target: ICAPS 2027 or IJCAI 2027 (decided by progress); double-blind.
-% Layout: plain article class for drafting; switch to the official
-% template once the CFP is out.
+% DRAFT v2 (11.11.2026) -- k-bonacci neighborhoods for the PFSP
+% Changes v1 -> v2 are listed in PLAN.md, section 9. Polish version: wersja_pl.tex.
+% Target: ICAPS 2027 (abstract 7.12, paper 14.12.2026) or IJCAI 2027
+% (abstract 4.01, paper 11.01.2027; 7 pages + 2 of references); double-blind.
+% Layout: plain article class for drafting; switch to the official template.
+% Every statement of Sections 4-5 is checked by scripts/kbonacci_theory_checks.py.
 % Protocol = identical to the previous papers of this line (same ILS/SA,
 % same constants, same budgets, same accelerator); only the neighborhood
 % class is new. Table 2 = PILOT (placeholder), Table 3 = skeleton.
@@ -11,6 +13,7 @@
 \usepackage[margin=0.75in]{geometry}
 \usepackage[T1]{fontenc}
 \usepackage{amsmath,amssymb,amsthm}
+\usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{xcolor}
@@ -18,6 +21,11 @@
 
 \newtheorem{proposition}{Proposition}
 \newtheorem{definition}{Definition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{definition}
+\newtheorem{example}{Example}
 \newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
 \newcommand{\N}{\mathcal{N}}
 
@@ -80,26 +88,27 @@ the earlier studies~\cite{fibonacci_own,motzkin_own,windowed_own}
 unchanged. The neighborhood is the only experimental factor, so every new
 number can be read against the published ones.
 
-\paragraph{Contributions.}
-\begin{enumerate}
-  \item The \textbf{$k$-bonacci neighborhood} $\N_k$ and the chain
-        $\N_{\mathrm{adj}}\subset\N_2=\N_{\mathrm{fib}}\subset\N_3\subset
-        \dots\subset\N_n=\N_{\mathrm{dyn}}$. We count $|\N_k|$ exactly
-        and show that $k=\log_2 n+O(1)$ already covers a constant fraction
-        of Dynasearch.
-  \item A \textbf{positional DP} that selects the compound move with the
-        best predicted makespan change (sum of the individual deltas) in
-        $O(nk)$ time after $O(mnk^2)$ delta evaluation, compatible with
-        the block-property filter. For $k=n$ it is a non-recursive
-        Dynasearch.
-  \item A \textbf{study of $k$} on the full Taillard benchmark
-        ($n=20$--$500$) under ILS and SA with six time budgets. It covers
-        solution quality, iterations within the budget, the structure of
-        the selected moves, and the \textbf{additivity error} that every
-        compound-move DP makes in the PFSP.
-  \item \todo{optional: $k$-bonacci QUBO on a quantum annealer and on a
-        gate-based device, same protocol as~\cite{windowed_own}}
-\end{enumerate}
+The paper makes three contributions. The first is the $k$-bonacci
+neighborhood $\N_k$ and the chain
+$\N_{\mathrm{adj}}\subset\N_2=\N_{\mathrm{fib}}\subset\N_3\subset
+\dots\subset\N_n=\N_{\mathrm{dyn}}$. We count $|\N_k|$ exactly, give its
+growth rate in closed form, and show that the share of Dynasearch moves
+contained in $\N_k$ is close to $\exp(-n/2^{k+1})$, so $k=\log_2 n+O(1)$
+already covers a constant fraction of Dynasearch. The second is the
+evaluation of the family. A positional DP selects the compound move with
+the best predicted makespan change in $O(nk)$ time after $O(mnk^2)$ delta
+evaluation, and for $k=n$ it is a non-recursive Dynasearch. We prove that
+a filter based on one critical path loses no improving swap and bounds the
+number of candidates by $(m-1)(k-1)(k+2)/2$, independently of $n$. We also
+describe exactly what the DP optimizes: the makespan change of a compound
+move is a maximum over lattice paths, the DP replaces it by a sum of
+maxima, and we give conditions under which the two agree and under which
+the sum is optimistic. The third contribution is a study of $k$ on the
+full Taillard benchmark ($n=20$--$500$) with six time budgets. It covers
+solution quality, iterations within the budget, the distances of the
+selected swaps, and the measured additivity error as a function of $k$.
+\todo{optional fourth contribution: $k$-bonacci QUBO on a quantum annealer
+and on a gate-based device, same protocol as~\cite{windowed_own}}
 
 % ---------------------------------------------------------------------
 \section{Related Work}
@@ -119,10 +128,14 @@ Motzkin~\cite{motzkin_own}. \todo{verify that Sci.\ Rep.\ 2026 and IFAC
 \paragraph{Bounded-reach moves.} Restricting how far a move may reach is a
 standard device in routing, e.g., Or-opt segments and granular
 neighborhoods~\cite{toth2003}. Balzereit et al.~\cite{balzereit2024}
-study the radius--runtime trade-off of distance-bounded local search in
-single-machine scheduling from a parameterized-complexity viewpoint.
-We study the same kind of trade-off empirically for a compound
-neighborhood.
+study local search with a bounded search radius for single-machine
+scheduling with family setup times and analyze its parameterized
+complexity in the radius. We study the same kind of radius--runtime
+trade-off for a compound neighborhood of the flow shop.
+\todo{bounded-distance swap neighborhoods for single-machine weighted
+tardiness on a quantum annealer are studied in parallel by the
+supervisor's group (unpublished); agree on the citation and the split
+before submission}
 
 % ---------------------------------------------------------------------
 \section{Problem and Notation}
@@ -136,6 +149,14 @@ backward longest paths) give the makespan after any modification of a
 segment $[i,j]$ by recomputing only that segment,
 $C_{\max}=\max_r\bigl(H'_{r,j}+T_{r,j+1}\bigr)$, at cost $O(m(j-i+1))$.
 
+Equivalently, $C_{\max}$ is a longest path in the $m\times n$ grid of
+operations. A \emph{path} $P$ is a sequence of cells from $(1,1)$ to
+$(m,n)$ in which every step goes one cell right or one cell down. Its
+length under $\pi$ is $\ell_\pi(P)=\sum_{(r,t)\in P}p_{r,\pi(t)}$, and
+$C_{\max}(\pi)=\max_P\ell_\pi(P)$. A path of maximum length is
+\emph{critical}. The set of paths does not depend on $\pi$; only the
+lengths do.
+
 % ---------------------------------------------------------------------
 \section{The $k$-bonacci Neighborhood}
 
@@ -147,62 +168,209 @@ intervals $[i,j]$ are pairwise disjoint. $\N_k(\pi)$ is the set of
 permutations reachable by one compound move.
 \end{definition}
 
-Special cases: $k=2$ allows swap distance $1$ only (Fibonacci), $k=3$
-allows distances $1$ and $2$ (tribonacci), and $k=n$ allows any distance
-(Dynasearch).
+For $k=2$ only adjacent jobs are exchanged, which gives the Fibonacci
+neighborhood. For $k=3$ a swap may also skip one job (tribonacci), and for
+$k=n$ any two jobs may be exchanged, which gives Dynasearch.
+
+\paragraph{Moves as rook placements.} A compound move is a permutation
+$\sigma$ of the positions, so it can be drawn as its permutation matrix:
+$n$ non-attacking rooks on an $n\times n$ board, one in each row and
+column, with a rook in cell $(t,\sigma(t))$. Every elementary move is a transposition and the
+transpositions of one compound move have disjoint supports, so $\sigma$ is
+an involution and its board is symmetric about the main diagonal. For
+$L\geq 2$ let $S_L$ be the $L\times L$ identity matrix with the two corner
+ones moved to $(1,L)$ and $(L,1)$, and let $S_1=[1]$.
+
+\begin{lemma}\label{lem:blocks}
+$\sigma\in\N_k$ if and only if its permutation matrix is block diagonal,
+$P_\sigma=\mathrm{diag}(S_{L_1},\dots,S_{L_r})$, with
+$L_1+\dots+L_r=n$ and every $L_q\leq k$. The block sizes are determined
+by $\sigma$.
+\end{lemma}
+\begin{proof}
+A swap $s(i,j)$ acts only on positions $i..j$, so it is the block
+$S_{j-i+1}$ placed on the diagonal at rows $i..j$. Disjoint intervals
+give disjoint diagonal blocks, and the untouched positions are blocks
+$S_1$. Conversely, each block $S_L$ with $2\leq L\leq k$ is one swap of
+distance $L-1\leq k-1$. A block $S_L$ with $L\geq 2$ cannot be split,
+because its corner rooks link row $1$ with column $L$, so the
+decomposition is unique.
+\end{proof}
+
+Figure~\ref{fig:boards} shows the four cases side by side. In the
+Fibonacci board the rooks stay on the diagonal or in $2\times 2$ blocks
+next to it. Raising $k$ widens the band $|t-\sigma(t)|\leq k-1$ that the
+rooks may occupy, and for $k=n$ the band covers the whole board. The
+block structure is the second constraint, and the band alone does not
+imply it: the $3$-cycle $\sigma=(2,3,1)$ stays within the band of $k=3$
+but is not an involution. The Motzkin neighborhood~\cite{motzkin_own}
+relaxes the block structure in a different way. It allows a swap inside
+the interval of another swap (dashed block in Fig.~\ref{fig:boards}), as
+long as no two intervals cross.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.85\textwidth]{figures/fig_boards.pdf}
+\caption{One compound move of each neighborhood for $n=8$, drawn as rooks
+on the board. Shaded cells form the band $|t-\sigma(t)|\leq k-1$ and
+thick squares mark the diagonal blocks of Lemma~\ref{lem:blocks}.}
+\label{fig:boards}
+\end{figure*}
+
+\paragraph{Counting.} Lemma~\ref{lem:blocks} turns a compound move into
+a sequence of block sizes, that is, a tiling of positions $1..n$ by tiles
+of length $1$ to $k$ (Fig.~\ref{fig:tiling}a). Fixing the length $L$ of
+the first tile leaves an arbitrary move on the remaining $n-L$ positions
+(Fig.~\ref{fig:tiling}b), which yields the $k$-bonacci recurrence.
 
 \begin{proposition}\label{prop:count}
 $|\N_k(\pi)|=a_n$, where $a_0=1$ and $a_p=\sum_{L=1}^{\min(k,p)}a_{p-L}$.
+The generating function is $\sum_{p\geq 0}a_p x^p=1/(1-x-x^2-\dots-x^k)$.
 Hence $|\N_2|=F_{n+1}$, $|\N_n|=2^{n-1}$, and
 $|\N_k|=\Theta(\lambda_k^n)$, where $\lambda_k$ is the largest real root
-of $x^k=x^{k-1}+\dots+x+1$. Moreover $2-\lambda_k=\lambda_k^{-k}$, so
-$\lambda_k=2-\Theta(2^{-k})$.
+of $x^k=x^{k-1}+\dots+x+1$. Moreover $2-\lambda_k=\lambda_k^{-k}$ and
+\begin{equation}\label{eq:lambda}
+2-2^{1-k}\;\leq\;\lambda_k\;<\;2-2^{-k}.
+\end{equation}
 \end{proposition}
-\begin{proof}[Sketch]
-A compound move is a tiling of positions $1..n$ by tiles of length $1$
-(untouched position) and $L\in\{2,\dots,k\}$ (the ends of the tile are
-swapped). Conditioning on the first tile gives the recurrence. Distinct
-tilings give distinct permutations: the tile starting at $i$ is the
-smallest interval starting at $i$ that the move maps onto itself. The
-identity for $\lambda_k$ follows from
-$x^k=(x^k-1)/(x-1)$.
+\begin{proof}
+The recurrence and the generating function follow from the first-tile
+decomposition, and distinct tilings give distinct permutations by
+Lemma~\ref{lem:blocks}. Multiplying
+$x^k=(x^k-1)/(x-1)$ by $x-1$ gives $x^{k+1}-2x^k+1=0$, that is,
+$f(x):=x^k(2-x)=1$. The function $f$ increases on $[1,2k/(k+1)]$ from
+$f(1)=1$ and then decreases to $f(2)=0$, so $\lambda_k$ is its only root
+in $(1,2)$ and lies on the decreasing branch. Since $\lambda_k<2$, we get
+$2-\lambda_k=\lambda_k^{-k}>2^{-k}$, which is the upper bound. For the
+lower bound, $x_0=2-2^{1-k}$ lies on the decreasing branch because
+$2^k\geq k+1$, and $f(x_0)=2(1-2^{-k})^k\geq 2(1-k2^{-k})\geq 1=f(\lambda_k)$,
+hence $x_0\leq\lambda_k$.
 \end{proof}
 
-\begin{table}[t]
+\begin{figure}[t]
 \centering
-\caption{Size of $\N_k$ for $n=10$, growth constant $\lambda_k$, and
-the share of all Dynasearch moves contained in $\N_k$.}
-\label{tab:count}
-\small
-\begin{tabular}{@{}lrrrrrr@{}}
-\toprule
-$k$ & 2 & 3 & 4 & 6 & 8 & $n$ \\
-\midrule
-$|\N_k|$, $n=10$ & 89 & 274 & 401 & 492 & 509 & 512 \\
-$\lambda_k$ & 1.618 & 1.839 & 1.928 & 1.984 & 1.996 & 2 \\
-share, $n=100$ & $10^{-9}$ & $3{\cdot}10^{-4}$ & 0.03 & 0.46 & 0.83 & 1 \\
-share, $n=500$ & $10^{-46}$ & $10^{-18}$ & $10^{-8}$ & 0.02 & 0.38 & 1 \\
-\bottomrule
-\end{tabular}
-\end{table}
+\includegraphics[width=\linewidth]{figures/fig_tiling.pdf}
+\caption{(a) The $k=3$ move of Fig.~\ref{fig:boards} as a tiling;
+arrows join the swapped jobs. (b) The first tile has length
+$L\in\{1,\dots,k\}$ and leaves a move on $n-L$ positions.}
+\label{fig:tiling}
+\end{figure}
 
-The share $|\N_k|/|\N_n|$ equals the probability that the longest part
-of a uniformly random composition of $n$ is at most $k$. By the classical
-longest-run law this probability is concentrated around $k=\log_2 n$.
-For $k=\lfloor\log_2 n\rfloor+2$ the share is $0.79$--$0.89$ for
-$n=20$--$500$, whereas for any constant $k$ it vanishes exponentially.
+\paragraph{The hierarchy.} A move of $\N_k$ is also a move of
+$\N_{k+1}$, and the inclusion is strict whenever $k<n$, because a single
+swap of distance $k$ lies in $\N_{k+1}$ only. Together with the
+neighborhoods of the earlier studies this gives the chain
+\begin{equation}\label{eq:chain}
+\N_{\mathrm{adj}}\subset\N_2=\N_{\mathrm{fib}}\subset\N_3\subset\dots
+\subset\N_n=\N_{\mathrm{dyn}}\subset\N_{\mathrm{mot}}\subset\mathcal I_n,
+\end{equation}
+where $\mathcal I_n$ is the set of all involutions
+(Fig.~\ref{fig:chain}). On the board, the first part of the chain widens
+the band, the step to Motzkin allows nested blocks, and the last step
+allows crossing swaps. For $n=10$ the sizes are $89$, $274$, $401$, $492$
+and $512$ for $k=2,3,4,6,n$, then $2188$ for Motzkin and $9496$ for all
+involutions.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.8\textwidth]{figures/fig_chain.pdf}
+\caption{The inclusion chain of the swap neighborhoods with their sizes
+for $n=10$. The shaded part is the $k$-bonacci family.}
+\label{fig:chain}
+\end{figure*}
+\todo{check whether \cite{bozejko2026sr} or the IFAC 2025 paper already
+state this chain; Fibonacci and Motzkin are joint work with the
+supervisor}
+
+\paragraph{How much of Dynasearch does $\N_k$ cover?} Every Dynasearch
+move is a composition of $n$, and a uniformly random composition places
+an independent cut between neighboring positions with probability $1/2$.
+A block of length $L$ is then a run of $L-1$ positions without a cut, so
+the share $|\N_k|/2^{n-1}$ is the probability that $n-1$ fair coin flips
+contain no run of $k$ consecutive gaps without a cut. The longest run in
+$n$ fair coin flips has length about $\log_2 n$~\cite{schilling1990}, so
+this probability jumps from near $0$ to near $1$ around $k=\log_2 n$
+(Fig.~\ref{fig:share}). The next proposition makes the jump explicit.
+
+\begin{proposition}\label{prop:share}
+For fixed $k$, $a_n=c_k\lambda_k^n\,(1+o(1))$ with
+$c_k=(\lambda_k-1)/\bigl(2-(k+1)(2-\lambda_k)\bigr)$, hence
+\begin{equation}\label{eq:share}
+\frac{|\N_k|}{|\N_n|}=2c_k\Bigl(\frac{\lambda_k}{2}\Bigr)^{n}(1+o(1)).
+\end{equation}
+If $k\to\infty$ and $n\to\infty$ with $n/2^k$ bounded, then
+$|\N_k|/|\N_n|=\exp\bigl(-n/2^{k+1}\bigr)(1+o(1))$.
+\end{proposition}
+\begin{proof}[Sketch]
+The generating function equals $(1-x)/(1-2x+x^{k+1})$. Its pole of
+smallest modulus is the simple pole $x=1/\lambda_k$, because all other
+roots of the $k$-bonacci polynomial lie inside the unit
+circle~\cite{miles1960}. The residue gives $c_k$. By
+Proposition~\ref{prop:count}, $\lambda_k/2=1-\lambda_k^{-k}/2$ and
+$\lambda_k^{-k}=2^{-k}(1+O(k2^{-k}))$ by~\eqref{eq:lambda}, so
+$(\lambda_k/2)^n=\exp\bigl(-n2^{-(k+1)}(1+o(1))\bigr)$, and $2c_k\to 1$.
+\end{proof}
+
+For $k=\lfloor\log_2 n\rfloor+2$ the exponent $n/2^{k+1}$ lies between
+$1/8$ and $1/4$, so the limit share lies between $e^{-1/4}\approx 0.78$
+and $e^{-1/8}\approx 0.88$. The exact shares for $n=20$--$500$ are
+$0.79$--$0.89$. Each increment of $k$ halves the exponent, whereas for
+any constant $k$ the share vanishes exponentially in $n$. A moderate $k$
+therefore keeps most Dynasearch moves and drops only the rare moves with
+very long swaps.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.9\linewidth]{figures/fig_share.pdf}
+\caption{Share of Dynasearch moves contained in $\N_k$. Dashed lines mark
+$k=\lfloor\log_2 n\rfloor+2$.}
+\label{fig:share}
+\end{figure}
 
 \paragraph{Evaluation.} For every candidate $(i,j)$ we compute
 $\delta_{ij}=C_{\max}(\pi\circ s(i,j))-C_{\max}(\pi)$ with heads and
-tails. There are fewer than $n(k-1)$ candidates, each costing
-$O(m(j-i))$, so all deltas cost $O(mnk^2)$, against $O(mn^3)$ for
-Dynasearch. Candidates are filtered with the block-boundary test used for
-the Fibonacci, Dynasearch and Motzkin neighborhoods in the earlier
-studies~\cite{windowed_own}: a swap $(i,j)$ is kept only if a boundary
-position lies in $[i,j]$. \todo{wording of the filter: decision on the
-exact critical-path variant (see plan, \S14)}
+tails. The candidates are the cells of the band above the diagonal,
+$(k-1)n-k(k-1)/2<n(k-1)$ of them, against $n(n-1)/2$ for Dynasearch. A
+candidate of distance $d$ costs $O(md)$, so all deltas cost $O(mnk^2)$
+instead of $O(mn^3)$.
+
+\paragraph{Filtering.} Block properties~\cite{nowicki1996,grabowski2004}
+remove candidates that cannot improve the makespan. Fix one critical path
+$P^\ast$ and let $U$ be the set of columns in which $P^\ast$ steps down
+to the next machine, so $|U|\leq m-1$.
+
+\begin{proposition}\label{prop:filter}
+If $[i,j]\cap U=\emptyset$, then $\delta_{ij}\geq 0$. Consequently the DP
+restricted to the candidates with $[i,j]\cap U\neq\emptyset$ has the same
+optimal value as the DP on all candidates whenever that value is
+negative. At most $(m-1)(k-1)(k+2)/2$ candidates remain, and one
+evaluation of $\N_k$ costs $O(mn+m^2k^3)$.
+\end{proposition}
+\begin{proof}
+If no column of $[i,j]$ belongs to $U$, the path $P^\ast$ crosses the
+columns $i,\dots,j$ in a single row $r$. The swap permutes the jobs of
+these columns, so the sum of $p_{r,\cdot}$ over them is unchanged and
+$\ell(P^\ast)$ is unchanged. Hence the new makespan is at least
+$\ell(P^\ast)=C_{\max}(\pi)$. A candidate with $\delta_{ij}\geq 0$ never
+improves the DP value, which gives the second claim. A fixed column lies
+in $d+1$ intervals of distance $d$, so it lies in
+$\sum_{d=1}^{k-1}(d+1)=(k-1)(k+2)/2$ candidates. Heads, tails and
+$P^\ast$ cost $O(mn)$, and every remaining delta costs $O(mk)$.
+\end{proof}
+
+The earlier studies~\cite{windowed_own} use a simpler test that marks a
+position as a boundary when the last machine starts a job immediately
+after the previous machine finishes it, and keep a swap only if a
+boundary lies in $[i,j]$. This test is a heuristic: on local optima it
+discards 2--6\% of the improving swaps and keeps two to five times more
+candidates than the filter of Proposition~\ref{prop:filter}
+\todo{numbers from scripts/check\_block\_filter.py; final wording after
+the decision on the filter}. The main campaign keeps the earlier test so
+that the results stay comparable, and an ablation runs the exact filter.
+
 \paragraph{Positional DP.} Let $B[p]$ be the minimum total delta of a
-compound move restricted to positions $1..p$. Then
+compound move restricted to positions $1..p$. By Lemma~\ref{lem:blocks}
+the last block ends at $p$ and has length $1$ or $d+1\leq k$, so
 \begin{equation}
 B[p]=\min\Bigl(B[p-1],\ \min_{1\le d\le k-1} B[p-d-1]+\delta_{p-d,p}\Bigr),
 \end{equation}
@@ -212,16 +380,98 @@ Dynasearch and Motzkin neighborhoods.
 
 % ---------------------------------------------------------------------
 \section{Additivity}\label{sec:additivity}
-The DP optimizes $\sum\delta_{ij}$. In the PFSP, however, the makespan
-change of a compound move is not the sum of the individual changes. In
-the lattice-path view
-$C'_{\max}=\max_P\bigl[\ell(P)+\sum_s\Delta_s(P)\bigr]$: two swaps on
-disjoint intervals interact through the choice of the critical path $P$.
-The sum can therefore under- or overestimate the real change, and is
-exact when one path is critical before and after every swap
-\todo{small counterexamples}. Every DP-based compound neighborhood
-(Fibonacci, Dynasearch, Motzkin) thus optimizes a surrogate. A larger $k$
-admits longer swaps, so the surrogate error should grow with $k$.
+The DP optimizes $\sum_s\delta_s$. In single-machine problems with
+additive costs this sum is the cost change of the compound move. In the
+PFSP it is not, and this section states exactly what the DP optimizes.
+
+For a swap $s=(i,j)$ and a path $P$ let $R_t(P)$ be the set of machines
+on which $P$ visits column $t$, and let
+\begin{equation}\label{eq:delta-path}
+\Delta_s(P)=\!\!\sum_{r\in R_i(P)}\!\!\bigl(p_{r,\pi(j)}-p_{r,\pi(i)}\bigr)
++\!\!\sum_{r\in R_j(P)}\!\!\bigl(p_{r,\pi(i)}-p_{r,\pi(j)}\bigr)
+\end{equation}
+be the change of the length of $P$ caused by $s$.
+
+\begin{theorem}\label{thm:paths}
+For a compound move $S$ of pairwise disjoint swaps,
+\begin{equation}\label{eq:real}
+C_{\max}(\pi\circ S)=\max_P\Bigl[\ell_\pi(P)+\sum_{s\in S}\Delta_s(P)\Bigr],
+\end{equation}
+whereas the DP objective is
+\begin{equation}\label{eq:pred}
+C_{\max}(\pi)+\sum_{s\in S}\delta_s
+=\sum_{s\in S}\max_P\bigl[\ell_\pi(P)+\Delta_s(P)\bigr]-(|S|-1)\,C_{\max}(\pi).
+\end{equation}
+The two agree if one path is critical for $\pi$, for every $\pi\circ s$
+with $s\in S$, and for $\pi\circ S$.
+\end{theorem}
+\begin{proof}
+The set of paths is the same for every permutation. A swap $s$ changes
+only the jobs in columns $i$ and $j$, so it changes $\ell(P)$ by
+$\Delta_s(P)$. Different swaps of $S$ touch different columns, so along a
+fixed path their changes add up, which gives~\eqref{eq:real}.
+Equation~\eqref{eq:pred} is~\eqref{eq:real} applied to each single swap.
+If a path $P^\circ$ attains all the maxima, then $\delta_s=\Delta_s(P^\circ)$
+and $C_{\max}(\pi\circ S)-C_{\max}(\pi)=\sum_s\Delta_s(P^\circ)$.
+\end{proof}
+
+The DP thus exchanges a maximum of sums for a sum of maxima. The error
+has a simple form when the move is cut at a column. Let $S_1$ contain the
+swaps to the left of the border between columns $c$ and $c+1$ and $S_2$
+the swaps to its right, with changes $\delta_1$ and $\delta_2$ when
+applied alone and $\Delta$ when applied together
+(Fig.~\ref{fig:paths}). Write $w_r=H_{r,c}+T_{r,c+1}$,
+$a_r=H^{S_1}_{r,c}-H_{r,c}$ and $b_r=T^{S_2}_{r,c+1}-T_{r,c+1}$.
+
+\begin{proposition}\label{prop:join}
+$C_{\max}(\pi\circ S_1\circ S_2)=\max_r\,(w_r+a_r+b_r)$, and
+$\delta_1+\min_r b_r\leq\Delta\leq\delta_1+\max_r b_r$. If one machine
+$r^\ast$ attains $\max_r w_r$, $\max_r(w_r+a_r)$ and $\max_r(w_r+b_r)$,
+then $\Delta\geq\delta_1+\delta_2$: the sum of deltas promises at least
+as much improvement as the move delivers. If $r^\ast$ also attains
+$\max_r(w_r+a_r+b_r)$, then $\Delta=\delta_1+\delta_2$.
+\end{proposition}
+\begin{proof}
+Heads left of the border depend only on $S_1$ and tails right of it only
+on $S_2$, so the head--tail formula of Section~3 gives the first claim.
+The bounds follow from $\max_r(w_r+a_r)=C_{\max}(\pi)+\delta_1$. For the
+third claim,
+$C_{\max}(\pi)+\Delta\geq w_{r^\ast}+a_{r^\ast}+b_{r^\ast}
+=(C_{\max}(\pi)+\delta_1)+(C_{\max}(\pi)+\delta_2)-C_{\max}(\pi)$,
+and the last claim turns this inequality into an equality.
+\end{proof}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig_paths.pdf}
+\caption{Two swaps $S_1$ and $S_2$ separated by a border. The paths $P$
+and $Q$ cross the border on different machines, and the makespan after
+both swaps is a maximum over the crossing machine.}
+\label{fig:paths}
+\end{figure}
+
+The condition of the third claim says that the critical path crosses the
+border on the same machine before and after each single swap. Small
+changes of the schedule rarely move the crossing, which explains why the
+DP is mostly optimistic (Section~\ref{sec:exp}). Both directions occur,
+as two instances with $n=4$ and the swaps $(1,2)$ and $(3,4)$ show.
+
+\begin{example}[optimistic sum]
+Let $m=3$ and let the rows of $p$ be $(2,1,1,1)$, $(1,2,2,1)$ and
+$(2,1,1,2)$. Then $C_{\max}=10$, each swap alone gives $\delta=-1$, and
+both swaps together also give $-1$, not $-2$.
+\end{example}
+\begin{example}[pessimistic sum]
+Let $m=2$ and let the rows of $p$ be $(1,2,1,2)$ and $(2,1,2,1)$. Then
+$C_{\max}=7$, each swap alone gives $\delta=+1$, and both swaps together
+give $+1$, not $+2$.
+\end{example}
+
+Every DP-based compound neighborhood for the PFSP (Fibonacci, Dynasearch,
+Motzkin, $k$-bonacci) therefore optimizes a surrogate. For $m=1$ the
+surrogate is exact, and Proposition~\ref{prop:join} suggests that the
+error grows with the number of machines on which paths can cross a
+border, that is, with $m$.
 
 % ---------------------------------------------------------------------
 \section{Experimental Protocol}\label{sec:setup}
@@ -281,6 +531,16 @@ runs vs extracted values, plus repeated runs as a noise control} A
 replication run of two earlier neighborhoods (Fibonacci and Dynasearch,
 two classes, same seeds) checks that the machine still reproduces the
 iteration counts and quality of the earlier campaign. \todo{numbers}
+
+\paragraph{Move anatomy.} A second experiment looks at single moves
+outside any metaheuristic. For every instance with $n\leq 100$ we run
+three descents from random permutations and sample states along each of
+them (the start, two early states and the local optimum), about 990
+states in total. On every state the best compound move is computed for
+every $k$, so all comparisons between values of $k$ are paired. We record
+the predicted and the real makespan change, the distances of the selected
+swaps, the number of candidates and the evaluation time.
+\todo{extend to $n=200$ with $k\leq 16$}
 
 \paragraph{Quantum protocol.} The quantum runs follow the earlier
 quantum studies~\cite{windowed_own} and differ only in the neighborhood.
@@ -358,10 +618,37 @@ overestimates the real one by 10\% at $k=2$ and by about 50\% at $k\geq 8$.
 RPD vs $k$ per budget, iterations vs $k$, distance histogram, additivity
 error vs $k$}
 
+\paragraph{Move anatomy (preliminary, exact filter).}
+Figure~\ref{fig:additivity} shows the additivity error on the sampled
+states. The number of machines drives it more than $k$ does. For $m=5$
+the move delivers 72--83\% of the predicted gain and the prediction is
+optimistic in 38--56\% of the states. For $m=20$ the move delivers 57\%
+of the predicted gain at $k=2$ and 33\% at $k=8$, and the prediction is
+optimistic in 78--91\% of the states. A pessimistic prediction is rare
+(1--7\%). The real gain of one move still grows with $k$: on
+$100\times 10$ it rises from 45 at $k=2$ to 64 at $k=8$ and 134 at $k=n$.
+One evaluation, however, takes 0.3\,ms at $k=2$, 1.2\,ms at $k=8$ and
+105\,ms at $k=n$, so the gain per millisecond falls from about 145 at
+$k\leq 3$ to about 1 at $k=n$. The swaps selected at $k=n$ are short in
+the median (distance 3--11 for $m\geq 10$) with a long tail.
+\todo{re-run after the campaign; add fig\_distances and fig\_cost or
+fold their numbers into the text}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.8\textwidth]{figures/fig_additivity.pdf}
+\caption{Additivity on sampled search states: share of the predicted
+gain that the selected move delivers (left) and share of states with an
+optimistic prediction (right).}
+\label{fig:additivity}
+\end{figure*}
+
 \paragraph{Planned analyses.} (i) Best $k$ per $(n,t_{\max})$ and whether
-it is interior. (ii) Iterations per budget versus $k$. (iii) Distances of
-the selected swaps versus the block length $n/m$. (iv) Wilcoxon tests of
-$k$-bonacci against the reference neighborhoods.
+it is interior. (ii) Iterations per budget versus $k$. (iii) Whether the
+gain per millisecond of the anatomy experiment predicts the best $k$ of
+the campaign at short budgets. (iv) Wilcoxon tests of $k$-bonacci against
+the reference neighborhoods on instance means, with Holm correction, and
+the Friedman test with the Nemenyi critical difference over all $k$.
 
 % ---------------------------------------------------------------------
 \section{Conclusions}
@@ -374,8 +661,10 @@ search~\cite{windowed_own}}
 \bibitem{ahuja2002} R.K.~Ahuja, \"O.~Ergun, J.B.~Orlin, A.P.~Punnen.
 A survey of very large-scale neighborhood search techniques.
 \emph{Discrete Appl.\ Math.} 123:75--102, 2002.
-\bibitem{balzereit2024} \todo{verify authors/venue}. Parameterized local
-search for scheduling. arXiv:2409.00771, 2024.
+\bibitem{balzereit2024} K.~Balzereit, N.~Gr\"uttemeier, N.~Morawietz,
+D.~Reinhardt, S.~Windmann, P.~Wolf. Scalable neighborhood local search
+for single-machine scheduling with family setup times. arXiv:2409.00771,
+2024. \todo{check for a published version}
 \bibitem{bozejko2007} W.~Bo\.zejko, M.~Wodecki. On the theoretical
 properties of swap multimoves. \emph{Oper.\ Res.\ Lett.} 35(2):227--231, 2007.
 \bibitem{bozejko2026sr} W.~Bo\.zejko, M.~Uchro\'nski, M.~Wodecki. The new
@@ -397,6 +686,9 @@ algorithm for the permutation flow shop problem with makespan criterion.
 \bibitem{grosso2004} A.~Grosso, F.~Della Croce, R.~Tadei. An enhanced
 dynasearch neighborhood for the single-machine total weighted tardiness
 scheduling problem. \emph{Oper.\ Res.\ Lett.} 32(1):68--72, 2004. \todo{verify}
+\bibitem{miles1960} E.P.~Miles~Jr. Generalized Fibonacci numbers and
+associated matrices. \emph{Amer.\ Math.\ Monthly} 67(8):745--752, 1960.
+\todo{verify in Crossref}
 \bibitem{motzkin_own} \todo{own work, third person: Motzkin neighborhood, SOCO 2026}
 \bibitem{nowicki1996} E.~Nowicki, C.~Smutnicki. A fast tabu search
 algorithm for the permutation flow-shop problem. \emph{Eur.\ J.\ Oper.\ Res.}
@@ -404,6 +696,8 @@ algorithm for the permutation flow-shop problem. \emph{Eur.\ J.\ Oper.\ Res.}
 \bibitem{ruiz2007} R.~Ruiz, T.~St\"utzle. A simple and effective iterated
 greedy algorithm for the permutation flowshop scheduling problem.
 \emph{Eur.\ J.\ Oper.\ Res.} 177(3):2033--2049, 2007.
+\bibitem{schilling1990} M.F.~Schilling. The longest run of heads.
+\emph{College Math.\ J.} 21(3):196--207, 1990. \todo{verify in Crossref}
 \bibitem{taillard1993} E.~Taillard. Benchmarks for basic scheduling
 problems. \emph{Eur.\ J.\ Oper.\ Res.} 64(2):278--285, 1993.
 \bibitem{toth2003} P.~Toth, D.~Vigo. The granular tabu search and its

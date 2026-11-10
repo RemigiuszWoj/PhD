@@ -52,7 +52,7 @@ Nowe DP robi z Dynasearch 2–3× więcej iteracji. To tylko pilot, a pełne wyn
 
 | Plik | Co to |
 |---|---|
-| `articles/kbonacci/PLAN.md` | pełny plan: hipotezy H0–H7, eksperymenty, ryzyka; **sekcja A.0 i A obowiązują** |
+| `articles/kbonacci/PLAN_v2_archiwum.md` | pełny plan: hipotezy H0–H7, eksperymenty, ryzyka; **sekcja A.0 i A obowiązują** |
 | `articles/kbonacci/RUN_LOCAL.md` | instrukcja uruchomienia na Macu (nadrzędna dla lokalnego modelu) |
 | `articles/kbonacci/main.tex`, `wersja_pl.tex` | szkice artykułu EN i PL (PDF-y poza repo, bo `.gitignore`) |
 | `articles/kbonacci/pilot/` | surowe wyniki pilota |
@@ -79,7 +79,7 @@ Nowe DP robi z Dynasearch 2–3× więcej iteracji. To tylko pilot, a pełne wyn
 - Potwierdzić listę BKS z promotorem przed cytowaniem.
 - Kompletność starych wyników (audyt wskazywał braki: Motzkin n = 500, nieważny Dynasearch n = 500).
 - Dokładne daty i limity stron z oficjalnych CFP.
-- Znany problem z poprzednich prac: filtr blokowy sprawdza tylko dwie ostatnie maszyny i odrzuca 2–7% zamian poprawiających (`PLAN.md` §14). Decyzja z promotorem.
+- Znany problem z poprzednich prac: filtr blokowy sprawdza tylko dwie ostatnie maszyny i odrzuca 2–7% zamian poprawiających (`PLAN_v2_archiwum.md` §14). Decyzja z promotorem.
 - SA nie jest powtarzalny nawet przy tym samym ziarnie (reheat zależy od zegara): wartość do opisania w artykule.
 
 ## 8. Prompt startowy dla lokalnego modelu (wklej na Macu)
@@ -89,7 +89,7 @@ Model: **Sonnet 5.5, średni wysiłek.** Haiku najwyżej do późniejszych krót
 ```
 Jesteś na moim Macu w repozytorium PhD. Przejmujesz uruchomienie kampanii obliczeniowej do artykułu o sąsiedztwach k-bonacci (PFSP), przygotowanej i przetestowanej w chmurze na gałęzi kbonacci-icaps.
 
-1. Najpierw git status. Jeśli są lokalne zmiany, zatrzymaj się i pokaż mi je (nie stashuj, nie kasuj). Potem: git fetch origin && git checkout kbonacci-icaps && git pull. Przeczytaj w całości articles/kbonacci/RUN_LOCAL.md oraz sekcję A.0 w articles/kbonacci/PLAN.md. RUN_LOCAL.md jest nadrzędny.
+1. Najpierw git status. Jeśli są lokalne zmiany, zatrzymaj się i pokaż mi je (nie stashuj, nie kasuj). Potem: git fetch origin && git checkout kbonacci-icaps && git pull. Przeczytaj w całości articles/kbonacci/RUN_LOCAL.md oraz sekcję A.0 w articles/kbonacci/PLAN_v2_archiwum.md. RUN_LOCAL.md jest nadrzędny.
 
 2. Zasady bezwzględne: nie zmieniaj config.yaml, src/algorithms/*, filtra blokowego, ziaren, budżetów ani instancji (porównywalność z poprzednimi artykułami). Nie aktualizuj pakietów Pythona, doinstaluj tylko brakujące. Liczymy tylko ILS. SA i obliczenia kwantowe wyłącznie na moje wyraźne polecenie. Nie commituj results/ ani .env i nie usuwaj results/.
 
@@ -109,4 +109,4 @@ Odpowiadaj po polsku, zwięźle, z liczbami.
 
 ## 9. Jakość przygotowania
 
-163 testy (Python 3.11 w czystym środowisku i 3.13), pięć iteracji przeglądu krytycznego (dziennik w `PLAN.md`), testy dymne wszystkich skryptów, automatyczny werdykt walidacji i kontrola replikacji starej kampanii.
+163 testy (Python 3.11 w czystym środowisku i 3.13), pięć iteracji przeglądu krytycznego (dziennik w `PLAN_v2_archiwum.md`), testy dymne wszystkich skryptów, automatyczny werdykt walidacji i kontrola replikacji starej kampanii.

@@ -66,6 +66,9 @@ To może być ogólna własność m = 2. Nie twierdzimy tego w artykule; ewentua
 | `main` | 12 plików, k ∈ {2, 3, 4, 5, 6, 8, 12, 16, n}, 10 s | ~15,5 h |
 | `insert` | 12 plików, Insert | ~1,7 h |
 | `ablation` | 12 plików, k ∈ {3, 8} z filtrem dokładnym | ~3,3 h |
+| `relative` | 12 plików, k = ⌈α·n⌉, α = 10%…90% (bez wartości z `main`), 10 s | ~14 h |
+
+Etap `relative` startuje automatycznie po `ablation`. Służy rysunkowi `fig_best_k_rel` (x = n, y = k/n, najlepsze k i remisy Wilcoxona).
 
 Instrukcja: `RUN_LOCAL.md`. Mniejsze budżety z logu ruchów (`scripts/extract_budgets.py`). SA dopiero po decyzji.
 
@@ -116,10 +119,10 @@ O cięciach decydujemy na końcu.
 
 | Kiedy | Co |
 |---|---|
-| do 16.11 | komplet GCMM (pierwszeństwo). W tle na Macu: dokończenie `replicate` (50 przebiegów, ~10 min), potem `main` + `insert` + `ablation` (20,5 h); D-Wave MIN po klasyce |
-| 1.12–… | D-Wave OPT po odnowieniu quoty |
+| do 16.11 | komplet GCMM (pierwszeństwo). W tle na Macu: `replicate` dokończony 11.11 (zgodny ze starą kampanią); od 11.11 `main` + `insert` + `ablation` (20,5 h), potem `relative` (~14 h); D-Wave MIN po klasyce |
 | 17–22.11 | analiza, rysunki, anatomia n = 200; rozmowa z promotorem (punkt 8); **decyzja 22.11: ICAPS czy IJCAI** |
 | 23.11–3.12 | rewizja BPASTS ma pierwszeństwo (termin 3.12); równolegle uzupełnianie rozdziału Results |
+| 1.12–… | D-Wave OPT po odnowieniu quoty |
 | ICAPS | abstrakt 7.12, artykuł 14.12 (koliduje z ANNSIM 18.12) |
 | IJCAI | abstrakt 4.01, artykuł 11.01; czas na SA albo kwanty |
 
@@ -137,6 +140,9 @@ ruszy w tym tygodniu, a promotor szybko odpowie w sprawie podziału.
 | Testy Wilcoxona na parach (instancja, ziarno) | średnie | ziarna tej samej instancji nie są niezależne; proponuję dodać test na średnich po ziarnach (120 par) obok dotychczasowego |
 | Brak SA w pierwszej wersji | niskie | decyzja po ILS |
 | Bezpiecznik (lepszy wg rzeczywistego C_max z ruchu złożonego i najlepszej pojedynczej zamiany) | niskie | decyzja 11.11: poza kampanią główną, bo zmienia regułę wyboru ruchu, a nie otoczenie, i psuje porównywalność ze starymi wynikami. Ewentualnie osobny, oznaczony wariant `kbonacci_kn_safe` (ok. +2,3 h), do rozważenia po wynikach; to samo ustalenie przekazane do wątku o krzyżowaniach. Offline: licznik w anatomii, jak często ruch złożony jest gorszy od najlepszej pojedynczej zamiany |
+| Brak porównania ze stanem wiedzy PFSP (iterated greedy Ruiza i Stützlego) | wysokie na A* | w tekście wprost: badamy otoczenie przy stałym protokole, nie bijemy rekordów; IG cytowany jako stan wiedzy, bez doliczania |
+| Część kwantowa mała, wygląda na doklejoną | średnie | jeden akapit w wynikach: małe k daje małe QUBO (MIN + OPT D-Wave, MIN IQM) |
+| Domknięcie łańcucha „od góry” | średnie | tylko Motzkin (zagnieżdżanie) ze starych wyników i z wcześniejszych prac. **Nie** dokładamy wyników z pilota crossings, bo zdradzają główny wynik artykułu o inwolucjach (decyzja 11.11). Krzyżowanie: jedno zdanie w zakończeniu, bez liczb |
 
 ## 8. Sprawy otwarte
 
@@ -146,6 +152,9 @@ ruszy w tym tygodniu, a promotor szybko odpowie w sprawie podziału.
    Balzereit i in. poprawione (tytuł i autorzy z arXiv).
 4. **Stare wyniki:** kompletność (Motzkin n = 500, Dynasearch n = 500).
 5. **Tabela 2 (pilot)** używa RPD do UB, a tabela główna RPD do LB; pilot zniknie po kampanii.
+6. **Miejsce publikacji:** decyzja po kampanii głównej i etapie `relative`. Jeśli teza jest ostra (najlepsze k/n wyraźnie
+   maleje z n zgodnie z (log₂n+2)/n), idziemy na IJCAI 11.01. Jeśli nie, od razu GECCO (termin 2027 niepotwierdzony).
+   Tezy „zysk Dynasearch siedzi w k ≤ 3–4” nie formułujemy przed wynikami, bo pilot (n ≤ 50, 1 s) wskazał k = n.
 
 ## 9. Zmiany szkicu v1 → v2 (zaakceptowane 11.11.2026)
 

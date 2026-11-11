@@ -1,0 +1,55 @@
+k-bonacci: walidacja i kontrola replikacji (stan 11.11.2026)
+
+== 1. Walidacja (validate 5.11): wartosci z logu przebiegu 10 s vs niezalezne przebiegi ==
+algo neigh              tl    n  RPD extr.  RPD indep.    diff  |diff| noise |diff|  p (Wilcoxon)  gate iters extr. iters indep.
+ils  kbonacci_k3       100  100       8.42        8.40    0.01    0.01         0.00         0.735    ok         836          861
+ils  kbonacci_k3       500  100       6.61        6.61   -0.00    0.00         0.00         0.936    ok        4242         4303
+ils  kbonacci_k3      1000  100       6.06        6.08   -0.02    0.02         0.02         0.682    ok        8574         8556
+ils  kbonacci_k3      2000  100       5.61        5.61   -0.00    0.00         0.01         0.974    ok       17356        17175
+ils  kbonacci_k3      5000  100       5.01        5.03   -0.02    0.03         0.02         0.895    ok       43546        43600
+ils  kbonacci_k8       100  100       6.87        6.87   -0.00    0.00         0.00         0.779    ok         284          288
+ils  kbonacci_k8       500  100       5.39        5.38    0.00    0.01         0.00         0.966    ok        1443         1451
+ils  kbonacci_k8      1000  100       4.87        4.87   -0.00    0.00         0.01         0.958    ok        2885         2887
+ils  kbonacci_k8      2000  100       4.44        4.44    0.00    0.00         0.00         0.128    ok        5778         5801
+ils  kbonacci_k8      5000  100       3.98        3.98   -0.00    0.00         0.00         0.760    ok       14436        14448
+Expected: ILS |diff| ~ 0 (deterministic given the seed); SA |diff| of the order of the
+run-to-run noise column (SA reheats on a wall-clock stagnation timer, so even two runs
+with the same seed and budget diverge after the first kick).
+VALIDATION GATE: PASS (|diff| <= max(0.1 pp, 2 x run-to-run noise) in every row)
+
+== 2. Replikacja (replicate, dokonczony 11.11) vs stara kampania ==
+-- tai20_5: results/experiments/20260527_205631
+algo neigh              tl    n  RPD extr.  RPD indep.    diff  |diff| noise |diff|  p (Wilcoxon)  gate iters extr. iters indep.
+ils  dynasearch        100   50       3.92        3.92    0.00    0.00            -         0.295    ok          98            0
+ils  dynasearch        500   50       3.47        3.47    0.00    0.00            -         0.101    ok         487            0
+ils  dynasearch       1000   50       3.32        3.32    0.00    0.00            -         0.166    ok         975            0
+ils  dynasearch       2000   50       3.08        3.08    0.00    0.00            -         0.088    ok        1951            0
+ils  dynasearch       5000   50       2.80        2.83   -0.03    0.03            -         0.242    ok        4873            0
+ils  dynasearch      10000   50       2.68        2.68    0.00    0.00            -         0.017    ok        9731            0
+ils  fibonacci         100   50       6.00        5.96    0.04    0.04            -         0.076    ok        1702            0
+ils  fibonacci         500   50       4.26        4.25    0.00    0.00            -         0.038    ok        8625            0
+ils  fibonacci        1000   50       4.09        4.09    0.00    0.00            -         0.553    ok       17371            0
+ils  fibonacci        2000   50       3.99        3.99    0.00    0.00            -         0.525    ok       34948            0
+ils  fibonacci        5000   50       3.87        3.87    0.00    0.00            -         0.323    ok       87620            0
+ils  fibonacci       10000   50       3.82        3.82    0.00    0.00            -         0.323    ok      175330            0
+VALIDATION GATE: PASS (|diff| <= max(0.1 pp, 2 x run-to-run noise) in every row)
+-- tai50_10: results/experiments/20260528_065735
+algo neigh              tl    n  RPD extr.  RPD indep.    diff  |diff| noise |diff|  p (Wilcoxon)  gate iters extr. iters indep.
+ils  dynasearch        100   50      15.59       15.34    0.25    0.27            -         0.776  FAIL           4            0
+ils  dynasearch        500   50       8.33        8.34   -0.01    0.04            -         0.735    ok          19            0
+ils  dynasearch       1000   50       6.96        7.04   -0.08    0.09            -         0.014    ok          39            0
+ils  dynasearch       2000   50       6.16        6.17   -0.00    0.01            -         0.258    ok          77            0
+ils  dynasearch       5000   50       5.39        5.39   -0.00    0.02            -         0.446    ok         190            0
+ils  dynasearch      10000   50       4.93        4.94   -0.01    0.01            -         0.359    ok         376            0
+ils  fibonacci         100   50      14.81       14.81    0.00    0.06            -         0.961    ok         412            0
+ils  fibonacci         500   50      11.30       11.27    0.03    0.03            -         0.338    ok        2101            0
+ils  fibonacci        1000   50       9.92        9.87    0.04    0.04            -         0.045    ok        4247            0
+ils  fibonacci        2000   50       9.05        9.03    0.03    0.03            -         0.159    ok        8581            0
+ils  fibonacci        5000   50       7.74        7.74    0.00    0.02            -         0.472    ok       21787            0
+ils  fibonacci       10000   50       7.06        7.06    0.00    0.00            -         0.037    ok       43940            0
+VALIDATION GATE: FAIL in 1 rows: [('ils', 'dynasearch', 100)]
+
+Ocena replikacji (RUN_LOCAL.md 1, gate nie obowiazuje - brak kolumny szumu):
+- RPD przy 10 s: roznica <= 0,01 pp w obu klasach (prog 0,3 pp) -> Mac liczy tak samo.
+- Najwieksza roznica 0,25 pp: dynasearch tai50_10, 100 ms (ok. 4 iteracje w budzecie, czula na czas), nadal < 0,3 pp.
+- Stara kampania nie zapisywala liczby iteracji (kolumna 0), wiec porownanie predkosci tylko przez RPD.

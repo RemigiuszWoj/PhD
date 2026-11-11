@@ -16,6 +16,7 @@ Stages (run in this order by --stage all; each one resumes where it stopped):
   main      12 Taillard files, k in {2,3,4,5,6,8,12,16,n}.
   insert    12 Taillard files, Insert neighborhood (reference row).
   ablation  12 Taillard files, k in {3,8} with the exact critical-path filter.
+  relative  12 Taillard files, k = ceil(alpha n) for alpha = 10%, ..., 90% (values not in `main`).
 
 Usage (Mac, repo root):
     python scripts/run_kbonacci_campaign.py --dry-run
@@ -25,6 +26,7 @@ Usage (Mac, repo root):
 """
 
 import argparse
+import math
 import os
 import subprocess
 import sys
@@ -60,16 +62,36 @@ STAGES = {
     "insert": {"files": TAILLARD, "modes": ["insert"], "budgets": [LONG]},
     "ablation": {"files": TAILLARD, "modes": ["kbonacci_k3_cp", "kbonacci_k8_cp"], "budgets": [LONG]},
 }
-ORDER = ["validate", "replicate", "main", "insert", "ablation"]
+# Relative k: k = ceil(alpha * n) for alpha = 10%, 20%, ..., 90%, so that every n has points
+# between the fixed small k of `main` and k = n. Values already in `main` are skipped.
+REL_ALPHA = [a / 10 for a in range(1, 10)]
+
+
+def relative_modes(f: str) -> list:
+    n = int(f.split("_")[0][3:])
+    ks = sorted({max(2, math.ceil(a * n)) for a in REL_ALPHA})
+    return [f"kbonacci_k{k}" for k in ks if f"kbonacci_k{k}" not in K_MAIN and k < n]
+
+
+STAGES["relative"] = {"files": TAILLARD, "modes": relative_modes, "budgets": [LONG]}
+ORDER = ["validate", "replicate", "main", "insert", "ablation", "relative"]
 # Rough wall-clock overrun for runs whose first move outlasts the budget
 # (k = n at n = 500: one Dynasearch-sized evaluation takes ~36 s in Python).
 OVERRUN_S = {("kbonacci_kn", 500): 30.0}
 
 
+def overrun_s(mode: str, n: int) -> float:
+    if (mode, n) in OVERRUN_S:
+        return OVERRUN_S[(mode, n)]
+    k = mode[len("kbonacci_k"):] if mode.startswith("kbonacci_k") else ""
+    # relative k at n = 500: the first move scales roughly with k / n of the k = n case
+    return 30.0 * int(k) / n if n == 500 and k.isdigit() and int(k) > 16 else 0.0
+
+
 def configs(files, modes, budgets, algos):
     out = []
     for f in files:
-        for mode in modes:
+        for mode in (modes(f) if callable(modes) else modes):
             for algo in algos:
                 for t in budgets:
                     for i in INSTANCES:
@@ -85,7 +107,7 @@ def est_hours(cfgs) -> float:
     sec = 0.0
     for c in cfgs:
         n = int(Path(c.instance_file).stem.split("_")[0][3:])
-        sec += c.time_limit_ms / 1000 + OVERRUN_S.get((c.neighborhood, n), 0.0) + 0.05
+        sec += c.time_limit_ms / 1000 + overrun_s(c.neighborhood, n) + 0.05
     return sec / 3600
 
 

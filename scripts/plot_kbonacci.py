@@ -9,6 +9,7 @@ Figures:
                         neighborhoods as horizontal marks at the longest budget
   fig_iters_vs_k.pdf    ILS iterations within the longest budget vs k (log-log), one line per n
   fig_best_k.pdf        best k for every (n, budget)
+  fig_best_k_rel.pdf    best k / n for every Taillard class, x = n (needs --runs)
   fig_additivity.pdf    predicted vs real gain and share of optimistic predictions vs k
   fig_distances.pdf     distances of the swaps selected at k = n, per instance class
   fig_cost.pdf          evaluation time and candidates vs k for both filters
@@ -130,6 +131,71 @@ def fig_best_k(tables: Path, out: Path, algo: str) -> None:
     plt.close(fig)
 
 
+def fig_best_k_rel(dirs, out: Path, algo: str, budgets=(100, 1000, 10000)) -> None:
+    """Best k as a fraction of n, per Taillard class: x = n, y = k/n (log-log).
+
+    Grey dots: every tested k. Filled marker: best mean RPD of the class (marker = m).
+    Open marker: k not distinguishable from the best (paired two-sided Wilcoxon over
+    instance x seed, p >= 0.05). Dashed: (log2 n + 2) / n, where N_k already holds
+    most of Dynasearch (share ~ exp(-n / 2^(k+1)))."""
+    import math
+    import sys
+
+    from scipy.stats import wilcoxon
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from analyze_kbonacci import load
+
+    runs = defaultdict(dict)  # (file, tl) -> {k: {(inst, seed): rpd}}
+    for r in load(dirs, None):
+        k = k_of(r["neigh"], r["n"])
+        if r["algo"] == algo and k is not None:
+            runs[(r["file"], r["tl"])].setdefault(min(k, r["n"]), {})[(r["inst"], r["seed"])] = r["rpd"]
+    budgets = [b for b in budgets if any(t == b for _, t in runs)]
+    if not budgets:
+        return
+    ms = sorted({int(f.split("_")[1]) for f, _ in runs})
+    mark = dict(zip(ms, MARKS))
+    shade = dict(zip(ms, ["0.0", "0.35", "0.6"]))
+    fig, axes = plt.subplots(1, len(budgets), figsize=(2.4 * len(budgets), 2.6), sharey=True, squeeze=False)
+    for ax, b in zip(axes[0], budgets):
+        for (f, t), by_k in sorted(runs.items()):
+            if t != b:
+                continue
+            n, m = (int(x) for x in f[3:].split("_"))
+            dx = {ms[0]: 0.92, ms[-1]: 1.08}.get(m, 1.0)  # spread the m classes of one n
+            means = {k: statistics.mean(v.values()) for k, v in by_k.items()}
+            kbest = min(means, key=means.get)
+            ax.scatter([n * dx] * len(means), [k / n for k in means], s=4, color="0.8", zorder=1)
+            for k, v in by_k.items():
+                if k == kbest:
+                    continue
+                keys = sorted(v.keys() & by_k[kbest].keys())
+                a_, b_ = [v[x] for x in keys], [by_k[kbest][x] for x in keys]
+                tie = a_ == b_ or (len(keys) >= 6 and wilcoxon(a_, b_).pvalue >= 0.05)
+                if tie:
+                    ax.scatter(n * dx, k / n, s=16, marker=mark[m], facecolors="none",
+                               edgecolors=shade[m], linewidths=0.6, zorder=2)
+            ax.scatter(n * dx, kbest / n, s=30, marker=mark[m], color=shade[m], zorder=3)
+        ns = sorted({int(f[3:].split("_")[0]) for f, _ in runs})
+        xs = [ns[0] * 0.85] + ns + [ns[-1] * 1.15]
+        ax.plot(xs, [min(1.0, (math.log2(x) + 2) / x) for x in xs], "k--", lw=0.7, zorder=0)
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        ax.set_xticks(ns, [str(n) for n in ns])
+        ax.minorticks_off()
+        ax.set_xlabel("$n$")
+        ax.set_title(f"{b / 1000:g} s")
+    axes[0][0].set_ylabel("$k / n$")
+    axes[0][0].set_yticks([0.005, 0.01, 0.03, 0.1, 0.3, 1.0], ["0.5%", "1%", "3%", "10%", "30%", "100%"])
+    handles = [plt.Line2D([], [], ls="", marker=mark[m], color=shade[m], label=f"$m={m}$") for m in ms]
+    handles.append(plt.Line2D([], [], ls="--", color="k", lw=0.7, label=r"$(\log_2 n+2)/n$"))
+    axes[0][-1].legend(handles=handles, loc="lower left", fontsize=6)
+    fig.tight_layout()
+    fig.savefig(out / "fig_best_k_rel.pdf")
+    plt.close(fig)
+
+
 def class_key(f: str):
     return tuple(int(v) for v in f[3:].split("_"))
 
@@ -211,10 +277,16 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--tables", type=Path, default=None)
     ap.add_argument("--anatomy", type=Path, default=None)
+    ap.add_argument("--runs", nargs="*", default=[],
+                    help="result dirs with per-run data, e.g. results/kbonacci/main_budgets "
+                         "results/kbonacci/relative_budgets (for fig_best_k_rel)")
     ap.add_argument("--algo", default="ils")
     ap.add_argument("--out", type=Path, default=Path("articles/kbonacci/figures"))
     a = ap.parse_args()
     a.out.mkdir(parents=True, exist_ok=True)
+    if a.runs:
+        fig_best_k_rel(a.runs, a.out, a.algo)
+        print("relative-k figure written")
     if a.tables and (a.tables / f"rpd_{a.algo}.csv").exists():
         fig_rpd(a.tables, a.out, a.algo)
         fig_best_k(a.tables, a.out, a.algo)

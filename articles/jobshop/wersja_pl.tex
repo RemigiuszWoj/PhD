@@ -1,0 +1,592 @@
+% =====================================================================
+% SZKIC v1 (11.11.2026) -- wersja polska articles/jobshop/main.tex
+% Do czytania i akceptacji; wersja do zgłoszenia to main.tex.
+% WSZYSTKIE LICZBY W TABELACH 2-4 TO PILOT (1 s, prototyp w Pythonie,
+% 2-3 ziarna): pokazują kierunek, zastąpi je kampania.
+% Bibliografia: jak w main.tex (do sprawdzenia w Crossref).
+% =====================================================================
+\documentclass[10pt,twocolumn]{article}
+\usepackage[margin=0.75in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[polish]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+\newtheorem{theorem}{Twierdzenie}
+\newtheorem{proposition}{Stwierdzenie}
+\newtheorem{lemma}{Lemat}
+\newtheorem{corollary}{Wniosek}
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+\newcommand{\pilot}{\textcolor{blue}{[pilot]}}
+\newcommand{\JP}{\mathrm{JP}}
+\newcommand{\JS}{\mathrm{JS}}
+\newcommand{\Cmax}{C_{\max}}
+
+\title{Złożone ruchy graniczne w problemie gniazdowym:\\
+wykonalność przestawień w blokach\\
+i kontinuum od flow shopu do job shopu}
+\author{\todo{autorzy}}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Sąsiedztwa złożone wykonują w jednym ruchu wiele niezależnych zamian,
+a najlepszą kombinację wybiera programowanie dynamiczne. Sprawdzają się
+w permutacyjnym problemie przepływowym, w którym każda permutacja jest
+wykonalnym harmonogramem. Przenosimy je na problem gniazdowy z kryterium
+$\Cmax$. Ścieżka krytyczna pełni rolę permutacji, a jej bloki rolę
+odcinków, w których umieszcza się zamiany. Jedyną nową przeszkodą jest
+wykonalność. Dowodzimy dokładnego warunku: przestawienie operacji
+wewnątrz bloków krytycznych tworzy cykl wtedy i tylko wtedy, gdy odwraca
+parę operacji połączoną ścieżką, która wychodzi z pierwszej przez jej
+następnik technologiczny, wchodzi do drugiej przez jej poprzednik
+technologiczny i omija resztę bloku. Z warunku wynika, że ruchy złożone
+z rozłącznych przedziałów wymagają tylko testów pojedynczych składowych,
+że krzyżujące się zamiany wprowadzają ograniczenia dla par, a w problemie
+przepływowym żadne przestawienie nie jest niewykonalne. Klasyczna
+własność blokowa sprowadza następnie każdą rodzinę zamian do najwyżej
+dwóch ruchów na blok. Prowadzi to do rodziny ruchów granicznych o trzech
+osiach: typ ruchu (zamiana albo wstawienie), zasięg oraz zastosowanie
+pojedyncze albo złożone. N5, N6 i N7 są punktami tej rodziny, podobnie
+jak złożone sąsiedztwa Fibonacciego, $k$-bonacciego i Dynasearch.
+W badaniu pilotażowym z iterowanym przeszukiwaniem lokalnym ruchy złożone
+o umiarkowanym zasięgu dają na instancjach Taillarda mniejszy $\Cmax$ niż
+N5 i N6, a ich przewaga nad N5 jest największa dla instancji pośrednich
+między flow shopem a job shopem.
+\todo{ostatnie zdanie zastąpić wynikiem kampanii}
+\end{abstract}
+
+% ---------------------------------------------------------------------
+\section{Wstęp}
+
+Przeszukiwanie lokalne dla problemu gniazdowego z kryterium długości
+uszeregowania, $J||\Cmax$, opiera się na kilku sąsiedztwach określonych na
+ścieżce krytycznej. N1 zamienia dowolne dwie sąsiednie operacje krytyczne
+jednej maszyny~\cite{laarhoven1992}. N5 zostawia tylko zamiany na obu
+końcach każdego bloku krytycznego~\cite{nowicki1996}. N6 i N7 przenoszą
+operację na początek albo na koniec jej
+bloku~\cite{balas1998,zhang2007}. Każde z nich zmienia w jednym ruchu
+jeden blok, a najlepsze algorytmy tabu~\cite{nowicki2005,peng2015} są
+zbudowane właśnie na nich.
+
+Dla permutacyjnego problemu przepływowego istnieje inna linia sąsiedztw.
+Ruch złożony to zbiór zamian na rozłącznych przedziałach permutacji,
+a najlepszy zbiór znajduje programowanie dynamiczne, jak
+w Dynasearch~\cite{congram2002}. Ograniczenie odległości zamiany daje
+sąsiedztwo Fibonacciego (tylko zamiany sąsiednie)~\cite{fibonacci_own}
+i rodzinę $k$-bonacciego między Fibonaccim
+a Dynasearch~\cite{kbonacci_own}. Sąsiedztwa te mają wykładniczy rozmiar
+i przeszukuje się je tanio, ale korzystają z tego, że każda permutacja
+jest wykonalnym harmonogramem przepływowym. W problemie gniazdowym
+zamiana dwóch niesąsiednich operacji może zamknąć cykl w grafie
+dysjunktywnym, a wykonalność kombinacji wykonalnych zamian nie jest
+oczywista.
+
+W tej pracy pytamy, co zostaje z sąsiedztw złożonych, gdy marszruty zadań
+się różnią. Odpowiedź ma trzy części. Pierwsza to konstrukcja. Ścieżkę
+krytyczną traktujemy jak wirtualną permutację, zamiana kandydująca leży
+w jednym bloku, a wybór ruchu złożonego wykonuje ten sam program
+dynamiczny co w problemie przepływowym. Program rozkłada się na bloki,
+więc sąsiedztwo jest iloczynem sąsiedztw bloków. Druga część to
+twierdzenie o wykonalności dowolnych przestawień wewnątrz bloków. Podaje
+ono dokładny warunek dla par i wyjaśnia, które rodziny złożone są
+bezpieczne: dla ruchów na przedziałach rozłącznych lub zagnieżdżonych
+wystarczy sprawdzić każdą zamianę osobno, krzyżujące się zamiany wymagają
+testów par, a przy wspólnych marszrutach nie trzeba sprawdzać niczego.
+Trzecia część to uczciwy opis tego, co własność blokowa robi z tymi
+rodzinami. Ruch, który nie zmienia żadnej granicy bloku, nie może
+poprawić $\Cmax$, więc po zwykłym filtrze w każdym bloku zostają najwyżej
+dwie zamiany, po jednej na każdym końcu. Rodziny liczone ciągami zapadają
+się, a naturalną rodzinę dla problemu gniazdowego indeksują typ ruchu
+granicznego, jego zasięg i to, czy stosujemy jeden ruch, czy po jednym na
+każdy koniec bloku. N5, N6 i N7 są punktami tej rodziny z jednym ruchem.
+Ich wersje złożone są nowe.
+
+Część eksperymentalna mierzy trzy rzeczy w jednym protokole i jednym
+kodzie: jakość osiąganą przez każdego członka rodziny w iterowanym
+przeszukiwaniu lokalnym i symulowanym wyżarzaniu na instancjach
+gniazdowych Taillarda~\cite{taillard1993}, udział niewykonalnych dalekich
+ruchów w zależności od kształtu instancji i jakości rozwiązania oraz
+zachowanie rodziny na generowanych instancjach pośrednich między flow
+shopem a job shopem. \todo{jedno zdanie z głównym wynikiem kampanii}
+
+% ---------------------------------------------------------------------
+\section{Podstawy}
+
+Instancja ma $n$ zadań i $m$ maszyn. Zadanie $j$ odwiedza maszyny
+w kolejności swojej marszruty, a jego $t$-ta operacja trwa $p_{j,t}$. Dla
+operacji $o$ przez $\JP(o)$ i $\JS(o)$ oznaczamy jej poprzednik
+i następnik technologiczny. Rozwiązanie to kolejność $\sigma_k$ operacji
+na każdej maszynie $k$. Graf dysjunktywny~\cite{roy1964} $G(\sigma)$ ma
+łuk technologiczny $o\to\JS(o)$ dla każdej operacji i łuk maszynowy
+między kolejnymi operacjami każdej $\sigma_k$. Rozwiązanie jest wykonalne
+wtedy i tylko wtedy, gdy $G(\sigma)$ jest acykliczny. Głowa $r(o)$ to
+długość najdłuższej ścieżki kończącej się na początku $o$, ogon $q(o)$ to
+długość najdłuższej ścieżki wychodzącej z końca $o$,
+a $\Cmax=\max_o\, r(o)+p_o+q(o)$. Jedno przejście w porządku
+topologicznym liczy je wszystkie w czasie $O(nm)$.
+
+Ścieżka krytyczna to najdłuższa ścieżka w $G(\sigma)$. Blok to maksymalna
+seria kolejnych operacji krytycznych połączonych łukami maszynowymi.
+Własność blokowa~\cite{brucker1994,nowicki1996} mówi, że w harmonogramie
+o mniejszym $\Cmax$ pewna operacja bloku musi być wykonana przed pierwszą
+albo po ostatniej operacji tego bloku. N5 korzysta z niej, zostawiając
+dwie zamiany na blok. N6 i N7 definiują na jej podstawie wstawienia
+i podają dla nich warunki wystarczające
+wykonalności~\cite{balas1998,zhang2007}. Wykonalność wstawień w ogólnym
+ujęciu badali Gr\"oflin i Klinkert~\cite{groflin2007}, a dla kryteriów
+regularnych Mati i in.~\cite{mati2011}. \todo{po lekturze opisać
+dokładnie relację twierdzenia~\ref{th:main} do
+\cite{groflin2007,mati2011,dauzere1997} i do ruchów złożonych Bożejki
+i Wodeckiego}
+Kandydatów porządkuje się zwykle estymatą liczoną z bieżących głów
+i ogonów~\cite{taillard1994,balas1998}, a dokładnie ocenia się tylko ruch
+wybrany.
+
+W permutacyjnym problemie przepływowym sąsiedztwa złożone liczą ciągi
+liczbowe: permutacja długości $L$ ma $F_{L+1}$ zbiorów rozłącznych zamian
+sąsiednich, $a_k(L)$ zbiorów rozłącznych zamian o odległości mniejszej niż
+$k$ (liczby $k$-bonacciego) i $2^{L-1}$ zbiorów rozłącznych zamian
+o dowolnej odległości. Dopuszczenie zamian zagnieżdżonych daje liczby
+Motzkina, a dopuszczenie krzyżowań inwolucje~\cite{motzkin_own}.
+
+% ---------------------------------------------------------------------
+\section{Sąsiedztwa na ścieżce krytycznej}\label{sec:family}
+
+Niech $P=(o_1,\dots,o_L)$ będzie jedną ścieżką krytyczną rozwiązania
+wykonalnego, a $B_1,\dots,B_b$ jej blokami. Gdy oba poprzedniki operacji
+są krytyczne, idziemy przez poprzednik maszynowy, co daje dłuższe bloki.
+Pozycje $1,\dots,L$ ścieżki $P$ tworzą wirtualną permutację. Zamiana
+wymienia dwie operacje jednego bloku i odpowiada przedziałowi pozycji.
+Przedziały z różnych bloków są rozłączne, więc dowolny zbiór zamian
+z różnych bloków jest ruchem złożonym w sensie problemu przepływowego.
+Ruch przepływowy zmienia kolejność na wszystkich maszynach naraz. Ruch
+gniazdowy zmienia jedną maszynę na blok.
+
+\begin{proposition}[rozmiar]\label{pr:count}
+Niech $a_F(L)$ będzie liczbą ruchów złożonych rodziny $F$ na permutacji
+długości $L$. Na ścieżce krytycznej o długościach bloków $L_1,\dots,L_b$
+rodzina ma $\prod_{i} a_F(L_i)$ ruchów, łącznie z pustym.
+\end{proposition}
+
+Iloczyn jest wykładniczy względem długości ścieżki, jak w problemie
+przepływowym. Własność blokowa usuwa większość tych ruchów.
+
+\begin{proposition}[reguła granic]\label{pr:border}
+Niech $\sigma'$ będzie rozwiązaniem wykonalnym otrzymanym z $\sigma$
+przez przestawienie operacji wewnątrz bloków ścieżki $P$. Jeśli $\sigma'$
+zachowuje pierwszą operację każdego bloku poza $B_1$ i ostatnią operację
+każdego bloku poza $B_b$, to $\Cmax(\sigma')\ge\Cmax(\sigma)$.
+\end{proposition}
+\begin{proof}
+W $\sigma'$ operacje każdego bloku nadal stoją kolejno na swojej
+maszynie. Odwiedzamy je w nowej kolejności. Łuk technologiczny z ostatniej
+operacji $B_i$ do pierwszej operacji $B_{i+1}$ się nie zmienia, więc
+odwiedzane operacje tworzą w $G(\sigma')$ ścieżkę o tych samych
+operacjach co $P$ i tej samej długości.
+\end{proof}
+
+Zamiana, która nie dotyka żadnej granicy, ma efekt nieujemny, więc
+program dynamiczny sumujący efekty zamian nigdy jej nie wybierze.
+Zostawiamy zatem tylko kandydatów, którzy wymieniają pierwszą albo
+ostatnią operację bloku. Filtr ten jest dokładny dla modelu addytywnego
+używanego przy wyborze. Nie jest dokładny dla prawdziwego $\Cmax$ ruchu
+złożonego, bo zamiana wewnętrzna może zmienić wynik zamiany granicznej
+wykonanej razem z nią. Wracamy do tego w rozdziale~\ref{sec:eval}.
+
+\begin{proposition}[spłaszczenie]\label{pr:flat}
+Pod regułą granic blok długości $L$ wnosi do ruchu złożonego najwyżej
+dwie rozłączne zamiany: jedną zawierającą jego pierwszą pozycję i jedną
+zawierającą ostatnią. Zamiany zagnieżdżone nie występują, a dwie zamiany
+krzyżują się tylko jako para $(1,j)$, $(i,L)$ dla $i<j$.
+\end{proposition}
+
+Stwierdzenie~\ref{pr:flat} zmienia obraz przeniesiony z problemu
+przepływowego. Wewnątrz bloku rodzina Motzkina jest równa Dynasearch,
+a liczba przefiltrowanych ruchów złożonych bloku jest wielomianowa
+względem $L$. Zmieniać można już tylko sam ruch graniczny. Rozważamy trzy
+typy ruchów na przedziale bloku $[a,b]$ zawierającym koniec bloku:
+zamianę końców, wstawienie przenoszące operację wewnętrzną na koniec
+bloku (N6) i wstawienie przesuwające operację końcową w głąb (N7).
+Parametr zasięgu $k$ ogranicza przedział warunkiem $b-a\le k-1$. Dla
+$k=2$ wszystkie trzy typy są tą samą zamianą sąsiednią. Sąsiedztwo
+pojedyncze wykonuje najlepszego kandydata. Sąsiedztwo złożone wykonuje
+najwyżej jednego kandydata na każdy koniec bloku we wszystkich blokach
+naraz. Tabela~\ref{tab:family} wymienia badanych członków rodziny.
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+Typ i zasięg & Pojedyncze & Złożone \\
+\midrule
+zamiana, $k=2$ & N5 & Fib \\
+zamiana, zasięg $k$ & & $k$-bonacci \\
+zamiana, dowolny zasięg & & Dyn \\
+wstawienie N6, dowolny zasięg & N6 & c6 \\
+wstawienia N6 i N7, dowolny zasięg & N7 & c7 \\
+wszystkie typy, zasięg $k$ & & bm$_k$ \\
+\bottomrule
+\end{tabular}
+\caption{Rodzina ruchów granicznych. Pozycje c6, c7 i bm$_k$ są nowe.}
+\label{tab:family}
+\end{table}
+
+Jedna iteracja ocenia bieżące rozwiązanie, wyznacza ścieżkę i jej bloki,
+wylicza kandydatów granicznych wybranego typu i zasięgu, odrzuca
+niewykonalnych (rozdział~\ref{sec:feas}), szacuje $\Cmax$ po każdym
+z pozostałych, wybiera zbiór kandydatów i dokładnie ocenia otrzymane
+rozwiązanie. Wybór wykonuje pozycyjny program dynamiczny z kodu
+przepływowego. Kandydaci z różnych bloków nigdy się nie nakładają, więc
+program zwraca sumę niezależnych optimów bloków i nie przedstawiamy go
+jako wkładu. Jeśli nie wybierze niczego, wykonujemy najlepszego
+pojedynczego kandydata, jak w naszych pracach o problemie przepływowym.
+Koszt iteracji to dwie oceny $O(nm)$ i $O(bk^2)$ na estymaty dla rodziny
+o zasięgu $k$.
+
+% ---------------------------------------------------------------------
+\section{Wykonalność przestawień w blokach}\label{sec:feas}
+
+Niech $\sigma$ będzie wykonalne, a $\sigma'$ powstaje przez permutowanie
+operacji wewnątrz bloków ścieżki $P$. Zmieniać się może kilka bloków
+naraz. Dla dwóch operacji $x,y$ jednego bloku, gdzie $x$ stoi przed $y$
+w $\sigma$, \emph{obejściem} z $x$ do $y$ nazywamy ścieżkę w $G(\sigma)$,
+która wychodzi z $x$ łukiem technologicznym $x\to\JS(x)$, wchodzi do $y$
+łukiem technologicznym $\JP(y)\to y$ i nie zawiera żadnej innej operacji
+bloku. Dopuszczamy przypadek $\JS(x)=\JP(y)$.
+
+\begin{lemma}\label{le:clean}
+Obejście z $x$ do $y$ nie zawiera żadnej operacji ścieżki $P$ poza $x$
+i $y$.
+\end{lemma}
+\begin{proof}
+Niech $u$ będzie wewnętrzną operacją obejścia leżącą na $P$. Jeśli $u$
+poprzedza $x$ na $P$, to $P$ prowadzi z $u$ do $x$, a obejście z $x$ do
+$u$, co daje cykl w $G(\sigma)$. Jeśli $u$ następuje po $y$ na $P$, cykl
+tworzą $P$ od $y$ do $u$ i obejście od $u$ do $y$. W pozostałym przypadku
+$u$ leży na $P$ między $x$ a $y$, a więc należy do bloku, co wyklucza
+definicja.
+\end{proof}
+
+\begin{theorem}\label{th:main}
+Rozwiązanie $\sigma'$ jest niewykonalne wtedy i tylko wtedy, gdy istnieją
+operacje $x,y$ jednego bloku takie, że $x$ poprzedza $y$ w $\sigma$, $y$
+poprzedza $x$ w $\sigma'$, a $G(\sigma)$ zawiera obejście z $x$ do $y$.
+\end{theorem}
+\begin{proof}
+Niech $\prec$ i $\prec'$ oznaczają porządki maszynowe w $\sigma$
+i $\sigma'$. Różnią się one tylko na parach operacji tego samego bloku.
+
+\emph{Dostateczność.} Z lematu~\ref{le:clean} wewnętrzne łuki obejścia
+łączą operacje spoza $P$, a jego pierwszy i ostatni łuk są
+technologiczne. Żaden z tych łuków nie zależy od kolejności wewnątrz
+bloku, więc obejście jest ścieżką w $G(\sigma')$. Razem z $y\prec' x$
+zamyka cykl.
+
+\emph{Konieczność.} Niech $C$ będzie cyklem w $G(\sigma')$, przy czym
+łuki maszynowe bierzemy w sensie przechodnim. Łuk maszynowy $u\to v$
+cyklu $C$ nazywamy \emph{nowym}, jeśli $v\prec u$. Pozostałe łuki $C$
+należą do $G(\sigma)$, więc $C$ zawiera nowy łuk i dzieli się na nowe
+łuki oraz ścieżki z $G(\sigma)$ między nimi. Nowy łuk zostaje w jednym
+bloku i cofa się po $P$. Ścieżka z $G(\sigma)$ między dwiema operacjami
+$P$ nie może cofać się po $P$. Gdyby taka ścieżka przeszła z bloku do
+późniejszego, $C$ nie mógłby wrócić, więc wszystkie nowe łuki cyklu leżą
+w jednym bloku $B$.
+
+Tniemy $C$ przy każdej wizycie w $B$. Fragment jest albo pojedynczym
+łukiem maszynowym między operacjami $B$, zgodnym z $\prec'$, albo ścieżką
+z $u\in B$ do $v\in B$, której wewnętrzne operacje leżą poza $B$.
+Fragment drugiego rodzaju leży w $G(\sigma)$, więc $u\prec v$. Nie może
+zaczynać się łukiem maszynowym, bo ten prowadziłby do operacji za blokiem
+na tej samej maszynie, a reszta fragmentu wracałaby do $B$, zamykając
+cykl w $G(\sigma)$. Z tego samego powodu nie może kończyć się łukiem
+maszynowym. Jest więc obejściem z $u$ do $v$. Po scaleniu kolejnych
+fragmentów maszynowych $C$ ma postać
+$c_1\preceq' d_1\leadsto c_2\preceq' d_2\leadsto\dots\leadsto c_1$, gdzie
+każde $\leadsto$ jest obejściem. Co najmniej jedno obejście występuje, bo
+$\prec'$ jest porządkiem liniowym. Gdyby dla każdego obejścia zachodziło
+$d_i\prec' c_{i+1}$, ciąg byłby cyklem w $\prec'$. Zatem pewne obejście
+łączy parę, dla której $d_i\prec c_{i+1}$ i $c_{i+1}\prec' d_i$.
+\end{proof}
+
+Wykluczenie pozostałych operacji bloku jest istotne. Jeśli ścieżka z $x$
+do $y$ może przechodzić przez operacje $z,z'$ bloku i używać łuku
+maszynowego $z\to z'$, to nowa kolejność $z',y,x,z$ odwraca parę $(x,y)$,
+a mimo to jest wykonalna. W testach pełnego przeglądu na losowych
+instancjach warunek z twierdzenia~\ref{th:main} zgadzał się z wykrywaniem
+cykli we wszystkich $184\,461$ sprawdzonych przestawieniach, z których
+$28\,065$ było niewykonalnych, a wersja bez wykluczenia dała jeden
+fałszywy alarm. \pilot
+
+Twierdzenie zależy od $\sigma'$ tylko przez zbiór odwróconych par. Stąd
+następujące wnioski.
+
+\begin{corollary}\label{co:all}
+(a) Zamiana dwóch sąsiednich operacji krytycznych jest
+wykonalna~\cite{laarhoven1992}.
+(b) Ruch złożony, którego składowe działają na przedziałach rozłącznych
+lub zagnieżdżonych, jest wykonalny wtedy i tylko wtedy, gdy każda
+składowa jest wykonalna osobno.
+(c) Przeniesienie $u$ w przód za $x_1,\dots,x_s$ jest niewykonalne wtedy
+i tylko wtedy, gdy istnieje obejście z $u$ do pewnego $x_i$.
+Przeniesienie $u$ wstecz jest niewykonalne wtedy i tylko wtedy, gdy
+istnieje obejście z pewnego $x_i$ do $u$.
+(d) Jeśli wszystkie zadania mają tę samą marszrutę, każde przestawienie
+wewnątrz bloków jest wykonalne.
+\end{corollary}
+\begin{proof}
+(a) Obejście z $x$ do jego następnika maszynowego $y$ jest dłuższe niż
+$p_x+p_y$, co przeczy krytyczności łuku $x\to y$. (b) Zbiór odwróconych
+par takiego ruchu jest sumą zbiorów jego składowych. (c) Ruch odwraca
+dokładnie pary $(u,x_i)$ albo $(x_i,u)$. (d) Przy wspólnej marszrucie
+numer maszyny nigdy nie maleje wzdłuż ścieżki, a obejście najpierw go
+zwiększa.
+\end{proof}
+
+Część (b) obejmuje złożone rodziny Fibonacciego, $k$-bonacciego,
+Dynasearch i Motzkina oraz wszystkie złożone ruchy graniczne
+z tabeli~\ref{tab:family}: ich wykonalność kosztuje jeden test na
+kandydata i nic na kombinację. Krzyżujące się zamiany zachowują się
+inaczej. Ich zbiór odwróconych par nie jest sumą składowych, dwie
+wykonalne zamiany mogą dać ruch niewykonalny (0,71\% krzyżujących się par
+w naszych testach \pilot), a zamianę niewykonalną może naprawić zamiana
+krzyżująca się z nią. Każda odwrócona para zależy od najwyżej dwóch
+zamian, więc wykonalność zbioru krzyżujących się zamian jest ograniczeniem
+kwadratowym w zmiennych wyboru. Część (c) jest dokładna, podczas gdy
+warunki używane z N6 i N7~\cite{balas1998,zhang2007} są wystarczające.
+Część (d) wskazuje problem przepływowy jako przypadek bez przeszkód.
+
+W implementacji parę sprawdza się najpierw głowami: ścieżka z $\JS(x)$
+do $\JP(y)$ wymaga $r(\JP(y))\ge r(\JS(x))+p_{\JS(x)}$. Ten certyfikat
+rozstrzyga około 90\% wykonalnych zamian niesąsiednich \pilot. Pozostałe
+pary rozstrzyga przeszukiwanie w głąb z $\JS(x)$, przycinane głowami
+i niewchodzące do bloku.
+
+% ---------------------------------------------------------------------
+\section{Ocena ruchu i addytywność}\label{sec:eval}
+
+Dla kandydata, który przestawia przedział bloku, estymata przelicza
+w nowej kolejności głowy operacji przedziału od lewej do prawej i ich
+ogony od prawej do lewej. Głowy poprzedników technologicznych
+i maszynowego poprzednika przedziału oraz ogony następników
+technologicznych i maszynowego następnika pochodzą z bieżącego
+rozwiązania. Estymatą nowego $\Cmax$ jest największa wartość $r'+p+q'$
+w przedziale, a jej koszt jest liniowy względem długości przedziału. Dla
+zamiany sąsiedniej to estymata Taillarda~\cite{taillard1994}: dolne
+ograniczenie nowego $\Cmax$, dokładne zawsze wtedy, gdy ruch nie
+poprawia. Dla dłuższych przedziałów to przybliżenie. \todo{E0: korelacja
+rang z wartością dokładną i udział fałszywych popraw, dla każdego
+zasięgu}
+
+Wybór sumuje oszacowane efekty wybranych kandydatów. W problemie
+gniazdowym suma ta zawyża rzeczywisty zysk bardziej niż w przepływowym,
+bo skrócenie jednego bloku czyni krytyczną ścieżkę równoległą. W pilocie
+rzeczywisty zysk ruchu złożonego wynosił 36--43\% sumy dokładnych efektów
+pojedynczych i 14--19\% sumy estymat, a mimo to tylko 2--4\% ruchów
+złożonych nie poprawiało. \pilot{} Dokładna ocena wybranego ruchu jest
+więc konieczna. \todo{E5: środki zaradcze, czyli dokładna ocena $t$
+najlepszych ruchów, limit liczby składowych oraz wariant bez filtra, który
+mierzy, ile traci filtr granic}
+
+% ---------------------------------------------------------------------
+\section{Protokół eksperymentów}\label{sec:setup}
+
+Protokół jest taki jak w naszych pracach o problemie przepływowym, żeby
+jedynym zmienianym czynnikiem było sąsiedztwo. Iterowane przeszukiwanie
+lokalne i symulowane wyżarzanie zachowują przebieg sterowania i stałe.
+\todo{stałe w jednym zdaniu, jak w pracy o $k$-bonaccim} Rozwiązanie
+początkowe przydziela operacje zadaniom po kolei i dekoduje je
+półaktywnie, co odpowiada permutacji identycznościowej. Zaburzeniem jest
+double bridge na porządku topologicznym operacji z tym samym
+dekodowaniem, więc zawsze daje rozwiązanie wykonalne. Identyfikatory tabu
+to zbiory zamienionych par operacji. Wszystkie sąsiedztwa mają jedną
+implementację, która różni się tylko generatorem kandydatów.
+
+Głównym zestawem testowym są instancje ta01--ta80
+Taillarda~\cite{taillard1993}, osiem klas od $15\times15$ do
+$100\times20$ po dziesięć instancji. Wszystkie instancje odtworzyliśmy
+z opublikowanych ziaren. Każdą konfigurację uruchamiamy raz na 10~s
+z pięcioma ziarnami, a wyniki dla budżetów 0,1, 0,5, 1, 2 i 5~s
+odczytujemy z dziennika ruchów tego przebiegu. Podajemy względne
+odchylenie od najlepszego znanego górnego
+ograniczenia~\cite{vanhoorn2018} z datą i źródłem każdej wartości oraz
+liczbę iteracji przy każdym budżecie czasu. \todo{maszyna, wersja
+Pythona; walidacja ekstrakcji budżetów na dwóch klasach}
+
+Eksperyment kontinuum używa generatora Taillarda z parametrem nieporządku
+marszrut $\rho\in\{0;0{,}1;0{,}25;0{,}5;1\}$. Marszruty zaczynają jako
+identyczność, a każdą transpozycję tasowania marszruty wykonuje się
+z prawdopodobieństwem $\rho$. Czasy operacji nie zależą od $\rho$.
+Wartość $\rho=0$ daje problem przepływowy, w którym kolejności na
+maszynach mogą się różnić, a $\rho=1$ standardową instancję gniazdową.
+Rozmiary to $20\times5$, $20\times10$, $30\times15$ i $50\times10$ po
+dziesięć instancji. Jako most do literatury przepływowej instancje
+przepływowe Taillarda o rozmiarach $20\times5$, $20\times10$
+i $50\times10$ rozwiązujemy także jako gniazdowe o wspólnych marszrutach.
+
+Warianty porównujemy testem Friedmana z różnicą krytyczną
+Nemenyiego~\cite{demsar2006} po instancjach, a kluczowe pary testem
+Wilcoxona z poprawką Holma przy $\alpha=0{,}05$.
+
+% ---------------------------------------------------------------------
+\section{Wyniki}\label{sec:exp}
+
+\todo{Ten rozdział zawiera tylko wartości pilotażowe. Docelowy układ:
+zejście do optimów lokalnych; anatomia ścieżki i wykonalność; główne
+porównanie na ta01--ta80 z diagramem różnic krytycznych; kontinuum;
+addytywność; odniesienie do przeszukiwania tabu.}
+
+\paragraph{Anatomia.}
+Tabela~\ref{tab:anatomy} opisuje ścieżkę krytyczną rozwiązań osiągniętych
+krótkim iterowanym przeszukiwaniem lokalnym. Bloki wydłużają się ze
+wzrostem $n/m$. Przy małym zasięgu regułę granic przechodzi niewielu
+kandydatów, a w klasach z $n/m\ge2$ duża część dalekich zamian jest
+niewykonalna. Użyteczny zasięg ogranicza więc wykonalność, a nie tylko
+koszt oceny.
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Klasa & bloki & długość & $k{=}4$ & $k{=}\infty$ & niewyk. \\
+\midrule
+$15\times15$  & 7,7  & 3,1  & 12,2 & 18,3  & 19\% \\
+$20\times20$  & 13,0 & 2,4  & 18,7 & 28,2  & 20\% \\
+$30\times15$  & 4,7  & 9,1  & 14,0 & 41,8  & 45\% \\
+$50\times15$  & 3,7  & 20,1 & 11,7 & 63,7  & 57\% \\
+$100\times20$ & 3,7  & 32,8 & 12,3 & 116,7 & 67\% \\
+\bottomrule
+\end{tabular}
+\caption{Bloki, średnia długość bloku, kandydaci zamian dla zasięgu 4
+i nieograniczonego oraz udział niewykonalnych wśród tych ostatnich.
+\pilot}
+\label{tab:anatomy}
+\end{table}
+
+\paragraph{Rodzina ruchów granicznych.}
+Tabela~\ref{tab:ils} porównuje dziewięciu członków rodziny w iterowanym
+przeszukiwaniu lokalnym. Złożone zamiany o zasięgu 3 były lepsze od N5 na
+wszystkich jedenastu instancjach i lepsze od N6 na dziewięciu. Złożona
+wersja N7 była lepsza od N7 na dziesięciu instancjach. Dla N6 wersja
+złożona wygrała na siedmiu instancjach i przegrała na trzech, czego test
+znaków nie rozróżnia. Warianty złożone są blisko siebie. Pilot sugeruje
+więc, że wykonanie ruchu granicznego we wszystkich blokach naraz znaczy
+więcej niż typ ruchu, a dla N6 zostawia pytanie otwarte.
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+Wariant & RPD [\%] & śr. ranga & iter./s \\
+\midrule
+N5        & 10,62 & 8,77 & 2868 \\
+N6        & 8,41  & 5,73 & 2304 \\
+N7        & 8,90  & 7,05 & 1970 \\
+$k=3$     & 7,40  & 3,36 & 2659 \\
+Dyn       & 7,47  & 4,45 & 2095 \\
+c6        & 7,53  & 3,68 & 2109 \\
+c7        & 7,50  & 4,32 & 1974 \\
+bm$_3$    & 7,42  & 3,68 & 2403 \\
+bm$_\infty$ & 7,70 & 3,95 & 1592 \\
+\bottomrule
+\end{tabular}
+\caption{Iterowane przeszukiwanie lokalne, 1~s, jedenaście instancji,
+trzy ziarna; odchylenie od najlepszego znanego $\Cmax$. \pilot}
+\label{tab:ils}
+\end{table}
+
+\paragraph{Od flow shopu do job shopu.}
+Tabela~\ref{tab:rho} pokazuje dwa większe rozmiary eksperymentu
+kontinuum. Przy wspólnych marszrutach N5 dało najlepszy wynik dla każdego
+rozmiaru. Dla $\rho$ od 0,1 do 0,5 traciło do najlepszego wariantu od 14
+do 22 punktów procentowych, a warianty złożone różniły się między sobą
+o kilka punktów. Przy $\rho=1$ różnica malała, a dla $n/m\ge4$ znikała,
+bo ścieżka krytyczna dobrego rozwiązania jest jednym blokiem, a $\Cmax$
+równa się ograniczeniu maszynowemu. Przed interpretacją tego wzoru trzeba
+rozdzielić dwa efekty. Przy $\rho=0$ N5 wykonuje od dwóch do czterech
+razy więcej iteracji niż warianty złożone, a łagodny nieporządek marszrut
+wydłuża bloki. \todo{etap continuum: wyniki przy równej liczbie iteracji,
+długości bloków i udziały niewykonalnych dla każdego $\rho$}
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Rozmiar & $\rho$ & N5 & $k{=}3$ & Dyn & c6 \\
+\midrule
+\multirow{5}{*}{$30\times15$}
+ & 0    & 0,68  & 2,46 & 2,27 & 2,47 \\
+ & 0,1  & 18,74 & 3,39 & 7,52 & 4,13 \\
+ & 0,25 & 16,62 & 4,02 & 4,26 & 2,20 \\
+ & 0,5  & 14,18 & 3,85 & 4,28 & 2,61 \\
+ & 1    & 5,78  & 2,81 & 1,84 & 1,59 \\
+\midrule
+\multirow{5}{*}{$50\times10$}
+ & 0    & 0,64  & 1,41 & 1,65 & 1,11 \\
+ & 0,1  & 22,14 & 7,54 & 4,37 & 5,63 \\
+ & 0,25 & 17,75 & 4,58 & 2,69 & 4,39 \\
+ & 0,5  & 17,35 & 5,72 & 1,75 & 2,63 \\
+ & 1    & 1,59  & 0,48 & 0,00 & 0,00 \\
+\bottomrule
+\end{tabular}
+\caption{Odchylenie [\%] od najlepszego wyniku dowolnego wariantu na tej
+samej instancji dla nieporządku marszrut $\rho$. \pilot}
+\label{tab:rho}
+\end{table}
+
+% ---------------------------------------------------------------------
+\section{Uwaga o sformułowaniach kwantowych}
+
+Wybór ruchu złożonego jest kwadratowym problemem binarnym bez ograniczeń
+z jedną zmienną na kandydata i karą za każdą parę nakładających się
+kandydatów, jak w naszej pracy o problemie
+przepływowym~\cite{windowed_own}. W problemie gniazdowym zadanie to jest
+blokowo-diagonalne i małe: blok wnosi najwyżej $2(k-1)$ zmiennych,
+a całe ruchy miały w dobrych rozwiązaniach od 4 do 19 zmiennych dla
+$k\le4$. \pilot{} Cały ruch mieści się na obecnym urządzeniu bramkowym
+bez okien. Program dynamiczny rozwiązuje to samo zadanie dokładnie, więc
+nie twierdzimy, że daje to przyspieszenie. Ciekawym przypadkiem są rodziny
+z krzyżowaniami, bo ich ograniczenia wykonalności są prawdziwymi wyrazami
+dwuciałowymi. \todo{zdecydować, czy ten rozdział zostaje, czy idzie do
+osobnej pracy}
+
+% ---------------------------------------------------------------------
+\section{Wnioski}
+
+\todo{Napisać po kampanii. Przewidywana treść: zalecany zasięg
+w zależności od $n/m$; rola złożenia wobec typu ruchu; w którym miejscu
+osi od flow shopu do job shopu ruchy złożone się opłacają; ograniczenia,
+czyli szkielet iterowanego przeszukiwania lokalnego, implementacja
+w Pythonie i kryterium $\Cmax$.}
+
+\todo{Bibliografia jak w main.tex.}
+\begin{thebibliography}{99}\small
+\bibitem{balas1998} Balas, Vazacopoulos, Manag. Sci. 1998.
+\bibitem{brucker1994} Brucker, Jurisch, Sievers, Discrete Appl. Math. 1994.
+\bibitem{congram2002} Congram, Potts, van de Velde, INFORMS J. Comput. 2002.
+\bibitem{dauzere1997} Dauz\`ere-P\'er\`es, Paulli, Ann. Oper. Res. 1997.
+\bibitem{demsar2006} Dem\v{s}ar, J. Mach. Learn. Res. 2006.
+\bibitem{fibonacci_own} praca własna: sąsiedztwo Fibonacciego.
+\bibitem{groflin2007} Gr\"oflin, Klinkert, Eur. J. Oper. Res. 2007.
+\bibitem{kbonacci_own} praca własna: rodzina $k$-bonacciego.
+\bibitem{laarhoven1992} van Laarhoven, Aarts, Lenstra, Oper. Res. 1992.
+\bibitem{mati2011} Mati, Dauz\`ere-P\'er\`es, Lahlou, Eur. J. Oper. Res. 2011.
+\bibitem{motzkin_own} praca własna: sąsiedztwo Motzkina.
+\bibitem{nowicki1996} Nowicki, Smutnicki, Manag. Sci. 1996.
+\bibitem{nowicki2005} Nowicki, Smutnicki, J. Sched. 2005.
+\bibitem{peng2015} Peng, L\"u, Cheng, Comput. Oper. Res. 2015.
+\bibitem{roy1964} Roy, Sussmann, SEMA 1964.
+\bibitem{taillard1993} Taillard, Eur. J. Oper. Res. 1993.
+\bibitem{taillard1994} Taillard, ORSA J. Comput. 1994.
+\bibitem{vanhoorn2018} van Hoorn, J. Sched. 2018.
+\bibitem{windowed_own} praca własna: okienkowe sąsiedztwa QUBO.
+\bibitem{zhang2007} Zhang, Li, Guan, Rao, Comput. Oper. Res. 2007.
+\end{thebibliography}
+
+\end{document}

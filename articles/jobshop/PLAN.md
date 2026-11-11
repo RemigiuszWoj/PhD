@@ -1,6 +1,7 @@
 # Plan badań i artykułu: przejście z flow shopu (PFSP) na job shop (J||C_max) — rodzina otoczeń liczonych ciągami na ścieżce krytycznej
 
-Wersja 2, 01.11.2026 (po trzech rundach przeglądu krytycznego, A.6), gałąź `claude/jobshop-plan`. Format jak w `articles/kbonacci/PLAN.md`.
+Wersja 3, 11.11.2026 (po czwartej rundzie przeglądu, A.7; wersja 2 z 01.11.2026 miała trzy rundy, A.6). Gałąź `jobshop-plan-v2`, worktree `~/Desktop/PhD-jobshop`.
+Format jak w `articles/kbonacci/PLAN.md`. **Stan i poprawki z rundy 4 są w A.7; tam, gdzie A.7 różni się od reszty dokumentu, obowiązuje A.7.**
 Powiązane:
 - `articles/kbonacci/PLAN.md`: oś k, czyli zasięg zamiany;
 - `articles/krzyzowania/PLAN.md`: oś c (Motzkin → ≤ c krzyżowań → inwolucje); w przygotowaniu w sesji „involution”, jeszcze nie wypchnięty;
@@ -187,11 +188,63 @@ Plan v1 przeszedł trzy rundy „wewnętrznego krytyka”. Każdy zarzut sprawdz
 | 2 | Niespójne odsyłacze i listy wariantów po zmianach | ujednolicone A.1, A.4, §6, §9, §15; wersja dokumentu |
 | 3 | Pilot nieodtwarzalny bez danych | komenda pobrania JSPLIB w §14 |
 
+### A.7 Runda 4: przegląd po przeniesieniu na Maca (11.11.2026)
+
+Przegląd lokalny: plan przeczytany w całości, liczby z §14 przeliczone z `pilot/*.json`, kod z `src/jobshop` uruchomiony (testy), dowód T2 sprawdzony krok po kroku.
+
+**Co się potwierdziło**
+- Tabele §14.3b i §14.5b zgadzają się z surowymi przebiegami (przeliczone od zera). Suma przypadków T2: 62 600 + 51 181 + 70 680 = 184 461.
+- Dowód T2 jest poprawny. Brakowało w nim jednego kroku, teraz dopisanego w szkicu artykułu (lemat: obejście z x do y nie zawiera żadnej innej operacji ścieżki krytycznej, więc nie używa relacji zmienionych w żadnym bloku; bez tego kierunek (⇐) nie działa, gdy ruch przestawia kilka bloków naraz).
+- Kontrprzykład dla wersji luźnej da się wskazać wprost (ścieżka x ⇝ z → z′ ⇝ y przez łuk maszynowy z → z′ wewnątrz bloku, nowa kolejność z′, y, x, z), więc wersja ścisła nie jest artefaktem testu.
+- Arytmetyka czasu kampanii (1,22 h na parę, 26,8 h, 4,6 h) jest poprawna.
+
+**Stan kodu (różnice względem §9 i A.3)**
+
+| Plan (v2) | Stan faktyczny |
+|---|---|
+| `core.py`, `estimate.py`, `data/bks_jssp.json` | `instance.py`, `schedule.py`, `feasibility.py`, `neighborhoods.py` (estymata w środku), `algorithms.py`, `runner.py`; ziarna i BKS w `src/jobshop/data/taillard_jssp.json` |
+| 0.7 / D5 / D12: adapter problemu w ILS/SA + test regresji PFSP bit w bit | **zrobiono lustrzaną kopię** ILS/SA w `src/jobshop/algorithms.py`; kod PFSP nietknięty, więc test regresji jest zbędny. Koszt: zgodność stałych pilnuje tylko test porównujący `SA_DEFAULTS`/`ILS_DEFAULTS` z `config.yaml` (do dopisania) |
+| etapy validate → main → continuum → ablation | validate → min → opt → continuum → bridge → ablation → classic (`run_jobshop_campaign.py`) |
+| OPT ≈ 34 h | dry-run ILS: validate 1,5 h, min 6,8 h, opt 5,6 h, continuum 4,3 h, bridge 1,3 h, razem **~19,4 h**; SA („later, on request”) podwaja min + opt, czyli **~32 h** |
+| 0.12 Gantt, `RUN_LOCAL.md`, szkic artykułu | Gantt niezrobiony; `RUN_LOCAL.md` niezrobiony; szkic: `main.tex`, `wersja_pl.tex` (11.11) |
+
+**Usterki znalezione w rundzie 4**
+
+| # | Usterka | Waga | Co zrobić |
+|---|---|---|---|
+| 1 | **`src/jobshop/data/taillard_jssp.json` nie trafił do repo**: reguła `data/` w `.gitignore` (linia 49) łapie też ten katalog. Bez pliku nie działa `verify_taillard_jssp.py`, `bks()` ani jeden z 25 testów (24 przechodzą) | blokuje kampanię | w sesji chmurowej `git add -f src/jobshop/data/taillard_jssp.json` i push; dodać do `.gitignore` wyjątek `!src/jobshop/data/`. Jeśli kontener przepadł: ziarna są w plikach Taillarda (`tai15_15.txt` itd.), BKS trzeba zebrać ponownie ze źródłami |
+| 2 | **„Filtr bezstratny” (T4, C3) jest bezstratny tylko względem modelu addytywnego.** Zamiana wewnętrzna ma δ ≥ 0 osobno, więc DP jej nie wybierze, ale w połączeniu z ruchem granicznym zmienia harmonogram i może dać niższe C_max. Przy addytywności na poziomie 36–43% (§14.6) to nie jest drobiazg | teza | T4 formułować dwustopniowo: (a) twierdzenie blokowe: ruch bez zmiany granicy nie poprawia; (b) wniosek: optimum **addytywnego** DP się nie zmienia. Prawdziwe sąsiedztwo złożone jest większe; ablacja „bez filtra” (MAX) mierzy różnicę. To samo dotyczy „Motzkin ≡ Dyn” (już opisane jako „przy addytywnym DP”) |
+| 3 | **Tytuł, §0 i C1 nadal prowadzą „rodziną liczoną ciągami”**, chociaż T10 i runda 1 przeniosły ciężar na rodzinę ruchów granicznych. Po filtrze ciągi (Fibonacci, k-bonacci, Motzkin) nie opisują już efektywnego sąsiedztwa bloku | spójność | tytuł roboczy: *Compound border moves for the job shop: feasibility of block reorderings and the flow-shop-to-job-shop continuum*. Liczności ciągowe zostają jako jedno stwierdzenie (sąsiedztwo formalne, iloczyn po blokach) |
+| 4 | **H9 w pilocie jest słabsze, niż mówi §14.5b.** Test znaków na 11 instancjach: k = 3 vs N5 11:0 (p ≈ 0,001); c7 vs N7 10:1 (p ≈ 0,01); **c6 vs N6 7:3 i remis (p ≈ 0,34)**; k = 3 vs N6 9:2 (p ≈ 0,07). „Złożenie pomaga wstawieniom” jest w pilocie pokazane tylko dla N7 | wniosek | w artykule pilot opisywać jako kierunek; H9 rozstrzyga etap opt |
+| 5 | **ILS w Pythonie przy RPD 5–13% nie przekona recenzentów czasopisma JSSP.** TS-N5/TS-c6 jest w MAX, a to właśnie on odpowiada na pytanie „czy ranking sąsiedztw przenosi się na metodę, której wszyscy używają” | ryzyko recenzji | **przenieść TS-N5 i TS-c6 (TSAB-light) z MAX do OPT** (~2,4 h Maca, ~1 dzień kodu). Bez tego celować w plan B albo w konferencję |
+| 6 | **Budżety 0,1–10 s są stałe**, a ocena przy 100×20 kosztuje ~3 ms: 0,1 s to kilkanaście iteracji. Najmniejsze budżety dla dużych klas mierzą start, nie sąsiedztwo | protokół | zostawić (zgodność z PFSP), ale w tabeli głównej podawać też liczbę iteracji i dodać kolumnę przy budżecie proporcjonalnym do n·m (ekstrakcja z tego samego przebiegu, bez nowych obliczeń) |
+| 7 | **H2: Spearman na 8 klasach** ma moc bliską zera (próg ρ_S ≥ 0,5 przy n = 8 nie jest istotny) | statystyka | liczyć na poziomie instancji (80 punktów: L̄ instancji vs najlepsze k), klasy tylko na rysunku |
+| 8 | **Kontinuum ma konfundującą zmienną: liczbę iteracji.** Przy ρ = 0 N5 robi 2–4× więcej iteracji niż c6/Dyn, więc „N5 wygrywa we flow shopie” może być efektem kosztu, nie struktury | H5 | w E4 raportować wynik także przy równej liczbie iteracji (z `move_log`); ρ = 1 przy 20×5 i 50×10 jest zdegenerowane (same zera), więc te dwa punkty nie niosą informacji |
+| 9 | `pilot/ils_border_b.json`, `ils_estimate_1s.json`, `ils_exact_1s_large.json`: **ta21 liczone do LB = 1217, nie do BKS = 1642** (stąd 51–56% w plikach). Tabele w §14.5 i §14.5b są przeliczone do BKS poprawnie, ale pole `summary` w plikach nie | odtwarzalność | pamiętać przy generowaniu tabel artykułu z JSON; w `src/jobshop` BKS pochodzi już z pliku danych |
+| 10 | Nowość T2 nadal niesprawdzona (bramka G0 minęła 8.11 bez lektury) | ryzyko | bez zmian: Gröflin–Klinkert 2007, Dauzère-Pérès–Paulli 1997, Mati i in. 2011, prace Bożejki–Wodeckiego o ruchach złożonych; PDF-y od promotora |
+
+**Harmonogram po aktualizacji (zastępuje daty w §10; bramki i warunki bez zmian)**
+
+Stan na 11.11: ICAISC wysłany 9.11; kampania k-bonacciego jeszcze nie ruszyła, więc Mac nie zwolni się ~5–8.11, jak zakładał §10.
+Przed JSSP stoją: GCMM (16.11), rewizja BPASTS (3.12), ICAPS k-bonacci (7.12 abstrakt, 14.12 artykuł), ANNSIM (18.12).
+
+| Kiedy | Co | Warunek |
+|---|---|---|
+| teraz, bez Maca | odzyskać plik danych (usterka 1); `RUN_LOCAL.md`; test zgodności stałych z `config.yaml`; TS-light, jeśli decyzja z usterki 5 jest na tak | 25/25 testów, `verify_taillard_jssp.py` 80/80 |
+| do ~30.11 | **G0**: rozmowa z promotorem (D1, D15, nowość T2) | JSSP w zakresie; T2 nieopisane w tej postaci |
+| po kampanii k-bonacciego, najwcześniej po 14.12 | etap validate (1,5 h), potem **G1** | Spearman ≥ 0,7 dla estymaty d ≥ 2; test wykonalności < 10% iteracji |
+| ~15–31.12 | min → opt → continuum → bridge (~18 h ILS), potem SA | — |
+| styczeń 2027 | **G2**, analiza, decyzja G3 (czasopismo; konferencja tylko jeśli termin pasuje) | jak w §10 |
+| luty–marzec 2027 | pisanie i zgłoszenie; kwanty JSSP bez zmian (Q1 2027) | — |
+
+GECCO 2027 przy takim układzie jest nierealne (kampania kończy się na przełomie roku, a termin w 2026 r. wypadał 26.01). Zostaje czasopismo albo plan B.
+
 ---
 
 ## 0. Skrót
 
-- **Pytanie główne** (tytuł roboczy EN: *From flow shop to job shop: sequence-counted compound neighborhoods on the critical path*):
+- **Pytanie główne** (tytuł roboczy EN od wersji 3: *Compound border moves for the job shop: feasibility of block reorderings and the flow-shop-to-job-shop continuum*;
+  poprzedni: *From flow shop to job shop: sequence-counted compound neighborhoods on the critical path*):
   czy rodzina sąsiedztw liczonych ciągami (Fibonacci → k-bonacci → Dynasearch → Motzkin → inwolucje) przenosi się z permutacyjnego flow shopu na job shop?
   Jeśli tak, to co ją ogranicza i co ją wzmacnia?
 - **Teza (do potwierdzenia):**
@@ -410,7 +463,7 @@ JSSP ma płaskie krajobrazy: często kilka ścieżek krytycznych, więc wiele de
 |---|---|---|
 | C1 | **Konstrukcja:** rodzina sąsiedztw liczonych ciągami na wirtualnej permutacji ścieżki krytycznej; liczność jako iloczyn po blokach; spłaszczenie pod filtrem (T10). Na tej podstawie **rodzina ruchów granicznych** (typ × zasięg × złożenie), w której N5, N6, N7, Fib, k-bonacci i Dyn są punktami jednej przestrzeni | T1, T10, §2.3–2.4 |
 | C2 | **Twierdzenie o przestawieniach bloków** i wnioski: N1, rozkład dla rodzin laminarnych, krzyżowania jako ograniczenia dwuciałowe (dokładnie kwadratowe), wykonalność wstawień, flow shop bez ograniczeń | T2, T3, T8 + brute force (§14.1) |
-| C3 | **Filtr bezstratny dla ruchów złożonych** (granice bloków) + niezmienniczość DP; estymata dokładna dla d = 1 | T4, T5 |
+| C3 | **Filtr granic dla ruchów złożonych** (bezstratny w modelu addytywnym, A.7) + niezmienniczość DP; estymata dokładna dla d = 1 | T4, T5 |
 | C4 | **Anatomia i kontinuum flow → job:** długości bloków, kandydaci, niewykonalność i korzyść z zasięgu w funkcji n/m i ρ | H2, H5 (E1, E4) |
 | C5 | **Studium empiryczne:** ILS/SA z każdą rodziną na Taillardzie JSSP, porównanie z N1/N5/N6/N7, addytywność | H1, H3, H4, H6 (E2, E3, E5, E6) |
 | C6 (opc.) | **Kwanty:** blokowo-diagonalne, małe QUBO JSSP; IQM bez okien; kary wykonalności dla krzyżowań | H7 (E7) |
@@ -427,7 +480,7 @@ JSSP ma płaskie krajobrazy: często kilka ścieżek krytycznych, więc wiele de
 | T3b | **Rodziny laminarne** (przedziały rozłączne lub zagnieżdżone): zbiór odwróconych par ruchu złożonego to suma zbiorów jego zamian. Zatem ruch jest wykonalny ⟺ każda zamiana jest wykonalna osobno. Obejmuje k-bonacci, Dyn i Motzkina | wniosek z T2; 0 / 169 118 (rozłączne), 0 / 2,55 mln par i 0 / 67 746 zbiorów (zagnieżdżone) ✅ |
 | T3c | **Krzyżowania** zmieniają zbiór odwróconych par: pojawiają się nowe, a niektóre znikają. Wykonalne składowe mogą dać niewykonalny ruch (0,71% par krzyżujących się, 9,5% zbiorów z krzyżowaniami), a niewykonalna składowa może zostać „uratowana” (174 przypadki) | wniosek z T2; brute force ✅ |
 | T3d | **Wykonalność jako kara kwadratowa:** każda zakazana para (x, y) zależy od ≤ 2 zamian (tych, które ruszają x i y). Wskaźnik naruszenia jest więc wielomianem stopnia 2 w zmiennych QUBO (przy ograniczeniu „każda operacja w ≤ 1 zamianie”). Dokładne kodowanie inwolucji z wykonalnością w QUBO | do spisania (krótkie) |
-| T4 | **Filtr granic jest bezstratny** dla ruchów złożonych: ruch, który nie zmienia żadnej (właściwej) granicy bloku, zostawia ścieżkę o tej samej długości. Wniosek: DP na kandydatach przefiltrowanych ma tę samą wartość optymalną | dowód krótki; 0 / 40 702 i 0 / 6 400 ✅ |
+| T4 | **Filtr granic**: ruch, który nie zmienia żadnej (właściwej) granicy bloku, zostawia ścieżkę o tej samej długości, więc nie poprawia (twierdzenie blokowe). Wniosek: **addytywne** DP na kandydatach przefiltrowanych ma tę samą wartość optymalną. Uwaga (A.7, usterka 2): filtr nie jest bezstratny dla prawdziwego C_max ruchu złożonego | dowód krótki; 0 / 40 702 i 0 / 6 400 ✅ |
 | T5 | **Estymata:** dla d = 1 to dokładne dolne ograniczenie, równe nowemu C_max, gdy ruch nie poprawia (Taillard 1994). Dla d ≥ 2 przybliżenie | d = 1 ✅ (0 / 84 203); d ≥ 2: E0 |
 | T6 | **Koszt iteracji** jak w §2.7; liczba kandydatów ≤ Σ_b 2(k − 1) | do spisania; zmierzyć w E0 |
 | T7 | **Rozkład na bloki:** problem wyboru (DP / QUBO) to suma niezależnych problemów bloków; QUBO blokowo-diagonalne | trywialne |
@@ -712,6 +765,8 @@ Budżety 0,1–10 s (ekstrakcja z 10 s), 5 ziaren, ta01–ta80.
 ---
 
 ## 10. Harmonogram i punkty kontrolne
+
+> **Daty w tym rozdziale są nieaktualne od 11.11.2026.** Obowiązuje tabela z A.7. Bramki G0–G3 i ich warunki zostają.
 
 Kontekst terminów:
 - ICAISC 15.11 (Hamming);
@@ -1025,6 +1080,7 @@ Ranga to średnia ranga na instancjach (1 = najlepszy z 9).
 
 Wnioski:
 1. **Złożenie pomaga także wstawieniom:** c6 jest lepsze od N6 (7,53 vs 8,41), a c7 od N7 (7,50 vs 8,90).
+   Zastrzeżenie (A.7, usterka 4): na poziomie instancji c7 wygrywa z N7 10:1, ale c6 z N6 tylko 7:3 przy jednym remisie, co nie jest istotne.
 2. N6 jest lepsze od N5 (8,41 vs 10,62), zgodnie z literaturą.
 3. Ale **złożone zamiany o umiarkowanym zasięgu (k = 3) są co najmniej tak dobre jak pojedyncze wstawienia N6/N7**.
 4. Czołówka (k = 3, bm3, c6, c7, Dyn) jest w pilocie nierozróżnialna (1 s, 3 ziarna). Rozstrzyga E3.

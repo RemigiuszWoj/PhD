@@ -1,0 +1,611 @@
+% =====================================================================
+% DRAFT v1 (11.11.2026) -- compound border moves for the job shop
+% Target: journal (C&OR / J. Scheduling / EJOR); plan B: short theory note.
+% Layout: plain article class for drafting (as articles/kbonacci/main.tex).
+% Plan: articles/jobshop/PLAN.md (v3, section A.7 = current state).
+% ALL NUMBERS IN TABLES 2-4 ARE PILOT VALUES (1 s, Python prototype,
+% 2-3 seeds). They show direction only and will be replaced by the
+% campaign (stages min, opt, continuum, bridge).
+% References: bibliographic data typed from memory, every entry must be
+% checked against Crossref before submission.
+% =====================================================================
+\documentclass[10pt,twocolumn]{article}
+\usepackage[margin=0.75in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newtheorem{definition}{Definition}
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+\newcommand{\pilot}{\textcolor{blue}{[pilot]}}
+\newcommand{\JP}{\mathrm{JP}}
+\newcommand{\JS}{\mathrm{JS}}
+\newcommand{\Cmax}{C_{\max}}
+
+\title{Compound Border Moves for the Job Shop:\\
+Feasibility of Block Reorderings and the\\
+Flow-Shop-to-Job-Shop Continuum}
+\author{\todo{authors}}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Compound neighborhoods apply many independent swaps in one move and pick
+the best combination by dynamic programming. They work well for the
+permutation flow shop, where every permutation is a feasible schedule. We
+carry them over to the job shop with makespan criterion. The critical path
+takes the role of the permutation and its blocks take the role of the
+segments in which swaps are placed. Feasibility is the one new obstacle. We
+prove an exact condition for it: a reordering of operations inside critical
+blocks creates a cycle if and only if it reverses a pair of operations that
+is joined by a path leaving the first through its job successor, entering
+the second through its job predecessor and avoiding the rest of the block.
+The condition implies that compound moves built from disjoint intervals
+need only tests of their single components, that crossing swaps add
+pairwise constraints, and that the flow shop has no infeasible reordering
+at all. The classical block property then reduces every swap family to at
+most two moves per block. This leads to a family of border moves with three
+axes: move type (swap or insertion), reach, and single versus compound
+application. N5, N6 and N7 are points of this family, and so are the
+compound Fibonacci, $k$-bonacci and Dynasearch neighborhoods. In a pilot
+study with iterated local search, compound moves of moderate reach attain a
+lower makespan than N5 and N6 on Taillard instances, and their advantage
+over N5 is largest for instances between the flow shop and the job shop.
+\todo{replace the last sentence with the campaign result}
+\end{abstract}
+
+% ---------------------------------------------------------------------
+\section{Introduction}
+
+Local search for the job shop scheduling problem with makespan criterion,
+$J||\Cmax$, rests on a small set of neighborhoods defined on the critical
+path. N1 swaps any two adjacent critical operations of one
+machine~\cite{laarhoven1992}. N5 keeps only the swaps at the two ends of
+each critical block~\cite{nowicki1996}. N6 and N7 move an operation to the
+front or to the back of its block~\cite{balas1998,zhang2007}. All of them
+change one block per move, and the best tabu search
+methods~\cite{nowicki2005,peng2015} are built on them.
+
+For the permutation flow shop a different line of neighborhoods exists. A
+compound move is a set of swaps on disjoint intervals of the permutation,
+and the best set is found by dynamic programming, as in
+Dynasearch~\cite{congram2002}. Restricting the swap distance gives the
+Fibonacci neighborhood (adjacent swaps only)~\cite{fibonacci_own} and the
+$k$-bonacci family between Fibonacci and
+Dynasearch~\cite{kbonacci_own}. These neighborhoods are exponential in
+size and cheap to search, but they rely on the fact that every permutation
+is a feasible flow shop schedule. In the job shop a swap of two
+non-adjacent operations may close a cycle in the disjunctive graph, and a
+combination of feasible swaps is not obviously feasible.
+
+This paper asks what remains of the compound neighborhoods when the routes
+of the jobs differ. Our answer has three parts. The first is a
+construction. The critical path is treated as a virtual permutation, a
+candidate swap lives inside one block, and the selection of a compound
+move is the same dynamic program as in the flow shop. The program
+decomposes into the blocks, so the neighborhood is a product of block
+neighborhoods. The second part is a feasibility theorem for arbitrary
+reorderings inside blocks. It gives an exact, pairwise condition and
+explains which compound families are safe: for moves on disjoint or nested
+intervals it is enough to test every swap alone, crossing swaps need
+pairwise tests, and with identical routes nothing needs testing. The third
+part is an honest account of what the block property does to these
+families. A move that changes no block border cannot improve the makespan,
+so under the usual filter every block keeps at most two swaps, one at each
+end. The sequence-counted families collapse, and the natural family for
+the job shop is indexed by the type of the border move, by its reach and
+by whether one move or one move per block end is applied. N5, N6 and N7
+are the single-move points of this family. Their compound versions are
+new.
+
+The experimental part measures three things under one protocol and one
+code path: the quality reached by each member of the family in iterated
+local search and simulated annealing on the Taillard job shop
+instances~\cite{taillard1993}, the share of infeasible long moves as a
+function of instance shape and solution quality, and the behaviour of the
+family on generated instances that interpolate between a flow shop and a
+job shop. \todo{one sentence with the headline result of the campaign}
+
+% ---------------------------------------------------------------------
+\section{Background}
+
+An instance has $n$ jobs and $m$ machines. Job $j$ visits the machines in
+the order of its route and its $t$-th operation has processing time
+$p_{j,t}$. For an operation $o$ we write $\JP(o)$ and $\JS(o)$ for its job
+predecessor and successor. A solution is a sequence $\sigma_k$ of the
+operations of every machine $k$. The disjunctive
+graph~\cite{roy1964} $G(\sigma)$ has a job arc $o\to\JS(o)$ for every
+operation and a machine arc between consecutive operations of every
+$\sigma_k$. The solution is feasible if and only if $G(\sigma)$ is
+acyclic. The head $r(o)$ is the length of a longest path ending at the
+start of $o$, the tail $q(o)$ is the length of a longest path leaving the
+end of $o$, and $\Cmax=\max_o\, r(o)+p_o+q(o)$. One topological pass
+computes all of them in $O(nm)$ time.
+
+A critical path is a longest path in $G(\sigma)$. A block is a maximal run
+of consecutive critical operations joined by machine arcs. The block
+property~\cite{brucker1994,nowicki1996} states that a schedule with a
+smaller makespan must process some operation of a block before the first
+or after the last operation of that block. N5 uses it to keep two swaps
+per block. N6 and N7 use it to define insertions, together with sufficient
+conditions for their feasibility~\cite{balas1998,zhang2007}. Feasibility
+of insertions was studied in a general setting by Gr\"oflin and
+Klinkert~\cite{groflin2007} and for regular criteria by Mati et
+al.~\cite{mati2011}. \todo{state precisely how Theorem~\ref{th:main}
+relates to \cite{groflin2007,mati2011,dauzere1997} and to the compound
+moves of Bo\.zejko and Wodecki once these are read}
+Candidate moves are usually ranked by an estimate computed from the
+current heads and tails~\cite{taillard1994,balas1998} and only the chosen
+move is evaluated exactly.
+
+In the permutation flow shop the compound neighborhoods are counted by
+integer sequences: a permutation of length $L$ has $F_{L+1}$ sets of
+disjoint adjacent swaps, $a_k(L)$ sets of disjoint swaps of distance below
+$k$ ($k$-bonacci numbers) and $2^{L-1}$ sets of disjoint swaps of any
+distance. Allowing nested swaps gives the Motzkin numbers and allowing
+crossings gives the involutions~\cite{motzkin_own}.
+
+% ---------------------------------------------------------------------
+\section{Neighborhoods on the Critical Path}\label{sec:family}
+
+Let $P=(o_1,\dots,o_L)$ be one critical path of a feasible solution and
+let $B_1,\dots,B_b$ be its blocks. When two predecessors of an operation
+are critical we follow the machine predecessor, which gives longer blocks.
+The positions $1,\dots,L$ of $P$ form a virtual permutation. A swap
+exchanges two operations of one block and corresponds to an interval of
+positions. Intervals of different blocks are disjoint, so any set of swaps
+taken from different blocks is a compound move in the flow shop sense. A
+flow shop move changes the order on all machines at once. A job shop move
+changes one machine per block.
+
+\begin{proposition}[size]\label{pr:count}
+Let $a_F(L)$ be the number of compound moves of a family $F$ on a
+permutation of length $L$. On a critical path with block lengths
+$L_1,\dots,L_b$ the family has $\prod_{i} a_F(L_i)$ moves, including the
+empty one.
+\end{proposition}
+
+The product is exponential in the path length, as in the flow shop. The
+block property removes most of it.
+
+\begin{proposition}[border rule]\label{pr:border}
+Let $\sigma'$ be a feasible solution obtained from $\sigma$ by reordering
+operations inside the blocks of $P$. If $\sigma'$ keeps the first
+operation of every block except $B_1$ and the last operation of every
+block except $B_b$, then $\Cmax(\sigma')\ge\Cmax(\sigma)$.
+\end{proposition}
+\begin{proof}
+In $\sigma'$ the operations of each block are still consecutive on their
+machine. Visit them in the new order. The job arc from the last operation
+of $B_i$ to the first operation of $B_{i+1}$ is unchanged, so the visits
+form a path in $G(\sigma')$ with the same operations as $P$ and the same
+length.
+\end{proof}
+
+A swap that touches no border has a non-negative effect, so a dynamic
+program that adds the effects of its swaps never selects it. We therefore
+keep only candidates that replace the first or the last operation of a
+block. This filter is exact for the additive model used in the selection.
+It is not exact for the true makespan of a compound move, because an
+interior swap can change the result of a border swap applied with it.
+Section~\ref{sec:eval} returns to this point.
+
+\begin{proposition}[flattening]\label{pr:flat}
+Under the border rule a block of length $L$ contributes at most two
+disjoint swaps to a compound move, one containing its first and one
+containing its last position. Nested swaps cannot occur, and two swaps
+cross only as the pair $(1,j)$, $(i,L)$ with $i<j$.
+\end{proposition}
+
+Proposition~\ref{pr:flat} changes the picture inherited from the flow
+shop. Inside a block the Motzkin family equals Dynasearch, and the number
+of filtered compound moves of a block is polynomial in $L$. What is left
+to vary is the border move itself. We consider three types of moves on a
+block interval $[a,b]$ that contains a block end: the endpoint swap, the
+insertion that brings an inner operation to the block end (N6), and the
+insertion that sends the end operation inward (N7). The reach parameter
+$k$ bounds the interval by $b-a\le k-1$. For $k=2$ all three types are the
+same adjacent swap. A single neighborhood applies the best candidate. A
+compound neighborhood applies at most one candidate per block end in every
+block at once. Table~\ref{tab:family} lists the members studied here.
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+Type and reach & Single & Compound \\
+\midrule
+swap, $k=2$ & N5 & Fib \\
+swap, reach $k$ & & $k$-bonacci \\
+swap, any reach & & Dyn \\
+N6 insertion, any reach & N6 & c6 \\
+N6 and N7 insertions, any reach & N7 & c7 \\
+all types, reach $k$ & & bm$_k$ \\
+\bottomrule
+\end{tabular}
+\caption{The border-move family. Entries c6, c7 and bm$_k$ are new.}
+\label{tab:family}
+\end{table}
+
+One iteration evaluates the current solution, extracts the path and its
+blocks, lists the border candidates of the chosen type and reach, discards
+the infeasible ones (Section~\ref{sec:feas}), estimates the makespan after
+each remaining candidate, selects a set of candidates and evaluates the
+resulting solution exactly. The selection is the positional dynamic
+program of the flow shop code. Because candidates of different blocks
+never overlap, it returns the sum of independent block optima, and we do
+not claim it as a contribution. If it selects nothing, the best single
+candidate is applied, as in our flow shop studies. The cost of an
+iteration is two $O(nm)$ evaluations plus $O(bk^2)$ for the estimates of a
+family of reach $k$.
+
+% ---------------------------------------------------------------------
+\section{Feasibility of Block Reorderings}\label{sec:feas}
+
+Let $\sigma$ be feasible and let $\sigma'$ be obtained by permuting the
+operations inside blocks of $P$. Several blocks may change at once. For
+two operations $x,y$ of one block, with $x$ before $y$ in $\sigma$, a
+\emph{bypass} from $x$ to $y$ is a path in $G(\sigma)$ that leaves $x$
+through the job arc $x\to\JS(x)$, enters $y$ through the job arc
+$\JP(y)\to y$ and contains no other operation of the block. The case
+$\JS(x)=\JP(y)$ is allowed.
+
+\begin{lemma}\label{le:clean}
+A bypass from $x$ to $y$ contains no operation of $P$ other than $x$ and
+$y$.
+\end{lemma}
+\begin{proof}
+Let $u$ be an inner operation of the bypass that lies on $P$. If $u$
+precedes $x$ on $P$, then $P$ leads from $u$ to $x$ and the bypass leads
+from $x$ to $u$, which is a cycle in $G(\sigma)$. If $u$ follows $y$ on
+$P$, the cycle is formed by $P$ from $y$ to $u$ and the bypass from $u$ to
+$y$. Otherwise $u$ lies between $x$ and $y$ on $P$, so it belongs to the
+block, which the definition excludes.
+\end{proof}
+
+\begin{theorem}\label{th:main}
+The solution $\sigma'$ is infeasible if and only if there are operations
+$x,y$ in one block such that $x$ precedes $y$ in $\sigma$, $y$ precedes
+$x$ in $\sigma'$, and $G(\sigma)$ contains a bypass from $x$ to $y$.
+\end{theorem}
+\begin{proof}
+Write $\prec$ and $\prec'$ for the machine orders of $\sigma$ and
+$\sigma'$. They differ only on pairs of operations of the same block.
+
+\emph{Sufficiency.} By Lemma~\ref{le:clean} the inner arcs of the bypass
+join operations outside $P$, and its first and last arcs are job arcs.
+None of these arcs depends on the order inside a block, so the bypass is a
+path of $G(\sigma')$. With $y\prec' x$ it closes a cycle.
+
+\emph{Necessity.} Let $C$ be a cycle of $G(\sigma')$, where machine arcs
+are taken in the transitive sense. Call a machine arc $u\to v$ of $C$
+\emph{new} if $v\prec u$. The other arcs of $C$ belong to $G(\sigma)$, so
+$C$ contains a new arc and splits into new arcs and paths of $G(\sigma)$
+between them. A new arc stays inside one block and goes backwards on $P$.
+A path of $G(\sigma)$ between two operations of $P$ cannot go backwards on
+$P$. Once such a path left a block for a later one, $C$ could not return,
+so all new arcs of $C$ lie in one block $B$.
+
+Cut $C$ at every visit to $B$. A piece is either a single machine arc
+between operations of $B$, ordered by $\prec'$, or a path from $u\in B$ to
+$v\in B$ whose inner operations are outside $B$. A piece of the second
+kind lies in $G(\sigma)$, so $u\prec v$. It cannot start with a machine
+arc, because that arc would lead to an operation after the block on the
+same machine and the rest of the piece would return to $B$, closing a
+cycle in $G(\sigma)$. For the same reason it cannot end with a machine
+arc. It is therefore a bypass from $u$ to $v$. Merging consecutive machine
+pieces, $C$ reads
+$c_1\preceq' d_1\leadsto c_2\preceq' d_2\leadsto\dots\leadsto c_1$, where
+every $\leadsto$ is a bypass. At least one bypass occurs, since $\prec'$
+is a linear order. If $d_i\prec' c_{i+1}$ held for every bypass, the
+sequence would be a cycle of $\prec'$. Hence some bypass joins a pair with
+$d_i\prec c_{i+1}$ and $c_{i+1}\prec' d_i$.
+\end{proof}
+
+The exclusion of the other block operations matters. If the path from $x$
+to $y$ may pass through operations $z,z'$ of the block and use the machine
+arc $z\to z'$, the new order $z',y,x,z$ reverses $(x,y)$ and is still
+feasible. In brute-force tests on random instances the condition of
+Theorem~\ref{th:main} agreed with cycle detection in all $184\,461$
+reorderings tested, of which $28\,065$ were infeasible, while the version
+without the exclusion gave one false alarm. \pilot
+
+The theorem depends on $\sigma'$ only through its set of reversed pairs.
+This gives the following consequences.
+
+\begin{corollary}\label{co:all}
+(a) A swap of two adjacent critical operations is
+feasible~\cite{laarhoven1992}.
+(b) A compound move whose components act on disjoint or nested intervals
+is feasible if and only if every component is feasible alone.
+(c) Moving $u$ forward past $x_1,\dots,x_s$ is infeasible if and only if
+a bypass leads from $u$ to some $x_i$. Moving $u$ backward is infeasible
+if and only if a bypass leads from some $x_i$ to $u$.
+(d) If all jobs have the same route, every reordering inside blocks is
+feasible.
+\end{corollary}
+\begin{proof}
+(a) A bypass from $x$ to its machine successor $y$ is longer than
+$p_x+p_y$, which contradicts the criticality of the arc $x\to y$. (b) The
+set of reversed pairs of such a move is the union of the sets of its
+components. (c) The move reverses exactly the pairs $(u,x_i)$ or
+$(x_i,u)$. (d) With a common route the machine index never decreases
+along a path, and a bypass first increases it.
+\end{proof}
+
+Part (b) covers the compound Fibonacci, $k$-bonacci, Dynasearch and
+Motzkin families and all compound border moves of
+Table~\ref{tab:family}: their feasibility costs one test per candidate
+and nothing per combination. Crossing swaps behave differently. Their set
+of reversed pairs is not the union of the components, two feasible swaps
+may give an infeasible move (0.71\% of crossing pairs in our tests
+\pilot), and an infeasible swap may be repaired by a crossing one. Every
+reversed pair depends on at most two swaps, so feasibility of a set of
+crossing swaps is a quadratic constraint in the selection variables.
+Part (c) is exact, whereas the conditions used with N6 and
+N7~\cite{balas1998,zhang2007} are sufficient. Part (d) identifies the
+flow shop as the case without obstacles.
+
+In the implementation a pair is first checked with heads: a path from
+$\JS(x)$ to $\JP(y)$ requires $r(\JP(y))\ge r(\JS(x))+p_{\JS(x)}$. This
+certificate settles about 90\% of the feasible non-adjacent swaps
+\pilot. The remaining pairs are decided by a depth-first search from
+$\JS(x)$ that is pruned by heads and never enters the block.
+
+% ---------------------------------------------------------------------
+\section{Move Evaluation and Additivity}\label{sec:eval}
+
+For a candidate that reorders a block interval, the estimate recomputes
+the heads of the interval operations from left to right and their tails
+from right to left in the new order. Heads of job predecessors and of the
+machine predecessor of the interval, and tails of job successors and of
+the machine successor, are taken from the current solution. The estimate
+of the new makespan is the largest value of $r'+p+q'$ in the interval and
+costs time linear in the interval length. For an adjacent swap this is the
+estimate of Taillard~\cite{taillard1994}: a lower bound on the new
+makespan that is exact whenever the move does not improve. For longer
+intervals it is an approximation. \todo{E0: rank correlation with the
+exact value and share of false improvements, per reach}
+
+The selection adds the estimated effects of the chosen candidates. In the
+job shop this sum overstates the real gain more than in the flow shop,
+because shortening one block makes a parallel path critical. In the pilot
+the real gain of a compound move was 36--43\% of the sum of the exact
+single effects and 14--19\% of the sum of the estimates, and still only
+2--4\% of the compound moves failed to improve. \pilot{} The exact
+evaluation of the selected move is therefore required. \todo{E5: remedies,
+i.e. exact evaluation of the top-$t$ moves, a cap on the number of
+components, and the unfiltered variant that measures what the border
+filter loses}
+
+% ---------------------------------------------------------------------
+\section{Experimental Protocol}\label{sec:setup}
+
+The protocol follows our flow shop studies so that the neighborhood is the
+only factor that changes. Iterated local search and simulated annealing
+keep their control flow and constants. \todo{constants in one sentence,
+as in the $k$-bonacci paper} The start solution assigns the operations in
+round-robin order of the jobs and decodes them semi-actively, which is the
+analogue of the identity permutation. The perturbation is a double bridge
+on a topological order of the operations followed by the same decoding, so
+it always returns a feasible solution. Tabu identifiers are sets of
+swapped operation pairs. All neighborhoods share one implementation that
+differs only in the candidate generator.
+
+The main benchmark is the set ta01--ta80 of Taillard~\cite{taillard1993},
+eight classes from $15\times15$ to $100\times20$ with ten instances each.
+We regenerated all instances from the published seeds. Each configuration
+is run once for 10~s with five seeds, and the results for the budgets 0.1,
+0.5, 1, 2 and 5~s are read from the move log of that run. We report the
+relative deviation from the best known upper bound~\cite{vanhoorn2018}
+with the date and source of every bound, and the number of iterations
+next to every time budget. \todo{machine, Python version; validation of
+the budget extraction on two classes}
+
+The continuum experiment uses Taillard's generator with a route disorder
+parameter $\rho\in\{0,0.1,0.25,0.5,1\}$. Routes start as the identity,
+and each transposition of the route shuffle is performed with probability
+$\rho$. Processing times do not depend on $\rho$. The value $\rho=0$ gives
+a flow shop in which machine orders may differ, and $\rho=1$ gives the
+standard job shop instance. Sizes are $20\times5$, $20\times10$,
+$30\times15$ and $50\times10$ with ten instances each. As a bridge to the
+flow shop literature, the Taillard flow shop instances of sizes
+$20\times5$, $20\times10$ and $50\times10$ are also solved as job shops
+with identical routes.
+
+Variants are compared with the Friedman test and the Nemenyi critical
+difference~\cite{demsar2006} over instances, and key pairs with the
+Wilcoxon signed-rank test under the Holm correction at $\alpha=0.05$.
+
+% ---------------------------------------------------------------------
+\section{Results}\label{sec:exp}
+
+\todo{This section holds pilot values only. Final structure: descent to
+local optima; anatomy of the path and feasibility; main comparison on
+ta01--ta80 with a critical difference diagram; continuum; additivity;
+tabu search reference.}
+
+\paragraph{Anatomy.}
+Table~\ref{tab:anatomy} describes the critical path of solutions reached
+by a short iterated local search. Blocks become longer as $n/m$ grows.
+Few candidates survive the border rule for small reach, and a large share
+of the long swaps is infeasible in the classes with $n/m\ge2$. The reach
+that can be used is therefore bounded by feasibility and not only by the
+cost of evaluation.
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Class & blocks & length & $k{=}4$ & $k{=}\infty$ & infeas. \\
+\midrule
+$15\times15$  & 7.7  & 3.1  & 12.2 & 18.3  & 19\% \\
+$20\times20$  & 13.0 & 2.4  & 18.7 & 28.2  & 20\% \\
+$30\times15$  & 4.7  & 9.1  & 14.0 & 41.8  & 45\% \\
+$50\times15$  & 3.7  & 20.1 & 11.7 & 63.7  & 57\% \\
+$100\times20$ & 3.7  & 32.8 & 12.3 & 116.7 & 67\% \\
+\bottomrule
+\end{tabular}
+\caption{Blocks, mean block length, swap candidates for reach 4 and
+unbounded reach, and the infeasible share of the latter. \pilot}
+\label{tab:anatomy}
+\end{table}
+
+\paragraph{Border-move family.}
+Table~\ref{tab:ils} compares nine members of the family in iterated local
+search. Compound swaps of reach 3 were better than N5 on all eleven
+instances and better than N6 on nine. The compound version of N7 was
+better than N7 on ten instances. For N6 the compound version won on seven
+instances and lost on three, which a sign test does not separate. The
+compound variants are close to each other. The pilot therefore suggests
+that applying a border move in all blocks at once matters more than the
+type of the move, and leaves the question open for N6.
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+Variant & RPD [\%] & mean rank & iter./s \\
+\midrule
+N5        & 10.62 & 8.77 & 2868 \\
+N6        & 8.41  & 5.73 & 2304 \\
+N7        & 8.90  & 7.05 & 1970 \\
+$k=3$     & 7.40  & 3.36 & 2659 \\
+Dyn       & 7.47  & 4.45 & 2095 \\
+c6        & 7.53  & 3.68 & 2109 \\
+c7        & 7.50  & 4.32 & 1974 \\
+bm$_3$    & 7.42  & 3.68 & 2403 \\
+bm$_\infty$ & 7.70 & 3.95 & 1592 \\
+\bottomrule
+\end{tabular}
+\caption{Iterated local search, 1~s, eleven instances, three seeds;
+deviation from the best known makespan. \pilot}
+\label{tab:ils}
+\end{table}
+
+\paragraph{From flow shop to job shop.}
+Table~\ref{tab:rho} shows the two larger sizes of the continuum
+experiment. With identical routes N5 gave the best result for every size.
+For $\rho$ between 0.1 and 0.5 it lost 14 to 22 percentage points to the
+best variant, while the compound variants stayed within a few points of
+each other. At $\rho=1$ the gap narrowed, and for $n/m\ge4$ it vanished
+because the critical path of a good solution is a single block and the
+makespan equals the machine bound. Two effects have to be separated
+before this pattern is interpreted. N5 performs two to four times more
+iterations than the compound variants at $\rho=0$, and mild route disorder
+lengthens the blocks. \todo{continuum stage: results at equal iteration
+counts, block lengths and infeasible shares per $\rho$}
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{@{}lrrrrr@{}}
+\toprule
+Size & $\rho$ & N5 & $k{=}3$ & Dyn & c6 \\
+\midrule
+\multirow{5}{*}{$30\times15$}
+ & 0    & 0.68  & 2.46 & 2.27 & 2.47 \\
+ & 0.1  & 18.74 & 3.39 & 7.52 & 4.13 \\
+ & 0.25 & 16.62 & 4.02 & 4.26 & 2.20 \\
+ & 0.5  & 14.18 & 3.85 & 4.28 & 2.61 \\
+ & 1    & 5.78  & 2.81 & 1.84 & 1.59 \\
+\midrule
+\multirow{5}{*}{$50\times10$}
+ & 0    & 0.64  & 1.41 & 1.65 & 1.11 \\
+ & 0.1  & 22.14 & 7.54 & 4.37 & 5.63 \\
+ & 0.25 & 17.75 & 4.58 & 2.69 & 4.39 \\
+ & 0.5  & 17.35 & 5.72 & 1.75 & 2.63 \\
+ & 1    & 1.59  & 0.48 & 0.00 & 0.00 \\
+\bottomrule
+\end{tabular}
+\caption{Deviation [\%] from the best result of any variant on the same
+instance for route disorder $\rho$. \pilot}
+\label{tab:rho}
+\end{table}
+
+% ---------------------------------------------------------------------
+\section{Remark on Quantum Formulations}
+
+The selection of a compound move is a quadratic unconstrained binary
+problem with one variable per candidate and a penalty for every pair of
+overlapping candidates, as in our flow shop work~\cite{windowed_own}. In
+the job shop this problem is block diagonal and small: a block
+contributes at most $2(k-1)$ variables and whole moves had 4 to 19
+variables for $k\le4$ in good solutions. \pilot{} A whole move fits a
+current gate-model device without windowing. The dynamic program solves
+the same problem exactly, so no speed-up is claimed. The crossing
+families are the interesting case, because their feasibility constraints
+are true two-body terms. \todo{decide whether this section stays or moves
+to a separate paper}
+
+% ---------------------------------------------------------------------
+\section{Conclusions}
+
+\todo{Write after the campaign. Expected content: recommended reach as a
+function of $n/m$; the role of compounding versus move type; where on the
+flow-shop-to-job-shop axis compound moves pay off; limits, namely the
+iterated local search framework, the Python implementation, and the
+makespan criterion.}
+
+\begin{thebibliography}{99}\small
+\bibitem{balas1998} E.~Balas, A.~Vazacopoulos. Guided local search with
+shifting bottleneck for job shop scheduling. \emph{Manag. Sci.}
+44(2):262--275, 1998.
+\bibitem{brucker1994} P.~Brucker, B.~Jurisch, B.~Sievers. A branch and
+bound algorithm for the job-shop scheduling problem. \emph{Discrete Appl.
+Math.} 49:107--127, 1994.
+\bibitem{congram2002} R.K.~Congram, C.N.~Potts, S.L.~van de Velde. An
+iterated dynasearch algorithm for the single-machine total weighted
+tardiness scheduling problem. \emph{INFORMS J. Comput.} 14(1):52--67,
+2002.
+\bibitem{dauzere1997} S.~Dauz\`ere-P\'er\`es, J.~Paulli. An integrated
+approach for modeling and solving the general multiprocessor job-shop
+scheduling problem using tabu search. \emph{Ann. Oper. Res.} 70:281--306,
+1997. \todo{verify}
+\bibitem{demsar2006} J.~Dem\v{s}ar. Statistical comparisons of classifiers
+over multiple data sets. \emph{J. Mach. Learn. Res.} 7:1--30, 2006.
+\bibitem{fibonacci_own} \todo{own work: Fibonacci neighborhood, Sci. Rep. 2026}
+\bibitem{groflin2007} H.~Gr\"oflin, A.~Klinkert. Feasible insertions in
+job shop scheduling, short cycles and stable sets. \emph{Eur. J. Oper.
+Res.} 177(2):763--785, 2007.
+\bibitem{kbonacci_own} \todo{own work: $k$-bonacci family, under review}
+\bibitem{laarhoven1992} P.J.M.~van Laarhoven, E.H.L.~Aarts, J.K.~Lenstra.
+Job shop scheduling by simulated annealing. \emph{Oper. Res.}
+40(1):113--125, 1992.
+\bibitem{mati2011} Y.~Mati, S.~Dauz\`ere-P\'er\`es, C.~Lahlou. A general
+approach for optimizing regular criteria in the job-shop scheduling
+problem. \emph{Eur. J. Oper. Res.} 212(1):33--42, 2011.
+\bibitem{motzkin_own} \todo{own work: Motzkin neighborhood, SOCO 2026}
+\bibitem{nowicki1996} E.~Nowicki, C.~Smutnicki. A fast taboo search
+algorithm for the job shop problem. \emph{Manag. Sci.} 42(6):797--813,
+1996.
+\bibitem{nowicki2005} E.~Nowicki, C.~Smutnicki. An advanced tabu search
+algorithm for the job shop problem. \emph{J. Sched.} 8(2):145--159, 2005.
+\bibitem{peng2015} B.~Peng, Z.~L\"u, T.C.E.~Cheng. A tabu search/path
+relinking algorithm to solve the job shop scheduling problem.
+\emph{Comput. Oper. Res.} 53:154--164, 2015.
+\bibitem{roy1964} B.~Roy, B.~Sussmann. Les probl\`emes d'ordonnancement
+avec contraintes disjonctives. Note DS no.~9 bis, SEMA, Paris, 1964.
+\bibitem{taillard1993} E.~Taillard. Benchmarks for basic scheduling
+problems. \emph{Eur. J. Oper. Res.} 64(2):278--285, 1993.
+\bibitem{taillard1994} E.~Taillard. Parallel taboo search techniques for
+the job shop scheduling problem. \emph{ORSA J. Comput.} 6(2):108--117,
+1994.
+\bibitem{vanhoorn2018} J.J.~van Hoorn. The current state of bounds on
+benchmark instances of the job-shop scheduling problem. \emph{J. Sched.}
+21(1):127--128, 2018.
+\bibitem{windowed_own} \todo{own work: windowed QUBO neighborhoods}
+\bibitem{zhang2007} C.Y.~Zhang, P.G.~Li, Z.L.~Guan, Y.Q.~Rao. A tabu
+search algorithm with a new neighborhood structure for the job shop
+scheduling problem. \emph{Comput. Oper. Res.} 34(11):3229--3242, 2007.
+\end{thebibliography}
+
+\end{document}

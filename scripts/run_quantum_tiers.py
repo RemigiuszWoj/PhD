@@ -17,7 +17,7 @@ Protocols are the ones of the previous quantum papers (nothing new):
 
 Usage (on the Mac, from the repo root, tokens in .env):
     python scripts/run_quantum_tiers.py --backend dwave --dry-run
-    python scripts/run_quantum_tiers.py --backend dwave --budget-s 400
+    python scripts/run_quantum_tiers.py --backend dwave --budget-s 287
     python scripts/run_quantum_tiers.py --backend iqm --machine sirius --credits 30 --dry-run
     python scripts/run_quantum_tiers.py --backend iqm --machine sirius --credits 30
 Smoke test without hardware (no budget used):
@@ -312,7 +312,8 @@ def main() -> None:
     ap.add_argument("--partial", action="store_true", help="start a tier even if the estimate exceeds the budget")
     ap.add_argument("--limit", type=int, default=0, help="at most N runs/moves per tier (smoke tests)")
     # D-Wave
-    ap.add_argument("--budget-s", type=float, default=400.0, help="monthly D-Wave QPU allocation [s]")
+    ap.add_argument("--budget-s", type=float, default=287.0,
+                    help="monthly D-Wave QPU allocation [s] (about 287 s, measured in July 2026, project fdMX)")
     ap.add_argument("--tl-ms", type=int, default=5000)
     ap.add_argument("--num-reads", type=int, default=100)
     ap.add_argument("--call-wall-s", type=float, default=2.1, help="wall time of one QPU call (windowed_qubo)")

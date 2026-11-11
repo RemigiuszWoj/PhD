@@ -10,7 +10,7 @@ Zaakceptowany 11.11.2026. Zastępuje plan v2 z sekcją A, który leży w `PLAN_v
 |---|---|
 | Kod sąsiedztwa, DP, Insert, wersje D-Wave i IQM | gotowe, 163 testy przechodzą |
 | Skrypty kampanii, ekstrakcji budżetów, analizy, kwantów | gotowe, przetestowane dymnie |
-| **Kampania klasyczna (ILS)** | **nieuruchomiona** (brak `results/kbonacci/`) |
+| **Kampania klasyczna (ILS)** | `validate` policzony 5.11 (VALIDATION GATE: PASS); `replicate` padł na 150/200 (limit rekurencji w starym `dynasearch_full`, naprawione 11.11, do dokończenia); `main`, `insert`, `ablation` nieruszone |
 | Pilot (01.11) | 3 klasy, 1 s, mała próba |
 | Anatomia ruchu (nowe, 11.11) | policzona dla n ≤ 100, ok. 990 stanów, `anatomy/anatomy.json` |
 | Teoria | spisana z dowodami w `main.tex`, sprawdzona numerycznie (`scripts/kbonacci_theory_checks.py`) |
@@ -82,7 +82,19 @@ Zrobione dla n ≤ 100 (kilkanaście minut na jednym rdzeniu). Do zrobienia: n =
 
 ### 4.4 Kwanty
 
-Bez zmian: poziomy MIN → OPT → MAX po klasyce (`scripts/run_quantum_tiers.py`), D-Wave ≤ 225 s QPU, IQM ok. 200 kredytów.
+Decyzja 11.11: **D-Wave MIN + OPT** (≤ 54 s QPU łącznie, ok. 19% miesięcznej quoty), po klasyce. MIN w listopadzie,
+OPT w grudniu po odnowieniu quoty. **IQM tylko MIN** (ok. 6 kredytów, z darmowej puli prywatnego konta), jeśli saldo pozwoli.
+MAX poza artykułem, jako kierunek dalszej pracy. Skrypt: `scripts/run_quantum_tiers.py` (poziomy po kolei; MAX po prostu nie startuje).
+
+| Poziom | Zakres | D-Wave | IQM Sirius |
+|---|---|---|---|
+| MIN | tai20_5, k ∈ {3, 4}, ILS + SA (IQM: instancja 0) | ≤ 18 s QPU, 200 przebiegów, ~0,4 h | ~6 kr (12 obwodów) |
+| OPT (przyrost) | + k = 8 na tai20_5; + tai20_10, tai50_10, tai100_10 (ILS, k ∈ {3, 4}) | ≤ 36 s QPU, 400 przebiegów, ~0,8 h | — (poza zakresem) |
+
+Quota D-Wave to **ok. 287 s/mies.** (projekt fdMX, korekta z lipca 2026), nie 400 s; domyślny `--budget-s` w skrypcie poprawiony.
+Reguła z audytu czerwcowego („maks. 10% quoty na całe badania”, ok. 29 s) mieściła tylko MIN; OPT zatwierdzony przez użytkownika 11.11.
+Aktualnego salda IQM ani zużycia D-Wave w listopadzie nie znamy (brak dostępu do dashboardów, licznik w repo widzi tylko ten kod),
+więc przed każdym poziomem najpierw `--dry-run` i sprawdzenie salda przez użytkownika.
 
 ## 5. Struktura artykułu
 
@@ -104,7 +116,8 @@ O cięciach decydujemy na końcu.
 
 | Kiedy | Co |
 |---|---|
-| do 16.11 | komplet GCMM (pierwszeństwo). W tle na Macu: `validate` + `replicate` (2,2 h), potem `main` + `insert` + `ablation` (20,5 h) |
+| do 16.11 | komplet GCMM (pierwszeństwo). W tle na Macu: dokończenie `replicate` (50 przebiegów, ~10 min), potem `main` + `insert` + `ablation` (20,5 h); D-Wave MIN po klasyce |
+| 1.12–… | D-Wave OPT po odnowieniu quoty |
 | 17–22.11 | analiza, rysunki, anatomia n = 200; rozmowa z promotorem (punkt 8); **decyzja 22.11: ICAPS czy IJCAI** |
 | 23.11–3.12 | rewizja BPASTS ma pierwszeństwo (termin 3.12); równolegle uzupełnianie rozdziału Results |
 | ICAPS | abstrakt 7.12, artykuł 14.12 (koliduje z ANNSIM 18.12) |
@@ -123,6 +136,7 @@ ruszy w tym tygodniu, a promotor szybko odpowie w sprawie podziału.
 | Nakładanie się ze szkicem promotora (tribonacci/k-nacci, TWT, D-Wave) | średnie | rozmowa przed pisaniem dalszych części; zdanie „we introduce” do uzgodnienia |
 | Testy Wilcoxona na parach (instancja, ziarno) | średnie | ziarna tej samej instancji nie są niezależne; proponuję dodać test na średnich po ziarnach (120 par) obok dotychczasowego |
 | Brak SA w pierwszej wersji | niskie | decyzja po ILS |
+| Bezpiecznik (lepszy wg rzeczywistego C_max z ruchu złożonego i najlepszej pojedynczej zamiany) | niskie | decyzja 11.11: poza kampanią główną, bo zmienia regułę wyboru ruchu, a nie otoczenie, i psuje porównywalność ze starymi wynikami. Ewentualnie osobny, oznaczony wariant `kbonacci_kn_safe` (ok. +2,3 h), do rozważenia po wynikach; to samo ustalenie przekazane do wątku o krzyżowaniach. Offline: licznik w anatomii, jak często ruch złożony jest gorszy od najlepszej pojedynczej zamiany |
 
 ## 8. Sprawy otwarte
 

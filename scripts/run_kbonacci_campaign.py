@@ -33,6 +33,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 os.chdir(ROOT)
+sys.setrecursionlimit(1_000_000)  # dynasearch_full (replicate) uses a recursive DP (depth ~ #candidates)
 
 from src.experiments.runner import ExperimentRunner, RunConfig  # noqa: E402
 

@@ -148,8 +148,13 @@ Najważniejsze ustalenie pilota dla części kwantowej: **QUBO JSSP jest małe i
 | | MIN | OPT | MAX |
 |---|---|---|---|
 | **D-Wave** (1 wywołanie na ruch, ~30 ms QPU, embedding trywialny) | ta01–10, k ∈ {2, 3}, ILS, 5 ziaren, reżim jednego ruchu: 100 wywołań, **~3 s QPU** | wszystkie klasy, k ∈ {2, 3, 4}, ILS + SA, 5 ziaren, 1–3 ruchy na przebieg: 2 400–7 200 wywołań, **72–216 s** (0,2–0,5 mies. quoty 400 s) | + Dyn i inwolucje bez filtra z karami wykonalności (gęstsze QUBO) |
-| **IQM** (jeden obwód na ruch, całe QUBO ≤ 20 kubitów) | ta01–10, k = 2, ILS, ziarno 0: **10 obwodów ≈ 12 kredytów** (darmowa pula) | ta01–20 z k = 2 + ta01–10 z k = 3, 1 ziarno: ~30 obwodów ≈ **35 kredytów** | to samo dla 5 ziaren: ~150 obwodów ≈ **175 kredytów (~105 USD)** |
+| **IQM** (jeden obwód na ruch, całe QUBO ≤ 20 kubitów) | ta01–10, k = 2, ILS, ziarno 0: **10 obwodów ≈ 5–8 kredytów** (darmowa pula) | ta01–20 z k = 2 + ta01–10 z k = 3, 1 ziarno: ~30 obwodów ≈ **14–23 kredyty** | to samo dla 5 ziaren: ~150 obwodów ≈ **70–115 kredytów (~40–70 USD)** |
 | **Odra 5 / IQM Spark (5 kubitów)** | bloki osobno: przy k ≤ 3 blok ma ≤ 4 zmienne, więc **mieści się bez okien** | — | — |
+
+Koszt IQM (poprawiony 11.11.2026): zmierzona stawka to 0,445 kredytu za obwód przy p = 1 (4096 shotów), a najwyższy pomiar (7.10.2026) dał 0,75.
+Wersja z 01.11 liczyła 1,2 kredytu za obwód, czyli zawyżała koszt mniej więcej dwukrotnie. Czas D-Wave bez zmian: mediana dostępu do QPU
+z 24 317 wywołań (`results/qpu_timing.jsonl`) to 28,6 ms.
+Sirius ma 16 kubitów. Całe ruchy mieszczą się dla k ≤ 3 (8–14 zmiennych w dobrych rozwiązaniach), a dla k = 4 bywa 12–19, więc część ruchów wymaga Garnet (20 kubitów).
 
 Uczciwie: QUBO bloku ma ≤ 2(k − 1) zmiennych, więc DP rozwiązuje je dokładnie w mikrosekundach. Wartość części kwantowej to taki sam pomost
 metodyczny jak w PFSP (protokół, reżim jednego ruchu), nie szybkość. Wyjątek: rodziny z krzyżowaniami. Tam kary wykonalności (T3d) tworzą
@@ -1108,5 +1113,5 @@ Mimo to ruch złożony prawie zawsze poprawia. Estymata jest optymistyczna zgodn
 | Praca w chmurze (Claude) | P0 ~6,5 dnia | P0 + P1 ~8,5 dnia | P0–P2 ~13–14 dni |
 | Mac M4 Pro (sekwencyjnie) | ~9 h | ~34 h | ~65 h |
 | D-Wave (QPU) | — | ~3 s (poziom MIN z §A.5) | 72–216 s (poziom OPT z §A.5) |
-| IQM (kredyty) | — | ~12 (darmowa pula) | ~35–175 (do ~105 USD) |
+| IQM (kredyty) | — | ~5–8 (darmowa pula) | ~14–115 (do ~70 USD) |
 | Pamięć / dysk | pomijalne (wyniki JSON jak w PFSP) | | |

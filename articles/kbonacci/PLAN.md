@@ -120,7 +120,7 @@ O cięciach decydujemy na końcu.
 | Kiedy | Co |
 |---|---|
 | do 16.11 | komplet GCMM (pierwszeństwo). W tle na Macu: `replicate` dokończony 11.11 (zgodny ze starą kampanią); od 11.11 `main` + `insert` + `ablation` (20,5 h), potem `relative` (~14 h); D-Wave MIN po klasyce |
-| 17–22.11 | analiza, rysunki, anatomia n = 200; rozmowa z promotorem (punkt 8); **decyzja 22.11: ICAPS czy IJCAI** |
+| 17–22.11 | analiza, rysunki, anatomia n = 200; rozmowa z promotorem (punkt 8); **decyzja 22.11: IJCAI czy GECCO** (punkt 8.6) |
 | 23.11–3.12 | rewizja BPASTS ma pierwszeństwo (termin 3.12); równolegle uzupełnianie rozdziału Results |
 | 1.12–… | D-Wave OPT po odnowieniu quoty |
 | ICAPS | abstrakt 7.12, artykuł 14.12 (koliduje z ANNSIM 18.12) |

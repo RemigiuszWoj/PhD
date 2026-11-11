@@ -1,16 +1,44 @@
 # Plan artykułu i badań: sąsiedztwa z krzyżowaniami (Motzkin → pojedyncze krzyżowania → inwolucje) ze studium parametru c
 
-Wersja 2 (po rundach krytyki, zmiany w §17), 01.11.2026, gałąź `claude/tender-thompson-ql1r4e`. Układ jak w planie k-bonacciego (`articles/kbonacci/PLAN.md` na gałęzi `kbonacci-icaps`).
+Wersja 3 (11.11.2026; v2 po rundach krytyki z 01.11.2026, zmiany w §17), gałąź `claude/tender-thompson-ql1r4e`. Układ jak w planie k-bonacciego (`articles/kbonacci/PLAN.md` na gałęzi `kbonacci-icaps`).
 Powiązane: `articles/katalog_sasiedztw.md` (pozycje #7–#9), `ROADMAP.md` (fronty C i E).
 Skrypty i surowe wyniki pilotów: `articles/crossings/pilot/` (tabele z tego planu: `python analyze_pilots.py all`).
+
+---
+
+## Zmiany v3 (11.11.2026): decyzja o bezpieczniku i wyniki pilota z Maca
+
+**Decyzja użytkownika (11.11.2026):** kampania główna i wszystkie wiersze główne są **bez bezpiecznika**. Bezpiecznik zmienia regułę wyboru ruchu, a nie otoczenie, i psuje porównywalność z wcześniejszymi pracami (Fibonacci, Dynasearch, Motzkin przyjmowały ruch złożony bez sprawdzenia). Bezpiecznik zostaje jako **osobny, oznaczony wariant dodatkowy** (osobny etap kampanii, osobna sekcja i tabela w artykule, poza hipotezami głównymi). Warianty `_safe` i `_prefix` zostają w kodzie; z etapów kampanii wypada tylko `_prefix`. **Skrypt `run_crossing_campaign.py` nie jest jeszcze dostosowany** (etap `main` nadal ma warianty `_safe`; zmiana do pokazania przed edycją). Ta sama decyzja obowiązuje w k-bonaccim (D12 zamknięte, tam bez bezpiecznika w kampanii głównej).
+
+Tam, gdzie dalsze sekcje opisują bezpiecznik jako „czynnik eksperymentu”, obowiązuje ta nota. Mapa zmian:
+
+| Miejsce | Było (v2) | Jest (v3) |
+|---|---|---|
+| Warianty kampanii (A.1 D7, A.3, A.4, E2) | 11 wariantów: 5 rodzin × {plain, safe} + Swap | **6 wariantów głównych:** Dynasearch, N₀, N₁, P₁, inwolucje, Swap (ok. 14 h). Etap dodatkowy E5: 5 wariantów `_safe` (ok. 11,5 h), uruchamiany po kampanii głównej |
+| Teza (§0) | bezpiecznik usuwa straty; poziom c przestaje mieć znaczenie | przy wyborze addytywnym RPD rośnie wzdłuż Dyn ⊂ N₀ ⊂ N₁ ⊂ P₁ ⊂ inw. |
+| Hipotezy (§5) | H3 plain, H4 bezpiecznik, H5 równoważność z bezpiecznikiem (TOST), H9 Dyn.-plain vs N₀-safe | **główne: H1, H2, H3, H9′, H8.** H9′: Dynasearch nie gorszy od N₀ (bez bezpiecznika) i lepszy od Swap. H4 → H4′ (dodatkowa, E5, eksploracyjna). **H5 i TOST wypadają** |
+| Rodziny testów (§7.4a) | P1–P4 | **P1:** inwolucje vs N₀. **P2:** Dynasearch vs N₀ (dwustronnie). Plus test trendu Page’a wzdłuż łańcucha. Reszta eksploracyjna |
+| Klasy rozstrzygające | 12 klas, kryterium ≥ 10/12 | klasy z ≥ 30 ruchami w 10 s (spodziewane n ≤ 100, 9 klas), kryterium **≥ 7/9**; n = 200 i 500 opisowo |
+| Anatomia (E1) | stany z N₀-plain, N₀-safe, inw.-safe | stany z przebiegów **bez bezpiecznika** (Dyn., N₀, inw.) plus **licznik offline:** w ilu stanach ruch złożony jest gorszy od najlepszej pojedynczej zamiany (zamiast bezpiecznika w ILS) |
+| E0 | testy, model kosztu | dodatkowo **pilot z filtrem blokowym** (krótki przebieg `crossing.py` na tai20_5, tai20_10, 50×10, 1 s i 5 s); kampania startuje, jeśli kierunki efektów zgadzają się z pilotem bez filtra |
+| Decyzje (§12) | D3, D12, D13 otwarte | **D3 zamknięte** (bezpiecznik tylko tutaj, jako wariant dodatkowy), **D12 zamknięte** (bez bezpiecznika w k-bonaccim), **D13 zbędne** (nie ma TOST) |
+| Kwota D-Wave (A.5) | 400 s/mies., limit ~40 s | **realnie ok. 287 s/mies.** (projekt fdMX), limit 10% = **ok. 29 s** |
+| Stawki IQM (A.5) | 0,7–0,95 kr/obwód | **0,45–0,75 kr/obwód** (p = 1: 0,445; p = 2: 0,54; p = 3: 0,58) |
+| Instancje 50×10 (§15) | nasiona niepotwierdzone | nasiona zgodne z ta041–ta044 w `data/tai50_10.txt`; macierze czasów do porównania w pilocie z filtrem |
+| Zagrożenia trafności (§7.6) | wnioski o c nie zależą od stałych implementacyjnych | wnioski dotyczą reżimu 50–300 ruchów od permutacji identycznościowej (przebieg to głównie zejście); H3 także przy równej liczbie iteracji; do wyjaśnienia, czemu Mac robi mniej iteracji niż chmura (57 wobec 69 przy 50×10, 1 s) |
+
+**Pilot na Macu (`pilot/measurements_mac/`, 16 trybów, 1 s i 5 s, 4 instancje × 3 ziarna, bez filtra).** Kierunki z chmury się utrzymują: inwolucje gorsze od N₀ w każdej instancji i klasie; przy 50×10 bez bezpiecznika Dynasearch 6,24 / 4,93, N₀ 17,84 / 13,69, N₁ 17,81 / 16,18, P₁ 19,27 / 16,89, inwolucje 24,16 / 22,82 (1 s / 5 s). Z bezpiecznikiem N₀ spada do 5,99 / 5,17, a Dynasearch-safe jest gorszy od Dynasearch (7,00 / 5,52); przewaga Dynasearch nad N₀-safe jest niestabilna między maszynami (Mac 1 s: 6,24 wobec 5,99). Dlatego H9 formułujemy bez bezpiecznika. Anatomii z Maca (`measurements_mac/anatomy.json`) jeszcze nie porównano z chmurą.
+
+Wersja do przeglądu w prostszej formie: `DO_PRZEGLADU.md`.
 
 ---
 
 ## A. PROPOZYCJA USTALEŃ WIĄŻĄCYCH I PLAN WYKONAWCZY (do zatwierdzenia)
 
 > Zasada nadrzędna jak w k-bonaccim: **badamy sąsiedztwa, nie metaheurystyki.** Protokół i wszystkie stałe badawcze są jak w poprzednich
-> artykułach i w kampanii k-bonacciego, żeby nowe wyniki dało się zestawić ze starymi. Nowa jest klasa sąsiedztw i jeden czynnik:
-> **bezpiecznik** (ruch złożony albo najlepsza pojedyncza zamiana, zależnie od tego, który daje mniejsze rzeczywiste C_max; §14).
+> artykułach i w kampanii k-bonacciego, żeby nowe wyniki dało się zestawić ze starymi. Nowa jest klasa sąsiedztw. **v3:** bezpiecznik
+> (ruch złożony albo najlepsza pojedyncza zamiana, zależnie od tego, który daje mniejsze rzeczywiste C_max; §14) nie jest czynnikiem
+> kampanii głównej, tylko osobnym wariantem dodatkowym (etap E5).
 
 ### A.0 Co pokazał pilot (01.11.2026) i co z tego wynika dla planu
 
@@ -44,7 +72,7 @@ bloki = instancje, §7.4). Piloty anatomii, zejścia i QUBO to statystyki opisow
 | D4 | ILS i SA | bez zmian (tabu 10, mushroom 10; SA: T0 = 1000, α = 0,99, podłoga 100, reheat 1,5, stagnacja 100 ms). Najpierw tylko ILS |
 | D5 | Miara | RPD do LB Taillarda, Wilcoxon + Holm, α = 0,05; do tego test trendu Page’a po łańcuchu c₀ ⊂ c₁ ⊂ P₁ ⊂ inw. i TOST dla H5 (to ta sama kampania, inna analiza) |
 | D6 | Filtr blokowy | bez zmian: test ostatniej maszyny, jak w Fib/Dyn/Motzkinie/k-bonaccim; dokładny filtr ścieżki krytycznej tylko w ablacji |
-| D7 | Warianty | Dynasearch (pary rozłączne, początek osi nachodzenia), c ∈ {0, 1, ∞} i P₁ („każdy łuk krzyżowany co najwyżej raz”), każdy w wersji *plain* i *safe*, plus Swap (najlepsza pojedyncza zamiana) jako kontrola. Dynasearch i c = 0 liczymy na nowo (jeden kod dla całej krzywej, jak k = 2 i k = n w k-bonaccim); Dynasearch-plain można przejąć z kampanii k-bonacciego (k = n), jeśli kod delt i filtr są te same |
+| D7 | Warianty | Dynasearch (pary rozłączne, początek osi nachodzenia), c ∈ {0, 1, ∞} i P₁ („każdy łuk krzyżowany co najwyżej raz”), **kampania główna tylko w wersji *plain* (v3)**, plus Swap (najlepsza pojedyncza zamiana) jako kontrola; warianty *safe* tylko w osobnym etapie dodatkowym E5. Dynasearch i c = 0 liczymy na nowo (jeden kod dla całej krzywej, jak k = 2 i k = n w k-bonaccim); Dynasearch-plain można przejąć z kampanii k-bonacciego (k = n), jeśli kod delt i filtr są te same |
 | D8 | Maszyna | Mac (M4 Pro), sekwencyjnie, **po** kampanii k-bonacciego |
 | D9 | Kolejność | klasyka → anatomia → kwanty (najpierw wyrocznia na stanach, pętla z QPU tylko w MAX) |
 | D10 | Gałąź | Etap 0 na bazie `kbonacci-icaps` (albo po jej zmergowaniu do main), bo korzysta z jej narzędzi (kampania, ekstrakcja, analiza, filtr ścieżki krytycznej) |
@@ -75,6 +103,8 @@ a ILS zapisuje `move_log` sam.
 **Etap 3: kwanty** (A.5).
 
 ### A.4 Trzy opcje: minimum / optimum / maksimum
+
+> **v3:** w tabeli niżej liczby wariantów i godzin dotyczą wersji z bezpiecznikiem w każdym wariancie. Po decyzji kampania główna ma 6 wariantów bez bezpiecznika (~14 h; ~2,3 h na wariant); 5 wariantów `_safe` idzie w osobnym etapie E5 (~11,5 h). Klasyka OPT: ~22 h bez E5, ~33 h z E5.
 
 Założenia: Mac sekwencyjnie, 120 instancji × 5 ziaren, przebieg 10 s + ekstrakcja, +10% narzutu. Wszystkie warianty liczą delty dla
 wszystkich par, więc tai500_20 to reżim jednego ruchu (jedna ocena ~36 s, jak Dynasearch i k = n; +0,36 h na wariant).
@@ -107,11 +137,11 @@ W MAX dochodzi miękka kara λ za krzyżowanie (λ ∈ {0, P/4, P}): λ = 0 daje
 |---|---|---|---|
 | D-Wave: stany | tai20_5: 30 stanów × 3 QUBO | tai20_5/10/20: 90 × 3 | + 50×10 (K ≤ 60): +90 × 3; + λ; + pętla tai20_5 (inw.-safe, Motzkin-safe; ILS + SA, protokół `windowed_qubo`) |
 | D-Wave: wywołania / QPU | 90 / ~3 s | 270 / ~8 s | ~1 000 / ~30 s |
-| IQM (K ≤ 16 na sirius, ≤ 20 na garnet; p = 1; 4096 strzałów) | 5 stanów × 2 QUBO = 10 obwodów, ~7–10 kr. (darmowa pula) | 10 × 3 = 30 obwodów, ~20–29 kr. | 30 × 3 = 90 obwodów, ~60–86 kr. |
+| IQM (K ≤ 16 na sirius, ≤ 20 na garnet; p = 1; 4096 strzałów) | 5 stanów × 2 QUBO = 10 obwodów, ~4,5–7,5 kr. (darmowa pula) | 10 × 3 = 30 obwodów, ~13–22 kr. | 30 × 3 = 90 obwodów, ~40–68 kr. (konto uczelniane lub dwa miesiące) |
 | Bez kosztu | transpilacja QAOA na fałszywych backendach (IBM, IQM): CZ i głębokość dla trzech QUBO | jak MIN | jak MIN |
 
-D-Wave łącznie ≤ ~40 s QPU (~10% quoty 400 s/mies.), IQM łącznie ≤ ~125 kredytów (~75 USD). Stawki: ~30 ms QPU na wywołanie przy
-num_reads = 100 (`windowed_qubo`); IQM ~0,25 kr. na zadanie + 0,43–0,95 kr. na obwód (`gate_qaoa`, plan k-bonacciego).
+D-Wave łącznie ≤ ~29 s QPU (10% realnej kwoty ok. 287 s/mies.; MAX ~30 s rozłożyć na dwa miesiące), IQM łącznie ≤ ~70 kredytów (v3). Stawki: ~30 ms QPU na wywołanie przy
+num_reads = 100 (`windowed_qubo`); IQM 0,45–0,75 kr. na obwód przy p = 1 i 4096 strzałach (zmierzone: 0,445 ACIIDS, 0,54 p = 2, 0,58 p = 3, 0,75 pomiar 7.10; v3).
 Przy K ≤ 16 QUBO mieści się na IQM **bez okien**: na stanach z trajektorii przy n = 20 mediana \|C\| to 4–17.
 
 ### A.6 Czego świadomie nie robimy
@@ -267,6 +297,8 @@ algorytm wyboru i jego koszt, liczba sprzężeń QUBO. Spina artykuł z planem k
 
 ### 5.1 Zestawienie
 
+> **v3:** hipotezy główne to H1, H2, H3, H9′, H8. H3 i H9 czytać bez bezpiecznika (H9′: Dynasearch nie gorszy od N₀ i lepszy od Swap, oba bez bezpiecznika). H4 → H4′ (dodatkowa, E5, eksploracyjna). H5 i test TOST wypadają.
+
 | ID | Hipoteza (skrót) | Eksperyment | Test | Kryterium potwierdzenia | Dane wstępne |
 |---|---|---|---|---|---|
 | H0 | Implementacja poprawna | testy, E0 | brute force | 100% zgodności | ✅ prototypy |
@@ -384,7 +416,7 @@ algorytm wyboru i jego koszt, liczba sprzężeń QUBO. Spina artykuł z planem k
 - *Mechanizm (anatomia, 192 stany):* Dynasearch przewiduje tylko 27–81% zysku inwolucji na trajektorii (14–51% na starcie), ale realizuje
   17–75% swojej prognozy. Motzkin i inwolucje przewidują 64–90% i 100%, ale realizują od +0,11 do −0,68 (Motzkin) i od −0,17 do −1,04
   (inwolucje) prognozy, czyli zwykle pogarszają.
-- *Siła dowodu:* przewaga Dynasearch widać w pilocie tylko w jednej klasie (50×10, 4 instancje, nasiona niepotwierdzone jako ta041–ta044);
+- *Siła dowodu:* przewaga Dynasearch widać w pilocie tylko w jednej klasie (50×10, 4 instancje, nasiona ta041–ta044);
   przy n = 20 jest remis. To hipoteza do kampanii, nie wynik.
 - *Dlaczego może nie wyjść:* przy n ≥ 100 także Dynasearch realizuje coraz mniej (0,32 przy 100×10, trajektoria); przy dłuższych budżetach
   przewaga może się odwrócić.
@@ -407,6 +439,8 @@ algorytm wyboru i jego koszt, liczba sprzężeń QUBO. Spina artykuł z planem k
 - Minimalne kontrprzykłady addytywności wg geometrii (n ≤ 6, m ≤ 3) do T8.
 
 ### E1. Anatomia na stanach z trajektorii (Mac, ~2 h, bez nowych przebiegów ILS/SA)
+
+> **v3:** stany losowane z przebiegów bez bezpiecznika (Dyn., N₀, inw.). Zamiast bezpiecznika w ILS liczymy offline, w ilu stanach ruch złożony jest gorszy od najlepszej pojedynczej zamiany.
 - Stany: 12 klas × 10 instancji × 20 stanów, losowane momenty przebiegów ILS c₀-plain, c₀-safe i inw.-safe (10 s), żeby żaden wariant nie
   wybierał sobie wygodnych stanów.
 - Na każdym stanie:
@@ -419,6 +453,8 @@ algorytm wyboru i jego koszt, liczba sprzężeń QUBO. Spina artykuł z planem k
 - **Do artykułu:** rysunek „zysk przewidywany i realny w funkcji c”, rysunek addytywności wg geometrii, histogram krzyżowań optimum inwolucyjnego.
 
 ### E2. Kampania główna ILS (Mac, ~25 h w OPT)
+
+> **v3:** 6 wariantów bez bezpiecznika (Dyn., N₀, N₁, P₁, inw., Swap), ~14 h. Warianty `_safe` w osobnym etapie E5 (~11,5 h) po kampanii głównej. Analiza: tabele RPD, Wilcoxon + Holm (P1, P2), test Page’a wzdłuż łańcucha, liczba iteracji, H3 przy równej liczbie iteracji.
 - 11 wariantów (OPT): Dyn., c₀, c₁, P₁, inw. × {plain, safe} + Swap; 12 plików × 10 instancji × 5 ziaren; 10 s z ekstrakcją 0,1–5 s.
 - Odniesienia z wcześniejszych kampanii: stary Motzkin, stary Dynasearch, k-bonacci (k ∈ {2, 3, 4, 8, n}).
 - Analiza:
@@ -464,6 +500,8 @@ przebiegów, zapis liczby iteracji, metadane w każdym JSON, anonimowe repozytor
 instancje, średnia z ziaren), Page po łańcuchu, TOST dla H5, Friedman w klasie, A12 Varghi i Delaneya.
 
 **7.4a Hipotezy główne i rodziny testów (ustalone przed kampanią).** Żeby uniknąć „ogrodu rozwidlających się ścieżek”:
+
+> **v3:** obowiązują tylko dwie rodziny, P1 (inwolucje vs N₀) i P2 (Dynasearch vs N₀, dwustronnie), klasy rozstrzygające n ≤ 100 (kryterium ≥ 7/9) i test Page’a wzdłuż łańcucha Dyn ⊂ N₀ ⊂ N₁ ⊂ P₁ ⊂ inw. Rodziny P3 (TOST) i P4 (z bezpiecznikiem) wypadają; porównania z bezpiecznikiem są eksploracyjne (E5).
 - punkt końcowy: RPD przy budżecie 10 s; pozostałe budżety tylko opisowo;
 - rodzina P1 (H3): inw.-plain vs c₀-plain, 12 klas, Holm w rodzinie;
 - rodzina P2 (H4): c₀-safe vs c₀-plain, 12 klas, Holm;
@@ -514,6 +552,8 @@ instancje, średnia z ziaren), Page po łańcuchu, TOST dla H5, Friedman w klasi
 
 ## 10. Harmonogram (propozycja) i punkty kontrolne
 
+> **v3 (stan 11.11.2026):** gotowe są kod, testy, szkic EN i pilot na Macu. Do zrobienia: pilot z filtrem (E0), brakujące skrypty, wersja PL. Mac po kampanii k-bonacciego. Terminy kolidujące: GCMM 16.11, BPASTS 3.12, ICAPS 14.12, ANNSIM 18.12. Tabela niżej pochodzi z v2.
+
 | Okres | Zadania | Wynik |
 |---|---|---|
 | do 15.11 | bez prac nad krzyżowaniami (ICAISC: Hamming; Mac zajęty kampanią k-bonacciego) | — |
@@ -544,7 +584,7 @@ instancje, średnia z ziaren), Page po łańcuchu, TOST dla H5, Friedman w klasi
 | Prawo Poissona (T2) jest już znane | średnie | mniejsza nowość C1 | sprawdzić literaturę i OEIS; w artykule i tak jako lemat |
 | Ruchy złożone dają mało ponad Swap (pilot: ≤ ~0,9 pp) | wysokie | recenzent: „po co to wszystko?” | uczciwie w tekście; wartością jest mechanizm (addytywność wg geometrii) i reguła akceptacji, a nie rekord |
 | Recenzent GECCO pyta o NEH/IG i stan wiedzy dla PFSP | średnie | słabsza ocena | ramowanie jako analiza sąsiedztw (jak w k-bonaccim A.6); ewentualnie dodatek z IG jako kontekst |
-| Kampania k-bonacciego ruszy bez wariantów z bezpiecznikiem | wysokie | brak porównania Dynasearch-safe w tym samym kodzie | D12: dopisać `kbonacci_kn_safe` (i ewentualnie k = 8) do kampanii k-bonacciego przed jej startem (+2,3 h na wariant) |
+| Kampania k-bonacciego ruszy bez wariantów z bezpiecznikiem | pewne (decyzja v3) | brak porównania Dynasearch-safe w k-bonaccim | świadoma decyzja (D12 zamknięte); Dynasearch-safe tylko w naszym etapie E5, licznik offline w anatomii |
 
 ---
 
@@ -554,7 +594,7 @@ instancje, średnia z ziaren), Page po łańcuchu, TOST dla H5, Friedman w klasi
 |---|---|---|
 | D1 | Główna oś: c (krzyżowania w całym ruchu, jak w katalogu) czy r (krzyżowania na łuk, P_r) | obie: N₁ i P₁ to dwa sposoby rozumienia „pojedynczych krzyżowań”; w kampanii c ∈ {0, 1, ∞} + P₁ |
 | D2 | Konferencja | GECCO 2027; zapas SOCO 2027 albo czasopismo |
-| D3 | Bezpiecznik: w tym artykule, w k-bonaccim, czy osobno | w tym artykule (tu jest mechanizm); w k-bonaccim jako ablacja |
+| D3 | Bezpiecznik: w tym artykule, w k-bonaccim, czy osobno | **zamknięte (v3):** tylko tutaj, jako osobny wariant dodatkowy (etap E5, osobna sekcja i tabela); w tabelach głównych go nie ma |
 | D4 | Wcześniejsze wyniki Motzkina przy n ≥ 50 | jedno uczciwe zdanie w tym artykule; co z pracami w recenzji, decyduje promotor |
 | D5 | Zakres kwantów | wyrocznia na stanach (MIN/OPT); pętla tylko w MAX |
 | D6 | SA | po ILS, jak w k-bonaccim |
@@ -562,8 +602,8 @@ instancje, średnia z ziaren), Page po łańcuchu, TOST dla H5, Friedman w klasi
 | D8 | Model drugiego rzędu | krótko tutaj; pełne studium w pracy kwantowej (fronty A/E w ROADMAP) |
 | D9 | Opcja | OPTIMUM |
 | D11 | Osobny artykuł czy połączenie z k-bonaccim | decyzja w punkcie kontrolnym 10.01: osobny artykuł (GECCO), jeśli H2–H4 potwierdzone i jest mocny wynik o geometrii nachodzenia; w przeciwnym razie jedna praca czasopismowa o ruchach złożonych w PFSP z dwiema osiami (k = zasięg, c = nachodzenie) i regułą akceptacji |
-| D12 | Bezpiecznik w kampanii k-bonacciego | **pilne**, zanim kampania ruszy na Macu: dopisać `kbonacci_kn_safe` jako ablację; pilot sugeruje, że Dynasearchowi bezpiecznik szkodzi, a Motzkinowi pomaga, i to trzeba zmierzyć w tym samym kodzie |
-| D13 | Margines równoważności dla H5 | ustalić przed kampanią (propozycja ±0,3 pp) |
+| D12 | Bezpiecznik w kampanii k-bonacciego | **zamknięte (v3, decyzja 11.11.2026):** bez bezpiecznika w kampanii głównej k-bonacciego; ewentualna ablacja `kbonacci_kn_safe` do rozważenia później |
+| D13 | Margines równoważności dla H5 | **zbędne (v3):** H5 i TOST wypadają |
 
 ---
 
@@ -586,6 +626,8 @@ Szczegóły bibliograficzne (tomy, strony) zweryfikować w Crossref przed pisani
 ---
 
 ## 14. Ważne ustalenie poboczne: bezpiecznik i słabe wyniki Motzkina przy n ≥ 50
+
+> **v3:** po decyzji z 11.11.2026 bezpiecznik jest wariantem dodatkowym, a wniosek o słabych wynikach Motzkina przy n ≥ 50 przesuwa się do tezy głównej: bez bezpiecznika (jak w pracach wcześniejszych) nachodzenie psuje wyniki; sam bezpiecznik opisujemy w osobnej sekcji. Wyniki z Maca w nocie „Zmiany v3” na początku pliku.
 
 W `get_neighbor` ruch złożony Motzkina jest przyjmowany bez sprawdzenia, a ILS (tabu) przyjmuje też ruchy pogarszające.
 Pilot pokazuje, że na stanach z trajektorii ruch złożony wybrany z sumy delt **średnio pogarsza** C_max:
@@ -643,8 +685,8 @@ Odtworzenie: `cd articles/crossings/pilot && python pilot_ils.py 1000` (~2 min n
 - ✅ Kontrole z rund krytyki: Dynasearch w nowym kodzie (`select_dyn`, zgodny z brute force; razem 2400/2400 sprawdzeń), Dynasearch-safe,
   bezpiecznik z prefiksem; anatomia powtórzona z Dynasearch.
 - ⚠️ Piloty liczone w chmurze (4 rdzenie, czasy zaszumione) na instancjach z generatora Taillarda. tai20_5 i tai20_10 to prawdziwe
-  ta001–ta004 i ta011–ta014 (LB zgodne z tabelą Taillarda). „lcg50_10” to instancje z tego samego generatora, ale ich nasion nie
-  potwierdziłem jako ta041–ta044. RPD liczone do maszynowego dolnego ograniczenia.
+  ta001–ta004 i ta011–ta014 (LB zgodne z tabelą Taillarda). „lcg50_10” to instancje z tego samego generatora; nasiona są zgodne z
+  ta041–ta044 w `data/tai50_10.txt` (sprawdzone 11.11.2026, macierzy czasów jeszcze nie porównano). RPD liczone do maszynowego dolnego ograniczenia.
 - ⏳ Etap 0 (§9) i decyzje D1–D9.
 
 ---
@@ -678,4 +720,4 @@ a z SA w obu kampaniach ~4,2 doby.
 | 4. Kwanty | 30–57% mniej CZ to tylko 2 stany; wierność sprzętu ≠ jakość ruchu | — | liczby stanów podane; dwa osobne punkty końcowe w H7 |
 | 5. Strategia | ruchy złożone dają mało ponad Swap; GECCO zapyta o NEH/IG; kolizja z IJCAI; kampania k-bonacciego ruszy bez kontroli | Dyn. vs Swap ~1 pp przy n = 50 | nowe ryzyka; D11 (osobny artykuł czy wspólny z k-bonaccim), D12 (pilna ablacja w kampanii k-bonacciego), D13 |
 | 6. Spójność | pogrubienia i liczby w tabelach | tabela §14 miała złe pogrubienie (tai20_10, 5 s) | poprawione; wszystkie liczby przeliczone skryptem `analyze_pilots.py` |
-
+| 7. Decyzja i Mac (11.11.2026) | bezpiecznik zmienia regułę wyboru, nie otoczenie, i psuje porównywalność; pilot z chmury niepowtórzony; kwoty QPU z notatek | decyzja użytkownika; pilot powtórzony na Macu (kierunki zgodne, przewaga Dyn. nad N₀-safe niestabilna); kwota D-Wave ok. 287 s, stawki IQM 0,45–0,75 kr | bezpiecznik jako wariant dodatkowy E5; kampania główna 6 wariantów; H9′ bez bezpiecznika; H5/TOST wypadają; P1–P2 zamiast P1–P4; klasy rozstrzygające n ≤ 100; pilot z filtrem w E0; poprawione kwoty QPU |

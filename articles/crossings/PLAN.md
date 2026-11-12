@@ -114,7 +114,7 @@ Razem **~2,3 h na wariant i algorytm**.
 |---|---|---|---|
 | Warianty | Dyn. (plain), c₀ i inw. (plain + safe), Swap = 6 | Dyn., c₀, c₁, P₁, inw. (plain + safe) + Swap = 11 | OPT + c₂ (plain + safe) + model drugiego rzędu (c₀ i inw., safe, top-K = 12) + bezpiecznik z prefiksem (c₀, inw.) = 17 |
 | ILS | ~14 h (~11,5 h, jeśli Dyn.-plain z kampanii k-bonacciego) | ~25 h | ~39 h |
-| Dodatki | — | anatomia E1 (~2 h), ablacja dokładnego filtra dla c₀-safe i inw.-safe (~4,6 h) | + ablacja limitu top-K (~2 h) |
+| Dodatki | — | anatomia E1 (~2 h), ablacja dokładnego filtra dla c₀ i inw. bez bezpiecznika (v3; ~4,2 h) | + ablacja limitu top-K (~2 h) |
 | **Razem klasyka (ILS)** | **~14 h** | **~32 h** (~1,3 doby) | **~48 h** (2 doby) |
 | SA (po decyzji) | +14 h | +25 h | +39 h |
 | Kwanty (A.5) | MIN | OPT | MAX |
@@ -465,7 +465,7 @@ algorytm wyboru i jego koszt, liczba sprzężeń QUBO. Spina artykuł z planem k
 - SA tą samą komendą z `--algos sa`, po decyzji.
 
 ### E3. Ablacje (Mac)
-- OPT: dokładny filtr ścieżki krytycznej dla c₀-safe i inw.-safe.
+- OPT: dokładny filtr ścieżki krytycznej dla c₀ i inw. bez bezpiecznika (v3: porównywalne z tabelą główną).
 - MAX: c₂ (plain i safe); model drugiego rzędu (c₀ i inw., top-K = 12, szybki solver); bezpiecznik z prefiksem (c₀, inw.);
   limit top-K (K ∈ {200, 400, ∞} przy n ≤ 100).
 

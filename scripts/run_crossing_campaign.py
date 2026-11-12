@@ -5,14 +5,15 @@ identity start; seeds 0-4; block filter of the previous papers). Runs are sequen
 Every run uses t_max = 10 s; the budgets 0.1-5 s are read off its move log with
 scripts/extract_budgets.py (validated in the k-bonacci campaign), run automatically after each stage.
 
-Stages (--stage all = main, anatomy, ablation; each one resumes where it stopped):
-  main      12 Taillard files x 11 modes: Dynasearch, Motzkin (c0), c1, P1, involutions, each plain and
-            _safe, plus cross_swap (best single swap). cross_dyn is k-bonacci's kbonacci_kn (same
-            candidates and DP); cross_dyn_safe answers decision D12 of the plan.
-  anatomy   E1: states sampled from 10 s ILS runs (cross_c0, cross_c0_safe, cross_inv_safe), analysed by
-            scripts/crossing_anatomy.py (predicted vs real gain per family, crossings, pair additivity
-            by geometry, QUBO couplers, second-order model). n = 500 is skipped (one-move regime).
-  ablation  exact critical-path filter for cross_c0_safe and cross_inv_safe.
+Stages (--stage all = main, anatomy, ablation, safe; each one resumes where it stopped):
+  main      12 Taillard files x 6 plain modes (plan v3): Dynasearch, Motzkin (c0), c1, P1, involutions,
+            plus cross_swap (best single swap). cross_dyn is k-bonacci's kbonacci_kn (same candidates
+            and DP). No safeguard here: it changes the selection rule, not the neighbourhood.
+  anatomy   E1: states sampled from 10 s ILS runs of cross_dyn, cross_c0 and cross_inv, analysed by
+            scripts/crossing_anatomy.py (predicted vs real gain per family, the offline counter against
+            the best single swap, pair additivity by geometry). n = 500 is skipped (one-move regime).
+  ablation  exact critical-path filter for cross_c0 and cross_inv (plain, comparable with main).
+  safe      E5, a separate extra variant: the five families with the safeguard (_safe), after main.
   extra     option MAXIMUM only: prefix safeguard (cross_c0_prefix, cross_inv_prefix).
 
 Usage (Mac, repo root):
@@ -45,13 +46,15 @@ LONG = 10000
 OUT = ROOT / "results" / "crossings"
 
 FAMILIES = ["dyn", "c0", "c1", "pa1", "inv"]
-MAIN_MODES = [f"cross_{f}{r}" for f in FAMILIES for r in ("", "_safe")] + ["cross_swap"]
+MAIN_MODES = [f"cross_{f}" for f in FAMILIES] + ["cross_swap"]
+SAFE_MODES = [f"cross_{f}_safe" for f in FAMILIES]
 STAGES = {
     "main": {"files": TAILLARD, "modes": MAIN_MODES},
-    "ablation": {"files": TAILLARD, "modes": ["cross_c0_safe_cp", "cross_inv_safe_cp"]},
+    "ablation": {"files": TAILLARD, "modes": ["cross_c0_cp", "cross_inv_cp"]},
+    "safe": {"files": TAILLARD, "modes": SAFE_MODES},
     "extra": {"files": TAILLARD, "modes": ["cross_c0_prefix", "cross_inv_prefix"]},
 }
-ORDER = ["main", "anatomy", "ablation"]          # "extra" only on explicit request (option MAXIMUM)
+ORDER = ["main", "anatomy", "ablation", "safe"]  # "extra" only on explicit request (option MAXIMUM)
 # Wall-clock overrun of runs whose first evaluation outlasts the budget: all cross_* modes evaluate
 # every pair, like Dynasearch / k = n (n = 500: ~36 s per evaluation on the M4 Pro).
 OVERRUN_S = {500: 30.0, 200: 1.0}
@@ -165,7 +168,7 @@ def print_summary(res_dir: Path) -> None:
         it[key].append(r.get("iterations") or 0)
         if r.get("neighborhood_stats"):
             ns[key].append(r["neighborhood_stats"])
-    modes = [m for m in MAIN_MODES + STAGES["ablation"]["modes"] + STAGES["extra"]["modes"]
+    modes = [m for m in MAIN_MODES + SAFE_MODES + STAGES["ablation"]["modes"] + STAGES["extra"]["modes"]
              if any(k[2] == m for k in it)]
     short = {m: m.replace("cross_", "").replace("_safe", "-s").replace("_prefix", "-p").replace("_cp", "/cp")
              for m in modes}
@@ -200,7 +203,7 @@ def print_summary(res_dir: Path) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--stage", default="all", help="all | main | anatomy | ablation | extra (comma list allowed)")
+    ap.add_argument("--stage", default="all", help="all | main | anatomy | ablation | safe | extra (comma list allowed)")
     ap.add_argument("--files", default=",".join(TAILLARD), help="subset of Taillard files")
     ap.add_argument("--modes", default="", help="subset of the stage's modes, e.g. to skip cross_dyn")
     ap.add_argument("--algos", default="ils", help="ils (default) | sa | ils,sa")

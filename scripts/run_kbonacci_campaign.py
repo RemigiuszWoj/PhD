@@ -74,7 +74,10 @@ def relative_modes(f: str) -> list:
 
 
 STAGES["relative"] = {"files": TAILLARD, "modes": relative_modes, "budgets": [LONG]}
-ORDER = ["validate", "replicate", "main", "insert", "ablation", "relative"]
+# Exact critical-path filter for the remaining k of `main` (k = 3 and 8 are in `ablation`).
+STAGES["ablation_all"] = {"files": TAILLARD, "budgets": [LONG],
+                          "modes": [f"{m}_cp" for m in K_MAIN if m not in ("kbonacci_k3", "kbonacci_k8")]}
+ORDER = ["validate", "replicate", "main", "insert", "ablation", "relative", "ablation_all"]
 # Rough wall-clock overrun for runs whose first move outlasts the budget
 # (k = n at n = 500: one Dynasearch-sized evaluation takes ~36 s in Python).
 OVERRUN_S = {("kbonacci_kn", 500): 30.0}

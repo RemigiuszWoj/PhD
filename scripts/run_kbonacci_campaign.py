@@ -17,6 +17,8 @@ Stages (run in this order by --stage all; each one resumes where it stopped):
   insert    12 Taillard files, Insert neighborhood (reference row).
   ablation  12 Taillard files, k in {3,8} with the exact critical-path filter.
   relative  12 Taillard files, k = ceil(alpha n) for alpha = 10%, ..., 90% (values not in `main`).
+  ablation_all  12 Taillard files, exact filter for the remaining k of `main`.
+  large     n = 200, 500, exact filter, k in {4,6,8,12,16,24,32} + Insert, 60 s (budgets to 60 s).
 
 Usage (Mac, repo root):
     python scripts/run_kbonacci_campaign.py --dry-run
@@ -77,7 +79,12 @@ STAGES["relative"] = {"files": TAILLARD, "modes": relative_modes, "budgets": [LO
 # Exact critical-path filter for the remaining k of `main` (k = 3 and 8 are in `ablation`).
 STAGES["ablation_all"] = {"files": TAILLARD, "budgets": [LONG],
                           "modes": [f"{m}_cp" for m in K_MAIN if m not in ("kbonacci_k3", "kbonacci_k8")]}
-ORDER = ["validate", "replicate", "main", "insert", "ablation", "relative", "ablation_all"]
+# Large n, long budget: does a small k win at n >= 200 by nature or only because 10 s is short?
+# Exact filter only; budgets up to 60 s are read off the move log of the 60 s runs.
+STAGES["large"] = {"files": ["tai200_10", "tai200_20", "tai500_20"], "budgets": [60000],
+                   "modes": [f"kbonacci_k{k}_cp" for k in (4, 6, 8, 12, 16, 24, 32)] + ["insert"],
+                   "extract_budgets": [100, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000]}
+ORDER = ["validate", "replicate", "main", "insert", "ablation", "relative", "ablation_all", "large"]
 # Rough wall-clock overrun for runs whose first move outlasts the budget
 # (k = n at n = 500: one Dynasearch-sized evaluation takes ~36 s in Python).
 OVERRUN_S = {("kbonacci_kn", 500): 30.0}
@@ -135,8 +142,9 @@ def run_stage(name: str, files, algos, dry: bool, limit: int) -> None:
         return
     # budgets from the 10 s runs (validate: from its own 10 s runs, for the comparison)
     src, out = OUT / name, OUT / f"{name}_budgets"
+    extra = ["--budgets", ",".join(map(str, spec["extract_budgets"]))] if spec.get("extract_budgets") else []
     subprocess.run([sys.executable, "scripts/extract_budgets.py", "extract", "--src", str(src),
-                    "--out", str(out)], check=True)
+                    "--out", str(out), *extra], check=True)
     print_moves(src)
     if name == "validate":
         gate = subprocess.run([sys.executable, "scripts/extract_budgets.py", "compare",

@@ -1,4 +1,4 @@
-% Response to the reviewers, GCMM 2026, Paper 59.
+ % Response to the reviewers, GCMM 2026, Paper 59.
 % Layout as in the BPASTS letter: (1) both reviews in full, (2) introduction,
 % (3) point-by-point answers with Before/After text of the manuscript.
 % Compile: pdflatex response_to_reviewers.tex
@@ -33,13 +33,13 @@ GCMM 2026, Paper 59
 \end{center}
 
 % =====================================================================
-\section*{Introduction}
+%\section*{Introduction}
 
-We thank both reviewers for their careful reading and for the concrete suggestions, which made the paper clearer and easier to reproduce. Below we answer every comment point by point. Each answer says what we changed and where, and quotes the old and the new text of the manuscript. As the notification requires, we also upload a copy of the revised manuscript in which all new or rewritten text is highlighted in blue.
+%We thank both reviewers for their careful reading and for the concrete suggestions, which made the paper clearer and easier to reproduce. Below we answer every comment point by point. Each answer says what we changed and where, and quotes the old and the new text of the manuscript. As the notification requires, we also upload a copy of the revised manuscript in which all new or rewritten text is highlighted in blue.
 
-The main changes are the following. The timing of the gate-model runs is now reported as what it is: one move per run, measured after the 10~s budget had passed (Tables~2 and~3, Fig.~3 removed). A new Section~3.4 explains how a QAOA sample becomes a scheduling move. The methodology now gives the shots, the transpiler and layout settings, the absence of error mitigation, the frozen angles, the training set and the software versions. The reference list is ordered by first citation, the two references under review are replaced by verifiable sources, and eight recent works (2022--2026) are added. The paper also gains a data and code availability statement, defined abbreviations, consistent units and redrawn circuit figures. The abstract is rewritten.
+%The main changes are the following. The timing of the gate-model runs is now reported as what it is: one move per run, measured after the 10~s budget had passed (Tables~2 and~3, Fig.~3 removed). A new Section~3.4 explains how a QAOA sample becomes a scheduling move. The methodology now gives the shots, the transpiler and layout settings, the absence of error mitigation, the frozen angles, the training set and the software versions. The reference list is ordered by first citation, the two references under review are replaced by verifiable sources, and eight recent works (2022--2026) are added. The paper also gains a data and code availability statement, defined abbreviations, consistent units and redrawn circuit figures. The abstract is rewritten.
 
-The revised paper keeps the length limit of 15 pages. To make room for the additions we removed Fig.~3, as Reviewer~2 suggested showing the QAOA result apart from the budget curves and Table~3 already gives it, and shortened a few passages that repeated the abstract or the conclusions.
+%The revised paper keeps the length limit of 15 pages. To make room for the additions we removed Fig.~3, as Reviewer~2 suggested showing the QAOA result apart from the budget curves and Table~3 already gives it, and shortened a few passages that repeated the abstract or the conclusions.
 
 % =====================================================================
 \section*{Answers to the Reviewer \#1 remarks}
@@ -130,8 +130,8 @@ Clarify how a QAOA sample becomes a scheduling move. Sections 3.2 and 4.1 descri
 \change{new Section~3.4 ``From a sample to a move'' (replaces the readout paragraph of Section~4.1)}{A move reads out the circuit by sampling it and returning the sampled bitstring of lowest \emph{original}-QUBO energy. This energy-based readout is essential: \ldots}{Each circuit is sampled with 4096 shots, and we keep the sampled bitstring of lowest energy under the original QUBO~(1). The single most frequent bitstring of a $p=1$ state is usually the all-zeros assignment or a high-energy state with many ones, so it is a poor readout. The bits equal to one name the selected swap candidates. For the dense neighborhoods the permutation is cut into windows of six positions that overlap by half, all windows of a move are sent as one job, and the swaps selected in all windows are joined into one list. A greedy pass from left to right then restores feasibility: a Dynasearch swap $(i,j)$ is kept if it does not overlap the last kept swap, a Motzkin swap is kept if it neither crosses a kept swap nor shares an endpoint with it, and Fibonacci keeps adjacent swaps that do not share a position. The same pass drops a swap that two overlapping windows both selected. For Adjacent each window proposes at most one swap and the move takes the proposal with the smallest $\delta_k$, which is the minimizer of the global one-hot QUBO. The kept swaps touch disjoint positions, so they are applied at once, and the makespan of the new permutation is then computed from scratch in $O(nm)$ time rather than from the sum of the $\delta_k$. If no swap survives the repair, the method falls back to the best single improving swap; no move reported in Section~4 came from this fallback, since every reported Fibonacci, Dynasearch and Motzkin move changes four or more positions.}
 
 % =====================================================================
-\section*{Requirements of the Programme Committee}
+%\section*{Requirements of the Programme Committee}
 
-We also checked the revised paper against the manuscript requirements in the notification. The abstract has 247 words. The section structure follows the recommended one. There are 28 references in order of first citation, with four self-citations (14\%), all in English and all with a DOI. Software names and versions are given in Section~3.7, and data and code availability in a separate statement. Both authors and their affiliation are listed, and the corresponding author is marked. The use of generative AI is disclosed in a separate paragraph.
+%We also checked the revised paper against the manuscript requirements in the notification. The abstract has 247 words. The section structure follows the recommended one. There are 28 references in order of first citation, with four self-citations (14\%), all in English and all with a DOI. Software names and versions are given in Section~3.7, and data and code availability in a separate statement. Both authors and their affiliation are listed, and the corresponding author is marked. The use of generative AI is disclosed in a separate paragraph.
 
 \end{document}

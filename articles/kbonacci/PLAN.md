@@ -33,6 +33,7 @@ ziarna 0–4, RPD do LB), więc jedynym czynnikiem jest sąsiedztwo.
 | Q6 | Jak N_k wypada wobec Adjacent, Fibonacciego, Dynasearch, Motzkina i Insert? | kampania + stare wyniki + `insert` | — |
 | Q7 | Ile kosztuje przybliżony filtr z poprzednich prac wobec filtra dokładnego? | ablacja `_cp` | filtr przybliżony gubi 2–7% zamian poprawiających |
 | Q8 (opcjonalne) | Czy QUBO k-bonacciego mieści się na D-Wave i IQM i jak k zmienia koszt? | poziomy MIN → OPT → MAX | — |
+| Q9 | Czy przy n ≥ 200 najlepsze k rośnie z budżetem i czy Insert dogania rodzinę k przy 60 s? | etap `large` | przy 10 s: k = 8 (n = 200), k = 6 (n = 500); Insert remis przy 200, −7 pp przy 500 |
 
 **Zmiana względem v2:** hipoteza H2 („korzyść z k nasyca się w skali długości bloku”) nie znajduje potwierdzenia
 w anatomii: mediana k_sat dla n = 100 wynosi n. Proponuję zastąpić ją pytaniem Q3 (zysk na jednostkę czasu), które dane wspierają.
@@ -67,8 +68,14 @@ To może być ogólna własność m = 2. Nie twierdzimy tego w artykule; ewentua
 | `insert` | 12 plików, Insert | ~1,7 h |
 | `ablation` | 12 plików, k ∈ {3, 8} z filtrem dokładnym | ~3,3 h |
 | `relative` | 12 plików, k = ⌈α·n⌉, α = 10%…90% (bez wartości z `main`), 10 s | ~14 h |
+| `ablation_all` | 12 plików, filtr dokładny dla pozostałych k z `main` (2, 4, 5, 6, 12, 16, n) | ~11,7 h |
+| `large` | tai200_10, tai200_20, tai500_20 (30 instancji), filtr dokładny, k ∈ {4, 6, 8, 12, 16, 24, 32} + Insert, 60 s | ~20 h |
 
 Etap `relative` startuje automatycznie po `ablation`. Służy rysunkowi `fig_best_k_rel` (x = n, y = k/n, najlepsze k i remisy Wilcoxona).
+
+Etap `large` ma rozstrzygnąć, czy małe k wygrywa przy dużych n z natury, czy tylko dlatego, że 10 s to krótki budżet.
+Mniejsze budżety (0,1–30 s) odczytujemy z logu ruchów przebiegów 60 s. Ruszył 13.11 o 15:25 przed dokończeniem crossings,
+które łańcuch sam wznawia po nim. Instancje n ≥ 1000 bierzemy dopiero wtedy, gdy trend będzie wyraźny.
 
 Instrukcja: `RUN_LOCAL.md`. Mniejsze budżety z logu ruchów (`scripts/extract_budgets.py`). SA dopiero po decyzji.
 
@@ -110,6 +117,9 @@ więc przed każdym poziomem najpierw `--dry-run` i sprawdzenie salda przez uży
 | 5 | Additivity | napisane: tw. 1, stw. 4, przykłady | ścieżki |
 | 6 | Experimental Protocol | napisane (+ anatomia) | — |
 | 7 | Results | anatomia wstępnie; kampania: szkielet | addytywność; po kampanii RPD(k), iteracje, najlepsze k, tabela główna |
+
+**Decyzja 13.11:** tabela główna i wnioski liczone na filtrze dokładnym (`_cp`), stary filtr jako ablacja (jedna tabela i akapit
+o tym, ile kosztował). Teza robocza: wystarczy zasięg ok. 10 pozycji, a dokładny filtr daje więcej niż dłuższy zasięg.
 | 8 | Conclusions | TODO po kampanii | — |
 
 Szkic ma teraz 8 stron w układzie roboczym, z dowodami w tekście. Pod IJCAI (7 stron) część dowodów trafi do suplementu.
@@ -120,7 +130,7 @@ O cięciach decydujemy na końcu.
 | Kiedy | Co |
 |---|---|
 | do 16.11 | komplet GCMM (pierwszeństwo). W tle na Macu: `replicate` dokończony 11.11 (zgodny ze starą kampanią); od 11.11 `main` + `insert` + `ablation` (20,5 h), potem `relative` (~14 h); D-Wave MIN po klasyce |
-| 17–22.11 | analiza, rysunki, anatomia n = 200; rozmowa z promotorem (punkt 8); **decyzja 22.11: IJCAI czy GECCO** (punkt 8.6) |
+| 17–22.11 | analiza (wyniki `large` od 14.11), rysunki, anatomia n = 200; rozmowa z promotorem (punkt 8); **decyzja 22.11: IJCAI czy GECCO** (punkt 8.6), po wynikach `large` |
 | 23.11–3.12 | rewizja BPASTS ma pierwszeństwo (termin 3.12); równolegle uzupełnianie rozdziału Results |
 | 1.12–… | D-Wave OPT po odnowieniu quoty |
 | ICAPS | abstrakt 7.12, artykuł 14.12 (koliduje z ANNSIM 18.12) |
@@ -135,9 +145,10 @@ ruszy w tym tygodniu, a promotor szybko odpowie w sprawie podziału.
 |---|---|---|
 | „To tylko Dynasearch z limitem odległości” | wysokie | teoria (stw. 2–4, tw. 1), studium k, anatomia |
 | Start z permutacji identycznościowej, stałe budżety, RPD do LB | wysokie na A* | decyzja wiążąca zostaje; RPD do BKS jako druga miara; w tekście jawnie: badamy sąsiedztwa przy protokole z poprzednich prac. Opcja: dodatkowy etap ze startem NEH tylko dla rodziny k (ok. +16 h) |
-| Główna kampania używa filtra przybliżonego, a twierdzenia mówią o dokładnym | średnie | opisane wprost w rozdziale 4; ablacja `_cp`. Opcja: ablacja dla wszystkich k zamiast dwóch (ok. +12 h) |
+| Główna kampania używa filtra przybliżonego, a twierdzenia mówią o dokładnym | rozwiązane 13.11 | `ablation_all` policzył filtr dokładny dla wszystkich k; wyniki główne na `_cp` (decyzja w §5) |
 | Nakładanie się ze szkicem promotora (tribonacci/k-nacci, TWT, D-Wave) | średnie | rozmowa przed pisaniem dalszych części; zdanie „we introduce” do uzgodnienia |
 | Testy Wilcoxona na parach (instancja, ziarno) | średnie | ziarna tej samej instancji nie są niezależne; proponuję dodać test na średnich po ziarnach (120 par) obok dotychczasowego |
+| Przy n = 500 i 10 s żaden wariant nie jest zbieżny (k = n robi 1 iterację, Insert 11), więc „najlepsze k” może być skutkiem budżetu | wysokie | etap `large` (60 s); w tekście najlepsze k zawsze z budżetem |
 | Brak SA w pierwszej wersji | niskie | decyzja po ILS |
 | Bezpiecznik (lepszy wg rzeczywistego C_max z ruchu złożonego i najlepszej pojedynczej zamiany) | niskie | decyzja 11.11: poza kampanią główną, bo zmienia regułę wyboru ruchu, a nie otoczenie, i psuje porównywalność ze starymi wynikami. Ewentualnie osobny, oznaczony wariant `kbonacci_kn_safe` (ok. +2,3 h), do rozważenia po wynikach; to samo ustalenie przekazane do wątku o krzyżowaniach. Offline: licznik w anatomii, jak często ruch złożony jest gorszy od najlepszej pojedynczej zamiany |
 | Brak porównania ze stanem wiedzy PFSP (iterated greedy Ruiza i Stützlego) | wysokie na A* | w tekście wprost: badamy otoczenie przy stałym protokole, nie bijemy rekordów; IG cytowany jako stan wiedzy, bez doliczania |

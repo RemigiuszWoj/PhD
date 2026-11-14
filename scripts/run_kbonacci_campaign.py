@@ -19,6 +19,8 @@ Stages (run in this order by --stage all; each one resumes where it stopped):
   relative  12 Taillard files, k = ceil(alpha n) for alpha = 10%, ..., 90% (values not in `main`).
   ablation_all  12 Taillard files, exact filter for the remaining k of `main`.
   large     n = 200, 500, exact filter, k in {4,6,8,12,16,24,32} + Insert, 60 s (budgets to 60 s).
+  large500  tai500_20, exact filter, k in {8,12} + Insert, 300 s (budgets to 300 s).
+  large_m10 tai200_10, exact filter, k in {48,64,n}, 60 s (budgets to 60 s).
 
 Usage (Mac, repo root):
     python scripts/run_kbonacci_campaign.py --dry-run
@@ -84,7 +86,17 @@ STAGES["ablation_all"] = {"files": TAILLARD, "budgets": [LONG],
 STAGES["large"] = {"files": ["tai200_10", "tai200_20", "tai500_20"], "budgets": [60000],
                    "modes": [f"kbonacci_k{k}_cp" for k in (4, 6, 8, 12, 16, 24, 32)] + ["insert"],
                    "extract_budgets": [100, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000]}
-ORDER = ["validate", "replicate", "main", "insert", "ablation", "relative", "ablation_all", "large"]
+# n = 500 at 300 s: does Insert catch up, and does the best k keep moving up with the budget?
+STAGES["large500"] = {"files": ["tai500_20"], "budgets": [300000],
+                      "modes": ["kbonacci_k8_cp", "kbonacci_k12_cp", "insert"],
+                      "extract_budgets": [100, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000,
+                                          120000, 180000, 300000]}
+# m = 10: at 60 s the best k of `large` on tai200_10 is the largest one tried (32); find the top of the U.
+STAGES["large_m10"] = {"files": ["tai200_10"], "budgets": [60000],
+                       "modes": ["kbonacci_k48_cp", "kbonacci_k64_cp", "kbonacci_kn_cp"],
+                       "extract_budgets": [100, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000]}
+ORDER = ["validate", "replicate", "main", "insert", "ablation", "relative", "ablation_all", "large",
+         "large500", "large_m10"]
 # Rough wall-clock overrun for runs whose first move outlasts the budget
 # (k = n at n = 500: one Dynasearch-sized evaluation takes ~36 s in Python).
 OVERRUN_S = {("kbonacci_kn", 500): 30.0}

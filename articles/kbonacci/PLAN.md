@@ -70,12 +70,20 @@ To może być ogólna własność m = 2. Nie twierdzimy tego w artykule; ewentua
 | `relative` | 12 plików, k = ⌈α·n⌉, α = 10%…90% (bez wartości z `main`), 10 s | ~14 h |
 | `ablation_all` | 12 plików, filtr dokładny dla pozostałych k z `main` (2, 4, 5, 6, 12, 16, n) | ~11,7 h |
 | `large` | tai200_10, tai200_20, tai500_20 (30 instancji), filtr dokładny, k ∈ {4, 6, 8, 12, 16, 24, 32} + Insert, 60 s | ~20 h |
+| `large500` | tai500_20, filtr dokładny, k ∈ {8, 12} + Insert, 300 s | ~12,5 h |
+| `large_m10` | tai200_10, filtr dokładny, k ∈ {48, 64, n}, 60 s | ~2,5 h |
 
 Etap `relative` startuje automatycznie po `ablation`. Służy rysunkowi `fig_best_k_rel` (x = n, y = k/n, najlepsze k i remisy Wilcoxona).
 
 Etap `large` ma rozstrzygnąć, czy małe k wygrywa przy dużych n z natury, czy tylko dlatego, że 10 s to krótki budżet.
 Mniejsze budżety (0,1–30 s) odczytujemy z logu ruchów przebiegów 60 s. Ruszył 13.11 o 15:25 przed dokończeniem crossings,
 które łańcuch sam wznawia po nim. Instancje n ≥ 1000 bierzemy dopiero wtedy, gdy trend będzie wyraźny.
+
+Wynik `large` (14.11): o najlepszym k decyduje liczba maszyn. Przy m = 20 zostaje ono małe także przy 60 s
+(k = 8 dla 200×20 i 500×20), a przy m = 10 rośnie z budżetem (200×10: k8 → k12 → k16 → k24 → k32, największe policzone).
+Insert wygrywa na 200×10 od 5 s, remisuje na 200×20 przy 60 s i przegrywa na 500×20 przy 60 s o 2,6 pp, ale różnica maleje.
+Stąd dwa etapy domykające, uruchomione 14.11 przed dokończeniem crossings (łańcuch sam je wznawia):
+`large500` sprawdza, czy Insert dogania przy n = 500, a `large_m10` szuka dna krzywej przy m = 10.
 
 Instrukcja: `RUN_LOCAL.md`. Mniejsze budżety z logu ruchów (`scripts/extract_budgets.py`). SA dopiero po decyzji.
 

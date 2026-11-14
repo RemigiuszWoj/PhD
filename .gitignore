@@ -118,8 +118,12 @@ results/
 figures/
 paper/
 tables/
-.claude/
+# lokalne ustawienia Claude zostają poza repo; wspólne są tylko skille i .claude/CLAUDE.md
+.claude/*
+!.claude/skills/
+!.claude/CLAUDE.md
 CLAUDE.md
+!.claude/CLAUDE.md
 
 # Exceptions (must come AFTER the global figures/ and tables/ ignores):
 # keep figure/table assets bundled with articles

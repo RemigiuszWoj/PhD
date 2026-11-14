@@ -1,0 +1,25 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{xcolor}
+\newenvironment{comment}{\par\medskip\noindent\itshape}{\par}
+\newenvironment{reply}{\par\smallskip\noindent\textbf{Response.} }{\par}
+\begin{document}
+\noindent\textbf{<Conference/Journal>, Paper <nr>: ``<Title>''}\\
+Response to the reviewers
+
+\medskip
+We thank the reviewers for their careful reading and helpful comments. Changes in the manuscript are
+marked in \textcolor{blue}{blue}. Code and data: Zenodo, DOI <…>.
+
+\section*{Reviewer 1}
+\subsection*{R1.1}
+\begin{comment}<quoted comment>\end{comment}
+\begin{reply}<what we did and where (Section, page, Fig.)>\end{reply}
+
+\section*{Reviewer 2}
+\subsection*{R2.1}
+\begin{comment}<quoted comment>\end{comment}
+\begin{reply}<…>\end{reply}
+\end{document}

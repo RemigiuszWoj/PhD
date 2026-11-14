@@ -2,7 +2,8 @@
 % SZKIC v2 (11.11.2026) -- wersja polska (robocza, do dyskusji z promotorem)
 % Odpowiada main.tex (EN, v2); lista zmian v1 -> v2 w PLAN.md, punkt 9.
 % Protokół identyczny z poprzednimi pracami; nowa jest tylko klasa sąsiedztw.
-% Tabela 2 = PILOT, Tabela 3 = szkielet.
+% Wyniki (14.11): kampania główna i etap `large` z filtrem dokładnym;
+% etapy large500 i large_m10 jeszcze trwają.
 % =====================================================================
 \documentclass[10pt,twocolumn]{article}
 \usepackage[margin=0.75in]{geometry}
@@ -45,15 +46,22 @@ nimi: ruch to zbiór zamian końców na rozłącznych przedziałach, przy
 odległości zamiany co najwyżej $k-1$. Liczność rodziny wyznaczają
 dokładnie liczby $k$-bonacciego, więc rośnie ona jak $\lambda_k^n$, gdzie
 $\lambda_2=1{,}618$ (Fibonacci), $\lambda_3=1{,}839$ (tribonacci)
-i $\lambda_k\to 2$ (Dynasearch). Już dla $k\approx\log_2 n+2$ rodzina
+i $\lambda_k\to 2$ (Dynasearch). Dla $k=\lfloor\log_2 n\rfloor+2$ rodzina
 zawiera ok. 80\% wszystkich ruchów Dynasearch. Pozycyjne programowanie
 dynamiczne wybiera ruch o najlepszej przewidywanej zmianie makespanu w czasie
-$O(nk)$. Rodzinę badamy na
-pełnym benchmarku Taillarda w ramach ILS i SA, przy budżetach czasu
-z naszych wcześniejszych prac, dzięki czemu nowe sąsiedztwa można
-bezpośrednio porównać z opublikowanymi wynikami dla sąsiedztw Adjacent,
-Fibonacciego, Dynasearch i Motzkina.
-\todo{główny wynik: najlepsze $k$ dla rozmiaru i budżetu}
+$O(nk)$. Rodzinę badamy na pełnym benchmarku Taillarda w ramach ILS
+z naszych wcześniejszych prac, przy tych samych budżetach czasu, więc
+nowe sąsiedztwa można porównać z opublikowanymi wynikami dla sąsiedztw
+Adjacent, Fibonacciego, Dynasearch i Motzkina. Najlepsze $k$ jest dużo
+mniejsze, niż sugeruje to pokrycie, i maleje z liczbą maszyn. Przy 20
+maszynach i co najmniej 100 zadaniach najlepsze $k$ leży między 5 a 8
+przy każdym budżecie, który uruchomiliśmy, do 60\,s dla 200 i 500
+zadań. Przy 5 maszynach każde $k\geq 12$ działa podobnie przy 10\,s,
+a dla 200 zadań i 10 maszyn najlepsze $k$ rośnie z budżetem. Dokładny
+filtr ścieżki krytycznej, który zastępuje test granic bloków z wcześniejszych
+prac, poprawia każde $k\leq 16$ i obniża najlepsze $k$.
+\todo{Insert przy długich budżetach, po etapie large500; SA tylko jeśli
+policzymy}
 \end{abstract}
 
 \section{Wstęp}
@@ -83,8 +91,9 @@ $\N_{\mathrm{adj}}\subset\N_2=\N_{\mathrm{fib}}\subset\N_3\subset
 \dots\subset\N_n=\N_{\mathrm{dyn}}$. Podajemy dokładną liczność $|\N_k|$
 i tempo wzrostu w postaci zamkniętej oraz pokazujemy, że udział ruchów
 Dynasearch zawartych w $\N_k$ jest bliski $\exp(-n/2^{k+1})$, więc
-$k=\log_2 n+O(1)$ pokrywa stały ułamek Dynasearch. Drugą jest ocena
-rodziny. Pozycyjne DP wybiera ruch o najlepszej przewidywanej zmianie
+$k=\log_2 n+O(1)$ pokrywa stały ułamek Dynasearch. Ten udział jest własnością rodziny;
+rozdz.~\ref{sec:wyniki} pokazuje, że nie przewiduje on jakości
+rozwiązań. Drugą jest ocena rodziny. Pozycyjne DP wybiera ruch o najlepszej przewidywanej zmianie
 makespanu w czasie $O(nk)$, po wyznaczeniu delt w czasie $O(mnk^2)$, a dla
 $k=n$ jest nierekurencyjnym Dynasearch. Dowodzimy, że filtr oparty na
 jednej ścieżce krytycznej nie gubi żadnej zamiany poprawiającej
@@ -94,7 +103,8 @@ ruchu złożonym jest maksimum po ścieżkach kratowych, DP zastępuje je sumą
 maksimów, a my podajemy warunki, przy których obie wielkości są równe,
 oraz warunki, przy których suma jest optymistyczna. Trzecią rzeczą jest
 studium parametru $k$ na pełnym benchmarku Taillarda ($n=20$--$500$) przy
-sześciu budżetach czasu. Obejmuje jakość rozwiązań, liczbę iteracji
+sześciu budżetach czasu do 10\,s i przy przebiegach 60\,s na największych
+klasach. Obejmuje jakość rozwiązań, liczbę iteracji
 w budżecie, odległości wybieranych zamian i zmierzony błąd addytywności
 w funkcji $k$.
 \todo{opcjonalnie czwarty wkład: QUBO $k$-bonacciego na wyżarzaczu
@@ -177,7 +187,9 @@ Rysunek~\ref{fig:plansze} pokazuje cztery przypadki. Zwiększanie $k$
 poszerza pasmo $|t-\sigma(t)|\leq k-1$, które mogą zajmować wieże, a dla
 $k=n$ pasmo pokrywa całą szachownicę. Struktura blokowa jest drugim
 ograniczeniem i samo pasmo jej nie wymusza: $3$-cykl $\sigma=(2,3,1)$
-mieści się w paśmie dla $k=3$, ale nie jest inwolucją. Sąsiedztwo
+mieści się w paśmie dla $k=3$, ale nie jest inwolucją. Symetria też nie wystarcza: $\sigma=(3,4,1,2)$
+jest inwolucją mieszczącą się w paśmie dla $k=3$, ale jej dwie zamiany
+się krzyżują. Sąsiedztwo
 Motzkina~\cite{motzkin_own} osłabia strukturę blokową inaczej: dopuszcza
 zamianę wewnątrz przedziału innej zamiany, o ile żadne dwa przedziały się
 nie krzyżują.
@@ -296,13 +308,18 @@ stwierdzenia~\ref{prop:licznosc} mamy $\lambda_k/2=1-\lambda_k^{-k}/2$
 oraz $\lambda_k^{-k}=2^{-k}(1+O(k2^{-k}))$ na mocy~\eqref{eq:lambda},
 więc $(\lambda_k/2)^n=\exp\bigl(-n2^{-(k+1)}(1+o(1))\bigr)$,
 a $2c_k\to 1$.
+\todo{błąd w pierwszym twierdzeniu musi być jednostajny względem $k$;
+dodać oszacowanie wkładu pozostałych pierwiastków}
 \end{proof}
 
 Dla $k=\lfloor\log_2 n\rfloor+2$ wykładnik $n/2^{k+1}$ leży między $1/8$
 a $1/4$, więc graniczny udział leży między $e^{-1/4}\approx 0{,}78$
 a $e^{-1/8}\approx 0{,}88$. Dokładne udziały dla $n=20$--$500$ wynoszą
-0,79--0,89. Każde zwiększenie $k$ o jeden zmniejsza wykładnik o połowę,
-natomiast przy stałym $k$ udział maleje wykładniczo z $n$.
+0,79--0,88. Każde zwiększenie $k$ o jeden zmniejsza wykładnik o połowę,
+natomiast przy stałym $k$ udział maleje wykładniczo z $n$. Umiarkowane $k$
+zachowuje więc większość ruchów Dynasearch i odrzuca tylko rzadkie ruchy
+z bardzo długimi zamianami. To, czy odrzucone ruchy mają znaczenie dla
+przeszukiwania, jest pytaniem empirycznym (rozdz.~\ref{sec:wyniki}).
 
 \begin{figure}[t]
 \centering
@@ -339,7 +356,8 @@ $\ell(P^\ast)=C_{\max}(\pi)$. Kandydat z $\delta_{ij}\geq 0$ nigdy nie
 poprawia wartości DP, co daje drugą część. Ustalona kolumna leży w $d+1$
 przedziałach o odległości $d$, czyli w
 $\sum_{d=1}^{k-1}(d+1)=(k-1)(k+2)/2$ kandydatach. Macierze Head i Tail
-oraz $P^\ast$ kosztują $O(mn)$, a każda pozostała delta $O(mk)$.
+oraz $P^\ast$ kosztują $O(mn)$, każda pozostała delta $O(mk)$, a DP
+przegląda $n$ pozycji i pozostałych kandydatów.
 \end{proof}
 
 Wcześniejsze prace~\cite{windowed_own} używają prostszego testu, który
@@ -348,9 +366,11 @@ tym, jak poprzednia je skończy, i zostawia zamianę tylko wtedy, gdy
 granica leży w $[i,j]$. Ten test jest heurystyką: na optimach lokalnych
 odrzuca 2--6\% zamian poprawiających i zostawia od dwóch do pięciu razy
 więcej kandydatów niż filtr ze stwierdzenia~\ref{prop:filtr}
-\todo{liczby z scripts/check\_block\_filter.py; ostateczne sformułowanie
-po decyzji o filtrze}. Kampania główna zachowuje wcześniejszy test, żeby
-wyniki pozostały porównywalne, a filtr dokładny badamy w ablacji.
+\todo{liczby z scripts/check\_block\_filter.py}. Dla każdego $k$
+uruchamiamy oba testy i wcześniejszy nazywamy filtrem granic bloków.
+Filtr dokładny jest wariantem głównym, a filtr granic bloków ablacją,
+która zachowuje związek z opublikowanymi wynikami
+(rozdz.~\ref{sec:wyniki}).
 
 \paragraph{Pozycyjne DP.} Niech $B[p]$ oznacza najmniejszą sumę delt
 ruchu złożonego ograniczonego do pozycji $1..p$. Na mocy
@@ -437,10 +457,11 @@ zamianach jest maksimum po maszynie przekroczenia.}
 \end{figure}
 
 Warunek z trzeciej części mówi, że ścieżka krytyczna przekracza granicę
-na tej samej maszynie przed każdą pojedynczą zamianą i po niej. Małe
-zmiany uszeregowania rzadko przesuwają to przekroczenie, co wyjaśnia,
-dlaczego DP jest przeważnie optymistyczne. Zdarzają się oba kierunki
-błędu, co pokazują dwie instancje z $n=4$ i zamianami $(1,2)$ oraz
+na tej samej maszynie przed każdą pojedynczą zamianą i po niej. Suma delt
+jest wtedy dokładna albo optymistyczna, a ściśle optymistyczna, gdy obie
+zmiany razem pozwalają innej maszynie wyprzedzić $r^\ast$. Na pobranych
+stanach prognoza jest optymistyczna znacznie częściej niż pesymistyczna
+(rozdz.~\ref{sec:wyniki}). Zdarzają się oba kierunki błędu, co pokazują dwie instancje z $n=4$ i zamianami $(1,2)$ oraz
 $(3,4)$.
 
 \begin{example}[suma optymistyczna]
@@ -461,8 +482,8 @@ błąd rośnie z liczbą maszyn, na których ścieżki mogą przekroczyć granic
 czyli z $m$.
 
 \section{Protokół eksperymentu}
-Protokół jest taki sam jak we wcześniejszych pracach~\cite{windowed_own}.
-Nowe jest tylko sąsiedztwo.
+Zachowujemy protokół wcześniejszych prac~\cite{windowed_own}
+i zmieniamy sąsiedztwo.
 \begin{itemize}
 \item \textbf{Instancje:} 120 instancji Taillarda (12 klas,
       $n\in\{20,\dots,500\}$, $m\in\{5,10,20\}$), zweryfikowanych
@@ -474,13 +495,17 @@ Nowe jest tylko sąsiedztwo.
       z puli dostaje kick double-bridge. Start z permutacji
       identycznościowej. \todo{wiersze SA tylko jeśli policzymy SA}
 \item \textbf{Budżety:} $\{0{,}1;\,0{,}5;\,1;\,2;\,5;\,10\}$\,s,
-      5 ziaren (0--4).
-\item \textbf{Sąsiedztwa:} $k\in\{2,3,4,5,6,8,12,16,n\}$. Wiersze
-      odniesienia: Adjacent, Fibonacci, Dynasearch i Motzkin z wcześniejszej
-      kampanii na tej samej maszynie oraz Insert (najlepsze pojedyncze
-      wstawienie, akceleracja Taillarda). Filtr blokowy jak we
-      wcześniejszych pracach; ablacja z dokładnymi granicami ścieżki
-      krytycznej dla $k\in\{3,8\}$.
+      5 ziaren (0--4). Klasy $200\times 10$, $200\times 20$ i $500\times 20$
+      uruchamiamy też na 60\,s. \todo{300\,s na $500\times 20$}
+\item \textbf{Sąsiedztwa:} $k\in\{2,3,4,5,6,8,12,16,n\}$, każde
+      z filtrem dokładnym ze stwierdzenia~\ref{prop:filtr} i z filtrem
+      granic bloków z wcześniejszych prac. Przebiegi 60\,s używają filtra
+      dokładnego i $k\in\{4,6,8,12,16,24,32\}$. Osobny eksperyment ustawia
+      $k$ na 10\%, 20\%, \dots, 90\% wartości $n$, tylko z filtrem granic
+      bloków. Odniesienia: Insert (najlepsze pojedyncze wstawienie,
+      akceleracja Taillarda), liczony w tej samej kampanii, oraz Adjacent,
+      Fibonacci, Dynasearch i Motzkin z wcześniejszej kampanii na tej samej
+      maszynie.
 \item \textbf{Miara:} RPD do dolnego ograniczenia Taillarda i test
       Wilcoxona, $\alpha=0{,}05$, jak wcześniej. Dodatkowo: korekta Holma,
       test Friedmana z różnicą krytyczną Nemenyi, RPD do górnych ograniczeń
@@ -505,10 +530,16 @@ jeden ruch). SA nie jest deterministyczny: reheat
 wyzwala licznik stagnacji mierzony zegarem, więc nawet dwa przebiegi
 z tym samym ziarnem i budżetem rozchodzą się po pierwszym kicku. Dla SA
 wartości z logu zgadzają się z niezależnymi przebiegami w granicach tego
-szumu. \todo{tabela walidacji} Przebieg kontrolny dwóch wcześniejszych
-sąsiedztw (Fibonacci i Dynasearch, dwie klasy, te same ziarna) sprawdza, czy
-maszyna odtwarza liczbę iteracji i jakość z wcześniejszej kampanii.
-\todo{liczby}
+szumu.
+
+Na dwóch klasach ($20\times 5$ i $50\times 10$, $k\in\{3,8\}$) wartości
+odczytane z logu i niezależne wartości ILS różnią się co najwyżej
+o 0,03 pkt proc. Przebieg kontrolny dwóch wcześniejszych sąsiedztw
+(Fibonacci i Dynasearch, dwie klasy, te same ziarna) sprawdza, czy maszyna
+odtwarza jakość z wcześniejszej kampanii. Przy 10\,s wartości zgadzają się
+w granicach 0,01 pkt proc. Największa różnica przy dowolnym budżecie
+wynosi 0,25 pkt proc., dla Dynasearch na $50\times 10$ przy 0,1\,s, gdzie
+przebieg kończy około czterech iteracji.
 
 \paragraph{Anatomia ruchu.} Drugi eksperyment dotyczy pojedynczych ruchów
 poza jakąkolwiek metaheurystyką. Dla każdej instancji z $n\leq 100$
@@ -530,63 +561,186 @@ na oknach po 6 pozycji z nakładaniem 50\%; wszystkie okna ruchu idą
 jednym zadaniem. \todo{które poziomy policzono i zużyty czas QPU /
 kredyty}
 
-\section{Wyniki}
+\section{Wyniki}\label{sec:wyniki}
+\begin{table*}[t]
+\centering
+\caption{Średnie RPD [\%] do dolnego ograniczenia, ILS, filtr dokładny.
+Pogrubienie oznacza najlepszą wartość w kolumnie.}
+\label{tab:main}
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}l*{15}{c}@{}}
+\toprule
+ & \multicolumn{3}{c}{$n=20$} & \multicolumn{3}{c}{$n=50$}
+ & \multicolumn{3}{c}{$n=100$} & \multicolumn{3}{c}{$n=200$}
+ & \multicolumn{3}{c}{$n=500$} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}\cmidrule(lr){11-13}\cmidrule(l){14-16}
+ & 0{,}1\,s & 1\,s & 10\,s & 0{,}1\,s & 1\,s & 10\,s & 0{,}1\,s & 1\,s & 10\,s
+ & 0{,}1\,s & 1\,s & 10\,s & 0{,}1\,s & 1\,s & 10\,s \\
+\midrule
+Insert & \textbf{12{,}26} & \textbf{11{,}29} & \textbf{10{,}94} & 9{,}76 & \textbf{6{,}38} & \textbf{5{,}51} & 14{,}11 & \textbf{5{,}36} & \textbf{3{,}51} & 18{,}82 & 12{,}49 & \textbf{4{,}11} & 16{,}01 & 15{,}60 & 12{,}59 \\
+\midrule
+$k=2$ & 14{,}89 & 12{,}60 & 11{,}97 & 13{,}02 & 9{,}65 & 7{,}45 & 10{,}89 & 7{,}76 & 5{,}83 & 12{,}92 & 9{,}63 & 6{,}97 & 13{,}34 & 11{,}01 & 8{,}05 \\
+$k=3$ & 13{,}66 & 12{,}06 & 11{,}50 & 11{,}30 & 8{,}34 & 6{,}64 & 9{,}70 & 6{,}83 & 5{,}05 & 11{,}88 & 8{,}07 & 5{,}74 & 12{,}34 & 9{,}84 & 6{,}33 \\
+$k=4$ & 13{,}30 & 11{,}81 & 11{,}29 & 10{,}37 & 7{,}75 & 6{,}40 & 9{,}03 & 6{,}20 & 4{,}58 & 11{,}22 & 7{,}42 & 5{,}10 & 11{,}94 & 9{,}08 & 5{,}66 \\
+$k=5$ & 13{,}14 & 11{,}70 & 11{,}18 & 10{,}21 & 7{,}46 & 6{,}13 & 8{,}93 & 5{,}77 & 4{,}21 & 10{,}99 & 7{,}13 & 4{,}52 & \textbf{11{,}74} & 8{,}58 & 5{,}29 \\
+$k=6$ & 12{,}96 & 11{,}61 & 11{,}11 & 10{,}17 & 7{,}30 & 5{,}90 & \textbf{8{,}53} & 5{,}64 & 3{,}97 & \textbf{10{,}80} & \textbf{6{,}99} & 4{,}36 & 11{,}75 & \textbf{8{,}46} & \textbf{5{,}28} \\
+$k=8$ & 12{,}72 & 11{,}55 & 11{,}09 & \textbf{9{,}54} & 6{,}88 & 5{,}78 & 8{,}60 & 5{,}42 & 3{,}77 & 11{,}18 & 7{,}05 & 4{,}20 & 11{,}99 & 8{,}55 & 5{,}43 \\
+$k=12$ & 12{,}65 & 11{,}55 & 11{,}03 & 9{,}94 & 6{,}72 & 5{,}70 & 9{,}24 & 5{,}42 & 3{,}74 & 11{,}94 & 7{,}31 & 4{,}50 & 12{,}56 & 9{,}14 & 5{,}90 \\
+$k=16$ & 12{,}70 & 11{,}54 & 11{,}06 & 9{,}92 & 6{,}76 & 5{,}76 & 10{,}02 & 5{,}95 & 3{,}80 & 13{,}05 & 7{,}90 & 4{,}57 & 13{,}38 & 9{,}74 & 6{,}40 \\
+$k=n$ & 12{,}74 & 11{,}55 & 11{,}09 & 13{,}28 & 7{,}69 & 5{,}85 & 17{,}10 & 9{,}41 & 4{,}97 & 17{,}13 & 16{,}18 & 10{,}20 & 14{,}39 & 14{,}39 & 14{,}39 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+\todo{wiersze odniesienia Adjacent, Fibonacci, Dynasearch i Motzkin
+z wcześniejszej kampanii; RPD do najlepszych znanych rozwiązań}
+
+\paragraph{Zasięg.} Większość zysku daje pierwszych kilka kroków $k$
+(tab.~\ref{tab:main}). Przejście od $k=2$ do $k=6$ usuwa od 0,9 do 2,8
+pkt proc. RPD przy 10\,s, a powyżej $k=8$ krzywa jest płaska albo
+rośnie. Przy 10\,s najlepsze $k$ wynosi 12 dla $n\leq 100$, 8 dla $n=200$
+i 6 dla $n=500$. Przy krótszych budżetach jest takie samo albo mniejsze,
+z wyjątkiem jednego remisu w granicach 0,01 pkt proc. Dla $k=n$ (pełne
+Dynasearch) wynik mieści się w granicach 0,15 pkt proc. od najlepszego $k$
+tylko dla $n\leq 50$. Dla $n=100$ jest gorszy o 1,2 pkt proc., a dla
+$n=500$ kończy jedną iterację w 10\,s. Udział ruchów Dynasearch zawartych
+w $\N_k$ nie przewiduje jakości. Dla $n=500$ sąsiedztwo $\N_6$ zawiera
+poniżej 2\% ruchów Dynasearch, a $\N_{12}$ zawiera 94\%, a mimo to $k=6$
+wygrywa z $k=12$ przy każdym budżecie do 10\,s. Do
+tabeli~\ref{tab:main} odnoszą się dwie uwagi. Po pierwsze, każda kolumna
+uśrednia klasy o jednym $n$: trzy dla $n\leq 100$, dwie dla $n=200$
+(klasy $200\times 5$ nie ma) i jedną dla $n=500$. Klasy z $m=20$ mają
+najwyższe RPD i najsilniej wpływają na średnią. Po drugie, dla $n=20$ dolne
+ograniczenie jest luźne, więc bezwzględne wartości RPD mało znaczą i liczy
+się tylko kolejność wierszy.
+
+\paragraph{Koszt zasięgu.} Każda dodatkowa pozycja zasięgu kosztuje
+iteracje. Dla $n=500$ ILS wykonuje w 10\,s około 3\,500 iteracji przy
+$k=2$, 1\,400 przy $k=8$, 370 przy $k=16$ i jedną przy $k=n$. Osobny
+eksperyment ustawia $k$ na ułamek $n$, od 10\% do 90\%. Używa filtra
+granic bloków, przy którym najlepsze $k$ jest większe niż przy
+dokładnym. Mimo to najlepszy ułamek przy 10\,s spada z płaskiego optimum między 30\% a 90\% dla
+$n=50$ do 30\% dla $n=100$ i 10\% dla $n=200$, a dla $n=500$ najmniejszy
+badany ułamek, 10\%, przegrywa z $k=16$. Żaden stały ułamek $n$ nie działa
+dla wszystkich rozmiarów. \todo{rysunki: RPD w funkcji $k$, iteracje
+w funkcji $k$, oba z filtrem dokładnym}
+
 \begin{table}[t]
 \centering
-\caption{PILOT (1\,s, RPD do UB, 4 instancje $\times$ 3 ziarna):
-średnie RPD [\%] / liczba iteracji ILS.}
+\caption{Najlepsze $k$ dla klasy (filtr dokładny) wraz z każdym $k$
+w granicach 0,05 pkt proc. od najlepszego. Gwiazdka oznacza komórki,
+w których Insert wygrywa z każdym $k$.}
+\label{tab:bestk}
 \small
-\begin{tabular}{@{}lccc@{}}
+\begin{tabular}{@{}lcccc@{}}
 \toprule
-Sąsiedztwo & $20\times5$ & $20\times10$ & $50\times10$ \\
+Klasa & 0{,}1\,s & 1\,s & 10\,s & 60\,s \\
 \midrule
-Adjacent         & 1,59 / 4578 & 3,26 / 2246 & 11,73 / 403 \\
-$k=2$ (Fibonacci) & 1,31 / 12400 & 2,46 / 7129 & 8,37 / 3329 \\
-$k=3$ (tribonacci) & 0,92 / 10177 & 1,84 / 5007 & 5,94 / 2481 \\
-$k=4$            & 0,89 / 7897 & 1,43 / 3618 & 5,51 / 1966 \\
-$k=6$            & 0,74 / 5397 & 1,09 / 2375 & 4,85 / 1123 \\
-$k=8$            & 0,72 / 3893 & 1,35 / 1580 & 4,66 / 809 \\
-$k=n$            & 0,55 / 1539 & 0,99 / 610 & 3,62 / 63 \\
+$20\times5$ & 6, 8 & 16, $n$ & 12, 16, $n$ & -- \\
+$20\times10$ & 12$^\ast$ & 6, 12, 16$^\ast$ & 8, 12, 16$^\ast$ & -- \\
+$20\times20$ & 16$^\ast$ & 8$^\ast$ & 8, 12$^\ast$ & -- \\
+$50\times5$ & 12$^\ast$ & 8, 12, 16$^\ast$ & 8, 12, 16, $n$ & -- \\
+$50\times10$ & 8 & 16$^\ast$ & 12$^\ast$ & -- \\
+$50\times20$ & 8 & 12$^\ast$ & 8, 12$^\ast$ & -- \\
+$100\times5$ & 8, 12, 16 & 16, $n$$^\ast$ & 8, 12, 16, $n$$^\ast$ & -- \\
+$100\times10$ & 8 & 12$^\ast$ & 12, 16$^\ast$ & -- \\
+$100\times20$ & 6 & 8 & 8$^\ast$ & -- \\
+$200\times10$ & 6, 8 & 8, 12 & 16$^\ast$ & 32$^\ast$ \\
+$200\times20$ & 5 & 5, 6 & 6, 8 & 6, 8 \\
+$500\times20$ & 5, 6 & 6 & 5, 6 & 8 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\begin{table*}[t]
+\paragraph{Maszyny.} Najlepsze $k$ maleje z liczbą maszyn
+(tab.~\ref{tab:bestk}). Dla $m=5$ każde $k\geq 12$ daje tę samą jakość
+przy 10\,s, łącznie z Dynasearch. Dla $m=10$ najlepsze $k$ przy 10\,s
+leży między 8 a 16. Dla $m=20$ wynosi 8 albo 12 przy 10\,s dla
+$n\leq 50$, a dla $n\geq 100$ leży między 5 a 8 przy każdym budżecie. Dla
+$m=20$ najlepsze $k$ maleje zatem także z $n$. Benchmark ma $m=5$ tylko
+do $n=100$, a $n=500$ tylko z $m=20$, więc nie możemy w pełni rozdzielić
+tych dwóch efektów. Rozdział~\ref{sec:addytywnosc} podaje, kiedy suma delt
+jest optymistyczna, ale nie mówi, jak zależy to od $m$. Na pobranych
+stanach eksperymentu z anatomią ruchu suma zawyża zysk silniej dla $m=20$
+niż dla $m=5$, a każda dodatkowa pozycja zasięgu kosztuje $O(m)$ na
+kandydata. Nie rozdzieliliśmy optymizmu sumy od tego kosztu na
+kandydata.
+
+\begin{table}[t]
 \centering
-\caption{SZKIELET: średnie RPD [\%] do LB, ILS, dla każdego $n$ (średnia
-po $m$, 10 instancji, 5 ziaren). Analogiczna tabela dla SA.}
+\caption{Długie przebiegi: średnie RPD [\%] do dolnego ograniczenia przy
+10\,s i 60\,s (ILS, filtr dokładny).}
+\label{tab:long}
 \small
-\begin{tabular}{@{}llcccccc@{}}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lcccccc@{}}
 \toprule
-$n$ & Sąsiedztwo & 0,1\,s & 0,5\,s & 1\,s & 2\,s & 5\,s & 10\,s \\
+ & \multicolumn{2}{c}{$200\times 10$} & \multicolumn{2}{c}{$200\times 20$}
+ & \multicolumn{2}{c}{$500\times 20$} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(l){6-7}
+ & 10\,s & 60\,s & 10\,s & 60\,s & 10\,s & 60\,s \\
 \midrule
-20--500 & Adjacent (ref.) & -- & -- & -- & -- & -- & -- \\
-& Fibonacci (ref.) & -- & -- & -- & -- & -- & -- \\
-& Dynasearch (ref.) & -- & -- & -- & -- & -- & -- \\
-& Motzkin (ref.) & -- & -- & -- & -- & -- & -- \\
-& Insert (ref.) & -- & -- & -- & -- & -- & -- \\
-\cmidrule(l){2-8}
-& $k=2$ & -- & -- & -- & -- & -- & -- \\
-& $k=3$ (tribonacci) & -- & -- & -- & -- & -- & -- \\
-& $k=4$ & -- & -- & -- & -- & -- & -- \\
-& $k=5$ & -- & -- & -- & -- & -- & -- \\
-& $k=6$ & -- & -- & -- & -- & -- & -- \\
-& $k=8$ & -- & -- & -- & -- & -- & -- \\
-& $k=12$ & -- & -- & -- & -- & -- & -- \\
-& $k=16$ & -- & -- & -- & -- & -- & -- \\
-& $k=n$ & -- & -- & -- & -- & -- & -- \\
+Insert & \textbf{1{,}63} & \textbf{1{,}28} & 6{,}58 & 4{,}66 & 12{,}69 & 5{,}34 \\
+\midrule
+$k=4$ & 2{,}91 & 2{,}35 & 7{,}29 & 5{,}63 & 5{,}65 & 3{,}79 \\
+$k=6$ & 2{,}57 & 2{,}04 & 6{,}16 & 4{,}65 & \textbf{5{,}27} & 2{,}94 \\
+$k=8$ & 2{,}30 & 1{,}87 & \textbf{6{,}13} & \textbf{4{,}61} & 5{,}43 & \textbf{2{,}71} \\
+$k=12$ & 2{,}07 & 1{,}65 & 6{,}93 & 5{,}00 & 5{,}90 & 3{,}16 \\
+$k=16$ & 1{,}88 & 1{,}51 & 7{,}25 & 5{,}09 & 6{,}40 & 3{,}68 \\
+$k=24$ & 1{,}88 & 1{,}48 & 8{,}53 & 5{,}58 & 7{,}04 & 4{,}62 \\
+$k=32$ & 1{,}94 & 1{,}42 & 8{,}92 & 5{,}76 & 7{,}75 & 5{,}13 \\
 \bottomrule
 \end{tabular}
-\end{table*}
+\end{table}
 
-\paragraph{Pilot.} Jakość poprawia się monotonicznie od $k=2$ do $k=6$,
-a przy 1\,s pełne $k=n$ nadal wygrywa. Błąd addytywności rośnie z $k$:
-predykcja jest dokładna w 42\% ocen dla $k=2$ i w 10--12\% dla $k\geq 6$.
-\todo{zastąpić wynikami pełnej kampanii}
+\paragraph{Długie budżety.} Najlepsze $k$ równe 6 dla $n=500$ mogłoby
+wynikać z limitu 10\,s, bo do tego czasu żaden wariant nie osiąga
+zbieżności. Przebiegi 60\,s (tab.~\ref{tab:long}) pokazują, że przy 20
+maszynach najlepsze $k$ pozostaje małe. Dla $500\times 20$ przechodzi
+z 6 na 8 między 20\,s a 30\,s, a dla $200\times 20$ wartości $k=6$
+i $k=8$ pozostają w granicach 0,05 pkt proc. od siebie przy 10\,s
+i przy 60\,s. Dla $200\times 10$ najlepsze $k$ rośnie dalej z budżetem,
+od 6 albo 8 przy 0,1\,s przez 16 przy 10\,s (remis z 24 w długich
+przebiegach) do 32 przy 60\,s,
+czyli największej wartości, jaką tam uruchomiliśmy. Długie przebiegi to
+osobne uruchomienia. Insert kończy tylko 11 iteracji w 10\,s dla
+$500\times 20$, więc szum czasowy przesuwa jego średnią przy 10\,s
+o 0,1 pkt proc. między tabelami~\ref{tab:main} i~\ref{tab:long}.
+\todo{$k\in\{48,64,n\}$ dla $200\times 10$ (etap large\_m10)}
 
-\paragraph{Anatomia ruchu (wstępnie, filtr dokładny).}
-Rysunek~\ref{fig:addytywnosc} pokazuje błąd addytywności na pobranych
-stanach. Liczba maszyn wpływa na niego silniej niż $k$. Dla $m=5$ ruch
+\paragraph{Filtr.} Przy równych budżetach czasu filtr dokładny ze
+stwierdzenia~\ref{prop:filtr} daje niższe średnie RPD niż filtr granic
+bloków dla każdego $k\leq 16$, każdego $n$ i każdego budżetu. Zysk przy
+10\,s rośnie z rozmiarem instancji, od 0,1--0,3 pkt proc. dla $n=20$ do
+1,3--3,7 pkt proc. dla $n=500$, a ILS wykonuje w 10\,s od 14\% do 111\%
+więcej iteracji. Dla $k=n$ filtr dokładny jest też lepszy dla $n=20$, 50
+i 500, a dla $n=100$ i 200 znak różnicy jest mieszany. Filtr obniża także
+najlepsze $k$. Przy filtrze granic bloków najlepsze $k$ przy 10\,s leży
+między 10 a 30. Przy filtrze dokładnym leży między 6 a 12, a najlepszy
+wariant dokładny wygrywa z najlepszym wariantem granic bloków przy każdym
+rozmiarze.
+
+\paragraph{Insert.} Insert osiąga niższe średnie RPD niż każde $k$ dla
+$n=20$ przy wszystkich budżetach, dla $n=50$ od 0,5\,s i dla $n=100$
+od 1\,s. Przy 10\,s różnica względem najlepszego $k$ wynosi 0,1--0,2
+pkt proc. (test Wilcoxona na parach instancja--ziarno z korektą Holma,
+$p<0{,}002$). Ziarna jednej instancji nie są niezależne, więc ten test
+jest optymistyczny. \todo{powtórzyć na średnich po instancjach; testy
+między wartościami $k$; Friedman z różnicą krytyczną Nemenyi} Zamiany
+złożone wygrywają tam, gdzie Insert jest wolny. Jedna iteracja Inserta
+kosztuje $O(mn^2)$, co zostawia 111 iteracji w 10\,s dla $n=200$ i 11 dla
+$n=500$. Dla $n=200$ wynik zależy od $m$. Dla $200\times 10$ Insert
+wygrywa z każdym $k$ od 5\,s i prowadzi jeszcze przy 60\,s. Dla
+$200\times 20$ najlepsze $k$ prowadzi do 30\,s, a przy 60\,s oba różnią się
+o 0,05 pkt proc. Dla $500\times 20$ najlepsze $k$ prowadzi o 7,4 pkt proc.
+przy 10\,s i o 2,6 pkt proc. przy 60\,s, a Insert nadal szybko się
+poprawia przy 60\,s. \todo{300\,s na $500\times 20$ (etap large500): czy
+Insert dogania?}
+
+\paragraph{Anatomia ruchu.}
+Rysunek~\ref{fig:addytywnosc} pokazuje błąd addytywności na stanach
+pobranych z zejść dla instancji z $n\leq 100$, z filtrem dokładnym.
+Liczba maszyn wpływa na niego silniej niż $k$. Dla $m=5$ ruch
 daje 72--83\% przewidywanego zysku, a prognoza jest optymistyczna
 w 38--56\% stanów. Dla $m=20$ ruch daje 57\% przewidywanego zysku przy
 $k=2$ i 33\% przy $k=8$, a prognoza jest optymistyczna w 78--91\% stanów.
@@ -597,7 +751,7 @@ przy $k=2$, 1,2\,ms przy $k=8$ i 105\,ms przy $k=n$, więc zysk na
 milisekundę spada z około 145 dla $k\leq 3$ do około 1 dla $k=n$. Zamiany
 wybierane przy $k=n$ mają krótką medianę odległości (3--11 dla
 $m\geq 10$) i długi ogon.
-\todo{powtórzyć po kampanii; dodać fig\_distances i fig\_cost albo
+\todo{rozszerzyć na $n=200$; dodać fig\_distances i fig\_cost albo
 przenieść ich liczby do tekstu}
 
 \begin{figure*}[t]
@@ -609,16 +763,26 @@ z optymistyczną prognozą (po prawej).}
 \label{fig:addytywnosc}
 \end{figure*}
 
-\paragraph{Planowane analizy.} (i) Najlepsze $k$ dla każdej pary
-$(n,t_{\max})$ i to, czy jest wewnętrzne. (ii) Liczba iteracji w budżecie
-w funkcji $k$. (iii) Czy zysk na milisekundę z anatomii przewiduje
-najlepsze $k$ kampanii przy krótkich budżetach. (iv) Testy Wilcoxona
-$k$-bonacciego względem sąsiedztw odniesienia na średnich po instancjach,
-z korektą Holma, oraz test Friedmana z różnicą krytyczną Nemenyi po
-wszystkich $k$.
-
 \section{Wnioski}
-\todo{po pełnej kampanii}
+Zamiana wewnątrz ruchu złożonego dla problemu przepływowego powinna sięgać
+tylko kilku pozycji, znacznie mniej, niż potrzeba do pokrycia większości
+ruchów Dynasearch. Jak mało, zależy od instancji. Przy 20 maszynach
+i co najmniej 100 zadaniach najlepsze $k$ pozostaje jednocyfrowe przy
+każdym budżecie, który uruchomiliśmy. Przy 5 maszynach wybór $k$ ma
+niewielkie znaczenie, gdy $k\geq 12$, a dla 200 zadań i 10 maszyn
+najlepsze $k$ rośnie z budżetem. Na pobranych stanach suma delt
+pojedynczych zamian obiecuje więcej, niż ruch daje, a różnica jest
+większa dla 20 maszyn. Rozdział~\ref{sec:addytywnosc} podaje warunki tego
+optymizmu, ale nie dowodzi jego zależności od $m$. Dokładny filtr ścieżki
+krytycznej poprawia każde $k\leq 16$ i obniża najlepsze $k$. Insert jest
+lepszy dla większości klas do 200 zadań, gdy budżet sięga kilku sekund.
+Zamiany złożone prowadzą dla $500\times 20$ przy każdym budżecie do 60\,s
+oraz dla pozostałych dużych klas przy krótkich budżetach, gdy jedna
+iteracja Inserta jest zbyt droga. \todo{uzupełnić po etapach large500
+i large\_m10} Małe $k$ utrzymuje też QUBO ruchu w postaci pasmowej
+o szerokości $k-1$, której wymaga kwantowe przeszukiwanie sąsiedztwa
+z~\cite{windowed_own}. \todo{akapit kwantowy tylko jeśli policzymy
+poziomy} Zamiany krzyżujące się zostawiamy na osobne studium.
 
 \begin{thebibliography}{99}\small
 \bibitem{balzereit2024} K.~Balzereit, N.~Gr\"uttemeier, N.~Morawietz,

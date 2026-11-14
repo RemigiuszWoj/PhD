@@ -1,21 +1,23 @@
-# k-bonacci: plan artykułu i badań, wersja 3 (11.11.2026)
+# k-bonacci: plan artykułu i badań, wersja 4 (14.11.2026)
+
+Wersja 4 uaktualnia stan po kampanii głównej i etapie `large`.
 
 Gałąź `kbonacci-icaps`, folder `~/Desktop/PhD-kbonacci/articles/kbonacci/`.
 Zaakceptowany 11.11.2026. Zastępuje plan v2 z sekcją A, który leży w `PLAN_v2_archiwum.md`
 (tam są szczegóły decyzji A.0–A.6, wyceny kwantowe i dziennik przeglądów).
 
-## 1. Stan na 11.11.2026
+## 1. Stan na 14.11.2026
 
 | Element | Stan |
 |---|---|
 | Kod sąsiedztwa, DP, Insert, wersje D-Wave i IQM | gotowe, 163 testy przechodzą |
 | Skrypty kampanii, ekstrakcji budżetów, analizy, kwantów | gotowe, przetestowane dymnie |
-| **Kampania klasyczna (ILS)** | `validate` policzony 5.11 (VALIDATION GATE: PASS); `replicate` padł na 150/200 (limit rekurencji w starym `dynasearch_full`, naprawione 11.11, do dokończenia); `main`, `insert`, `ablation` nieruszone |
-| Pilot (01.11) | 3 klasy, 1 s, mała próba |
-| Anatomia ruchu (nowe, 11.11) | policzona dla n ≤ 100, ok. 990 stanów, `anatomy/anatomy.json` |
+| **Kampania klasyczna (ILS)** | policzone: `validate` (PASS), `replicate` (skończony 11.11, zgodny ze starą kampanią: przy 10 s w granicach 0,01 pp), `main`, `insert`, `ablation`, `ablation_all`, `relative`, `large`. Od 14.11 ok. 11:50 trwają `large500` (tai500_20, 300 s, ok. 12,5 h), a potem `large_m10` (tai200_10, k ∈ {48, 64, n}, 60 s, ok. 2,5 h); koniec spodziewany w niedzielę 15.11 ok. 3:00, potem łańcuch sam wznawia kampanię crossings |
+| Pilot (01.11) | zastąpiony kampanią główną (tabela pilota usunięta z artykułu) |
+| Anatomia ruchu (11.11) | policzona dla n ≤ 100, ok. 990 stanów, `anatomy/anatomy.json`; n = 200 do zrobienia |
 | Teoria | spisana z dowodami w `main.tex`, sprawdzona numerycznie (`scripts/kbonacci_theory_checks.py`) |
-| Szkic | `main.tex` (EN, v2), `wersja_pl.tex` (PL, v2) |
-| Terminy (potwierdzone na stronach konferencji 10.11) | ICAPS: abstrakt 7.12, artykuł 14.12.2026. IJCAI: abstrakt 4.01, artykuł 11.01.2027, 7 stron + 2 strony bibliografii, opłata 100 USD za zgłoszenie |
+| Szkic | `main.tex` (EN) ma rozdział Results i roboczy Conclusions, napisane 14.11 na filtrze dokładnym; `wersja_pl.tex` (PL) do zsynchronizowania |
+| Terminy (potwierdzone na stronach konferencji 10.11) | ICAPS (14.12.2026) nie jest już realny. IJCAI: abstrakt 4.01, artykuł 11.01.2027, 7 stron + 2 strony bibliografii, opłata 100 USD za zgłoszenie |
 
 ## 2. Co chcemy zbadać
 
@@ -23,17 +25,17 @@ Pytanie główne: **jak daleko powinna sięgać zamiana w ruchu złożonym dla P
 Protokół jest ten sam co w poprzednich pracach (ILS, start z permutacji identycznościowej, budżety 0,1–10 s,
 ziarna 0–4, RPD do LB), więc jedynym czynnikiem jest sąsiedztwo.
 
-| # | Pytanie | Skąd odpowiedź | Wstępnie (pilot, anatomia) |
+| # | Pytanie | Skąd odpowiedź | Stan na 14.11 |
 |---|---|---|---|
-| Q1 | Jak jakość zależy od k przy stałym budżecie? Czy najlepsze k jest wewnętrzne (2 < k < n) i jak przesuwa się z n i z budżetem? | kampania `main` | pilot: przy n ≤ 50 i 1 s wygrywa k = n |
-| Q2 | Ile iteracji mieści się w budżecie dla każdego k? | kampania `main` | pilot: 3329 → 63 iteracji (50×10, k = 2 → n) |
-| Q3 | Ile daje jeden ruch i ile kosztuje? Czy zysk na milisekundę przewiduje najlepsze k? | anatomia | zysk rośnie z k (100×10: 45 → 134), ale zysk/ms spada z ok. 145 (k ≤ 3) do ok. 1 (k = n) |
-| Q4 | Jak duży jest błąd addytywności i od czego zależy? | anatomia + twierdzenie 1, stwierdzenie 4 | zależy głównie od m: przy m = 20 ruch daje 33–57% obiecanego zysku, prognoza jest optymistyczna w 78–91% stanów |
-| Q5 | Jak daleko sięgają zamiany wybierane przy k = n? | anatomia | mediana 3–11 pozycji dla m ≥ 10, długi ogon |
-| Q6 | Jak N_k wypada wobec Adjacent, Fibonacciego, Dynasearch, Motzkina i Insert? | kampania + stare wyniki + `insert` | — |
-| Q7 | Ile kosztuje przybliżony filtr z poprzednich prac wobec filtra dokładnego? | ablacja `_cp` | filtr przybliżony gubi 2–7% zamian poprawiających |
+| Q1 | Jak jakość zależy od k przy stałym budżecie? Czy najlepsze k jest wewnętrzne (2 < k < n) i jak przesuwa się z n i z budżetem? | kampania `main` | najlepsze k jest wewnętrzne; przy 10 s i filtrze dokładnym wynosi 12 (n ≤ 100), 8 (n = 200), 6 (n = 500); zależy od m i od budżetu |
+| Q2 | Ile iteracji mieści się w budżecie dla każdego k? | kampania `main` | n = 500, 10 s: ok. 3500 iteracji (k = 2), 1400 (k = 8), 370 (k = 16), 1 (k = n) |
+| Q3 | Ile daje jeden ruch i ile kosztuje? Czy zysk na milisekundę przewiduje najlepsze k? | anatomia | zysk rośnie z k (100×10: 45 → 134), ale zysk/ms spada z ok. 145 (k ≤ 3) do ok. 1 (k = n); porównanie z kampanią do zrobienia |
+| Q4 | Jak duży jest błąd addytywności i od czego zależy? | anatomia + twierdzenie 1, stwierdzenie 4 | zależy głównie od m: przy m = 20 ruch daje 33–57% obiecanego zysku, prognoza jest optymistyczna w 78–91% stanów; w kampanii najlepsze k maleje z m (m = 5: każde k ≥ 12 jednakowo; m = 10: 8–16 przy 10 s; m = 20 i n ≥ 100: 5–8 przy każdym budżecie) |
+| Q5 | Jak daleko sięgają zamiany wybierane przy k = n? | anatomia | mediana 3–11 pozycji dla m ≥ 10, długi ogon (liczby z anatomii bez zmian; porównanie z kampanią do zrobienia) |
+| Q6 | Jak N_k wypada wobec Adjacent, Fibonacciego, Dynasearch, Motzkina i Insert? | kampania + stare wyniki + `insert` | Insert policzony: lepszy na większości klas z n ≤ 200, gdy budżet sięga kilku sekund; k-bonacci prowadzi na 500×20 do 60 s (7 pp przy 10 s, 2,6 pp przy 60 s); wiersze Adjacent, Fibonacci, Dynasearch, Motzkin ze starej kampanii jeszcze nie weszły do tabel |
+| Q7 | Ile kosztuje przybliżony filtr z poprzednich prac wobec filtra dokładnego? | ablacja `_cp` | filtr dokładny jest lepszy dla każdego k ≤ 16, każdego n i budżetu (0,1–3,7 pp przy 10 s, o 14–111% więcej iteracji); przy filtrze przybliżonym najlepsze k przy 10 s wynosiło 10–30, przy dokładnym 6–12; filtr przybliżony gubi 2–6% zamian poprawiających |
 | Q8 (opcjonalne) | Czy QUBO k-bonacciego mieści się na D-Wave i IQM i jak k zmienia koszt? | poziomy MIN → OPT → MAX | — |
-| Q9 | Czy przy n ≥ 200 najlepsze k rośnie z budżetem i czy Insert dogania rodzinę k przy 60 s? | etap `large` | przy 10 s: k = 8 (n = 200), k = 6 (n = 500); Insert remis przy 200, −7 pp przy 500 |
+| Q9 | Czy przy n ≥ 200 najlepsze k rośnie z budżetem i czy Insert dogania rodzinę k przy 60 s? | etap `large` | 200×10: Insert wygrywa od 5 s i przy 60 s (1,28 wobec 1,42 dla k = 32), najlepsze k rośnie do 32; 200×20: najlepsze k prowadzi o 0,05 pp przy 60 s (k = 6 i 8 remis); 500×20: najlepsze k przechodzi z 6 na 8 między 20 a 30 s; 300 s otwarte (`large500`) |
 
 **Zmiana względem v2:** hipoteza H2 („korzyść z k nasyca się w skali długości bloku”) nie znajduje potwierdzenia
 w anatomii: mediana k_sat dla n = 100 wynosi n. Proponuję zastąpić ją pytaniem Q3 (zysk na jednostkę czasu), które dane wspierają.
@@ -73,7 +75,7 @@ To może być ogólna własność m = 2. Nie twierdzimy tego w artykule; ewentua
 | `large500` | tai500_20, filtr dokładny, k ∈ {8, 12} + Insert, 300 s | ~12,5 h |
 | `large_m10` | tai200_10, filtr dokładny, k ∈ {48, 64, n}, 60 s | ~2,5 h |
 
-Etap `relative` startuje automatycznie po `ablation`. Służy rysunkowi `fig_best_k_rel` (x = n, y = k/n, najlepsze k i remisy Wilcoxona).
+Etap `relative` jest policzony (po `ablation`, filtr przybliżony). Służy rysunkowi `fig_best_k_rel` (x = n, y = k/n, najlepsze k i remisy Wilcoxona).
 
 Etap `large` ma rozstrzygnąć, czy małe k wygrywa przy dużych n z natury, czy tylko dlatego, że 10 s to krótki budżet.
 Mniejsze budżety (0,1–30 s) odczytujemy z logu ruchów przebiegów 60 s. Ruszył 13.11 o 15:25 przed dokończeniem crossings,
@@ -96,6 +98,7 @@ Zrobione dla n ≤ 100 (kilkanaście minut na jednym rdzeniu). Do zrobienia: n =
 ### 4.3 Analiza i rysunki
 
 - `scripts/analyze_kbonacci.py`: tabele RPD (LB, UB-1993, BKS), iteracje, Wilcoxon + Holm, Friedman + Nemenyi, najlepsze k.
+- Tabele etapu `large` są w `articles/kbonacci/tables/large/` (kopia z 14.11; odtworzenie: `analyze_kbonacci.py --dirs results/kbonacci/large_budgets --bks data/taillard_pfsp_bks.json --out articles/kbonacci/tables/large`). Wiersze trzech tabel w artykule powstały skryptem z plików CSV, nie ręcznie; skrypt trzeba jeszcze przenieść do `scripts/`.
 - `scripts/plot_kbonacci.py` (nowy): RPD(k) dla każdego n i budżetu, iteracje(k), mapa najlepszego k, addytywność, odległości, koszt.
 
 ### 4.4 Kwanty
@@ -124,11 +127,11 @@ więc przed każdym poziomem najpierw `--dry-run` i sprawdzenie salda przez uży
 | 4 | The k-bonacci Neighborhood | napisane: definicja, lemat 1, stw. 1–3, DP | plansze, kafelki, łańcuch, udział |
 | 5 | Additivity | napisane: tw. 1, stw. 4, przykłady | ścieżki |
 | 6 | Experimental Protocol | napisane (+ anatomia) | — |
-| 7 | Results | anatomia wstępnie; kampania: szkielet | addytywność; po kampanii RPD(k), iteracje, najlepsze k, tabela główna |
+| 7 | Results | napisane na filtrze dokładnym (akapity Reach, Cost of reach, Machines, Long budgets, Filter, Insert, Move anatomy); do dodania: rysunki RPD(k) i iteracje(k) przeliczone dla filtra dokładnego (`plot_kbonacci.py` pomija teraz wiersze `_cp`), wiersze referencyjne, wyniki 300 s i k ∈ {48, 64, n}, testy na średnich po instancjach | trzy tabele (główna, najlepsze k per klasa, długie biegi), jeden rysunek (addytywność) |
+| 8 | Conclusions | wersja robocza; do uaktualnienia po `large500` i `large_m10` | — |
 
 **Decyzja 13.11:** tabela główna i wnioski liczone na filtrze dokładnym (`_cp`), stary filtr jako ablacja (jedna tabela i akapit
-o tym, ile kosztował). Teza robocza: wystarczy zasięg ok. 10 pozycji, a dokładny filtr daje więcej niż dłuższy zasięg.
-| 8 | Conclusions | TODO po kampanii | — |
+o tym, ile kosztował). Teza robocza: zasięg powinien być krótki i zależy od liczby maszyn; dokładny filtr poprawia każde k ≤ 16 i przesuwa najlepsze k w dół.
 
 Szkic ma teraz 8 stron w układzie roboczym, z dowodami w tekście. Pod IJCAI (7 stron) część dowodów trafi do suplementu.
 O cięciach decydujemy na końcu.
@@ -137,15 +140,13 @@ O cięciach decydujemy na końcu.
 
 | Kiedy | Co |
 |---|---|
-| do 16.11 | komplet GCMM (pierwszeństwo). W tle na Macu: `replicate` dokończony 11.11 (zgodny ze starą kampanią); od 11.11 `main` + `insert` + `ablation` (20,5 h), potem `relative` (~14 h); D-Wave MIN po klasyce |
-| 17–22.11 | analiza (wyniki `large` od 14.11), rysunki, anatomia n = 200; rozmowa z promotorem (punkt 8); **decyzja 22.11: IJCAI czy GECCO** (punkt 8.6), po wynikach `large` |
-| 23.11–3.12 | rewizja BPASTS ma pierwszeństwo (termin 3.12); równolegle uzupełnianie rozdziału Results |
-| 1.12–… | D-Wave OPT po odnowieniu quoty |
-| ICAPS | abstrakt 7.12, artykuł 14.12 (koliduje z ANNSIM 18.12) |
+| do 16.11 | `large500` i `large_m10` kończą się 15.11; analiza obu, tabele `large*` przeniesione z katalogu roboczego do `articles/kbonacci/tables` |
+| 17–22.11 | rysunki z filtrem dokładnym, wiersze referencyjne, testy na średnich po instancjach (120 par) i między k, Friedman z Nemenyi CD, anatomia n = 200, rozmowa z promotorem; **decyzja 22.11: IJCAI czy GECCO** |
+| 23.11–3.12 | rewizja BPASTS ma pierwszeństwo (termin 3.12) |
+| od 1.12 | D-Wave OPT po odnowieniu quoty |
 | IJCAI | abstrakt 4.01, artykuł 11.01; czas na SA albo kwanty |
 
-Moja ocena: przy GCMM (16.11), BPASTS (3.12) i ANNSIM (18.12) realny jest IJCAI. ICAPS tylko wtedy, gdy kampania
-ruszy w tym tygodniu, a promotor szybko odpowie w sprawie podziału.
+ICAPS (14.12) odpada; IJCAI albo GECCO, decyzja 22.11.
 
 ## 7. Ryzyka
 
@@ -155,9 +156,12 @@ ruszy w tym tygodniu, a promotor szybko odpowie w sprawie podziału.
 | Start z permutacji identycznościowej, stałe budżety, RPD do LB | wysokie na A* | decyzja wiążąca zostaje; RPD do BKS jako druga miara; w tekście jawnie: badamy sąsiedztwa przy protokole z poprzednich prac. Opcja: dodatkowy etap ze startem NEH tylko dla rodziny k (ok. +16 h) |
 | Główna kampania używa filtra przybliżonego, a twierdzenia mówią o dokładnym | rozwiązane 13.11 | `ablation_all` policzył filtr dokładny dla wszystkich k; wyniki główne na `_cp` (decyzja w §5) |
 | Nakładanie się ze szkicem promotora (tribonacci/k-nacci, TWT, D-Wave) | średnie | rozmowa przed pisaniem dalszych części; zdanie „we introduce” do uzgodnienia |
-| Testy Wilcoxona na parach (instancja, ziarno) | średnie | ziarna tej samej instancji nie są niezależne; proponuję dodać test na średnich po ziarnach (120 par) obok dotychczasowego |
-| Przy n = 500 i 10 s żaden wariant nie jest zbieżny (k = n robi 1 iterację, Insert 11), więc „najlepsze k” może być skutkiem budżetu | wysokie | etap `large` (60 s); w tekście najlepsze k zawsze z budżetem |
+| Testy Wilcoxona na parach (instancja, ziarno) | średnie | artykuł podaje obecnie test na parach (instancja, ziarno) z zastrzeżeniem, że jest optymistyczny; test na średnich po ziarnach (120 par) jest wymagany przed wysłaniem |
+| Przy n = 500 i 10 s żaden wariant nie jest zbieżny (k = n robi 1 iterację, Insert 11), więc „najlepsze k” może być skutkiem budżetu | niskie po etapie `large` | 60 s potwierdza małe k dla m = 20 (k = 8); dla m = 10 optimum rośnie z budżetem, więc tezę formułujemy per m; 300 s otwarte (`large500`) |
 | Brak SA w pierwszej wersji | niskie | decyzja po ILS |
+| Zmieszanie n i m w benchmarku (brak 200×5, n = 500 tylko z m = 20) | średnie | twierdzenia formułujemy per klasa, tabela najlepszego k per klasa |
+| Insert wygrywa z rodziną na większości klas z n ≤ 200 | wysokie | artykuł mówi to otwarcie; rodzina k jest lepsza dla dużych instancji i krótkich budżetów; ostateczne sformułowanie po `large500` |
+| Kolizje oznaczeń znalezione w przeglądzie (macierze S_L a ruchy złożone S, S_1, S_2; macierz ogonowa T a T_0; Δ i α użyte podwójnie) | średnie | zmienić nazwy przed wysłaniem; wymaga przebudowy `fig_paths` |
 | Bezpiecznik (lepszy wg rzeczywistego C_max z ruchu złożonego i najlepszej pojedynczej zamiany) | niskie | decyzja 11.11: poza kampanią główną, bo zmienia regułę wyboru ruchu, a nie otoczenie, i psuje porównywalność ze starymi wynikami. Ewentualnie osobny, oznaczony wariant `kbonacci_kn_safe` (ok. +2,3 h), do rozważenia po wynikach; to samo ustalenie przekazane do wątku o krzyżowaniach. Offline: licznik w anatomii, jak często ruch złożony jest gorszy od najlepszej pojedynczej zamiany |
 | Brak porównania ze stanem wiedzy PFSP (iterated greedy Ruiza i Stützlego) | wysokie na A* | w tekście wprost: badamy otoczenie przy stałym protokole, nie bijemy rekordów; IG cytowany jako stan wiedzy, bez doliczania |
 | Część kwantowa mała, wygląda na doklejoną | średnie | jeden akapit w wynikach: małe k daje małe QUBO (MIN + OPT D-Wave, MIN IQM) |
@@ -170,10 +174,15 @@ ruszy w tym tygodniu, a promotor szybko odpowie w sprawie podziału.
 3. **Bibliografia:** trzy pozycje własne to wciąż placeholdery; Miles 1960, Schilling 1990, Ergun i Orlin 2006, Grosso i in. 2004 do sprawdzenia w Crossref.
    Balzereit i in. poprawione (tytuł i autorzy z arXiv).
 4. **Stare wyniki:** kompletność (Motzkin n = 500, Dynasearch n = 500).
-5. **Tabela 2 (pilot)** używa RPD do UB, a tabela główna RPD do LB; pilot zniknie po kampanii.
-6. **Miejsce publikacji:** decyzja po kampanii głównej i etapie `relative`. Jeśli teza jest ostra (najlepsze k/n wyraźnie
-   maleje z n zgodnie z (log₂n+2)/n), idziemy na IJCAI 11.01. Jeśli nie, od razu GECCO (termin 2027 niepotwierdzony).
-   Tezy „zysk Dynasearch siedzi w k ≤ 3–4” nie formułujemy przed wynikami, bo pilot (n ≤ 50, 1 s) wskazał k = n.
+5. **Tabela pilota:** zrobione, pilot usunięty z artykułu.
+6. **Miejsce publikacji:** kryterium oparte na (log₂n+2)/n odrzucają dane: najlepsze k wynosi 12, 12, 8, 6 dla n = 50…500 i zależy od m;
+   N_6 pokrywa poniżej 2% Dynasearch przy n = 500 i mimo to wygrywa. Decyzja IJCAI czy GECCO zależy teraz od `large500`
+   (czy Insert dogania przy 300 s) i od siły zależności od m. Tezy „zysk Dynasearch siedzi w k ≤ 3–4” nie formułujemy.
+7. **`nemenyi_cd` jest NaN** w `tables/friedman.csv`: poprawić w `analyze_kbonacci.py`.
+8. **Etap `relative`** policzono tylko ze starym filtrem: albo powtórzyć trzy ułamki z filtrem dokładnym (koszt do oszacowania), albo zostawić zastrzeżenie w tekście.
+9. **Szkic dowodu Stw. 2:** składnik błędu musi być jednostajny względem k (w artykule oznaczone TODO).
+10. **Licznik bezpiecznika w anatomii** (jak często ruch złożony jest gorszy od najlepszej pojedynczej zamiany): zrobić z istniejących stanów albo porzucić.
+11. **RPD do UB-1993 i do BKS** są w tabelach, ale artykuł jeszcze ich nie używa; trzeba podać źródło BKS.
 
 ## 9. Zmiany szkicu v1 → v2 (zaakceptowane 11.11.2026)
 

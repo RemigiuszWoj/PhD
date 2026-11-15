@@ -176,6 +176,8 @@ articles/gate_qaoa/scripts/gate_m5_budgets.py
 
 # Pakiet do wgrania na strone katedry (PDF-y duplikaty, README odtwarzalny)
 publikacje_kam/
+administracja_pwr/
+linkedin/
 
 # eksport prywatnego arkusza cytowan katedry (tools/bib_pool.py cytownik)
 bibliography/cytownik.bib

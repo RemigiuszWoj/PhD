@@ -3,6 +3,8 @@
 
 Trzy polecenia (tylko biblioteka standardowa):
 
+  cytownik pobiera arkusz „cytownik” katedry (Google Sheets, eksport CSV) i zapisuje
+           bibliography/cytownik.bib: jeden wpis na prace, klucze ASCII i bez powtorzen.
   build    zbiera wszystkie articles/**/*.bib (i pliki podane w --extra, np. eksport
            z cytownika) do bibliography/pula.bib; duplikaty po kluczu i po DOI,
            konflikty wypisuje zamiast zgadywać.
@@ -21,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
 import time
@@ -31,6 +34,11 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 POOL = REPO / "bibliography" / "pula.bib"
+CYTOWNIK_BIB = REPO / "bibliography" / "cytownik.bib"
+# arkusz katedry jest prywatny: identyfikator tylko ze zmiennej srodowiskowej (np. z .env), nie w repo
+CYTOWNIK_ID = os.environ.get("CYTOWNIK_ID", "")
+CYTOWNIK_URL = f"https://docs.google.com/spreadsheets/d/{CYTOWNIK_ID}/edit#gid=0"
+CYTOWNIK_CSV = f"https://docs.google.com/spreadsheets/d/{CYTOWNIK_ID}/export?format=csv&gid=0"
 
 
 def parse_bib(text: str) -> list[dict]:
@@ -87,20 +95,81 @@ def norm_title(t: str) -> str:
     return re.sub(r"[^a-z0-9]", "", re.sub(r"\\.|[{}]", "", t.lower()))
 
 
+def ascii_key(key: str) -> str:
+    import unicodedata
+    key = unicodedata.normalize("NFKD", key.replace("\u0142", "l").replace("\u0141", "L"))
+    return re.sub(r"[^A-Za-z0-9_:-]", "", key)
+
+
+def cmd_cytownik(args) -> int:
+    import csv
+    import io
+    if args.csv:
+        text = Path(args.csv).expanduser().read_text(encoding="utf-8")
+    else:
+        if not CYTOWNIK_ID:
+            print("Brak CYTOWNIK_ID w srodowisku (identyfikator arkusza katedry) – ustaw go albo podaj --csv.")
+            return 1
+        req = urllib.request.Request(CYTOWNIK_CSV, headers={"User-Agent": "PhD-bib/1.0"})
+        with urllib.request.urlopen(req, timeout=30) as r:
+            text = r.read().decode("utf-8")
+    rows = list(csv.reader(io.StringIO(text)))
+    seen_ids, used, out, missing = set(), {}, [], []
+    for r in rows[1:]:
+        if len(r) < 8 or not r[0].strip() or r[0] in seen_ids:
+            continue
+        seen_ids.add(r[0])
+        rid, year, title, topic, pts, bib = r[0], r[1], r[3].strip(), r[4], r[5], r[7].strip()
+        if not bib:
+            if title:
+                missing.append(f"{rid}: {title}")
+            continue
+        entries = parse_bib(bib)
+        if not entries:
+            missing.append(f"{rid}: {title} (nieczytelny BibTeX)")
+            continue
+        e = entries[0]
+        key = ascii_key(e["key"])
+        t = norm_title(e["fields"].get("title", ""))
+        base, n = key, 0
+        while key in used and used[key] != t:      # ten sam klucz, inna praca
+            n += 1
+            key = base + "abcdefgh"[n]
+        used[key] = t
+        raw = re.sub(r"\{\s*[^,\s]+\s*,", "{" + key + ",", e["raw"], count=1)
+        out.append(f"% cytownik ID {rid} | rok {year} | {topic} | MNiSW {pts or '-'}\n{raw}")
+    CYTOWNIK_BIB.parent.mkdir(exist_ok=True)
+    CYTOWNIK_BIB.write_text(
+        "% Eksport z cytownika katedry (Google Sheets). NIE edytowac recznie.\n"
+        "% Odtwarzanie: python tools/bib_pool.py cytownik && python tools/bib_pool.py build\n"
+        "% Wpisy pochodza z Google Scholar: przed cytowaniem uzupelnic DOI, tom i strony (check).\n\n"
+        + "\n\n".join(out) + "\n", encoding="utf-8")
+    print(f"Zapisano {CYTOWNIK_BIB.relative_to(REPO)}: {len(out)} prac.")
+    if missing:
+        print(f"W cytowniku bez BibTeX-a ({len(missing)}):")
+        for m in missing:
+            print("  -", m)
+    return 0
+
+
 def cmd_build(args) -> int:
     sources = sorted((REPO / "articles").rglob("*.bib"))
     sources = [p for p in sources if "submitted_v" not in str(p) and "_szablon" not in str(p)]
+    if CYTOWNIK_BIB.exists():
+        sources.append(CYTOWNIK_BIB)      # po artykulach: wpisy z DOI z artykulow maja pierwszenstwo
     sources += [Path(p).expanduser() for p in (args.extra or [])]
     by_key: dict[str, dict] = {}
     by_doi: dict[str, str] = {}
-    conflicts, aliases = [], []
+    by_title: dict[str, str] = {}
+    conflicts, aliases, in_pool = [], [], []
     for src in sources:
         for e in parse_bib(src.read_text(encoding="utf-8", errors="replace")):
             e["src"] = str(src.relative_to(REPO)) if src.is_relative_to(REPO) else str(src)
             doi = norm_doi(e["fields"].get("doi"))
             if e["key"] in by_key:
                 old = by_key[e["key"]]
-                if norm_doi(old["fields"].get("doi")) != doi or \
+                old_doi = norm_doi(old["fields"].get("doi"))
+                if (old_doi and doi and old_doi != doi) or \
                         norm_title(old["fields"].get("title", "")) != norm_title(e["fields"].get("title", "")):
                     conflicts.append(f"klucz {e['key']}: {old['src']} vs {e['src']}")
                 continue
@@ -108,6 +177,15 @@ def cmd_build(args) -> int:
                 # ta sama praca pod innym kluczem: zostaje (artykuly sie do niego odwoluja),
                 # ale nowe artykuly maja uzywac pierwszego klucza
                 aliases.append(f"{e['key']} = {by_doi[doi]} (DOI {doi})")
+            else:
+                t = norm_title(e["fields"].get("title", ""))
+                if t and t in by_title:
+                    if src == CYTOWNIK_BIB:      # praca z cytownika jest juz w puli w lepszej wersji
+                        in_pool.append(f"{e['key']} -> {by_title[t]}")
+                        continue
+                    aliases.append(f"{e['key']} = {by_title[t]} (ten sam tytul)")
+                elif t:
+                    by_title[t] = e["key"]
             by_key[e["key"]] = e
             if doi:
                 by_doi.setdefault(doi, e["key"])
@@ -125,6 +203,9 @@ def cmd_build(args) -> int:
     no_doi = [k for k, e in by_key.items() if not e["fields"].get("doi")]
     if no_doi:
         print(f"Bez DOI ({len(no_doi)}): {', '.join(sorted(no_doi))}")
+    if in_pool:
+        print(f"\nZ cytownika pominieto {len(in_pool)} prac, ktore pula juz ma (klucz cytownika -> klucz w puli):")
+        print("  " + ", ".join(in_pool))
     if aliases:
         print(f"\nALIASY ({len(aliases)}) – ta sama praca pod dwoma kluczami; w nowych tekstach uzywaj drugiego:")
         for a in aliases:
@@ -202,6 +283,8 @@ def cmd_extract(args) -> int:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
+    cy = sub.add_parser("cytownik")
+    cy.add_argument("--csv", help="lokalny plik CSV zamiast pobierania z Google Sheets")
     b = sub.add_parser("build")
     b.add_argument("--extra", nargs="*", help="dodatkowe pliki .bib (np. eksport z cytownika)")
     c = sub.add_parser("check")
@@ -210,7 +293,7 @@ def main() -> int:
     x.add_argument("tex")
     x.add_argument("-o", "--output", required=True)
     args = ap.parse_args()
-    return {"build": cmd_build, "check": cmd_check, "extract": cmd_extract}[args.cmd](args)
+    return {"cytownik": cmd_cytownik, "build": cmd_build, "check": cmd_check, "extract": cmd_extract}[args.cmd](args)
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 # Proces: od pomysłu do wydrukowanego egzemplarza
 
 Spisane 14.11.2026 z historii prac: SOCO 2026, ICAISC 2026, BPASTS, windowed QUBO (C&OR), GCMM 2026, ACIIDS 2027,
-ICAISC 2027 (studium p), ANNSIM 2027, k-bonacci (ICAPS/IJCAI). Każdy etap ma skill w `.claude/skills/`.
+ICAISC 2027 (studium p), ANNSIM 2027, k-bonacci (ICAPS/IJCAI). Każdy etap ma skill w `.claude/skills/`; wejściem do całości jest `/doktorat`.
 Stan konkretnego artykułu trzymamy w jego `articles/<slug>/STATUS.md` (szablon w `articles/_szablon/`).
 
 ## Etap 0 – nowe badanie (`/nowe-badanie`)

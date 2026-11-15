@@ -17,7 +17,8 @@ Nie piszemy „przewaga kwantowa”, „pierwsi”, „quantum advantage”. Pis
 
 ## Jak pracujemy (cykl życia artykułu)
 
-Pełny opis i lista kontrolna: **`articles/PROCES_ARTYKULU.md`**. W skrócie, każdy etap ma swój skill:
+Pełny opis i lista kontrolna: **`articles/PROCES_ARTYKULU.md`**. Wejście: **`/doktorat`** – sam rozpoznaje etap i prowadzi dalej.
+W skrócie, każdy etap ma swój skill:
 
 | Etap | Skill | Wynik |
 |---|---|---|
@@ -31,6 +32,7 @@ Pełny opis i lista kontrolna: **`articles/PROCES_ARTYKULU.md`**. W skrócie, ka
 | 7. Domknięcie: DOI, tabele, kalendarz, ORCID, druk | `/domkniecie` | wszystkie miejsca ze stanem zaktualizowane |
 | 8. Druk egzemplarza do półki | `/druk` | `druk/` z PDF do drukarni |
 | przekrojowo: stan wszystkich prac | `/stan-doktoratu` | przegląd terminów i tabel |
+| **wejście do całości** | **`/doktorat`** | rozpoznaje etap i woła właściwy skill |
 
 ## Gdzie co jest (Mac)
 
@@ -47,6 +49,9 @@ Pełny opis i lista kontrolna: **`articles/PROCES_ARTYKULU.md`**. W skrócie, ka
   i dzień przed, w opisie numer pracy i link).
 - Pamięć projektu Claude: `~/.claude/projects/-Users-remigiuszwojewodzki-Desktop-PhD/memory/` (`project_*.md`,
   m.in. `project_konferencje_plan.md`). Po każdej zmianie stanu artykułu aktualizować odpowiednią notatkę.
+- **Cytownik katedry** (Google Sheets): lista prac grupy z BibTeX-em, punktami MNiSW i IF –
+  arkusz prywatny, link poza repo (identyfikator w zmiennej `CYTOWNIK_ID` w `.env`);
+  `python tools/bib_pool.py cytownik` → `bibliography/cytownik.bib` (lokalnie, poza gitem).
 - Overleaf: promotor czyta i poprawia na Overleafie; synchronizacja skryptem `overleaf_sync.sh` albo paczką
   `overleaf_source.zip`. Zmiany promotora z Overleafa wracają do repo osobnym commitem.
 - Kod i dane do artykułu: snapshot w **Zenodo** (DOI w artykule i w odpowiedzi recenzentom).

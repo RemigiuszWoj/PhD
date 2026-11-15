@@ -118,12 +118,13 @@ results/
 figures/
 paper/
 tables/
-# lokalne ustawienia Claude zostają poza repo; wspólne są tylko skille i .claude/CLAUDE.md
+# Claude Code: w repo sa tylko wspolne skille i instrukcje projektu;
+# ustawienia lokalne, pamiec i prywatny CLAUDE.md w katalogu glownym zostaja poza repo
 .claude/*
 !.claude/skills/
 !.claude/CLAUDE.md
-CLAUDE.md
-!.claude/CLAUDE.md
+/CLAUDE.md
+CLAUDE.local.md
 
 # Exceptions (must come AFTER the global figures/ and tables/ ignores):
 # keep figure/table assets bundled with articles
@@ -160,3 +161,6 @@ articles/gate_qaoa/scripts/gate_m5_budgets.py
 
 # Pakiet do wgrania na strone katedry (PDF-y duplikaty, README odtwarzalny)
 publikacje_kam/
+
+# eksport prywatnego arkusza cytowan katedry (tools/bib_pool.py cytownik)
+bibliography/cytownik.bib

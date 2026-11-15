@@ -32,6 +32,8 @@ przyjęty → korekta (proofs) → opublikowany (DOI) → wydrukowany`.
 - DOI, tom, strony do `PUBLICATIONS.md`, `references.bib` wszystkich artykułów, które tę pracę cytują
   (zamiast „in press”), i do puli (`python tools/bib_pool.py build`).
 - Offprint/wersja wydawcy do `articles/<slug>/` (jak SOCO), jeśli licencja pozwala.
+- **Cytownik katedry** (arkusz Google, prywatny; link poza repo) – dopisać pracę z BibTeX-em, punktami MNiSW i IF
+  (wiersz dla każdego autora z katedry); potem `python tools/bib_pool.py cytownik && python tools/bib_pool.py build`.
 - **ORCID** i **Google Scholar** – dodaj pracę (właściciel loguje się sam; prowadź krok po kroku).
 - Zenodo – powiąż rekord kodu z DOI artykułu („is supplement to”).
 - Rozliczenia uczelni (sprawozdanie doktoranta, punkty) – przypomnij, jeśli właściciel prowadzi ich listę.

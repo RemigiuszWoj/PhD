@@ -52,6 +52,7 @@ W skrócie, każdy etap ma swój skill:
 - **Cytownik katedry** (Google Sheets): lista prac grupy z BibTeX-em, punktami MNiSW i IF –
   arkusz prywatny, link poza repo (identyfikator w zmiennej `CYTOWNIK_ID` w `.env`);
   `python tools/bib_pool.py cytownik` → `bibliography/cytownik.bib` (lokalnie, poza gitem).
+  Synchronizacja w obie strony: skill `/cytownik`.
 - Overleaf: promotor czyta i poprawia na Overleafie; synchronizacja skryptem `overleaf_sync.sh` albo paczką
   `overleaf_source.zip`. Zmiany promotora z Overleafa wracają do repo osobnym commitem.
 - Kod i dane do artykułu: snapshot w **Zenodo** (DOI w artykule i w odpowiedzi recenzentom).

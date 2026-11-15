@@ -35,8 +35,21 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 POOL = REPO / "bibliography" / "pula.bib"
 CYTOWNIK_BIB = REPO / "bibliography" / "cytownik.bib"
-# arkusz katedry jest prywatny: identyfikator tylko ze zmiennej srodowiskowej (np. z .env), nie w repo
-CYTOWNIK_ID = os.environ.get("CYTOWNIK_ID", "")
+
+
+def _cytownik_id() -> str:
+    """Identyfikator arkusza katedry: ze srodowiska albo z .env (arkusz prywatny, nie w repo)."""
+    if os.environ.get("CYTOWNIK_ID"):
+        return os.environ["CYTOWNIK_ID"].strip()
+    env = REPO / ".env"
+    if env.exists():
+        for line in env.read_text(encoding="utf-8").splitlines():
+            if line.startswith("CYTOWNIK_ID="):
+                return line.split("=", 1)[1].strip().strip("\"'")
+    return ""
+
+
+CYTOWNIK_ID = _cytownik_id()
 CYTOWNIK_URL = f"https://docs.google.com/spreadsheets/d/{CYTOWNIK_ID}/edit#gid=0"
 CYTOWNIK_CSV = f"https://docs.google.com/spreadsheets/d/{CYTOWNIK_ID}/export?format=csv&gid=0"
 
@@ -108,7 +121,7 @@ def cmd_cytownik(args) -> int:
         text = Path(args.csv).expanduser().read_text(encoding="utf-8")
     else:
         if not CYTOWNIK_ID:
-            print("Brak CYTOWNIK_ID w srodowisku (identyfikator arkusza katedry) – ustaw go albo podaj --csv.")
+            print("Brak CYTOWNIK_ID (identyfikator arkusza katedry) w srodowisku i w .env – dopisz go albo podaj --csv.")
             return 1
         req = urllib.request.Request(CYTOWNIK_CSV, headers={"User-Agent": "PhD-bib/1.0"})
         with urllib.request.urlopen(req, timeout=30) as r:

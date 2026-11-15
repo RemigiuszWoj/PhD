@@ -15,6 +15,7 @@ description: Bibliografia do artykułu doktoratu – cytownik katedry (Google Sh
    ```bash
    python tools/bib_pool.py cytownik     # pobiera arkusz -> bibliography/cytownik.bib (lokalnie, poza gitem)
    ```
+   Pełna synchronizacja (raport zmian, przebudowa puli, brakujące nasze prace): skill `/cytownik`.
    **Stąd bierzemy prace grupy do cytowania** (wymóg promotora: cytować katedrę) i punkty MNiSW/IF.
    BibTeX w cytowniku pochodzi z Google Scholar: bez DOI, często bez tomu, z małymi literami w tytule, czasem
    ten sam klucz dla dwóch prac (skrypt dodaje wtedy literę `b`). Przed cytowaniem uzupełnij DOI, tom i strony

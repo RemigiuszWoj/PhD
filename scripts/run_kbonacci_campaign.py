@@ -21,6 +21,7 @@ Stages (run in this order by --stage all; each one resumes where it stopped):
   large     n = 200, 500, exact filter, k in {4,6,8,12,16,24,32} + Insert, 60 s (budgets to 60 s).
   large500  tai500_20, exact filter, k in {8,12} + Insert, 300 s (budgets to 300 s).
   large_m10 tai200_10, exact filter, k in {48,64,n}, 60 s (budgets to 60 s).
+  relative_cp  12 Taillard files, the k of `relative` with the exact filter.
 
 Usage (Mac, repo root):
     python scripts/run_kbonacci_campaign.py --dry-run
@@ -95,8 +96,11 @@ STAGES["large500"] = {"files": ["tai500_20"], "budgets": [300000],
 STAGES["large_m10"] = {"files": ["tai200_10"], "budgets": [60000],
                        "modes": ["kbonacci_k48_cp", "kbonacci_k64_cp", "kbonacci_kn_cp"],
                        "extract_budgets": [100, 500, 1000, 2000, 5000, 10000, 20000, 30000, 60000]}
+# Relative k with the exact filter: closes the gap between k = 16 and k = n of `ablation_all`.
+STAGES["relative_cp"] = {"files": TAILLARD, "budgets": [LONG],
+                         "modes": lambda f: [f"{m}_cp" for m in relative_modes(f)]}
 ORDER = ["validate", "replicate", "main", "insert", "ablation", "relative", "ablation_all", "large",
-         "large500", "large_m10"]
+         "large500", "large_m10", "relative_cp"]
 # Rough wall-clock overrun for runs whose first move outlasts the budget
 # (k = n at n = 500: one Dynasearch-sized evaluation takes ~36 s in Python).
 OVERRUN_S = {("kbonacci_kn", 500): 30.0}
@@ -105,7 +109,7 @@ OVERRUN_S = {("kbonacci_kn", 500): 30.0}
 def overrun_s(mode: str, n: int) -> float:
     if (mode, n) in OVERRUN_S:
         return OVERRUN_S[(mode, n)]
-    k = mode[len("kbonacci_k"):] if mode.startswith("kbonacci_k") else ""
+    k = mode[len("kbonacci_k"):].removesuffix("_cp") if mode.startswith("kbonacci_k") else ""
     # relative k at n = 500: the first move scales roughly with k / n of the k = n case
     return 30.0 * int(k) / n if n == 500 and k.isdigit() and int(k) > 16 else 0.0
 

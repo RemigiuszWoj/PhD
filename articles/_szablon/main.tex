@@ -1,0 +1,82 @@
+% Szkielet artykułu (Springer LNCS/LNAI). Klasa llncs.cls i splncs04.bst skopiuj z poprzedniego artykułu,
+% np. articles/qaoa_depth_icaisc/. Inny format: podmień klasę, układ sekcji zostaje (patrz /artykul).
+\documentclass[runningheads]{llncs}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage[hidelinks,pdfauthor={},pdftitle={}]{hyperref}
+\emergencystretch=1em
+
+% --- wersja ślepa / z nazwiskami ---
+\newif\ifblind \blindtrue        % \blindfalse dla wersji z nazwiskami i finalnej
+% --- zmiany w rewizji na niebiesko (main_highlighted.pdf) ---
+\newif\ifhighlight \highlightfalse
+\newcommand{\rev}[1]{\ifhighlight\textcolor{blue}{#1}\else#1\fi}
+
+\begin{document}
+
+\title{<Title>}
+\titlerunning{<Short title>}
+\ifblind
+  \author{Anonymous}
+  \institute{Anonymous}
+\else
+  \author{Remigiusz Wojew\'{o}dzki \and Wojciech Bo\.{z}ejko}
+  \authorrunning{R. Wojew\'{o}dzki and W. Bo\.{z}ejko}
+  \institute{Department of Control and Quantum Computing,
+    Faculty of Information and Communication Technology,
+    Wroc\l{}aw University of Science and Technology, Wroc\l{}aw, Poland\\
+    \email{remigiusz.wojewodzki@pwr.edu.pl, wojciech.bozejko@pwr.edu.pl}}
+\fi
+\maketitle
+
+\begin{abstract}
+% Prosto i opisowo, główny wynik liczbą. Limit słów i znaków pola formularza – patrz STATUS.md.
+\keywords{flow shop \and neighborhood search \and QUBO \and <…>}
+\end{abstract}
+
+\section{Introduction}
+% Akapit 1: PFSP, Taillard~\cite{taillard1993}, ILS~\cite{lourenco2003}, sąsiedztwa wykładnicze.
+% Akapit 2: wybór ruchu jako QUBO~\cite{lucas2014ising}, annealer, QAOA~\cite{farhi2014qaoa}.
+% Akapit 3: luka. Akapit 4: wkład prozą (i)…(iv), bez wypunktowań.
+
+\section{Related Work}
+% Trzy akapity tematyczne, bez podrozdziałów.
+
+\section{<Problem and Neighborhood Search>}
+% Akapit wprowadzający przed ewentualnym \subsection.
+
+\section{<Method>}
+
+\section{Experimental Setup}
+% Instancje, warianty, miary: PRD = (C_max - C^*)/C^* \cdot 100\%, statystyka, sprzęt, wersje pakietów.
+
+\section{Results}
+% Fig. 1–4, Tab. 1–2 ze skryptów (figures/*_en.pdf, \input{tables/...}).
+
+\section{Discussion}
+% Ograniczenia; czego nie twierdzimy.
+
+\section{Conclusions}
+% Jeden akapit.
+
+\begin{credits}
+\ifblind\else
+\subsubsection{Acknowledgements.} <…>
+\fi
+\subsubsection{Use of AI Tools.} The authors used a large language model as
+a writing and programming assistant. The research design, the experiments,
+the results and their interpretation are entirely the authors' own.
+
+\subsubsection{\discintname} The authors have no competing interests to
+declare that are relevant to the content of this article.
+\end{credits}
+
+\bibliographystyle{splncs04}
+\bibliography{references}
+\end{document}

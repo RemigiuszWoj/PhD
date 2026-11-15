@@ -1,6 +1,6 @@
 % =====================================================================
-% DRAFT v2 (11.11.2026) -- k-bonacci neighborhoods for the PFSP
-% Changes v1 -> v2 are listed in PLAN.md, section 9. Polish version: wersja_pl.tex.
+% DRAFT v3 (14.11.2026) -- k-bonacci neighborhoods for the PFSP
+% Changes are listed in PLAN.md, sections 9 and 9a. Polish version: wersja_pl.tex.
 % Target: IJCAI 2027 (abstract 4.01, paper 11.01.2027; 7 pages + 2 of
 % references) or GECCO, decision 22.11; double-blind.
 % Layout: plain article class for drafting; switch to the official template.
@@ -8,7 +8,7 @@
 % Protocol = identical to the previous papers of this line (same ILS/SA,
 % same constants, same budgets, same accelerator); only the neighborhood
 % class is new. Results (14.11): main campaign and stage `large` with the exact
-% filter; stages large500 and large_m10 still running.
+% filter, stages large500 and large_m10 included (15.11); stage relative_cp running.
 % =====================================================================
 \documentclass[10pt,twocolumn]{article}
 \usepackage[margin=0.75in]{geometry}
@@ -50,21 +50,27 @@ whose swap distance is at most $k-1$. The family is counted exactly by
 the $k$-bonacci numbers, so its size grows as $\lambda_k^n$, with
 $\lambda_2=1.618$ (Fibonacci), $\lambda_3=1.839$ (tribonacci) and
 $\lambda_k\to 2$ (Dynasearch). For $k=\lfloor\log_2 n\rfloor+2$ it
-contains about 80\% of all Dynasearch moves. A positional dynamic program
+contains 79--88\% of all Dynasearch moves for $n=20$--$500$. A positional dynamic program
 selects the compound move with the best predicted makespan change in
 $O(nk)$ time. We evaluate the family on the full
 Taillard benchmark inside the iterated local search of our earlier
 studies, with the same time budgets, so the new neighborhoods can be
 compared with the Adjacent, Fibonacci, Dynasearch and Motzkin results
-reported there. The best $k$ is much smaller than this coverage would
-suggest, and it falls with the number of machines. With 20 machines and
+reported there. Under a fixed time budget the best reach is short. Coverage does not
+predict quality: on 500 jobs $k=6$, which contains under 2\% of the
+Dynasearch moves, beats $k=12$, which contains 94\%. The best $k$ falls
+with the number of machines and grows with the budget. With 20 machines and
 at least 100 jobs the best $k$ lies between 5 and 8 at every budget we
 ran, up to 60\,s for 200 and 500 jobs. With 5 machines every $k\geq 12$
 performs alike at 10\,s, and on 200 jobs with 10 machines the best $k$
-grows with the budget. An exact critical-path filter, which replaces the
-block-boundary test of the earlier studies, improves every $k\leq 16$
-and lowers the best $k$. \todo{Insert at long budgets, after stage large500; SA only if
-run}
+grows with the budget. An additional comparison at an equal number of
+iterations shows that a longer reach is then better on every class, so
+the limit on $k$ comes from the cost of a move. An exact critical-path
+filter, which replaces the
+block-boundary filter of the earlier studies, improves every $k\leq 16$
+at every instance size. Insert is better on most classes with up to 200 jobs. On 500 jobs with 20
+machines the compound swaps lead at every budget up to 300\,s, by 7 points
+at 10\,s and by 0.2 points at 300\,s. \todo{SA only if run}
 \end{abstract}
 
 % ---------------------------------------------------------------------
@@ -99,17 +105,18 @@ number can be read against the published ones.
 The paper makes three contributions. The first is the $k$-bonacci
 neighborhood $\N_k$ and the chain
 $\N_{\mathrm{adj}}\subset\N_2=\N_{\mathrm{fib}}\subset\N_3\subset
-\dots\subset\N_n=\N_{\mathrm{dyn}}$. We count $|\N_k|$ exactly, give its
-growth rate in closed form, and show that the share of Dynasearch moves
-contained in $\N_k$ is close to $\exp(-n/2^{k+1})$, so $k=\log_2 n+O(1)$
+\dots\subset\N_n=\N_{\mathrm{dyn}}$. The counting is classical: $|\N_k|$ is a
+$k$-bonacci number, and by the longest-run law the share of Dynasearch
+moves contained in $\N_k$ is close to $\exp(-n/2^{k+1})$, so
+$k=\log_2 n+O(1)$
 already covers a constant fraction of Dynasearch. This share is a
 property of the family; Section~\ref{sec:exp} shows that it does not
 predict solution quality. The second is the
 evaluation of the family. A positional DP selects the compound move with
 the best predicted makespan change in $O(nk)$ time after $O(mnk^2)$ delta
-evaluation, and for $k=n$ it is a non-recursive Dynasearch. We prove that
-a filter based on one critical path loses no improving swap and bounds the
-number of candidates by $(m-1)(k-1)(k+2)/2$, independently of $n$. We also
+evaluation. A filter based on one critical path, which follows from the
+classical block properties, loses no improving swap, and it leaves at
+most $(m-1)(k-1)(k+2)/2$ candidates, independently of $n$. We also
 describe exactly what the DP optimizes: the makespan change of a compound
 move is a maximum over lattice paths, the DP replaces it by a sum of
 maxima, and we give conditions under which the two agree and under which
@@ -132,9 +139,7 @@ Wodecki analyzed swap multimoves for the PFSP~\cite{bozejko2007}. In
 single-machine total weighted tardiness the cost changes of independent
 swaps add up, which makes the DP exact. In the PFSP they do not
 (Section~\ref{sec:additivity}).
-\paragraph{Sequence-counted neighborhoods.} Fibonacci~\cite{fibonacci_own},
-its QUBO form on a quantum annealer~\cite{bozejko2026sr}, and
-Motzkin~\cite{motzkin_own}. \todo{verify that Sci.\ Rep.\ 2026 and IFAC
+\paragraph{Sequence-counted neighborhoods.} The Fibonacci neighborhood~\cite{fibonacci_own}, its QUBO form on a quantum annealer~\cite{bozejko2026sr} and the Motzkin neighborhood~\cite{motzkin_own} have sizes counted by classical integer sequences. \todo{verify that Sci.\ Rep.\ 2026 and IFAC
 2025 do not already contain the bounded-distance hierarchy}
 \paragraph{Bounded-reach moves.} Restricting how far a move may reach is a
 standard device in routing, e.g., Or-opt segments and granular
@@ -149,13 +154,13 @@ supervisor's group (unpublished); agree on the citation and the split
 before submission}
 
 % ---------------------------------------------------------------------
-\section{Problem and Notation}
+\section{Problem and Notation}\label{sec:problem}
 
 $n$ jobs are processed on machines $1,\dots,m$ in the same order
 $\pi=(\pi(1),\dots,\pi(n))$. $p_{r,j}$ is the processing time of job $j$
 on machine $r$. Completion times satisfy
 $C_{r,t}=\max(C_{r-1,t},C_{r,t-1})+p_{r,\pi(t)}$, and
-$C_{\max}(\pi)=C_{m,n}$. Head and tail matrices $H$ and $T$ (forward and
+$C_{\max}(\pi)=C_{m,n}$, with $C_{0,t}=C_{r,0}=0$. Head and tail matrices $H$ and $T$ (forward and
 backward longest paths) give the makespan after any modification of a
 segment $[i,j]$ by recomputing only that segment,
 $C_{\max}=\max_r\bigl(H'_{r,j}+T_{r,j+1}\bigr)$, at cost $O(m(j-i+1))$.
@@ -278,7 +283,7 @@ neighborhoods of the earlier studies this gives the chain
 \subset\N_n=\N_{\mathrm{dyn}}\subset\N_{\mathrm{mot}}\subset\mathcal I_n,
 \end{equation}
 where $\mathcal I_n$ is the set of all involutions
-(Fig.~\ref{fig:chain}). On the board, the first part of the chain widens
+(Fig.~\ref{fig:chain}); the last two inclusions are strict for $n\geq 4$. On the board, the first part of the chain widens
 the band, the step to Motzkin allows nested blocks, and the last step
 allows crossing swaps. For $n=10$ the sizes are $89$, $274$, $401$, $492$
 and $512$ for $k=2,3,4,6,n$, then $2188$ for Motzkin and $9496$ for all
@@ -298,12 +303,11 @@ supervisor}
 \paragraph{How much of Dynasearch does $\N_k$ cover?} Every Dynasearch
 move is a composition of $n$, and a uniformly random composition places
 an independent cut between neighboring positions with probability $1/2$.
-A block of length $L$ is then a run of $L-1$ positions without a cut, so
+A block of length $L$ is then a run of $L-1$ gaps without a cut, so
 the share $|\N_k|/2^{n-1}$ is the probability that $n-1$ fair coin flips
-contain no run of $k$ consecutive gaps without a cut. The longest run in
-$n$ fair coin flips has length about $\log_2 n$~\cite{schilling1990}, so
-this probability jumps from near $0$ to near $1$ around $k=\log_2 n$
-(Fig.~\ref{fig:share}). The next proposition makes the jump explicit.
+contain no run of $k$ consecutive gaps without a cut. The longest run of
+one symbol in $n$ fair coin flips has length about
+$\log_2 n-1$~\cite{schilling1990}, so this probability rises from $e^{-2}\approx 0.14$ at $k=\log_2 n-2$ to $e^{-1/8}\approx 0.88$ at $k=\log_2 n+2$ (Fig.~\ref{fig:share}). The next proposition makes this rise explicit.
 
 \begin{proposition}\label{prop:share}
 For fixed $k$, $a_n=c_k\lambda_k^n\,(1+o(1))$ with
@@ -320,10 +324,12 @@ smallest modulus is the simple pole $x=1/\lambda_k$, because all other
 roots of the $k$-bonacci polynomial lie inside the unit
 circle~\cite{miles1960}. The residue gives $c_k$. By
 Proposition~\ref{prop:count}, $\lambda_k/2=1-\lambda_k^{-k}/2$ and
-$\lambda_k^{-k}=2^{-k}(1+O(k2^{-k}))$ by~\eqref{eq:lambda}, so
+$\lambda_k^{-k}=2^{-k}(1-\lambda_k^{-k}/2)^{-k}=2^{-k}(1+O(k2^{-k}))$,
+because $\lambda_k^{-k}\leq 2^{1-k}$ by~\eqref{eq:lambda}, so
 $(\lambda_k/2)^n=\exp\bigl(-n2^{-(k+1)}(1+o(1))\bigr)$, and $2c_k\to 1$.
-\todo{the error term of the first claim must be uniform in $k$; add the
-bound on the contribution of the other roots}
+\todo{both claims are classical (success runs, longest-run law): cite
+Feller and Gordon--Schilling--Waterman instead of the sketch; this also
+settles the uniformity of the error term in $k$}
 \end{proof}
 
 For $k=\lfloor\log_2 n\rfloor+2$ the exponent $n/2^{k+1}$ lies between
@@ -358,12 +364,14 @@ to the next machine, so $|U|\leq m-1$.
 \begin{proposition}\label{prop:filter}
 If $[i,j]\cap U=\emptyset$, then $\delta_{ij}\geq 0$. Consequently the DP
 restricted to the candidates with $[i,j]\cap U\neq\emptyset$ has the same
-optimal value as the DP on all candidates whenever that value is
-negative. At most $(m-1)(k-1)(k+2)/2$ candidates remain, and one
-evaluation of $\N_k$ costs $O(mn+m^2k^3)$.
+optimal value as the DP on all candidates. At most
+$(m-1)(k-1)(k+2)/2$ candidates remain, and one evaluation of $\N_k$
+costs $O(mn+\min(mnk^2,m^2k^3))$.
 \end{proposition}
 \begin{proof}
-If no column of $[i,j]$ belongs to $U$, the path $P^\ast$ crosses the
+The first claim is the block property
+of~\cite{nowicki1996,grabowski2004} in our notation. If no column of
+$[i,j]$ belongs to $U$, the path $P^\ast$ crosses the
 columns $i,\dots,j$ in a single row $r$. The swap permutes the jobs of
 these columns, so the sum of $p_{r,\cdot}$ over them is unchanged and
 $\ell(P^\ast)$ is unchanged. Hence the new makespan is at least
@@ -374,6 +382,13 @@ $\sum_{d=1}^{k-1}(d+1)=(k-1)(k+2)/2$ candidates. Heads, tails and
 $P^\ast$ cost $O(mn)$, every remaining delta costs $O(mk)$, and the DP
 visits the $n$ positions and the remaining candidates.
 \end{proof}
+
+The filter is exact for the quantity that the DP optimizes, the sum of
+deltas. It does not preserve the best real makespan over $\N_k$, because
+a swap with $\delta_{ij}\geq 0$ can still improve a compound move. The
+fallback to the best single swap (below) is taken over the remaining
+candidates, so whenever no improving move exists the filtered and the unfiltered search can
+choose different moves.
 
 The earlier studies~\cite{windowed_own} use a simpler test that marks a
 position as a boundary when the last machine starts a job immediately
@@ -391,7 +406,7 @@ ablation that keeps the link to the published results
 compound move restricted to positions $1..p$. By Lemma~\ref{lem:blocks}
 the last block ends at $p$ and has length $1$ or $d+1\leq k$, so
 \begin{equation}
-B[p]=\min\Bigl(B[p-1],\ \min_{1\le d\le k-1} B[p-d-1]+\delta_{p-d,p}\Bigr),
+B[p]=\min\Bigl(B[p-1],\ \min_{1\le d\le \min(k-1,p-1)} B[p-d-1]+\delta_{p-d,p}\Bigr),
 \end{equation}
 with $B[0]=0$, which takes $O(nk)$ time and memory. When no move improves
 the predicted makespan, the best single swap is applied, as in the
@@ -445,19 +460,21 @@ $a_r=H^{S_1}_{r,c}-H_{r,c}$ and $b_r=T^{S_2}_{r,c+1}-T_{r,c+1}$.
 \begin{proposition}\label{prop:join}
 $C_{\max}(\pi\circ S_1\circ S_2)=\max_r\,(w_r+a_r+b_r)$, and
 $\delta_1+\min_r b_r\leq\Delta\leq\delta_1+\max_r b_r$. If one machine
-$r^\ast$ attains $\max_r w_r$, $\max_r(w_r+a_r)$ and $\max_r(w_r+b_r)$,
-then $\Delta\geq\delta_1+\delta_2$: the sum of deltas promises at least
-as much improvement as the move delivers. If $r^\ast$ also attains
-$\max_r(w_r+a_r+b_r)$, then $\Delta=\delta_1+\delta_2$.
+$r^\ast$ attains both $\max_r(w_r+a_r)$ and $\max_r(w_r+b_r)$, then
+$\Delta\geq\delta_1+\delta_2$: the sum of deltas promises at least as
+much improvement as the move delivers. If $r^\ast$ also attains
+$\max_r w_r$ and $\max_r(w_r+a_r+b_r)$, then $\Delta=\delta_1+\delta_2$.
 \end{proposition}
 \begin{proof}
 Heads left of the border depend only on $S_1$ and tails right of it only
-on $S_2$, so the head--tail formula of Section~3 gives the first claim.
+on $S_2$, so the head--tail formula of Section~\ref{sec:problem} gives the first claim.
 The bounds follow from $\max_r(w_r+a_r)=C_{\max}(\pi)+\delta_1$. For the
 third claim,
 $C_{\max}(\pi)+\Delta\geq w_{r^\ast}+a_{r^\ast}+b_{r^\ast}
-=(C_{\max}(\pi)+\delta_1)+(C_{\max}(\pi)+\delta_2)-C_{\max}(\pi)$,
-and the last claim turns this inequality into an equality.
+=(C_{\max}(\pi)+\delta_1)+(C_{\max}(\pi)+\delta_2)-w_{r^\ast}
+\geq C_{\max}(\pi)+\delta_1+\delta_2$, because
+$w_{r^\ast}\leq C_{\max}(\pi)$. The last claim turns both inequalities
+into equalities.
 \end{proof}
 
 \begin{figure}[t]
@@ -469,12 +486,10 @@ both swaps is a maximum over the crossing machine.}
 \label{fig:paths}
 \end{figure}
 
-The condition of the third claim says that the critical path crosses the
-border on the same machine before and after each single swap. The sum
-of deltas is then exact or optimistic, and it is strictly optimistic when
-the two changes together let another machine overtake $r^\ast$. On
-sampled states the prediction is optimistic far more often than
-pessimistic (Section~\ref{sec:exp}). Both directions occur,
+The condition of the third claim says that after either part of the move
+a critical path crosses the border on the same machine. The sum $\delta_1+\delta_2$ is then exact or optimistic. On states sampled along descents the
+prediction is optimistic far more often than pessimistic
+(Section~\ref{sec:exp}). Both directions occur,
 as two instances with $n=4$ and the swaps $(1,2)$ and $(3,4)$ show.
 
 \begin{example}[optimistic sum]
@@ -514,11 +529,12 @@ change the neighborhood.
 \item \textbf{Budgets:} $t_{\max}\in\{0.1,0.5,1,2,5,10\}$\,s,
       5 seeds per instance (seeds 0--4). The classes $200\times 10$,
       $200\times 20$ and $500\times 20$ are also run for 60\,s.
-      \todo{300\,s on $500\times 20$}
+      The class $500\times 20$ is also run for 300\,s with $k\in\{8,12\}$
+      and Insert.
 \item \textbf{Neighborhoods:} $k\in\{2,3,4,5,6,8,12,16,n\}$, each
       with the exact filter of Proposition~\ref{prop:filter} and with the
-      block-boundary filter of the earlier studies. The 60\,s runs use
-      the exact filter and $k\in\{4,6,8,12,16,24,32\}$. A separate
+      block-boundary filter of the earlier studies. The 60\,s runs use the exact filter and $k\in\{4,6,8,12,16,24,32\}$,
+      and on $200\times 10$ also $k\in\{48,64,n\}$. A separate
       experiment sets $k$ to 10\%, 20\%, \dots, 90\% of $n$ with the
       block-boundary filter only. References: Insert (best single insertion with
       Taillard's acceleration), run in the same campaign, and Adjacent,
@@ -531,7 +547,9 @@ change the neighborhood.
       the current best-known solutions \todo{cite the source of the
       best-known values}.
 \item \textbf{Hardware:} classical runs on an Apple M4 Pro, executed
-      sequentially, as in the earlier campaign. Quantum runs on the
+      sequentially, as in the earlier campaign. \todo{state the
+      implementation language and what the tabu list stores for a
+      compound move} Quantum runs on the
       D-Wave Advantage annealer (Pegasus topology, about 5\,600 qubits;
       Leap cloud, \texttt{EmbeddingComposite}, the solver identifier is
       recorded at run time) and on IQM gate-based processors via IQM
@@ -546,7 +564,9 @@ with budget $t$ is therefore a prefix of the run with budget $10$\,s and
 the same seed. Each configuration is run once with $t_{\max}=10$\,s, and
 the trajectory log yields the incumbent for every smaller budget. The
 loop tests the clock before each move, so a move started before $t$ is
-counted, exactly as in an independent run. ILS is deterministic for a
+counted, exactly as in an independent run. Where a single iteration
+exceeds the budget (Insert at $n=500$ below 1\,s, $k=n$ at $n=500$) the
+reported value is that of the first iteration. ILS is deterministic for a
 given seed, and the extracted values coincide with independent runs up to
 the timing jitter of at most one move. SA
 is not: its reheat is triggered by a wall-clock stagnation timer, so even
@@ -624,7 +644,8 @@ earlier campaign; RPD to the best-known solutions}
 (Table~\ref{tab:main}). Going from $k=2$ to $k=6$ removes between 0.9
 and 2.8 percentage points of RPD at 10\,s, and beyond $k=8$ the curve is
 flat or rises. At 10\,s the best $k$ is 12 for $n\leq 100$, 8 for $n=200$
-and 6 for $n=500$. At shorter budgets it is the same or smaller, except
+(an average of 16 on $200\times 10$ and 6--8 on $200\times 20$) and 6 for
+$n=500$. At shorter budgets it is the same or smaller, except
 for one tie within 0.01 points. With $k=n$ (full Dynasearch) the search
 stays within 0.15 points of the best $k$ only for $n\leq 50$. For $n=100$
 it trails by 1.2 points, and for $n=500$ it completes one iteration in
@@ -641,13 +662,16 @@ mean little and only the ranking of the rows matters.
 \paragraph{Cost of reach.} Every extra position of reach costs
 iterations. On $n=500$ the ILS completes about 3\,500 iterations in
 10\,s with $k=2$, 1\,400 with $k=8$, 370 with $k=16$ and a single one
-with $k=n$. A separate experiment sets $k$ to a fraction of $n$, from
+with $k=n$. By Proposition~\ref{prop:filter} one move costs
+$O(mn+m^2k^3)$ for $k$ small against $n$, so a longer reach pays only
+when the budget covers enough moves. A separate experiment sets $k$ to a fraction of $n$, from
 10\% to 90\%. It uses the block-boundary filter, under which the best $k$
 is larger than under the exact one. Even so, the best fraction at 10\,s
 falls from a flat optimum between 30\% and 90\% at $n=50$ to 30\% at
 $n=100$ and 10\% at
 $n=200$, and at $n=500$ the smallest fraction tried, 10\%, loses to
-$k=16$. No fixed fraction of $n$ works across sizes. \todo{figures: RPD
+$k=16$. No fixed fraction of $n$ works across sizes. \todo{repeat with the
+exact filter (stage relative\_cp, running)} \todo{figures: RPD
 vs $k$, iterations vs $k$, both with the exact filter}
 
 \begin{table}[t]
@@ -667,10 +691,10 @@ $20\times20$ & 16$^\ast$ & 8$^\ast$ & 8, 12$^\ast$ & -- \\
 $50\times5$ & 12$^\ast$ & 8, 12, 16$^\ast$ & 8, 12, 16, $n$ & -- \\
 $50\times10$ & 8 & 16$^\ast$ & 12$^\ast$ & -- \\
 $50\times20$ & 8 & 12$^\ast$ & 8, 12$^\ast$ & -- \\
-$100\times5$ & 8, 12, 16 & 16, $n$$^\ast$ & 8, 12, 16, $n$$^\ast$ & -- \\
+$100\times5$ & 8, 12, 16 & 16, $n^\ast$ & 8, 12, 16, $n^\ast$ & -- \\
 $100\times10$ & 8 & 12$^\ast$ & 12, 16$^\ast$ & -- \\
 $100\times20$ & 6 & 8 & 8$^\ast$ & -- \\
-$200\times10$ & 6, 8 & 8, 12 & 16$^\ast$ & 32$^\ast$ \\
+$200\times10$ & 6, 8 & 8, 12 & 16$^\ast$ & 32, 48, 64$^\ast$ \\
 $200\times20$ & 5 & 5, 6 & 6, 8 & 6, 8 \\
 $500\times20$ & 5, 6 & 6 & 5, 6 & 8 \\
 \bottomrule
@@ -681,15 +705,13 @@ $500\times20$ & 5, 6 & 6 & 5, 6 & 8 \\
 (Table~\ref{tab:bestk}). With $m=5$ every $k\geq 12$ gives the same
 quality at 10\,s, Dynasearch included. With $m=10$ the best $k$ at 10\,s
 lies between 8 and 16. With $m=20$ it is 8 or 12 at 10\,s for
-$n\leq 50$, and between 5 and 8 for $n\geq 100$ at every budget. For
-$m=20$ the best $k$ therefore also falls with $n$. The benchmark has
+$n\leq 50$, and between 5 and 8 for $n\geq 100$ at every budget. For $m=20$ and $n\geq 50$ the best $k$ is smaller or equal on larger instances at the same budget, with one exception at 0.5\,s, and for $n\geq 100$ it does not fall as the budget grows, up to ties within 0.05 points. The benchmark has
 $m=5$ only up to $n=100$ and $n=500$ only with $m=20$, so we cannot fully
-separate the two effects. Section~\ref{sec:additivity} states when the
-sum of deltas is optimistic but does not say how this depends on $m$. On
-the sampled states of the anatomy experiment the sum overstates the gain
-more for $m=20$ than for $m=5$, and each extra position of reach costs
-$O(m)$ per candidate. We have not separated the optimism of the sum from this cost per
-candidate.
+separate the two effects. The cost of a move explains the direction.
+Evaluating the candidates costs up to $O(m^2k^3)$. Measured at $n=200$, doubling $m$ from 10 to 20 multiplies the time per move by 2.3 at $k=4$ and by 3.8 at $k=16$, so with more machines the same budget covers fewer moves, and the loss grows with the reach. The additivity error points the same way, since on the
+sampled states of the anatomy experiment the sum of deltas overstates
+the gain more for $m=20$ than for $m=5$. It is not the main cause, as the comparison at equal iterations below
+shows.
 
 \begin{table}[t]
 \centering
@@ -722,30 +744,33 @@ $k=32$ & 1.94 & 1.42 & 8.92 & 5.76 & 7.75 & 5.13 \\
 of the 10\,s limit, because no variant has converged by then. The 60\,s
 runs (Table~\ref{tab:long}) show that the best $k$ stays small with 20
 machines. On $500\times 20$ it moves from 6 to 8 between 20\,s and
-30\,s, and on $200\times 20$ the values $k=6$ and $k=8$ stay within 0.05
-points of each other at 10\,s and at 60\,s. On $200\times 10$ the best
+30\,s, and on $200\times 20$ the values $k=6$ and $k=8$ stay within 0.07
+points of each other from 10\,s to 60\,s. On $200\times 10$ the best
 $k$ keeps growing with the budget, from 6 or 8 at 0.1\,s through 16 at
-10\,s (tied with 24 in the long runs) to 32 at 60\,s, the largest value
-we ran there. The long
-runs are separate executions. Insert finishes only 11 iterations in
+10\,s (tied with 24 in the long runs) to 64 at 60\,s. The curve is flat there: $k=32$, 48 and 64 lie within
+0.05 points of each other, and $k=n$ is 0.1 points behind. On
+$500\times 20$ the 300\,s runs keep $k=8$ ahead of $k=12$ at every
+budget. The long runs are separate executions. Insert finishes only 11 iterations in
 10\,s on $500\times 20$, so timing jitter moves its 10\,s mean by 0.1
 points between Tables~\ref{tab:main} and~\ref{tab:long}.
-\todo{$k\in\{48,64,n\}$ on $200\times 10$ (stage large\_m10)}
+
 
 \paragraph{Filter.} At equal time budgets the exact filter of
 Proposition~\ref{prop:filter} gives a lower mean RPD than the
-block-boundary filter for every $k\leq 16$, every $n$ and every budget.
+block-boundary filter for every $k\leq 16$ and every budget on the
+average of each instance size. Per class there are exceptions in three class--$k$ pairs, of at most 0.25 points.
 The gain at 10\,s grows with the instance, from 0.1--0.3 points at $n=20$
 to 1.3--3.7 points at $n=500$, and the ILS completes between 14\% and
 111\% more iterations in 10\,s. For $k=n$ the exact filter is also better
-for $n=20$, 50 and 500, and the sign is mixed for $n=100$ and 200. The
-filter also lowers the best $k$. Under the block-boundary filter the best
-$k$ at 10\,s lies between 10 and 30. Under the exact filter it lies
-between 6 and 12, and the best exact variant beats the best
-block-boundary variant at every size.
+for $n=20$, 50 and 500, and the sign is mixed for $n=100$ and 200. On
+the grids we ran the filter also lowers the best $k$. Under the
+block-boundary filter the best $k$ at 10\,s lies between 10 and 30, and
+under the exact filter between 6 and 12. The grids differ, because only
+the block-boundary runs include values between 16 and $n$. The best
+exact variant beats the best block-boundary variant at every size.
 
-\paragraph{Insert.} Insert reaches a lower mean RPD than every $k$ for
-$n=20$ at all budgets, for $n=50$ from 0.5\,s and for $n=100$ from 1\,s.
+\paragraph{Insert.} Insert reaches a lower mean RPD than every $k$ on the
+$n=20$ average at all budgets, for $n=50$ from 0.5\,s and for $n=100$ from 1\,s.
 At 10\,s the difference to the best $k$ is 0.1--0.2 points (Wilcoxon on
 instance--seed pairs with Holm correction, $p<0.002$). The seeds of one
 instance are not independent, so this test is optimistic. \todo{repeat
@@ -756,18 +781,30 @@ One Insert iteration costs $O(mn^2)$, which leaves 111 iterations in
 $m$. On $200\times 10$ Insert beats every $k$ from 5\,s on and is still
 ahead at 60\,s. On $200\times 20$ the best $k$ is ahead up to 30\,s, and
 at 60\,s the two differ by 0.05 points. On $500\times 20$ the best $k$
-leads by 7.4 points at 10\,s and by 2.6 points at 60\,s, and Insert is
-still improving quickly at 60\,s. \todo{300\,s on $500\times 20$ (stage
-large500): does Insert catch up?}
+leads by 7.4 points at 10\,s (Table~\ref{tab:long}) and by 2.6 points at 60\,s. In the 300\,s runs Insert closes most of
+this gap but does not catch up: 0.9 points remain at 120\,s and 0.2 at
+300\,s, where $k=8$ reaches 2.02 and Insert 2.26 ($p<0.001$ on
+instance--seed pairs).
+
+\paragraph{Equal iterations.} All comparisons above are made at equal
+time budgets, as in the earlier studies. As an additional view we compare
+the values of $k$ at an equal number of iterations, read from the same
+runs. A larger $k$ is then better on every class, also with 20 machines.
+After about 690 iterations on $500\times 20$ the RPD is 7.6 for $k=4$,
+6.7 for $k=6$ and 6.4 for $k=8$, and after 4\,000 iterations of the long
+runs it falls from 5.2 for $k=4$ to 3.3 for $k=12$. A longer reach thus
+gives better moves, and the short best $k$ under a time budget reflects
+what a move costs. \todo{figure: RPD against the number of iterations,
+one curve per $k$; table of time per move by $k$ and $m$}
 
 \paragraph{Move anatomy.}
 Figure~\ref{fig:additivity} shows the additivity error on states sampled
-from descents on the instances with $n\leq 100$, with the exact filter. The number of machines drives it more than $k$ does. For $m=5$
+from descents on the instances with $n\leq 100$, with the exact filter. The number of machines drives it more than $k$ does. For $m=5$ and $k\leq 8$
 the move delivers 72--83\% of the predicted gain and the prediction is
 optimistic in 38--56\% of the states. For $m=20$ the move delivers 57\%
 of the predicted gain at $k=2$ and 33\% at $k=8$, and the prediction is
 optimistic in 78--91\% of the states. A pessimistic prediction is rare
-(1--7\%). The real gain of one move still grows with $k$: on
+(1--7\% in these classes). The real gain of one move still grows with $k$: on
 $100\times 10$ it rises from 45 at $k=2$ to 64 at $k=8$ and 134 at $k=n$.
 One evaluation, however, takes 0.3\,ms at $k=2$, 1.2\,ms at $k=8$ and
 105\,ms at $k=n$, so the gain per millisecond falls from about 145 at
@@ -787,24 +824,27 @@ optimistic prediction (right).}
 
 % ---------------------------------------------------------------------
 \section{Conclusions}
-A swap inside a compound move for the flow shop should reach only a few
-positions, far fewer than are needed to cover most Dynasearch moves. How
-few depends on the instance. With 20 machines and at least 100 jobs the
-best $k$ stays in single digits at every budget we ran. With 5 machines
-the choice of $k$ hardly matters once $k\geq 12$, and on 200 jobs with 10
-machines the best $k$ grows with the budget. On sampled states the sum of
-single-swap deltas promises more than the move delivers, and the gap is
-larger for 20 machines. Section~\ref{sec:additivity} gives the conditions
-for this optimism but does not prove its dependence on $m$. The exact
-critical-path filter improves every $k\leq 16$ and lowers the best $k$.
-Insert is better on most classes with up to 200 jobs once the budget
-reaches a few seconds. The compound swaps lead on $500\times 20$ at every
-budget up to 60\,s, and on the other large classes at short budgets,
-where one Insert iteration is too expensive. \todo{update after stages
-large500 and large\_m10} A small $k$ also keeps the QUBO of the move
-banded with bandwidth $k-1$, as the quantum neighborhood search
-of~\cite{windowed_own} requires. \todo{quantum paragraph only if the
-tiers are run} Swaps that cross are left for a separate study.
+A swap inside a compound move for the flow shop should reach only as far
+as the time budget pays for. Under a fixed budget the best $k$ falls with
+the number of machines and grows with the budget. With 20 machines and at
+least 100 jobs it stays in single digits at every budget we ran, far
+below what is needed to cover most Dynasearch moves on the largest
+instances. With 5 machines the choice of $k$ hardly matters once
+$k\geq 12$, and on 200 jobs with 10 machines the best $k$ grows with the
+budget. The exact critical-path filter improves every $k\leq 16$ at
+every instance size. Insert is better on 8 of the 11 classes with up to
+200 jobs at 10\,s. The compound swaps lead on $500\times 20$ at every budget up to 300\,s,
+where the lead has shrunk to 0.2 points, and on the other large classes
+at short budgets, where one Insert iteration is too expensive. The additional comparison at an equal number of
+iterations shows where the limit on $k$ comes from. A longer reach is
+then better on every class, so what limits it under a time budget is the
+cost of a move, which grows faster than linearly in $k$ and in $m$. The
+additivity error is not the cause, although the sum of single-swap
+deltas promises more than the move delivers, more so for 20 machines. A
+small $k$ also keeps the QUBO of the move banded with bandwidth $k-1$, as
+the quantum neighborhood search of~\cite{windowed_own} requires.
+\todo{quantum paragraph only if the tiers are run} Swaps that cross are
+left for a separate study.
 
 % ---------------------------------------------------------------------
 \begin{thebibliography}{99}\small

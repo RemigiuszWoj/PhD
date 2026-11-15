@@ -122,6 +122,21 @@ tables/
 # ustawienia lokalne, pamiec i prywatny CLAUDE.md w katalogu glownym zostaja poza repo
 .claude/*
 !.claude/skills/
+# tylko skille projektu; lokalnie w .claude/skills/ leza tez cudze (ruflo itd.) i te zostaja poza repo.
+# Nowy skill projektu = nowy wiersz ponizej.
+.claude/skills/*
+!.claude/skills/artykul/
+!.claude/skills/badania/
+!.claude/skills/bibliografia/
+!.claude/skills/cytownik/
+!.claude/skills/doktorat/
+!.claude/skills/domkniecie/
+!.claude/skills/druk/
+!.claude/skills/nowe-badanie/
+!.claude/skills/przeglad-krytyczny/
+!.claude/skills/rewizja/
+!.claude/skills/stan-doktoratu/
+!.claude/skills/zgloszenie/
 !.claude/CLAUDE.md
 /CLAUDE.md
 CLAUDE.local.md

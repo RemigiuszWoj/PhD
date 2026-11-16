@@ -558,6 +558,11 @@ Pogrubienie oznacza najlepszą wartość w kolumnie.}
  & 0{,}1\,s & 1\,s & 10\,s & 0{,}1\,s & 1\,s & 10\,s & 0{,}1\,s & 1\,s & 10\,s
  & 0{,}1\,s & 1\,s & 10\,s & 0{,}1\,s & 1\,s & 10\,s \\
 \midrule
+Adjacent & 18{,}66 & 14{,}09 & 12{,}40 & 19{,}08 & 14{,}24 & 10{,}20 & 18{,}88 & 13{,}88 & 9{,}78 & 19{,}33 & 17{,}36 & 13{,}53 & 16{,}25 & 15{,}96 & 14{,}98 \\
+Fibonacci & 15{,}98 & 13{,}18 & 12{,}40 & 15{,}12 & 10{,}82 & 8{,}28 & 13{,}11 & 9{,}64 & 7{,}11 & 15{,}26 & 12{,}15 & 9{,}07 & 14{,}72 & 12{,}71 & 10{,}48 \\
+Dynasearch & 13{,}38 & 12{,}17 & 11{,}36 & 16{,}35 & 8{,}74 & 6{,}58 & 17{,}88 & 13{,}13 & 5{,}87 & 17{,}17 & 17{,}17 & 14{,}83 & -- & -- & 14{,}53 \\
+Motzkin & 13{,}95 & 12{,}23 & 11{,}44 & 19{,}05 & 13{,}81 & 11{,}47 & 19{,}40 & 16{,}60 & 12{,}43 & 18{,}11 & 18{,}11 & 17{,}23 & -- & -- & 16{,}26 \\
+\midrule
 Insert & \textbf{12{,}26} & \textbf{11{,}29} & \textbf{10{,}94} & 9{,}76 & \textbf{6{,}38} & \textbf{5{,}51} & 14{,}11 & \textbf{5{,}36} & \textbf{3{,}51} & 18{,}82 & 12{,}49 & \textbf{4{,}11} & 16{,}01 & 15{,}60 & 12{,}59 \\
 \midrule
 $k=2$ & 14{,}89 & 12{,}60 & 11{,}97 & 13{,}02 & 9{,}65 & 7{,}45 & 10{,}89 & 7{,}76 & 5{,}83 & 12{,}92 & 9{,}63 & 6{,}97 & 13{,}34 & 11{,}01 & 8{,}05 \\
@@ -572,8 +577,16 @@ $k=n$ & 12{,}74 & 11{,}55 & 11{,}09 & 13{,}28 & 7{,}69 & 5{,}85 & 17{,}10 & 9{,}
 \bottomrule
 \end{tabular}
 \end{table*}
-\todo{wiersze odniesienia Adjacent, Fibonacci, Dynasearch i Motzkin
-z wcześniejszej kampanii; RPD do najlepszych znanych rozwiązań}
+Wiersze Adjacent, Fibonacci, Dynasearch i Motzkin pochodzą
+z wcześniejszej kampanii i używają filtra granic bloków. Tak jak
+w bieżącej kampanii przebieg kończy rozpoczęty ruch, więc tam, gdzie
+jeden ruch trwa dłużej niż budżet, komórka zawiera wynik po jednym
+ruchu. Kreska oznacza komórki, których wcześniejsza kampania nie
+liczyła. Wiersz
+$k=n$ to sąsiedztwo Dynasearch w bieżącej implementacji, szybszej na
+dużych instancjach. Każde $k$ od 4 do 16 z filtrem dokładnym wyprzedza
+cztery wcześniejsze sąsiedztwa przy 10\,s dla $n\geq 50$.
+\todo{RPD do najlepszych znanych rozwiązań}
 
 \paragraph{Zasięg.} Większość zysku daje pierwszych kilka kroków $k$
 (tab.~\ref{tab:main}). Przejście od $k=2$ do $k=6$ obniża RPD o 0,9--2,8 pkt proc. przy 10\,s, a powyżej $k=8$ krzywa jest płaska albo
@@ -727,10 +740,18 @@ z najlepszym wariantem z filtrem granic bloków przy każdym rozmiarze.
 
 \paragraph{Insert.} Insert osiąga niższe średnie RPD niż każde $k$ po uśrednieniu klas o danym $n$ dla $n=20$ przy wszystkich budżetach, dla $n=50$ od 0,5\,s i dla $n=100$
 od 1\,s. Przy 10\,s różnica względem najlepszego $k$ wynosi 0,1--0,2
-pkt proc. (test Wilcoxona na parach instancja--ziarno z korektą Holma,
-$p<0{,}002$). Ziarna jednej instancji nie są niezależne, więc ten test
-jest optymistyczny. \todo{powtórzyć na średnich po instancjach; testy
-między wartościami $k$; Friedman z różnicą krytyczną Nemenyi} W podziale
+pkt proc. Testujemy na średnich po instancjach, bo ziarna jednej
+instancji nie są niezależne. Test Wilcoxona potwierdza wtedy różnicę
+tylko dla $n=100$ ($p=0{,}005$, 30 instancji). Dla $n=20$ daje
+$p=0{,}02$, co nie wytrzymuje korekty Holma, a dla $n=50$ i $n=200$
+różnica nie jest istotna ($p>0{,}1$). Test Friedmana na wszystkich 120
+instancjach przy 10\,s odrzuca równość rang ($p<0{,}001$). Według
+różnicy krytycznej Nemenyi, równej 2,86, Insert i warianty z filtrem
+dokładnym dla $k\in\{6,8,12,16\}$ tworzą jedną grupę na czele. Między
+wartościami $k$ testy rozdzielają tylko końce siatki. Po korekcie Holma
+pasmo wokół najlepszego $k$ nie różni się od niego istotnie: 6--16 dla
+$n=20$, 10--25 dla $n=50$, każde $k\geq 8$ dla $n=100$, 6--60 dla
+$n=200$ i 3--8 dla $n=500$. W podziale
 na klasy obraz jest mniej jednolity. Przy 10\,s Insert jest lepszy
 w 7 z 11 klas o $n\leq 200$, w klasie $20\times 10$ o mniej niż 0,01 pkt
 proc., a w klasie $50\times 10$ wartość $k=15$ wyprzedza Insert o 0,1 pkt

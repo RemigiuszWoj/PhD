@@ -45,9 +45,17 @@ def neigh_sort_key(name: str):
     return (2, 0, name)
 
 
-def load(dirs, bks):
-    recs = []
-    for d in dirs:
+def load(dirs, bks, reference=()):
+    """Runs of `dirs` and of the `reference` campaign, one record per configuration.
+
+    A configuration found twice keeps the run read last. Both campaigns check the time limit
+    between iterations, so a run always finishes the move in progress and may exceed its budget by
+    one move; such runs are kept, as in the earlier papers. A reference cell (neighborhood, class,
+    budget) is dropped only when it is incomplete.
+    """
+    recs = {}
+    for d in list(dirs) + list(reference):
+        is_ref = d in reference
         for p in Path(d).rglob("result.json"):
             try:
                 r = _normalize_result(json.loads(p.read_text()))
@@ -68,8 +76,32 @@ def load(dirs, bks):
                 b = bks[f][c["instance_number"]]
                 rec["rpd_bks"] = 100.0 * (rec["cmax"] - b) / b
             if rec["rpd"] is not None:
-                recs.append(rec)
-    return recs
+                recs[(rec["algo"], rec["neigh"], f, rec["inst"], rec["seed"], rec["tl"])] = rec
+    # reference runs: only the algorithms of the campaign, only complete cells
+    algos = {r["algo"] for r in recs.values() if r["neigh"] not in REF_ORDER[:4]}
+    cells = _count(recs.values(), ("algo", "neigh", "file", "tl"))
+    full = max(cells.values())
+    short = sorted({(c[1], c[2], c[3]) for c, v in cells.items()
+                    if v < full and c[1] in REF_ORDER[:4] and c[0] in algos})
+    if short:
+        print(f"[load] incomplete reference cells dropped: {short}")
+    return [r for r in recs.values() if r["neigh"] not in REF_ORDER[:4]
+            or (r["algo"] in algos and cells[(r["algo"], r["neigh"], r["file"], r["tl"])] == full)]
+
+
+def _count(recs, fields):
+    c = defaultdict(int)
+    for r in recs:
+        c[tuple(r[f] for f in fields)] += 1
+    return c
+
+
+def nemenyi_q(k: int) -> float:
+    """q_{0.05} of the Nemenyi test for k methods (Demsar 2006): studentized range / sqrt(2)."""
+    if k in Q05:
+        return Q05[k]
+    from scipy.stats import studentized_range
+    return float(studentized_range.ppf(0.95, k, 10**6)) / math.sqrt(2)
 
 
 def holm(pvals):
@@ -91,7 +123,7 @@ def main() -> None:
     from scipy.stats import friedmanchisquare, wilcoxon
 
     bks = json.loads(a.bks.read_text()) if a.bks else None
-    recs = load(a.dirs + a.reference, bks)
+    recs = load(a.dirs, bks, a.reference)
     a.out.mkdir(parents=True, exist_ok=True)
     metrics = ["rpd", "rpd_ub93"] + (["rpd_bks"] if bks else [])
     neighs = sorted({r["neigh"] for r in recs}, key=neigh_sort_key)
@@ -129,10 +161,14 @@ def main() -> None:
                 w = csv.writer(fh)
                 w.writerow(["n", "neighborhood"] + [f"{t}ms" for t in tls])
                 for n in ns:
+                    n_files = len({r["file"] for r in recs if r["n"] == n})
                     for nb in neighs:
                         row = []
                         for t in tls:
-                            v = [x[metric] for x in cell.get((algo, n, nb, t), []) if x.get(metric) is not None]
+                            got = cell.get((algo, n, nb, t), [])
+                            v = [x[metric] for x in got if x.get(metric) is not None]
+                            if nb in REF_ORDER[:4] and len({x["file"] for x in got}) < n_files:
+                                v = []  # a reference row is averaged only over all classes of this n
                             row.append(f"{statistics.mean(v):.2f}" if v else "")
                         if any(row):
                             w.writerow([n, nb] + row)
@@ -166,6 +202,62 @@ def main() -> None:
         w.writerows(rows)
     print(f"wrote {a.out / 'wilcoxon.csv'} ({len(rows)} tests)")
 
+    # 2b) the same tests on instance means (10 instances per class): seeds of one instance are not independent
+    inst = defaultdict(list)
+    for (al, nb, f, i, s, t), v in by.items():
+        inst[(al, nb, f, i, t)].append(v)
+    inst = {key: statistics.mean(v) for key, v in inst.items()}
+
+    def paired(algo, t, n_sel, x_nb, y_nb):
+        pairs = [(v, inst[(algo, y_nb, f, i, t)]) for (al, nb, f, i, tt), v in inst.items()
+                 if al == algo and nb == x_nb and tt == t and (n_sel == "all" or n_of[f] == n_sel)
+                 and (algo, y_nb, f, i, t) in inst]
+        if len(pairs) < 6:
+            return None
+        x, y = zip(*pairs)
+        p = wilcoxon(x, y).pvalue if any(u != v for u, v in pairs) else 1.0
+        return [len(pairs), statistics.mean(x) - statistics.mean(y), p]
+
+    rows = []
+    for algo in algos:
+        for t in tls:
+            for n_sel in ["all"] + ns:
+                fam = [[algo, t, n_sel, k, ref] + res for k in kb for ref in ref_present
+                       if (res := paired(algo, t, n_sel, k, ref))]
+                for row, padj in zip(fam, holm([f[-1] for f in fam])):
+                    rows.append(row + [padj])
+    with open(a.out / "wilcoxon_inst.csv", "w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(["algo", "tl_ms", "n", "kbonacci", "reference", "pairs", "mean_rpd_diff", "p", "p_holm"])
+        w.writerows(rows)
+    print(f"wrote {a.out / 'wilcoxon_inst.csv'} ({len(rows)} tests)")
+
+    # 2c) between values of k: the best k of each filter (by mean RPD) against every other k of that filter
+    rows = []
+    for algo in algos:
+        for t in tls:
+            for n_sel in ns:
+                for exact in (False, True):
+                    ks = [k for k in kb if k.endswith("_cp") == exact]
+                    means = {}
+                    for k in ks:
+                        v = [x for (al, nb, f, i, tt), x in inst.items()
+                             if al == algo and nb == k and tt == t and n_of[f] == n_sel]
+                        if v:
+                            means[k] = statistics.mean(v)
+                    if len(means) < 2:
+                        continue
+                    best = min(means, key=means.get)
+                    fam = [[algo, t, n_sel, "exact" if exact else "block", best, k] + res
+                           for k in means if k != best and (res := paired(algo, t, n_sel, k, best))]
+                    for row, padj in zip(fam, holm([f[-1] for f in fam])):
+                        rows.append(row + [padj])
+    with open(a.out / "wilcoxon_k.csv", "w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(["algo", "tl_ms", "n", "filter", "best_k", "other_k", "pairs", "mean_rpd_diff", "p", "p_holm"])
+        w.writerows(rows)
+    print(f"wrote {a.out / 'wilcoxon_k.csv'} ({len(rows)} tests)")
+
     # 3) Friedman + Nemenyi CD over neighborhoods with complete blocks (file, inst; seed-averaged)
     frows = []
     for algo, t, n_sel in [(al, tt, nn) for al in algos for tt in tls for nn in ["all"] + ns]:
@@ -191,7 +283,7 @@ def main() -> None:
                         ranks[vals[q][1]] += (pos + end) / 2 + 1
                     pos = end + 1
             kk, N = len(common), len(blocks)
-            cd = Q05.get(kk, float("nan")) * math.sqrt(kk * (kk + 1) / (6 * N))
+            cd = nemenyi_q(kk) * math.sqrt(kk * (kk + 1) / (6 * N))
             for i, nb in enumerate(common):
                 frows.append([algo, t, n_sel, nb, round(ranks[i] / N, 3), N, round(stat, 2), p, round(cd, 3)])
     with open(a.out / "friedman.csv", "w", newline="") as fh:

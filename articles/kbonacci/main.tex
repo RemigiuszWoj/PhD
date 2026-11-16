@@ -623,6 +623,11 @@ the best value of a column.}
  & 0.1\,s & 1\,s & 10\,s & 0.1\,s & 1\,s & 10\,s & 0.1\,s & 1\,s & 10\,s
  & 0.1\,s & 1\,s & 10\,s & 0.1\,s & 1\,s & 10\,s \\
 \midrule
+Adjacent & 18.66 & 14.09 & 12.40 & 19.08 & 14.24 & 10.20 & 18.88 & 13.88 & 9.78 & 19.33 & 17.36 & 13.53 & 16.25 & 15.96 & 14.98 \\
+Fibonacci & 15.98 & 13.18 & 12.40 & 15.12 & 10.82 & 8.28 & 13.11 & 9.64 & 7.11 & 15.26 & 12.15 & 9.07 & 14.72 & 12.71 & 10.48 \\
+Dynasearch & 13.38 & 12.17 & 11.36 & 16.35 & 8.74 & 6.58 & 17.88 & 13.13 & 5.87 & 17.17 & 17.17 & 14.83 & -- & -- & 14.53 \\
+Motzkin & 13.95 & 12.23 & 11.44 & 19.05 & 13.81 & 11.47 & 19.40 & 16.60 & 12.43 & 18.11 & 18.11 & 17.23 & -- & -- & 16.26 \\
+\midrule
 Insert & \textbf{12.26} & \textbf{11.29} & \textbf{10.94} & 9.76 & \textbf{6.38} & \textbf{5.51} & 14.11 & \textbf{5.36} & \textbf{3.51} & 18.82 & 12.49 & \textbf{4.11} & 16.01 & 15.60 & 12.59 \\
 \midrule
 $k=2$ & 14.89 & 12.60 & 11.97 & 13.02 & 9.65 & 7.45 & 10.89 & 7.76 & 5.83 & 12.92 & 9.63 & 6.97 & 13.34 & 11.01 & 8.05 \\
@@ -637,8 +642,16 @@ $k=n$ & 12.74 & 11.55 & 11.09 & 13.28 & 7.69 & 5.85 & 17.10 & 9.41 & 4.97 & 17.1
 \bottomrule
 \end{tabular}
 \end{table*}
-\todo{reference rows Adjacent, Fibonacci, Dynasearch and Motzkin from the
-earlier campaign; RPD to the best-known solutions}
+The rows Adjacent, Fibonacci, Dynasearch and Motzkin come from the
+earlier campaign and use the block-boundary filter. As in the
+current campaign, a run finishes the move in progress, so where one move
+takes longer than the budget the cell holds the result after a single
+move. A dash marks the cells that the earlier campaign did not run. The
+row $k=n$ is the
+Dynasearch neighborhood in the current implementation, which is faster
+on large instances. Every $k$ from 4 to 16 with the exact filter is ahead
+of the four earlier neighborhoods at 10\,s for $n\geq 50$.
+\todo{RPD to the best-known solutions}
 
 \paragraph{Reach.} Most of the gain comes from the first steps of $k$
 (Table~\ref{tab:main}). Going from $k=2$ to $k=6$ removes between 0.9
@@ -793,11 +806,19 @@ exact variant beats the best block-boundary variant at every size.
 
 \paragraph{Insert.} Insert reaches a lower mean RPD than every $k$ on the
 $n=20$ average at all budgets, for $n=50$ from 0.5\,s and for $n=100$ from 1\,s.
-At 10\,s the difference to the best $k$ is 0.1--0.2 points (Wilcoxon on
-instance--seed pairs with Holm correction, $p<0.002$). The seeds of one
-instance are not independent, so this test is optimistic. \todo{repeat
-on instance means; tests between values of $k$; Friedman with the Nemenyi
-critical difference} Class by class the picture is less uniform. At
+At 10\,s the difference to the best $k$ is 0.1--0.2 points. We test on
+instance means, because the seeds of one instance are not independent.
+The Wilcoxon test then confirms the difference only for $n=100$
+($p=0.005$, 30 instances). For $n=20$ it gives $p=0.02$, which does not
+survive the Holm correction, and for $n=50$ and $n=200$ the difference
+is not significant ($p>0.1$). The Friedman test over all 120 instances at
+10\,s rejects equal ranks ($p<0.001$). By the Nemenyi critical
+difference of 2.86, Insert and the exact-filter variants with
+$k\in\{6,8,12,16\}$ form one group at the top. Between values of $k$
+the tests separate only the ends of the grid. After the Holm correction
+a band around the best $k$ does not differ from it significantly: 6--16
+for $n=20$, 10--25 for $n=50$, every $k\geq 8$ for $n=100$, 6--60 for
+$n=200$ and 3--8 for $n=500$. Class by class the picture is less uniform. At
 10\,s Insert is better on 7 of the 11 classes with $n\leq 200$, on
 $20\times 10$ by less than 0.01 points, and on $50\times 10$ the value
 $k=15$ is ahead of Insert by 0.1 points. The compound swaps are ahead where Insert is slow.

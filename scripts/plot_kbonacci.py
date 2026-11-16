@@ -38,11 +38,15 @@ MARKS = ["o", "s", "^", "D", "v", "P"]
 REFS = {"adjacent": "Adj", "fibonacci": "Fib", "dynasearch": "Dyn", "motzkin": "Motz", "insert": "Ins"}
 
 
+EXACT = False  # True: draw the rows of the exact critical-path filter (`_cp`), else the block-boundary ones
+SUFFIX = ""    # appended to the output file names of the table figures
+
+
 def k_of(name: str, n: int):
     """x-coordinate of a k-bonacci row; k = n is drawn at x = n."""
-    if not name.startswith("kbonacci_k") or name.endswith("_cp"):
+    if not name.startswith("kbonacci_k") or name.endswith("_cp") != EXACT:
         return None
-    tail = name[len("kbonacci_k"):]
+    tail = name[len("kbonacci_k"):].removesuffix("_cp")
     return n if tail == "n" else int(tail)
 
 
@@ -57,8 +61,19 @@ def read_table(path: Path):
     return out, budgets
 
 
-def fig_rpd(tables: Path, out: Path, algo: str) -> None:
-    data, budgets = read_table(tables / f"rpd_{algo}.csv")
+def read_tables(tables: Path, extra, name: str):
+    """Main table merged with the same table of further stages (e.g. `relative_cp`, 10 s only)."""
+    data, budgets = read_table(tables / name)
+    for d in extra:
+        more, _ = read_table(Path(d) / name)
+        for n, rows in more.items():
+            for nb, vals in rows.items():
+                data[n].setdefault(nb, {}).update(vals)
+    return data, budgets
+
+
+def fig_rpd(tables: Path, out: Path, algo: str, extra=()) -> None:
+    data, budgets = read_tables(tables, extra, f"rpd_{algo}.csv")
     ns = sorted(data)
     fig, axes = plt.subplots(1, len(ns), figsize=(1.75 * len(ns), 2.2), sharey=False)
     axes = [axes] if len(ns) == 1 else list(axes)
@@ -78,14 +93,15 @@ def fig_rpd(tables: Path, out: Path, algo: str) -> None:
         ax.set_title(f"$n={n}$")
         ax.set_xlabel("$k$")
     axes[0].set_ylabel("mean RPD [%]")
-    axes[-1].legend(fontsize=6, title="budget", title_fontsize=6)
+    axes[0].legend(fontsize=5.5, title="budget", title_fontsize=5.5, loc="upper right", ncol=2,
+                   columnspacing=0.8, handlelength=1.5)
     fig.tight_layout()
-    fig.savefig(out / "fig_rpd_vs_k.pdf")
+    fig.savefig(out / f"fig_rpd_vs_k{SUFFIX}.pdf")
     plt.close(fig)
 
 
-def fig_iters(tables: Path, out: Path, algo: str) -> None:
-    data, budgets = read_table(tables / f"iters_{algo}.csv")
+def fig_iters(tables: Path, out: Path, algo: str, extra=()) -> None:
+    data, budgets = read_tables(tables, extra, f"iters_{algo}.csv")
     b = budgets[-1]
     fig, ax = plt.subplots(figsize=(3.3, 2.3))
     for i, n in enumerate(sorted(data)):
@@ -99,7 +115,7 @@ def fig_iters(tables: Path, out: Path, algo: str) -> None:
     ax.set_ylabel(f"iterations in {b / 1000:g} s")
     ax.legend(fontsize=6)
     fig.tight_layout()
-    fig.savefig(out / "fig_iters_vs_k.pdf")
+    fig.savefig(out / f"fig_iters_vs_k{SUFFIX}.pdf")
     plt.close(fig)
 
 
@@ -127,7 +143,7 @@ def fig_best_k(tables: Path, out: Path, algo: str) -> None:
     ax.set_ylabel("$n$")
     ax.set_title("best $k$ by mean RPD")
     fig.tight_layout()
-    fig.savefig(out / "fig_best_k.pdf")
+    fig.savefig(out / f"fig_best_k{SUFFIX}.pdf")
     plt.close(fig)
 
 
@@ -281,17 +297,24 @@ def main() -> None:
                     help="result dirs with per-run data, e.g. results/kbonacci/main_budgets "
                          "results/kbonacci/relative_budgets (for fig_best_k_rel)")
     ap.add_argument("--algo", default="ils")
+    ap.add_argument("--exact", action="store_true",
+                    help="table figures for the exact critical-path filter; files get the suffix _cp")
+    ap.add_argument("--extra-tables", nargs="*", default=[], type=Path,
+                    help="tables of further stages merged into the RPD and iteration figures, "
+                         "e.g. articles/kbonacci/tables/relative_cp")
     ap.add_argument("--out", type=Path, default=Path("articles/kbonacci/figures"))
     a = ap.parse_args()
     a.out.mkdir(parents=True, exist_ok=True)
+    global EXACT, SUFFIX
+    EXACT, SUFFIX = a.exact, "_cp" if a.exact else ""
     if a.runs:
         fig_best_k_rel(a.runs, a.out, a.algo)
         print("relative-k figure written")
     if a.tables and (a.tables / f"rpd_{a.algo}.csv").exists():
-        fig_rpd(a.tables, a.out, a.algo)
+        fig_rpd(a.tables, a.out, a.algo, a.extra_tables)
         fig_best_k(a.tables, a.out, a.algo)
         if (a.tables / f"iters_{a.algo}.csv").exists():
-            fig_iters(a.tables, a.out, a.algo)
+            fig_iters(a.tables, a.out, a.algo, a.extra_tables)
         print("table figures written")
     if a.anatomy and a.anatomy.exists():
         fig_anatomy(a.anatomy, a.out)

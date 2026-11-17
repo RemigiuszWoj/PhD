@@ -494,8 +494,11 @@ i zmieniamy sąsiedztwo.
       Taillarda z 1993 roku oraz RPD do aktualnych najlepszych znanych
       rozwiązań \todo{źródło listy BKS}.
 \item \textbf{Sprzęt:} obliczenia klasyczne na Apple M4 Pro, przebiegi
-      sekwencyjne, jak wcześniej. \todo{podać język implementacji
-      i to, co lista tabu przechowuje dla ruchu złożonego} Obliczenia kwantowe na wyżarzaczu D-Wave
+      sekwencyjne, jak wcześniej. Kod jest napisany w Pythonie. Lista tabu
+      przechowuje cały ruch złożony, czyli zbiór jego zamian, przez 10
+      iteracji. Gdy najlepszy ruch jest tabu i nie poprawia najlepszego
+      makespanu, przeszukiwanie rusza dalej z zaburzenia double-bridge
+      rozwiązania z puli. Obliczenia kwantowe na wyżarzaczu D-Wave
       Advantage (topologia Pegasus, ok. 5\,600 kubitów; chmura Leap,
       \texttt{EmbeddingComposite}, identyfikator solvera zapisywany przy
       uruchomieniu) oraz na procesorach bramkowych IQM przez IQM Resonance:
@@ -531,7 +534,7 @@ około 990 stanów. Na każdym stanie wyznaczamy najlepszy ruch złożony dla
 każdego $k$, więc wszystkie porównania między wartościami $k$ są
 sparowane. Zapisujemy przewidywaną i rzeczywistą zmianę makespanu,
 odległości wybranych zamian, liczbę kandydatów i czas oceny.
-\todo{rozszerzyć na $n=200$ dla $k\leq 16$}
+Dla $n=200$ ten sam eksperyment obejmuje $k\leq 16$ i daje 194 stany.
 
 \paragraph{Protokół kwantowy.} Obliczenia kwantowe przebiegają jak we wcześniejszych pracach~\cite{windowed_own}, zmienia się tylko sąsiedztwo. Na wyżarzaczu ruch $k$-bonacci to QUBO
 nakładania przedziałów o długości co najwyżej $k$ (ograniczenie działa
@@ -560,8 +563,8 @@ Pogrubienie oznacza najlepszą wartość w kolumnie.}
 \midrule
 Adjacent & 18{,}66 & 14{,}09 & 12{,}40 & 19{,}08 & 14{,}24 & 10{,}20 & 18{,}88 & 13{,}88 & 9{,}78 & 19{,}33 & 17{,}36 & 13{,}53 & 16{,}25 & 15{,}96 & 14{,}98 \\
 Fibonacci & 15{,}98 & 13{,}18 & 12{,}40 & 15{,}12 & 10{,}82 & 8{,}28 & 13{,}11 & 9{,}64 & 7{,}11 & 15{,}26 & 12{,}15 & 9{,}07 & 14{,}72 & 12{,}71 & 10{,}48 \\
-Dynasearch & 13{,}38 & 12{,}17 & 11{,}36 & 16{,}35 & 8{,}74 & 6{,}58 & 17{,}88 & 13{,}13 & 5{,}87 & 17{,}17 & 17{,}17 & 14{,}83 & -- & -- & 14{,}53 \\
-Motzkin & 13{,}95 & 12{,}23 & 11{,}44 & 19{,}05 & 13{,}81 & 11{,}47 & 19{,}40 & 16{,}60 & 12{,}43 & 18{,}11 & 18{,}11 & 17{,}23 & -- & -- & 16{,}26 \\
+Dynasearch & 13{,}38 & 12{,}17 & 11{,}36 & 16{,}35 & 8{,}74 & 6{,}58 & 17{,}88 & 13{,}13 & 5{,}87 & 17{,}17 & 17{,}17 & 14{,}83 & 14{,}53$^\dagger$ & 14{,}53$^\dagger$ & 14{,}53 \\
+Motzkin & 13{,}95 & 12{,}23 & 11{,}44 & 19{,}05 & 13{,}81 & 11{,}47 & 19{,}40 & 16{,}60 & 12{,}43 & 18{,}11 & 18{,}11 & 17{,}23 & 16{,}26$^\dagger$ & 16{,}26$^\dagger$ & 16{,}26 \\
 \midrule
 Insert & \textbf{12{,}26} & \textbf{11{,}29} & \textbf{10{,}94} & 9{,}76 & \textbf{6{,}38} & \textbf{5{,}51} & 14{,}11 & \textbf{5{,}36} & \textbf{3{,}51} & 18{,}82 & 12{,}49 & \textbf{4{,}11} & 16{,}01 & 15{,}60 & 12{,}59 \\
 \midrule
@@ -581,12 +584,18 @@ Wiersze Adjacent, Fibonacci, Dynasearch i Motzkin pochodzą
 z wcześniejszej kampanii i używają filtra granic bloków. Tak jak
 w bieżącej kampanii przebieg kończy rozpoczęty ruch, więc tam, gdzie
 jeden ruch trwa dłużej niż budżet, komórka zawiera wynik po jednym
-ruchu. Kreska oznacza komórki, których wcześniejsza kampania nie
-liczyła. Wiersz
+ruchu. Wcześniejsza kampania nie liczyła Dynasearch i Motzkina dla $n=500$
+przy 0,1 i 1\,s. Tam przebiegi 10\,s też wykonują jeden ruch, który
+startuje z permutacji tożsamościowej i daje ten sam makespan dla każdego
+ziarna, więc krótszy budżet daje ten sam wynik; te komórki ($\dagger$)
+powtarzają wartość z 10\,s. Wiersz
 $k=n$ to sąsiedztwo Dynasearch w bieżącej implementacji, szybszej na
 dużych instancjach. Każde $k$ od 4 do 16 z filtrem dokładnym wyprzedza
 cztery wcześniejsze sąsiedztwa przy 10\,s dla $n\geq 50$.
-\todo{RPD do najlepszych znanych rozwiązań}
+Względem najlepszych znanych rozwiązań RPD przy 10\,s dla najlepszego
+$k$ wynosi 0,21, 1,55, 1,90, 3,13 i 4,86\% dla $n=20$, 50, 100, 200
+i 500, a dla Inserta 0,14, 1,48, 1,68, 3,04 i 12,14\%. Kolejność metod
+się nie zmienia.
 
 \paragraph{Zasięg.} Większość zysku daje pierwszych kilka kroków $k$
 (tab.~\ref{tab:main}). Przejście od $k=2$ do $k=6$ obniża RPD o 0,9--2,8 pkt proc. przy 10\,s, a powyżej $k=8$ krzywa jest płaska albo
@@ -789,8 +798,13 @@ przez 64 przy $k=8$ do 134 przy $k=n$. Jedna ocena trwa jednak 0,3\,ms
 przy $k=2$, 1,2\,ms przy $k=8$ i 105\,ms przy $k=n$, więc zysk na
 milisekundę spada z około 145 dla $k\leq 3$ do około 1 dla $k=n$. Zamiany
 wybierane przy $k=n$ są zwykle krótkie (mediana odległości 3--11 dla $m\geq 10$), ale rozkład ma długi ogon.
-\todo{rozszerzyć na $n=200$; dodać fig\_distances i fig\_cost albo
-przenieść ich liczby do tekstu}
+Dla $n=200$ obraz jest taki sam. Dla $200\times 10$ średni rzeczywisty
+zysk stanowi 65\% średniego przewidywanego zysku przy $k=2$ i 48\% przy
+$k=8$. Dla $200\times 20$ jest to 48\% i 27\%, a prognoza jest
+optymistyczna w co najmniej 99\% stanów. Dla $200\times 20$ rzeczywisty
+zysk ruchu pozostaje między 95 a 99 od $k=4$ do $k=8$, a czas oceny
+rośnie z 1,8 do 4,9\,ms.
+\todo{fig\_distances i fig\_cost: dodać albo pominąć}
 
 \begin{figure*}[t]
 \centering
@@ -832,7 +846,7 @@ A survey of very large-scale neighborhood search techniques.
 \bibitem{balzereit2024} K.~Balzereit, N.~Gr\"uttemeier, N.~Morawietz,
 D.~Reinhardt, S.~Windmann, P.~Wolf. Scalable neighborhood local search
 for single-machine scheduling with family setup times. arXiv:2409.00771,
-2024. \todo{sprawdzić, czy jest wersja opublikowana}
+2024.
 \bibitem{bozejko2007} W.~Bo\.zejko, M.~Wodecki. On the theoretical
 properties of swap multimoves. \emph{Oper.\ Res.\ Lett.} 35(2):227--231, 2007.
 \bibitem{bozejko2026sr} W.~Bo\.zejko, M.~Uchro\'nski, M.~Wodecki. The new
@@ -844,8 +858,11 @@ iterated dynasearch algorithm for the single-machine total weighted
 tardiness scheduling problem. \emph{INFORMS J.\ Comput.} 14(1):52--67, 2002.
 \bibitem{ergun2006} \"O.~Ergun, J.B.~Orlin. Fast neighborhood search for
 the single machine total weighted tardiness problem. \emph{Oper.\ Res.\
-Lett.} 34(1):41--45, 2006. \todo{zweryfikować}
-\bibitem{fibonacci_own} \todo{praca własna -- Fibonacci}
+Lett.} 34(1):41--45, 2006.
+\bibitem{fibonacci_own} R.~Wojew\'odzki, W.~Bo\.zejko. Hybrid neighborhood evaluation in tabu
+search and simulated annealing for the permutation flow shop problem. In:
+\emph{Artificial Intelligence and Soft Computing -- ICAISC 2026, Part II},
+LNAI 16858. Springer, 2026. In press.
 \bibitem{garey1976} M.R.~Garey, D.S.~Johnson, R.~Sethi. The complexity of
 flowshop and jobshop scheduling. \emph{Math.\ Oper.\ Res.} 1(2):117--129, 1976.
 \bibitem{grabowski2004} J.~Grabowski, M.~Wodecki. A very fast tabu search
@@ -853,11 +870,13 @@ algorithm for the permutation flow shop problem with makespan criterion.
 \emph{Comput.\ Oper.\ Res.} 31(11):1891--1909, 2004.
 \bibitem{grosso2004} A.~Grosso, F.~Della Croce, R.~Tadei. An enhanced
 dynasearch neighborhood for the single-machine total weighted tardiness
-scheduling problem. \emph{Oper.\ Res.\ Lett.} 32(1):68--72, 2004. \todo{zweryfikować}
+scheduling problem. \emph{Oper.\ Res.\ Lett.} 32(1):68--72, 2004.
 \bibitem{miles1960} E.P.~Miles~Jr. Generalized Fibonacci numbers and
 associated matrices. \emph{Amer.\ Math.\ Monthly} 67(8):745--752, 1960.
-\todo{zweryfikować w Crossref}
-\bibitem{motzkin_own} \todo{praca własna -- Motzkin, SOCO 2026}
+\bibitem{motzkin_own} R.~Wojew\'odzki, W.~Bo\.zejko. Motzkin neighborhood evaluation in
+iterated local search and simulated annealing for the permutational flow
+shop problem. In: \emph{Soft Computing Models in Industrial and
+Environmental Applications}, CCIS 3046, pp.~144--155. Springer, 2026.
 \bibitem{nowicki1996} E.~Nowicki, C.~Smutnicki. A fast tabu search
 algorithm for the permutation flow-shop problem. \emph{Eur.\ J.\ Oper.\ Res.}
 91(1):160--175, 1996.
@@ -865,12 +884,14 @@ algorithm for the permutation flow-shop problem. \emph{Eur.\ J.\ Oper.\ Res.}
 greedy algorithm for the permutation flowshop scheduling problem.
 \emph{Eur.\ J.\ Oper.\ Res.} 177(3):2033--2049, 2007.
 \bibitem{schilling1990} M.F.~Schilling. The longest run of heads.
-\emph{College Math.\ J.} 21(3):196--207, 1990. \todo{zweryfikować w Crossref}
+\emph{College Math.\ J.} 21(3):196--207, 1990.
 \bibitem{taillard1993} E.~Taillard. Benchmarks for basic scheduling
 problems. \emph{Eur.\ J.\ Oper.\ Res.} 64(2):278--285, 1993.
 \bibitem{toth2003} P.~Toth, D.~Vigo. The granular tabu search and its
 application to the vehicle-routing problem. \emph{INFORMS J.\ Comput.}
 15(4):333--346, 2003.
-\bibitem{windowed_own} \todo{praca własna -- windowed QUBO}
+\bibitem{windowed_own} R.~Wojew\'odzki, W.~Bo\.zejko. Scalable quantum neighborhood search
+for the permutation flow shop problem via windowed QUBO decomposition.
+SSRN preprint, doi:10.2139/ssrn.7411334, 2026.
 \end{thebibliography}
 \end{document}

@@ -547,9 +547,11 @@ change the neighborhood.
       the current best-known solutions \todo{cite the source of the
       best-known values}.
 \item \textbf{Hardware:} classical runs on an Apple M4 Pro, executed
-      sequentially, as in the earlier campaign. \todo{state the
-      implementation language and what the tabu list stores for a
-      compound move} Quantum runs on the
+      sequentially, as in the earlier campaign. The code is written in Python. The tabu list stores the
+      whole compound move, that is the set of its swaps, for 10
+      iterations. When the best move is tabu and does not improve the
+      best makespan, the search continues from a double-bridge
+      perturbation of a solution from the pool. Quantum runs on the
       D-Wave Advantage annealer (Pegasus topology, about 5\,600 qubits;
       Leap cloud, \texttt{EmbeddingComposite}, the solver identifier is
       recorded at run time) and on IQM gate-based processors via IQM
@@ -591,7 +593,7 @@ states in total. On every state the best compound move is computed for
 every $k$, so all comparisons between values of $k$ are paired. We record
 the predicted and the real makespan change, the distances of the selected
 swaps, the number of candidates and the evaluation time.
-\todo{extend to $n=200$ with $k\leq 16$}
+For $n=200$ the same experiment uses $k\leq 16$ and gives 194 states.
 
 \paragraph{Quantum protocol.} The quantum runs follow the earlier
 quantum studies~\cite{windowed_own} and differ only in the neighborhood.
@@ -625,8 +627,8 @@ the best value of a column.}
 \midrule
 Adjacent & 18.66 & 14.09 & 12.40 & 19.08 & 14.24 & 10.20 & 18.88 & 13.88 & 9.78 & 19.33 & 17.36 & 13.53 & 16.25 & 15.96 & 14.98 \\
 Fibonacci & 15.98 & 13.18 & 12.40 & 15.12 & 10.82 & 8.28 & 13.11 & 9.64 & 7.11 & 15.26 & 12.15 & 9.07 & 14.72 & 12.71 & 10.48 \\
-Dynasearch & 13.38 & 12.17 & 11.36 & 16.35 & 8.74 & 6.58 & 17.88 & 13.13 & 5.87 & 17.17 & 17.17 & 14.83 & -- & -- & 14.53 \\
-Motzkin & 13.95 & 12.23 & 11.44 & 19.05 & 13.81 & 11.47 & 19.40 & 16.60 & 12.43 & 18.11 & 18.11 & 17.23 & -- & -- & 16.26 \\
+Dynasearch & 13.38 & 12.17 & 11.36 & 16.35 & 8.74 & 6.58 & 17.88 & 13.13 & 5.87 & 17.17 & 17.17 & 14.83 & 14.53$^\dagger$ & 14.53$^\dagger$ & 14.53 \\
+Motzkin & 13.95 & 12.23 & 11.44 & 19.05 & 13.81 & 11.47 & 19.40 & 16.60 & 12.43 & 18.11 & 18.11 & 17.23 & 16.26$^\dagger$ & 16.26$^\dagger$ & 16.26 \\
 \midrule
 Insert & \textbf{12.26} & \textbf{11.29} & \textbf{10.94} & 9.76 & \textbf{6.38} & \textbf{5.51} & 14.11 & \textbf{5.36} & \textbf{3.51} & 18.82 & 12.49 & \textbf{4.11} & 16.01 & 15.60 & 12.59 \\
 \midrule
@@ -646,12 +648,19 @@ The rows Adjacent, Fibonacci, Dynasearch and Motzkin come from the
 earlier campaign and use the block-boundary filter. As in the
 current campaign, a run finishes the move in progress, so where one move
 takes longer than the budget the cell holds the result after a single
-move. A dash marks the cells that the earlier campaign did not run. The
+move. The earlier campaign did not run Dynasearch and Motzkin on $n=500$ at
+0.1 and 1\,s. There the 10\,s runs also complete a single move, which
+starts from the identity permutation and gives the same makespan for
+every seed, so a shorter budget gives the same result; these cells
+($\dagger$) repeat the 10\,s value. The
 row $k=n$ is the
 Dynasearch neighborhood in the current implementation, which is faster
 on large instances. Every $k$ from 4 to 16 with the exact filter is ahead
 of the four earlier neighborhoods at 10\,s for $n\geq 50$.
-\todo{RPD to the best-known solutions}
+Measured against the best-known solutions, the RPD at 10\,s of the best
+$k$ is 0.21, 1.55, 1.90, 3.13 and 4.86\% for $n=20$, 50, 100, 200 and
+500, and that of Insert is 0.14, 1.48, 1.68, 3.04 and 12.14\%. The
+ranking of the methods does not change.
 
 \paragraph{Reach.} Most of the gain comes from the first steps of $k$
 (Table~\ref{tab:main}). Going from $k=2$ to $k=6$ removes between 0.9
@@ -856,8 +865,13 @@ One evaluation, however, takes 0.3\,ms at $k=2$, 1.2\,ms at $k=8$ and
 105\,ms at $k=n$, so the gain per millisecond falls from about 145 at
 $k\leq 3$ to about 1 at $k=n$. The swaps selected at $k=n$ are short in
 the median (distance 3--11 for $m\geq 10$) with a long tail.
-\todo{extend to $n=200$; add fig\_distances and fig\_cost or fold their
-numbers into the text}
+The picture is the same on $n=200$. On $200\times 10$ the mean real
+gain is 65\% of the mean predicted gain at $k=2$ and 48\% at $k=8$. On
+$200\times 20$ it is 48\% and 27\%, and the prediction is optimistic in
+at least 99\% of the states. On $200\times 20$ the real gain of a move
+stays between 95 and 99 from $k=4$ to $k=8$, while the evaluation time
+grows from 1.8 to 4.9\,ms.
+\todo{fig\_distances and fig\_cost: add or leave out}
 
 \begin{figure*}[t]
 \centering
@@ -900,7 +914,7 @@ A survey of very large-scale neighborhood search techniques.
 \bibitem{balzereit2024} K.~Balzereit, N.~Gr\"uttemeier, N.~Morawietz,
 D.~Reinhardt, S.~Windmann, P.~Wolf. Scalable neighborhood local search
 for single-machine scheduling with family setup times. arXiv:2409.00771,
-2024. \todo{check for a published version}
+2024.
 \bibitem{bozejko2007} W.~Bo\.zejko, M.~Wodecki. On the theoretical
 properties of swap multimoves. \emph{Oper.\ Res.\ Lett.} 35(2):227--231, 2007.
 \bibitem{bozejko2026sr} W.~Bo\.zejko, M.~Uchro\'nski, M.~Wodecki. The new
@@ -912,8 +926,11 @@ iterated dynasearch algorithm for the single-machine total weighted
 tardiness scheduling problem. \emph{INFORMS J.\ Comput.} 14(1):52--67, 2002.
 \bibitem{ergun2006} \"O.~Ergun, J.B.~Orlin. Fast neighborhood search for
 the single machine total weighted tardiness problem. \emph{Oper.\ Res.\
-Lett.} 34(1):41--45, 2006. \todo{verify}
-\bibitem{fibonacci_own} \todo{own work, third person: Fibonacci neighborhood}
+Lett.} 34(1):41--45, 2006.
+\bibitem{fibonacci_own} R.~Wojew\'odzki, W.~Bo\.zejko. Hybrid neighborhood evaluation in tabu
+search and simulated annealing for the permutation flow shop problem. In:
+\emph{Artificial Intelligence and Soft Computing -- ICAISC 2026, Part II},
+LNAI 16858. Springer, 2026. In press.
 \bibitem{garey1976} M.R.~Garey, D.S.~Johnson, R.~Sethi. The complexity of
 flowshop and jobshop scheduling. \emph{Math.\ Oper.\ Res.} 1(2):117--129, 1976.
 \bibitem{grabowski2004} J.~Grabowski, M.~Wodecki. A very fast tabu search
@@ -921,11 +938,13 @@ algorithm for the permutation flow shop problem with makespan criterion.
 \emph{Comput.\ Oper.\ Res.} 31(11):1891--1909, 2004.
 \bibitem{grosso2004} A.~Grosso, F.~Della Croce, R.~Tadei. An enhanced
 dynasearch neighborhood for the single-machine total weighted tardiness
-scheduling problem. \emph{Oper.\ Res.\ Lett.} 32(1):68--72, 2004. \todo{verify}
+scheduling problem. \emph{Oper.\ Res.\ Lett.} 32(1):68--72, 2004.
 \bibitem{miles1960} E.P.~Miles~Jr. Generalized Fibonacci numbers and
 associated matrices. \emph{Amer.\ Math.\ Monthly} 67(8):745--752, 1960.
-\todo{verify in Crossref}
-\bibitem{motzkin_own} \todo{own work, third person: Motzkin neighborhood, SOCO 2026}
+\bibitem{motzkin_own} R.~Wojew\'odzki, W.~Bo\.zejko. Motzkin neighborhood evaluation in
+iterated local search and simulated annealing for the permutational flow
+shop problem. In: \emph{Soft Computing Models in Industrial and
+Environmental Applications}, CCIS 3046, pp.~144--155. Springer, 2026.
 \bibitem{nowicki1996} E.~Nowicki, C.~Smutnicki. A fast tabu search
 algorithm for the permutation flow-shop problem. \emph{Eur.\ J.\ Oper.\ Res.}
 91(1):160--175, 1996.
@@ -933,12 +952,14 @@ algorithm for the permutation flow-shop problem. \emph{Eur.\ J.\ Oper.\ Res.}
 greedy algorithm for the permutation flowshop scheduling problem.
 \emph{Eur.\ J.\ Oper.\ Res.} 177(3):2033--2049, 2007.
 \bibitem{schilling1990} M.F.~Schilling. The longest run of heads.
-\emph{College Math.\ J.} 21(3):196--207, 1990. \todo{verify in Crossref}
+\emph{College Math.\ J.} 21(3):196--207, 1990.
 \bibitem{taillard1993} E.~Taillard. Benchmarks for basic scheduling
 problems. \emph{Eur.\ J.\ Oper.\ Res.} 64(2):278--285, 1993.
 \bibitem{toth2003} P.~Toth, D.~Vigo. The granular tabu search and its
 application to the vehicle-routing problem. \emph{INFORMS J.\ Comput.}
 15(4):333--346, 2003.
-\bibitem{windowed_own} \todo{own work, third person: windowed QUBO / classical--quantum neighborhoods}
+\bibitem{windowed_own} R.~Wojew\'odzki, W.~Bo\.zejko. Scalable quantum neighborhood search
+for the permutation flow shop problem via windowed QUBO decomposition.
+SSRN preprint, doi:10.2139/ssrn.7411334, 2026.
 \end{thebibliography}
 \end{document}

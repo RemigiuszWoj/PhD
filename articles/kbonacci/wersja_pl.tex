@@ -281,9 +281,9 @@ oraz $\lambda_k^{-k}=2^{-k}(1-\lambda_k^{-k}/2)^{-k}=2^{-k}(1+O(k2^{-k}))$,
 bo $\lambda_k^{-k}\leq 2^{1-k}$ na mocy~\eqref{eq:lambda},
 więc $(\lambda_k/2)^n=\exp\bigl(-n2^{-(k+1)}(1+o(1))\bigr)$,
 a $2c_k\to 1$.
-\todo{oba twierdzenia są klasyczne (serie sukcesów, prawo najdłuższej
-serii): zacytować Fellera oraz Gordona--Schillinga--Watermana zamiast
-szkicu; to rozstrzyga też jednostajność błędu względem $k$}
+Oba fakty to klasyczne wyniki o seriach
+sukcesów~\cite{feller1968,gordon1986}; szkic tylko zapisuje je w naszej
+notacji.
 \end{proof}
 
 Dla $k=\lfloor\log_2 n\rfloor+2$ wykładnik $n/2^{k+1}$ leży między $1/8$
@@ -782,8 +782,24 @@ przy 20 maszynach. Po około 690 iteracjach na $500\times 20$ RPD wynosi
 7,6 dla $k=4$, 6,7 dla $k=6$ i 6,4 dla $k=8$, a po 4\,000 iteracji
 długich przebiegów spada z 5,2 dla $k=4$ do 3,3 dla $k=12$. Dłuższy
 zasięg daje więc lepsze ruchy, a krótkie najlepsze $k$ przy budżecie
-czasu odzwierciedla koszt ruchu. \todo{rysunek: RPD względem liczby
-iteracji, krzywa dla każdego $k$; tabela czasu ruchu dla $k$ i $m$}
+czasu odzwierciedla koszt ruchu. Rysunek~\ref{fig:rpditers} pokazuje to samo na przebiegach 60\,s. Przy
+każdej liczbie iteracji większe $k$ prowadzi: po 1\,000 iteracji dla
+$500\times 20$ RPD spada z 7,07 dla $k=4$ do 5,11 dla $k=16$, a dla
+$200\times 10$ z 4,41 do 2,17. Jeden ruch trwa jednak 3,5\,ms przy $k=4$
+i 137\,ms przy $k=32$ dla $500\times 20$. Między tymi samymi wartościami
+$k$ czas ruchu rośnie 27 razy dla $200\times 10$ i 48 razy dla
+$200\times 20$, więc przy większej liczbie maszyn długi zasięg kosztuje
+więcej.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.8\textwidth]{figures/fig_rpd_vs_iters_cp.pdf}
+\caption{Średnie RPD w funkcji numeru iteracji w przebiegach 60\,s
+(ILS, filtr dokładny). Każda krzywa kończy się na najmniejszej liczbie
+iteracji spośród swoich 50 przebiegów.}
+\label{fig:rpditers}
+\end{figure*}
+
 
 \paragraph{Anatomia ruchu.}
 Rysunek~\ref{fig:addytywnosc} pokazuje błąd addytywności na stanach
@@ -804,7 +820,6 @@ $k=8$. Dla $200\times 20$ jest to 48\% i 27\%, a prognoza jest
 optymistyczna w co najmniej 99\% stanów. Dla $200\times 20$ rzeczywisty
 zysk ruchu pozostaje między 95 a 99 od $k=4$ do $k=8$, a czas oceny
 rośnie z 1,8 do 4,9\,ms.
-\todo{fig\_distances i fig\_cost: dodać albo pominąć}
 
 \begin{figure*}[t]
 \centering
@@ -859,12 +874,16 @@ tardiness scheduling problem. \emph{INFORMS J.\ Comput.} 14(1):52--67, 2002.
 \bibitem{ergun2006} \"O.~Ergun, J.B.~Orlin. Fast neighborhood search for
 the single machine total weighted tardiness problem. \emph{Oper.\ Res.\
 Lett.} 34(1):41--45, 2006.
+\bibitem{feller1968} W.~Feller. \emph{An Introduction to Probability Theory and Its
+Applications}, Vol.~I, 3rd ed. Wiley, New York, 1968.
 \bibitem{fibonacci_own} R.~Wojew\'odzki, W.~Bo\.zejko. Hybrid neighborhood evaluation in tabu
 search and simulated annealing for the permutation flow shop problem. In:
 \emph{Artificial Intelligence and Soft Computing -- ICAISC 2026, Part II},
 LNAI 16858. Springer, 2026. In press.
 \bibitem{garey1976} M.R.~Garey, D.S.~Johnson, R.~Sethi. The complexity of
 flowshop and jobshop scheduling. \emph{Math.\ Oper.\ Res.} 1(2):117--129, 1976.
+\bibitem{gordon1986} L.~Gordon, M.F.~Schilling, M.S.~Waterman. An extreme value theory
+for long head runs. \emph{Probab.\ Theory Related Fields} 72(2):279--287, 1986.
 \bibitem{grabowski2004} J.~Grabowski, M.~Wodecki. A very fast tabu search
 algorithm for the permutation flow shop problem with makespan criterion.
 \emph{Comput.\ Oper.\ Res.} 31(11):1891--1909, 2004.

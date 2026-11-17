@@ -327,9 +327,9 @@ Proposition~\ref{prop:count}, $\lambda_k/2=1-\lambda_k^{-k}/2$ and
 $\lambda_k^{-k}=2^{-k}(1-\lambda_k^{-k}/2)^{-k}=2^{-k}(1+O(k2^{-k}))$,
 because $\lambda_k^{-k}\leq 2^{1-k}$ by~\eqref{eq:lambda}, so
 $(\lambda_k/2)^n=\exp\bigl(-n2^{-(k+1)}(1+o(1))\bigr)$, and $2c_k\to 1$.
-\todo{both claims are classical (success runs, longest-run law): cite
-Feller and Gordon--Schilling--Waterman instead of the sketch; this also
-settles the uniformity of the error term in $k$}
+Both facts are classical results on success
+runs~\cite{feller1968,gordon1986}; the sketch only restates them in our
+notation.
 \end{proof}
 
 For $k=\lfloor\log_2 n\rfloor+2$ the exponent $n/2^{k+1}$ lies between
@@ -849,8 +849,24 @@ After about 690 iterations on $500\times 20$ the RPD is 7.6 for $k=4$,
 6.7 for $k=6$ and 6.4 for $k=8$, and after 4\,000 iterations of the long
 runs it falls from 5.2 for $k=4$ to 3.3 for $k=12$. A longer reach thus
 gives better moves, and the short best $k$ under a time budget reflects
-what a move costs. \todo{figure: RPD against the number of iterations,
-one curve per $k$; table of time per move by $k$ and $m$}
+what a move costs. Figure~\ref{fig:rpditers} shows the same on the 60\,s runs. At every
+iteration count a larger $k$ is ahead: after 1\,000 iterations on
+$500\times 20$ the RPD falls from 7.07 for $k=4$ to 5.11 for $k=16$, and
+on $200\times 10$ from 4.41 to 2.17. One move, however, takes 3.5\,ms
+at $k=4$ and 137\,ms at $k=32$ on $500\times 20$. Between the same two
+values of $k$ the time per move grows 27 times on $200\times 10$ and 48
+times on $200\times 20$, so more machines make a long reach more
+expensive.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.8\textwidth]{figures/fig_rpd_vs_iters_cp.pdf}
+\caption{Mean RPD against the iteration number in the 60\,s runs (ILS,
+exact filter). Each curve ends at the smallest iteration count of its
+50 runs.}
+\label{fig:rpditers}
+\end{figure*}
+
 
 \paragraph{Move anatomy.}
 Figure~\ref{fig:additivity} shows the additivity error on states sampled
@@ -871,7 +887,6 @@ $200\times 20$ it is 48\% and 27\%, and the prediction is optimistic in
 at least 99\% of the states. On $200\times 20$ the real gain of a move
 stays between 95 and 99 from $k=4$ to $k=8$, while the evaluation time
 grows from 1.8 to 4.9\,ms.
-\todo{fig\_distances and fig\_cost: add or leave out}
 
 \begin{figure*}[t]
 \centering
@@ -927,12 +942,16 @@ tardiness scheduling problem. \emph{INFORMS J.\ Comput.} 14(1):52--67, 2002.
 \bibitem{ergun2006} \"O.~Ergun, J.B.~Orlin. Fast neighborhood search for
 the single machine total weighted tardiness problem. \emph{Oper.\ Res.\
 Lett.} 34(1):41--45, 2006.
+\bibitem{feller1968} W.~Feller. \emph{An Introduction to Probability Theory and Its
+Applications}, Vol.~I, 3rd ed. Wiley, New York, 1968.
 \bibitem{fibonacci_own} R.~Wojew\'odzki, W.~Bo\.zejko. Hybrid neighborhood evaluation in tabu
 search and simulated annealing for the permutation flow shop problem. In:
 \emph{Artificial Intelligence and Soft Computing -- ICAISC 2026, Part II},
 LNAI 16858. Springer, 2026. In press.
 \bibitem{garey1976} M.R.~Garey, D.S.~Johnson, R.~Sethi. The complexity of
 flowshop and jobshop scheduling. \emph{Math.\ Oper.\ Res.} 1(2):117--129, 1976.
+\bibitem{gordon1986} L.~Gordon, M.F.~Schilling, M.S.~Waterman. An extreme value theory
+for long head runs. \emph{Probab.\ Theory Related Fields} 72(2):279--287, 1986.
 \bibitem{grabowski2004} J.~Grabowski, M.~Wodecki. A very fast tabu search
 algorithm for the permutation flow shop problem with makespan criterion.
 \emph{Comput.\ Oper.\ Res.} 31(11):1891--1909, 2004.

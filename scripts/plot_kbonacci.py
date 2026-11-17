@@ -212,6 +212,53 @@ def fig_best_k_rel(dirs, out: Path, algo: str, budgets=(100, 1000, 10000)) -> No
     plt.close(fig)
 
 
+def fig_rpd_vs_iters(run_dir: Path, out: Path, algo: str, ks=(4, 6, 8, 12, 16, 32)) -> None:
+    """Mean RPD against the iteration number, one curve per k (exact filter, per-run move logs).
+
+    Each curve stops at the smallest iteration count over the 50 runs of that k, so every point
+    averages the same runs. Also writes the time per move [ms] by class and k to time_per_move.csv.
+    """
+    import json
+    import numpy as np
+    runs = defaultdict(list)   # (file, k) -> list of (lb, [best cmax after each iteration])
+    per_move = defaultdict(list)
+    for p in Path(run_dir).glob(f"algo={algo}__neigh=kbonacci_k*_cp__*/result.json"):
+        r = json.loads(p.read_text())
+        c = r["config"]
+        k = int(c["neighborhood"][len("kbonacci_k"):].removesuffix("_cp"))
+        f = Path(c["instance_file"]).stem
+        if r.get("iterations"):
+            per_move[(f, k)].append(r["total_time_ms"] / r["iterations"])
+        if k in ks and r.get("move_log"):
+            runs[(f, k)].append((r["lower_bound"], [cm for _, cm in r["move_log"]]))
+    files = sorted({f for f, _ in runs}, key=class_key)
+    fig, axes = plt.subplots(1, len(files), figsize=(1.9 * len(files) + 0.6, 2.2))
+    axes = [axes] if len(files) == 1 else list(axes)
+    for ax, f in zip(axes, files):
+        for i, k in enumerate(ks):
+            rs = runs.get((f, k))
+            if not rs:
+                continue
+            L = min(len(h) for _, h in rs)
+            rpd = np.mean([[100.0 * (cm - lb) / lb for cm in h[:L]] for lb, h in rs], axis=0)
+            x = np.arange(1, L + 1)
+            ax.plot(x, rpd, lw=0.9, color=GRAYS[i % 6], ls=["-", "--", "-.", ":", "-", "--"][i % 6],
+                    label=f"$k={k}$")
+        ax.set_xscale("log")
+        n, m = f[3:].split("_")
+        ax.set_title(f"${n}\\times{m}$")
+        ax.set_xlabel("iteration")
+    axes[0].set_ylabel("mean RPD [%]")
+    axes[-1].legend(fontsize=5.5, handlelength=1.5)
+    fig.tight_layout()
+    fig.savefig(out / "fig_rpd_vs_iters_cp.pdf")
+    plt.close(fig)
+    with open(out / "time_per_move.csv", "w") as fh:
+        fh.write("file,k,ms_per_move\n")
+        for (f, k), v in sorted(per_move.items(), key=lambda t: (class_key(t[0][0]), t[0][1])):
+            fh.write(f"{f},{k},{statistics.mean(v):.2f}\n")
+
+
 def class_key(f: str):
     return tuple(int(v) for v in f[3:].split("_"))
 
@@ -297,6 +344,8 @@ def main() -> None:
                     help="result dirs with per-run data, e.g. results/kbonacci/main_budgets "
                          "results/kbonacci/relative_budgets (for fig_best_k_rel)")
     ap.add_argument("--algo", default="ils")
+    ap.add_argument("--iters-runs", type=Path, default=None,
+                    help="run dir with move logs (e.g. results/kbonacci/large) for RPD vs iterations")
     ap.add_argument("--exact", action="store_true",
                     help="table figures for the exact critical-path filter; files get the suffix _cp")
     ap.add_argument("--extra-tables", nargs="*", default=[], type=Path,
@@ -307,6 +356,9 @@ def main() -> None:
     a.out.mkdir(parents=True, exist_ok=True)
     global EXACT, SUFFIX
     EXACT, SUFFIX = a.exact, "_cp" if a.exact else ""
+    if a.iters_runs:
+        fig_rpd_vs_iters(a.iters_runs, a.out, a.algo)
+        print("RPD-vs-iterations figure written")
     if a.runs:
         fig_best_k_rel(a.runs, a.out, a.algo)
         print("relative-k figure written")

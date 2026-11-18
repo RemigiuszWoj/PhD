@@ -1,6 +1,6 @@
 # Publikacje — Remigiusz Wojewódzki
 
-Stan na: **2026-11-15**. Wszystkie prace współautorskie z Wojciechem Bożejką
+Stan na: **2026-11-18**. Wszystkie prace współautorskie z Wojciechem Bożejką
 (Katedra Sterowania i Obliczeń Kwantowych, WIT, Politechnika Wrocławska).
 Źródła stanu: repo (README zgłoszeń, gałęzie), notatka DOKTORAT, Crossref (15.11.2026).
 Pozycje oznaczone **(?)** wymagają potwierdzenia przez autora.
@@ -10,7 +10,7 @@ Pozycje oznaczone **(?)** wymagają potwierdzenia przez autora.
 | 1 | Motzkin – rozdział | monografia EXIT 2025 | opublikowany | druk egzemplarza |
 | 2 | Motzkin ILS/SA | SOCO 2026 (CCIS 3046) | opublikowany, DOI | druk egzemplarza |
 | 3 | Hybrid neighborhoods | ICAISC 2026 (LNAI) | w druku, korekta wydawnictwa | DOI → ORCID, Scholar, druk |
-| 4 | Classical and quantum neighborhoods | BPASTS (BPASTS-05673) | rewizja po recenzjach | odesłać rewizję do 3.12.2026 (?) |
+| 4 | Quantum and classical annealing (VLSN, PFSP) | BPASTS (BPASTS-05673-2026-02) | rewizja wysłana 18.11.2026 (major revision z 5.11) | ponowna ocena redakcji i recenzentów |
 | 5 | Windowed QUBO | C&OR; preprint SSRN | preprint; stan w czasopiśmie (?) | — |
 | 6 | Fixed-angle QAOA | GCMM 2026 (Paper 59) | przyjęty, rewizja wgrana 13.11.2026 | konferencja 2–4.12.2026; korekta |
 | 7 | Windowed QAOA on IQM Sirius | ACIIDS 2027 (nr 316) | w recenzji od 23.10.2026 | decyzja: styczeń 2027 |
@@ -56,12 +56,13 @@ Pozycje oznaczone **(?)** wymagają potwierdzenia przez autora.
 
 ## W recenzji
 
-### 4. BPASTS (BPASTS-05673, rewizja)
-- **Tytuł:** Classical and Quantum Neighborhoods Evaluation in Iterated Local Search and Simulated Annealing
-  for the Permutation Flow Shop Problem
+### 4. BPASTS (BPASTS-05673-2026-02, rewizja wysłana)
+- **Tytuł (po rewizji):** Quantum and Classical Annealing for Very Large-Scale Neighborhood Search in the
+  Permutation Flow Shop Problem (pierwotnie: Classical and Quantum Neighborhoods Evaluation in Iterated Local
+  Search and Simulated Annealing for the Permutation Flow Shop Problem)
 - **Czasopismo:** Bulletin of the Polish Academy of Sciences: Technical Sciences
-- **Stan:** recenzje otrzymane, rewizja i list do recenzentów w przygotowaniu (gałąź `pan-bpasts`, ostatnie
-  zmiany 10.11.2026); termin odesłania 3.12.2026 **(?)**
+- **Stan:** major revision 5.11.2026; rewizja z listem do recenzentów wysłana 18.11.2026 (potwierdzenie redakcji
+  17:52); czeka na ponowną ocenę redakcji i recenzentów. Gałąź `pan-bpasts`, commit `fd092a1`
 - Źródła: `articles/bpasts_classical_quantum` · klucz: `wojewodzki2026bpasts`
 
 ### 5. Windowed QUBO (C&OR)

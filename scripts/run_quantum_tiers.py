@@ -63,6 +63,8 @@ class DWaveBlock:
     files: Sequence[str]
     algos: Sequence[str]
     ks: Sequence[int]
+    instances: Sequence[int] = field(default_factory=lambda: INSTANCES)
+    seeds: Sequence[int] = field(default_factory=lambda: SEEDS)
 
 
 @dataclass
@@ -74,6 +76,9 @@ class IQMBlock:
 
 # Tiers are cumulative: OPTIMUM adds to MINIMUM, MAXIMUM adds to OPTIMUM.
 DWAVE_TIERS: Dict[str, List[DWaveBlock]] = {
+    # Pilot for ICAPS (decision 18.11.2026): ILS only, every Taillard class, instances 0-4,
+    # k in {3, 4, 8}; one block per seed so that a budget cap cuts whole seeds, not classes.
+    "pilot": [DWaveBlock(TAILLARD, ["ils"], [3, 4, 8], instances=range(5), seeds=[s]) for s in (0, 1, 2, 3, 4)],
     # Table "n = 20" of windowed_qubo: tai20_5, ILS + SA.
     "min": [DWaveBlock(["tai20_5"], ["ils", "sa"], [3, 4])],
     # + k = 8 at n = 20, + scaling rows of windowed_qubo (ILS, m = 10) for n = 20..100.
@@ -92,7 +97,8 @@ IQM_TIERS: Dict[str, List[IQMBlock]] = {
     "opt": [IQMBlock(["tai20_5"], [3, 4])],
     "max": [IQMBlock(["tai20_5"], [8]), IQMBlock(["tai20_10", "tai20_20"], [3, 4])],
 }
-TIER_ORDER = ["min", "opt", "max"]
+TIER_ORDER = ["pilot", "min", "opt", "max"]
+IQM_TIERS["pilot"] = []
 
 # IQM Resonance price list measured in gate_qaoa (credits): fee per job + per circuit.
 IQM_JOB_FEE = 0.25
@@ -130,8 +136,8 @@ def dwave_tier_configs(tier: str, tl_ms: int):
             for f in b.files:
                 for algo in b.algos:
                     for k in b.ks:
-                        for i in INSTANCES:
-                            for s in SEEDS:
+                        for i in b.instances:
+                            for s in b.seeds:
                                 key = (f, algo, k, i, s)
                                 if key in seen:
                                     continue

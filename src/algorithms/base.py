@@ -23,7 +23,7 @@ from src.neighborhoods.classical.kbonacci import (
     kbonacci_neighborhood,
     parse_kbonacci_mode,
 )
-from src.neighborhoods.classical.crossing import crossing_neighborhood, parse_crossing_mode
+from src.neighborhoods.classical.crossing import crossing_neighborhood, parse_crossing_mode, parse_crossing_options
 from src.neighborhoods.quantum_qubo.kbonacci import quantum_kbonacci_neighborhood
 from src.neighborhoods.classical.motzkin import motzkin_neighborhood_full
 
@@ -56,7 +56,8 @@ CLASSICAL_MODES = ("adjacent", "fibonacci", "dynasearch", "motzkin")
 # "tetranacci", "kbonacci_k<K>" (K >= 2), "kbonacci_kn" (K = n, i.e. Dynasearch).
 KBONACCI_MODE_EXAMPLES = ("tribonacci", "tetranacci", "kbonacci_k5", "kbonacci_kn", "kbonacci_k3_cp")
 # Crossing family (overlap axis, articles/crossings/PLAN.md): cross_<dyn|c0|c1|pa1|inv>[_safe|_prefix][_cp], cross_swap.
-CROSSING_MODE_EXAMPLES = ("cross_dyn", "cross_c0", "cross_c0_safe", "cross_inv_safe", "cross_pa1_prefix", "cross_swap")
+CROSSING_MODE_EXAMPLES = ("cross_dyn", "cross_c0", "cross_c0_safe", "cross_inv_safe", "cross_pa1_prefix", "cross_swap",
+                          "cross_inv_k4", "cross_inv_top8", "cross_inv_lim10000x2000", "cross_q16")
 # "insert": best single insertion (Taillard acceleration) -- reference only, k-bonacci paper.
 QUANTUM_QUBO_MODES = (
     "quantum_adjacent",
@@ -243,9 +244,10 @@ def get_neighbor(
         return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
 
     elif neigh_mode.startswith("cross_"):
-        family, rule, boundary = parse_crossing_mode(neigh_mode)
+        o = parse_crossing_options(neigh_mode)
         new_pi, new_c, swaps = crossing_neighborhood(
-            current_pi, processing_times, family, rule, boundary_mode=boundary
+            current_pi, processing_times, o["family"], o["rule"], boundary_mode=o["boundary"],
+            top_k=o["top_k"], core_k=o["core_k"], card=o["card"], top=o["top"], q=o["q"],
         )
         return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
 

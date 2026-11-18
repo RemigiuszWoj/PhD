@@ -16,6 +16,15 @@ Stages (--stage all = main, anatomy, ablation, safe; each one resumes where it s
   safe      E5, a separate extra variant: the five families with the safeguard (_safe), after main.
   extra     option MAXIMUM only: prefix safeguard (cross_c0_prefix, cross_inv_prefix).
 
+Plan v4 stages (--stage v4 = anatomy_v4, card, top, context, qubo, lim; IJCAI 2027, after the critic review;
+all ILS, n <= 100 unless noted, results in results/crossings/<stage>):
+  anatomy_v4  crossing_anatomy.py --extras: c2 on the 60 best candidates, pair-corrected QUBO on 16, QUBO export n=20
+  card      equal cardinality: c0, P1, inv cut to K = 2 and 4 swaps (cross_<f>_k<K>), Dynasearch cut to 2
+  top       exact acceptance among 8 moves (cross_<f>_top8), the stronger rule asked for by the reviewer
+  context   NEH start (algorithm ils_neh) for cross_dyn and cross_swap, and IG_RS (algorithm ig)
+  qubo      ILS with the pair-corrected QUBO over 16 candidates (cross_q16), n <= 50
+  lim       cap sensitivity at n = 100-200: TOP_K/CORE_K = 10000/2000 and 1000/100 for c0 and inv
+
 Usage (Mac, repo root):
     python scripts/run_crossing_campaign.py --dry-run
     python scripts/run_crossing_campaign.py --stage main              # ILS only (default)
@@ -42,6 +51,7 @@ TAILLARD = [  # ascending n: errors show up on the fast classes first
 INSTANCES = list(range(10))
 SEEDS = list(range(5))
 ALGOS = ["ils", "sa"]
+SMALL = TAILLARD[:9]          # n <= 100: the decisive classes (PLAN 7.4a, v4)
 LONG = 10000
 OUT = ROOT / "results" / "crossings"
 
@@ -53,7 +63,18 @@ STAGES = {
     "ablation": {"files": TAILLARD, "modes": ["cross_c0_cp", "cross_inv_cp"]},
     "safe": {"files": TAILLARD, "modes": SAFE_MODES},
     "extra": {"files": TAILLARD, "modes": ["cross_c0_prefix", "cross_inv_prefix"]},
+    # plan v4
+    "card": {"files": SMALL, "modes": ["cross_c0_k2", "cross_c0_k4", "cross_pa1_k2", "cross_pa1_k4",
+                                       "cross_inv_k2", "cross_inv_k4", "cross_dyn_k2"]},
+    "top": {"files": SMALL, "modes": ["cross_dyn_top8", "cross_c0_top8", "cross_inv_top8"]},
+    "context": {"files": SMALL, "modes": ["cross_dyn", "cross_swap"], "algos": ["ils_neh"],
+                "plus": [("ig", "neh_insert")]},
+    "qubo": {"files": SMALL[:6], "modes": ["cross_q16"]},
+    "lim": {"files": ["tai100_5", "tai100_10", "tai100_20", "tai200_10", "tai200_20"],
+            "modes": ["cross_c0_lim10000x2000", "cross_inv_lim10000x2000",
+                      "cross_c0_lim1000x100", "cross_inv_lim1000x100"]},
 }
+ORDER_V4 = ["anatomy_v4", "card", "top", "context", "qubo", "lim"]
 ORDER = ["main", "anatomy", "ablation", "safe"]  # "extra" only on explicit request (option MAXIMUM)
 # Wall-clock overrun of runs whose first evaluation outlasts the budget: all cross_* modes evaluate
 # every pair, like Dynasearch / k = n (n = 500: ~36 s per evaluation on the M4 Pro).
@@ -69,7 +90,7 @@ def configs(files, modes, algos):
                     for s in SEEDS:
                         out.append(RunConfig(algorithm=algo, neighborhood=mode, instance_file=f"data/{f}.txt",
                                              instance_number=i, seed=s, time_limit_ms=LONG,
-                                             tabu_tenure=10 if algo == "ils" else None))
+                                             tabu_tenure=10 if algo.startswith("ils") else None))
     return out
 
 
@@ -82,8 +103,10 @@ def est_hours(cfgs) -> float:
 
 
 def run_stage(name: str, files, algos, dry: bool, limit: int, modes_filter) -> None:
-    if name == "anatomy":
+    if name in ("anatomy", "anatomy_v4"):
         cmd = [sys.executable, "scripts/crossing_anatomy.py", "--files", ",".join(f for f in files if f != "tai500_20")]
+        if name == "anatomy_v4":
+            cmd += ["--extras", "--workers", "4"]
         if dry:
             cmd.append("--dry-run")
         if limit:
@@ -93,7 +116,11 @@ def run_stage(name: str, files, algos, dry: bool, limit: int, modes_filter) -> N
     spec = STAGES[name]
     modes = [m for m in spec["modes"] if not modes_filter or m in modes_filter]
     fl = [f for f in spec["files"] if f in files]
+    algos = spec.get("algos", algos)
     cfgs = configs(fl, modes, algos)
+    for algo, mode in spec.get("plus", []):
+        if not modes_filter or mode in modes_filter:
+            cfgs += configs(fl, [mode], [algo])
     res_dir = OUT / name
     res_dir.mkdir(parents=True, exist_ok=True)
     if not dry:
@@ -168,8 +195,8 @@ def print_summary(res_dir: Path) -> None:
         it[key].append(r.get("iterations") or 0)
         if r.get("neighborhood_stats"):
             ns[key].append(r["neighborhood_stats"])
-    modes = [m for m in MAIN_MODES + SAFE_MODES + STAGES["ablation"]["modes"] + STAGES["extra"]["modes"]
-             if any(k[2] == m for k in it)]
+    all_modes = list(dict.fromkeys(m for sp in STAGES.values() for m in sp["modes"] + [x[1] for x in sp.get("plus", [])]))
+    modes = [m for m in all_modes if any(k[2] == m for k in it)]
     short = {m: m.replace("cross_", "").replace("_safe", "-s").replace("_prefix", "-p").replace("_cp", "/cp")
              for m in modes}
 
@@ -203,21 +230,22 @@ def print_summary(res_dir: Path) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--stage", default="all", help="all | main | anatomy | ablation | safe | extra (comma list allowed)")
+    ap.add_argument("--stage", default="all", help="all | v4 | main | anatomy | ablation | safe | extra | anatomy_v4 | "
+                    "card | top | context | qubo | lim (comma list allowed)")
     ap.add_argument("--files", default=",".join(TAILLARD), help="subset of Taillard files")
     ap.add_argument("--modes", default="", help="subset of the stage's modes, e.g. to skip cross_dyn")
     ap.add_argument("--algos", default="ils", help="ils (default) | sa | ils,sa")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--limit", type=int, default=0, help="at most N runs per stage (smoke test)")
     a = ap.parse_args()
-    stages = ORDER if a.stage == "all" else [s.strip() for s in a.stage.split(",")]
+    stages = ORDER if a.stage == "all" else ORDER_V4 if a.stage == "v4" else [s.strip() for s in a.stage.split(",")]
     files = [f.strip() for f in a.files.split(",")]
     algos = [x.strip() for x in a.algos.split(",")]
     modes_filter = {m.strip() for m in a.modes.split(",") if m.strip()}
     if any(x not in ALGOS for x in algos):
         ap.error(f"--algos must be from {ALGOS}")
     for s in stages:
-        if s not in STAGES and s != "anatomy":
+        if s not in STAGES and s not in ("anatomy", "anatomy_v4"):
             ap.error(f"unknown stage {s}")
     if not a.dry_run:
         try:

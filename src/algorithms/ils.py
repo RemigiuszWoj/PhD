@@ -80,6 +80,7 @@ def iterated_local_search(
     quantum_config: dict | None = None,
     mushroom_k: int = 10,
     diversification: str = "mushroom",
+    start: str = "identity",
 ) -> Tuple[List[int], int, List[int], List[int], dict]:
     """Iterated Local Search for flow shop scheduling problem.
 
@@ -93,6 +94,7 @@ def iterated_local_search(
         mushroom_k: elite pool size for diversification (MushroomList)
         diversification: "mushroom" (elite-pool double-bridge kick) or
             "random_restart" (uniform restart; ablation baseline)
+        start: "identity" (all previous papers) or "neh" (context row, crossing paper plan v4)
 
     Returns:
         (best_pi, best_cmax, iteration_history, cmax_history, stats)
@@ -100,7 +102,14 @@ def iterated_local_search(
         loop passes and cumulative wall time inside get_neighbor().
     """
     n = len(processing_times[0])
-    initial_pi = list(range(n))
+    t_start = time.time()   # NEH time counts towards the budget
+    if start == "neh":
+        from src.algorithms.neh_ig import neh
+        initial_pi = neh(processing_times)
+    elif start == "identity":
+        initial_pi = list(range(n))
+    else:
+        raise ValueError(f"unknown ILS start {start!r} (identity | neh)")
     initial_cmax = c_max(initial_pi, processing_times)
 
     state = SearchState(
@@ -110,7 +119,7 @@ def iterated_local_search(
         best_cmax=initial_cmax,
         cmax_history=[initial_cmax],
         iteration_history=[0],
-        start_time=time.time(),
+        start_time=t_start,
         iteration=0,
     )
 

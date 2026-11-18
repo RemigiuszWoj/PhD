@@ -160,6 +160,8 @@ class ExperimentRunner:
         self._dispatch = {
             "ils": self._run_ils,
             "sa": self._run_sa,
+            "ils_neh": lambda pt, cfg: self._run_ils(pt, cfg, start="neh"),   # crossing paper, plan v4
+            "ig": self._run_ig,                                               # IG_RS reference row
         }
 
     def run(self, configs: Sequence[RunConfig]) -> List[RunResult]:
@@ -339,7 +341,11 @@ class ExperimentRunner:
             except Exception as e:
                 print(f"[Experiment] Failed to create convergence plot: {e}")
 
-    def _run_ils(self, processing_times, cfg: RunConfig):
+    def _run_ig(self, processing_times, cfg: RunConfig):
+        from src.algorithms.neh_ig import iterated_greedy
+        return iterated_greedy(processing_times, max_time_ms=cfg.time_limit_ms)
+
+    def _run_ils(self, processing_times, cfg: RunConfig, start: str = "identity"):
         return iterated_local_search(
             processing_times,
             max_time_ms=cfg.time_limit_ms,
@@ -349,6 +355,7 @@ class ExperimentRunner:
             quantum_config=self.quantum_config,
             mushroom_k=self.ils_params.get("mushroom_k", 10),
             diversification=cfg.diversification,
+            start=start,
         )
 
     def _run_sa(self, processing_times, cfg: RunConfig):

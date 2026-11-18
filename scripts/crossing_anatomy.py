@@ -10,7 +10,12 @@ Each state is analysed with the campaign's candidate set (block filter, top-K ca
   - the smallest c with OPT_c = OPT_inv (0, 1 or "2+"), from the DP values of c0 and c1;
   - additivity of random pairs of improving swaps, a third per geometry (disjoint, nested, crossing),
     with the length of the overlap of the two intervals for the regression in E1.
-QUBO couplers and the second-order model stay in pilot/pilot_qubo_structure.py and pilot/pilot_pairq.py.
+With --extras (plan v4; output in results/crossings/anatomy_v4/):
+  - "restricted": the 60 most improving candidates, exact optimum of c0, c1, c2 (MILP, HiGHS) and inv on that
+    set, and the smallest c in {0, 1, 2, "3+"} with OPT_c = OPT_inv there;
+  - "q": the second-order (pair-corrected) QUBO over the 16 most improving candidates (cross_q16), its exact
+    optimum and real gain, against dyn / c0 / inv restricted to the same 16 candidates; for n = 20 the QUBO
+    itself is stored (linear terms, couplers, conflicts) for E4 (annealer and QAOA on the same states).
 
 Usage (repo root):
     python scripts/crossing_anatomy.py --dry-run
@@ -34,7 +39,8 @@ os.chdir(ROOT)
 
 import src.algorithms.ils as ils_mod  # noqa: E402
 from src.neighborhoods.classical.crossing import (  # noqa: E402
-    crossing_neighborhood, crossings, max_crossings_per_arc, nestings, parse_crossing_mode,
+    _apply, crossing_neighborhood, crossings, max_crossings_per_arc, nestings, pair_corrected_qubo,
+    parse_crossing_mode, select_c0, select_c1, select_dyn, select_inv, solve_qubo_exact,
 )
 from src.neighborhoods.classical.kbonacci import compute_candidates  # noqa: E402
 from src.parser import parser  # noqa: E402
@@ -48,6 +54,72 @@ INSTANCES = list(range(10))
 SOURCES = ["cross_dyn", "cross_c0", "cross_inv"]       # v3: plain variants only
 FAMILIES = ["dyn", "c0", "c1", "pa1", "inv"]
 OUT = ROOT / "results" / "crossings" / "anatomy"
+EXTRAS = False          # set by --extras (plan v4); OUT then points at anatomy_v4
+R_SIZE, Q_SIZE = 60, 16
+
+
+def select_milp(cands, c, time_limit=60):
+    """Exact optimum with at most c crossing pairs (MILP, HiGHS); same as pilot/crossing_select.py."""
+    import numpy as np
+    from scipy.optimize import Bounds, LinearConstraint, milp
+    arcs = sorted(cands)
+    A = len(arcs)
+    if A == 0:
+        return 0.0, []
+    cross_p = [(x, y) for x in range(A) for y in range(x + 1, A)
+               if arcs[x][0] < arcs[y][0] < arcs[x][1] < arcs[y][1] or arcs[y][0] < arcs[x][0] < arcs[y][1] < arcs[x][1]]
+    nv = A + len(cross_p)
+    obj = np.zeros(nv)
+    obj[:A] = [cands[a] for a in arcs]
+    rows, ub = [], []
+    for pt in sorted({q for ab in arcs for q in ab}):
+        r = np.zeros(nv)
+        for x, (a, b) in enumerate(arcs):
+            if pt in (a, b):
+                r[x] = 1
+        rows.append(r)
+        ub.append(1)
+    for t, (x, y) in enumerate(cross_p):
+        r = np.zeros(nv)
+        r[x] = r[y] = 1
+        r[A + t] = -1
+        rows.append(r)
+        ub.append(1)
+    r = np.zeros(nv)
+    r[A:] = 1
+    rows.append(r)
+    ub.append(c)
+    res = milp(obj, constraints=LinearConstraint(np.array(rows), -np.inf, ub), integrality=np.ones(nv),
+               bounds=Bounds(0, 1), options={"time_limit": time_limit})
+    chosen = [arcs[x] for x in range(A) if res.x[x] > 0.5]
+    return float(sum(cands[a] for a in chosen)), chosen
+
+
+def extras(pi, p, base, improving, best1):
+    """Plan v4 additions to one state: restricted c2 analysis and the pair-corrected QUBO."""
+    real = lambda arcs: c_max(_apply(pi, arcs), p) - base if arcs else 0
+    top = lambda k: dict(sorted(improving.items(), key=lambda kv: kv[1])[:k])
+    R = top(R_SIZE)
+    opt = {"c0": select_c0(R)[0], "c1": select_c1(R)[0], "c2": select_milp(R, 2)[0], "inv": select_inv(R)[0]}
+    min_c = next((c for c, f in ((0, "c0"), (1, "c1"), (2, "c2")) if abs(opt[f] - opt["inv"]) < 1e-9), "3+")
+    out = {"restricted": {"size": len(R), "opt": opt, "min_c": min_c}}
+    Q = top(Q_SIZE)
+    arcs, lin, quad, conf = pair_corrected_qubo(pi, p, base, Q, Q_SIZE)
+    e, idx = solve_qubo_exact(lin, quad, conf)
+    q_arcs = [arcs[x] for x in idx]
+    fam = {"q": {"pred": e, "pred_linear": float(sum(lin[x] for x in idx)), "real": real(q_arcs),
+                 "swaps": len(q_arcs), "cr": crossings(q_arcs), "nest": nestings(q_arcs)}}
+    for f, sel in (("dyn", select_dyn), ("c0", select_c0), ("inv", select_inv)):
+        pr, a = sel(Q)
+        fam[f] = {"pred": pr, "real": real(a), "swaps": len(a), "cr": crossings(a), "nest": nestings(a),
+                  "energy": float(sum(lin[arcs.index(x)] for x in a)
+                                  + sum(quad.get(tuple(sorted((arcs.index(x), arcs.index(y)))), 0.0)
+                                        for i, x in enumerate(a) for y in a[i + 1:]))}
+    out["q"] = {"size": len(arcs), "best_single": best1, "fam": fam}
+    if len(pi) == 20:
+        out["q"]["qubo"] = {"arcs": arcs, "linear": lin, "quad": [[x, y, w] for (x, y), w in quad.items()],
+                            "conflicts": conf}
+    return out
 
 
 def sample_states(p, mode, time_ms, k, rng):
@@ -122,11 +194,16 @@ def analyse(pi, p, boundary, rng, n_pairs):
             q[a], q[b] = q[b], q[a]
         pairs[g].append([improving[x] + improving[y], c_max(q, p) - base, overlap])
     rec["pairs"] = pairs            # [predicted, real, overlap] per pair
+    if EXTRAS:
+        rec["v4"] = extras(pi, p, base, improving, best1)
     return rec
 
 
 def job(args):
-    file, inst, time_ms, k, n_pairs = args
+    global EXTRAS, OUT
+    file, inst, time_ms, k, n_pairs, extras_flag = args
+    if extras_flag:          # spawn-started workers do not inherit globals set in main()
+        EXTRAS, OUT = True, ROOT / "results" / "crossings" / "anatomy_v4"
     out = OUT / f"{file}__inst={inst}.json"
     if out.exists():
         return out.name, "skip"
@@ -158,8 +235,12 @@ def main():
     ap.add_argument("--workers", type=int, default=1)
     ap.add_argument("--limit", type=int, default=0, help="at most N instances (smoke test)")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--extras", action="store_true", help="plan v4: c2 on 60 candidates + pair-corrected QUBO")
     a = ap.parse_args()
-    jobs = [(f, i, a.time_ms, a.states, a.pairs) for f in a.files.split(",") for i in map(int, a.instances.split(","))]
+    global EXTRAS, OUT
+    if a.extras:
+        EXTRAS, OUT = True, ROOT / "results" / "crossings" / "anatomy_v4"
+    jobs = [(f, i, a.time_ms, a.states, a.pairs, a.extras) for f in a.files.split(",") for i in map(int, a.instances.split(","))]
     if a.limit:
         jobs = jobs[:a.limit]
     todo = [j for j in jobs if not (OUT / f"{j[0]}__inst={j[1]}.json").exists()]

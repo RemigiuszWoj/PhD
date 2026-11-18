@@ -87,15 +87,15 @@ The preprint~\cite{WojewodzkiBozejkoSSRN} builds on the QUBO models of the prese
 
 \section{Problem Definition}\label{sec:problem}
 \begin{revblock}
-We are given a set of $n$ jobs $J=\{1,\dots,n\}$ and a set of $m$ machines $M=\{1,\dots,m\}$. Every job visits the machines in the order $1,2,\dots,m$, and job $j$ occupies machine $k$ for $p_{k,j}>0$ time units. All jobs are available at time zero, a machine processes at most one job at a time, a job is processed by at most one machine at a time, and an operation cannot be interrupted. In the permutation flow shop all machines process the jobs in the same order. A schedule is therefore described by one permutation $\pi=(\pi(1),\dots,\pi(n))$ of $J$, where $\pi(j)$ is the job at position $j$ of the common sequence, and $\Pi_n$ denotes the set of all $n!$ such permutations. In the three-field notation of Graham et al.~\cite{Graham1979} the problem is $F_m|prmu|C_{\max}$: the first field denotes a flow shop with $m$ machines, the second the permutation constraint, and the third the makespan objective.
+We are given a set of $n$ jobs $J=\{1,2,\dots,n\}$ and a set of $m$ machines $M=\{1,2,\dots,m\}$. Every job visits the machines in the order $1,2,\dots,m$, and job $j$ occupies machine $k$ for $p_{k,j}>0$ time units. All jobs are available at time zero, a machine processes at most one job at a time, a job is processed by at most one machine at a time, and an operation cannot be interrupted. In the permutation flow shop all machines process the jobs in the same order. A schedule is therefore described by one permutation $\pi=(\pi(1),\pi(2),\dots,\pi(n))$ of $J$, where $\pi(j)$ is the job at position $j$ of the common sequence, and $\Pi_n$ denotes the set of all $n!$ such permutations. In the three-field notation of Graham et al.~\cite{Graham1979} the problem is $F_m|prmu|C_{\max}$: the first field denotes a flow shop with $m$ machines, the second the permutation constraint, and the third the makespan objective.
 
 Let $C_{k,j}$ denote the completion time of the job at position $j$ on machine $k$. The completion times follow from the recurrence
 \begin{align}
 C_{1,1} &= p_{1,\pi(1)}, \label{eq:C11}\\
-C_{1,j} &= C_{1,j-1}+p_{1,\pi(j)}, \quad j=2,\dots,n, \label{eq:C1j}\\
-C_{k,1} &= C_{k-1,1}+p_{k,\pi(1)}, \quad k=2,\dots,m, \label{eq:Ck1}\\
+C_{1,j} &= C_{1,j-1}+p_{1,\pi(j)}, \quad j=2,3,\dots,n, \label{eq:C1j}\\
+C_{k,1} &= C_{k-1,1}+p_{k,\pi(1)}, \quad k=2,3,\dots,m, \label{eq:Ck1}\\
 C_{k,j} &= \max\{C_{k-1,j},\,C_{k,j-1}\}+p_{k,\pi(j)}, \nonumber\\
-&\qquad k=2,\dots,m,\ j=2,\dots,n. \label{eq:Ckj}
+&\qquad k=2,3,\dots,m,\ j=2,3,\dots,n. \label{eq:Ckj}
 \end{align}
 The makespan of $\pi$ is $C_{\max}(\pi)=C_{m,n}$, the completion time of the last job on the last machine, and the problem is to find
 \begin{equation}\label{eq:obj}
@@ -171,12 +171,12 @@ All four neighborhoods are built from swaps. A swap $(i,j)$ with $i<j$ exchanges
 
 \subsection{\rev{Adjacent}}
 \begin{revblock}
-The Adjacent neighborhood contains the $n-1$ permutations obtained by one swap of neighboring positions $(i,i+1)$, $i=1,\dots,n-1$. With Head+Tail all $n-1$ gains $\delta_i=\delta_{i,i+1}$ cost $O(mn)$ time in total, and a scan finds the best swap in $O(n)$ time. The neighborhood changes the permutation only locally, and it is the baseline for the compound neighborhoods below.
+The Adjacent neighborhood contains the $n-1$ permutations obtained by one swap of neighboring positions $(i,i+1)$, $i=1,2,\dots,n-1$. With Head+Tail all $n-1$ gains $\delta_i=\delta_{i,i+1}$ cost $O(mn)$ time in total, and a scan finds the best swap in $O(n)$ time. The neighborhood changes the permutation only locally, and it is the baseline for the compound neighborhoods below.
 \end{revblock}
 
 \subsection{Fibonacci}
 \begin{revblock}
-The Fibonacci neighborhood~\cite{WojewodzkiBozejko2026} applies any set of adjacent swaps that do not overlap. If the swap $(i,i+1)$ is applied, the swaps $(i-1,i)$ and $(i+1,i+2)$ are not. Counting the empty set, there are $F_{n+1}$ such sets for $n$ positions. The best set is found by dynamic programming. Let $\delta_i$ be the gain of the swap $(i,i+1)$, and let $\mathcal{S}_i$ be the family of admissible sets that contain only swaps from $\{1,\dots,i\}$, including the empty set. For $i=0,\dots,n-1$ we define the value function
+The Fibonacci neighborhood~\cite{WojewodzkiBozejko2026} applies any set of adjacent swaps that do not overlap. If the swap $(i,i+1)$ is applied, the swaps $(i-1,i)$ and $(i+1,i+2)$ are not. Counting the empty set, there are $F_{n+1}$ such sets for $n$ positions. The best set is found by dynamic programming. Let $\delta_i$ be the gain of the swap $(i,i+1)$, and let $\mathcal{S}_i$ be the family of admissible sets that contain only swaps from $\{1,2,\dots,i\}$, including the empty set. For $i=0,1,\dots,n-1$ we define the value function
 \begin{equation}\label{eq:fibV}
 V(i)=\min_{S\in\mathcal{S}_i}\ \sum_{k\in S}\delta_k .
 \end{equation}
@@ -184,7 +184,7 @@ $V(i)$ is the smallest total gain of an admissible set that changes only the fir
 \begin{align}
 V(0)&=0, \quad V(1)=\min\{0,\,\delta_1\}, \label{eq:fib0}\\
 V(i)&=\min\{V(i-1),\,V(i-2)+\delta_i\}, \nonumber\\
-&\qquad i=2,\dots,n-1. \label{eq:fibrec}
+&\qquad i=2,3,\dots,n-1. \label{eq:fibrec}
 \end{align}
 The first term covers the sets without swap $i$. The second term covers the sets with swap $i$, which cannot contain swap $i-1$. The best set of the whole neighborhood has the total gain $V(n-1)$ and is recovered by tracing these choices back from $i=n-1$. This recurrence is the dynamic program of Dynasearch~\cite{Congram2002} restricted to adjacent swaps, and it takes $O(n)$ time after the $O(mn)$ evaluation of all gains. For TS the recurrence keeps the $\tau+1$ best sets in every state instead of one, which raises its cost to $O(n\tau)$. The empty set is not returned, so if no set improves the schedule, the best non-empty set is applied.
 \end{revblock}
@@ -227,12 +227,12 @@ The first term covers the sets without swap $i$. The second term covers the sets
 
 \subsection{\rev{Dynasearch}}
 \begin{revblock}
-The Dynasearch neighborhood~\cite{Congram2002} applies a set of swaps whose segments are pairwise disjoint (Fig.~\ref{fig:moves}b): the swaps $(i,j)$ and $(k,l)$ with $i<k$ can be applied together only if $j<k$. A segment may have any length, so there are $n(n-1)/2$ candidate swaps. One gain costs $O(m(j-i+1))$ time, and since $\sum_{i<j}(j-i+1)=O(n^3)$, all gains cost $O(mn^3)$. Let $D(j)$ be the smallest sum of gains over admissible sets inside positions $1,\dots,j$. Then
+The Dynasearch neighborhood~\cite{Congram2002} applies a set of swaps whose segments are pairwise disjoint (Fig.~\ref{fig:moves}b): the swaps $(i,j)$ and $(k,l)$ with $i<k$ can be applied together only if $j<k$. A segment may have any length, so there are $n(n-1)/2$ candidate swaps. One gain costs $O(m(j-i+1))$ time, and since $\sum_{i<j}(j-i+1)=O(n^3)$, all gains cost $O(mn^3)$. Let $D(j)$ be the smallest sum of gains over admissible sets inside positions $1,2,\dots,j$. Then
 \begin{equation}
 \begin{aligned}
 D(0)&=0,\\
 D(j)&=\min\Bigl\{D(j-1),\ \min_{1\le i<j}\bigl[D(i-1)+\delta_{ij}\bigr]\Bigr\},\\
-&\qquad j=1,\dots,n.
+&\qquad j=1,2,\dots,n.
 \end{aligned}\label{eq:dyna}
 \end{equation}
 In this recurrence either no swap ends at position $j$, or the swap $(i,j)$ ends there and the swaps to the left of $i$ are chosen optimally. This recurrence takes $O(n^2)$ time, so the evaluation of the gains dominates, and one step of the neighborhood costs $O(mn^3)$. Counting the empty set, the neighborhood contains $2^{n-1}$ move sets. If no set improves the schedule, the single swap with the smallest gain is applied, so that the search always moves.
@@ -240,32 +240,28 @@ In this recurrence either no swap ends at position $j$, or the swap $(i,j)$ ends
 
 \subsection{\rev{Motzkin}}
 \begin{revblock}
-The Motzkin neighborhood~\cite{Motzkin_PWR_EXIT,Motzkin_PWR} also allows nested swaps. Two swaps $(i,j)$ and $(k,l)$ with $i<k$ can be applied together if their segments are disjoint ($j<k$) or nested ($l<j$), and they cannot if they cross ($k<j<l$) or share an endpoint (Fig.~\ref{fig:moves}c and~\ref{fig:moves}d). Swaps on four different positions exchange disjoint pairs of jobs, so they commute, and the result of a disjoint or nested set does not depend on the order of its swaps. Two swaps with a shared endpoint move three jobs along a cycle, and the result depends on the order, so such pairs are excluded. Crossing swaps would also commute, but they are excluded by the definition of the neighborhood. The non-crossing sets of swaps on $n$ positions correspond one-to-one to Motzkin paths of length $n$, which gives their number $M_n$~\cite{motzkin1948} and allows an exact interval dynamic program. Let $G(L,R)$ be the smallest sum of gains over admissible sets inside positions $L,\dots,R$, with $G(L,R)=0$ for $L\ge R$. Then
+The Motzkin neighborhood~\cite{Motzkin_PWR_EXIT,Motzkin_PWR} also allows nested swaps. Two swaps $(i,j)$ and $(k,l)$ with $i<k$ can be applied together if their segments are disjoint ($j<k$) or nested ($l<j$), and they cannot if they cross ($k<j<l$) or share an endpoint (Fig.~\ref{fig:moves}c and~\ref{fig:moves}d). Swaps on four different positions exchange disjoint pairs of jobs, so they commute, and the result of a disjoint or nested set does not depend on the order of its swaps. Two swaps with a shared endpoint move three jobs along a cycle, and the result depends on the order, so such pairs are excluded. Crossing swaps would also commute, but they are excluded by the definition of the neighborhood. The non-crossing sets of swaps on $n$ positions correspond one-to-one to Motzkin paths of length $n$, which gives their number $M_n$~\cite{motzkin1948} and allows an exact interval dynamic program. Let $G(L,R)$ be the smallest sum of gains over admissible sets inside positions $L,L+1,\dots,R$, with $G(L,R)=0$ for $L\ge R$. Then
 \begin{equation}
 \begin{aligned}
 G(L,R)=\min\Bigl\{&G(L+1,R),\\
 &\min_{L<k\le R}\bigl[\delta_{Lk}+G(L+1,k-1)+G(k+1,R)\bigr]\Bigr\}.
 \end{aligned}\label{eq:motz}
 \end{equation}
-In this recurrence either position $L$ is not swapped, or it is swapped with a position $k$, which splits the remaining positions into the inside $L+1,\dots,k-1$ and the outside $k+1,\dots,R$. The table has $O(n^2)$ entries, each computed in $O(n)$ time, so this recurrence runs in $O(n^3)$ time. With the $O(mn^3)$ evaluation of all $n(n-1)/2$ gains, one step of the Motzkin neighborhood costs $O(mn^3)$. As in Dynasearch, if no set improves the schedule, the single swap with the smallest gain is applied.
+In this recurrence either position $L$ is not swapped, or it is swapped with a position $k$, which splits the remaining positions into the inside $L+1,L+2,\dots,k-1$ and the outside $k+1,k+2,\dots,R$. The table has $O(n^2)$ entries, each computed in $O(n)$ time, so this recurrence runs in $O(n^3)$ time. With the $O(mn^3)$ evaluation of all $n(n-1)/2$ gains, one step of the Motzkin neighborhood costs $O(mn^3)$. As in Dynasearch, if no set improves the schedule, the single swap with the smallest gain is applied.
 \end{revblock}
 
 \begin{table}
-\caption{\rev{Size and cost of the move selection for $n$ jobs and $m$ machines. $K$ is the number of QUBO variables and $|E|$ the number of nonzero quadratic coefficients; for Dynasearch and Motzkin both are upper bounds, reached when no candidate is removed, and the values in brackets are for $n=20$. DP is the cost of the dynamic program and $Q$ the cost of building the QUBO matrix.}}\label{tab:sizes}
+\caption{\rev{Size and cost of the move selection for $n$ jobs and $m$ machines. $K$ is the number of QUBO variables and $|E|$ the number of nonzero quadratic coefficients; for Dynasearch and Motzkin both are upper bounds, reached when no candidate is removed. DP is the cost of the dynamic program and $Q$ the cost of building the QUBO matrix. In the experiments $n=20$ and $m\in\{5,10,20\}$.}}\label{tab:sizes}
 \centering\footnotesize\ifrevmarks\color{red}\fi
 \setlength{\tabcolsep}{3pt}
 \begin{tabular}{@{}lccccc@{}}
 \toprule
  & $K$ & gains $\delta_k$ & DP & $|E|$ & $Q$\\
 \midrule
-Adjacent   & $n-1$ & $O(mn)$ & $O(n)$ & $\binom{n-1}{2}$ & $O(n^2)$\\
-           & (19) & & & (171; 100\%) & \\[2pt]
-Fibonacci  & $n-1$ & $O(mn)$ & $O(n)$ & $n-2$ & $O(n)$\\
-           & (19) & & & (18; 10.5\%) & \\[2pt]
-Dynasearch & $\binom{n}{2}$ & $O(mn^3)$ & $O(n^2)$ & $\binom{K}{2}-\binom{n}{4}$ & $O(n^4)$\\
-           & (190) & & & (13\,110; 73\%) & \\[2pt]
+Adjacent   & $n-1$ & $O(mn)$ & $O(n)$ & $\binom{n-1}{2}$ & $O(n^2)$\\[2pt]
+Fibonacci  & $n-1$ & $O(mn)$ & $O(n)$ & $n-2$ & $O(n)$\\[2pt]
+Dynasearch & $\binom{n}{2}$ & $O(mn^3)$ & $O(n^2)$ & $\binom{K}{2}-\binom{n}{4}$ & $O(n^4)$\\[2pt]
 Motzkin    & $\binom{n}{2}$ & $O(mn^3)$ & $O(n^3)$ & $\binom{n}{4}+3\binom{n}{3}$ & $O(n^4)$\\
-           & (190) & & & (8\,265; 46\%) & \\
 \bottomrule
 \end{tabular}
 
@@ -288,14 +284,14 @@ All four models have the form $f(\mathbf{x})=\sum_k\delta_kx_k+P\cdot(\text{pena
 
 \textbf{Lemma 1.} Let $E$ be the set of incompatible pairs of moves and $f(\mathbf{x})=\sum_k\delta_kx_k+P\sum_{(k,l)\in E}x_kx_l$. If $P>\max_k|\delta_k|$, every minimizer of $f$ selects a compatible set of moves, and the minimizers of $f$ are exactly the compatible sets with the smallest sum of gains. Likewise, if $P>\max_k|\delta_k|$, every minimizer of $g(\mathbf{x})=\sum_k\delta_kx_k+P\bigl(\sum_kx_k-1\bigr)^2$ selects exactly one move.
 
-\emph{Proof.} Let $\mathbf{x}$ select an incompatible pair, and let $k$ be a selected move of this pair. Setting $x_k=0$ changes $f$ by $-\delta_k-P\,d_k$, where $d_k\ge 1$ is the number of selected moves incompatible with $k$, so the change is at most $|\delta_k|-P<0$ and $\mathbf{x}$ is not a minimizer. On compatible selections $f$ equals the sum of gains, which proves the first claim. For $g$, the zero vector has the value $P>\min_k\delta_k$, the value of the best one-hot vector. If $\mathbf{x}$ selects $s\ge 2$ moves, dropping a selected move $k$ changes $g$ by $-\delta_k-P(2s-3)\le|\delta_k|-P<0$. $\square$
+\emph{Proof.} Let $\mathbf{x}$ select an incompatible pair, and let $k$ be a selected move of this pair. Setting $x_k=0$ changes $f$ by $-\delta_k-P\,d_k$, where $d_k\ge 1$ is the number of selected moves incompatible with $k$, so the change is at most $|\delta_k|-P<0$ and $\mathbf{x}$ is not a minimizer. On compatible selections $f$ equals the sum of gains, which proves the first claim. For $g$, the zero vector has the value $P>\min_k\delta_k$, the value of the best one-hot vector. If $\mathbf{x}$ selects $s\ge 2$ moves, dropping a selected move $k$ changes $g$ by $-\delta_k-P(2s-3)\le|\delta_k|-P<0$. \hfill$\square$
 
 Any weight above this bound gives the same minimizers, so $P$ does not change the model, but it changes its numerical scale. The QPU accepts coefficients only in a bounded range, and the sampler rescales the whole model to fit it. A large $P$ therefore compresses the differences between the gains into a small part of the range, where they compete with the analog control errors of the device~\cite{dwave_handbook}. For classical samplers a large $P$ makes every step out of a feasible state expensive, which slows the search down~\cite{Glover2019}. The weights used in our experiments, $P=2\max_i|\delta_i|+1$ for the Adjacent model and $P=\sum_k|\delta_k|+1$ for the other models, satisfy Lemma~1, but the second one is up to $K$ times larger than necessary.
 \end{revblock}
 
 \subsection{\rev{QUBO formulation of the Adjacent selection}}
 \begin{revblock}
-The Adjacent selection chooses one swap of neighboring positions. The variable $x_i=1$ selects the swap $(i,i+1)$, $i=1,\dots,n-1$, with the gain $\delta_i$, and the model
+The Adjacent selection chooses one swap of neighboring positions. The variable $x_i=1$ selects the swap $(i,i+1)$, $i=1,2,\dots,n-1$, with the gain $\delta_i$, and the model
 \begin{equation}
 g(\mathbf{x})=\sum_{i=1}^{n-1}\delta_ix_i+P\Bigl(\sum_{i=1}^{n-1}x_i-1\Bigr)^2
 \end{equation}
@@ -355,7 +351,7 @@ has $\delta_k$ on the diagonal of $Q$ and $P$ at the positions of incompatible p
 
 \section{\rev{Results and Discussion}}\label{sec:results}
 \begin{revblock}
-Tables~\ref{tab:results_ts} and~\ref{tab:results_sa} give the mean RPD of every variant for the six budgets.
+Tables~\ref{tab:results_ts} and~\ref{tab:results_sa} give the mean RPD of every variant for the six time budgets.
 
 \paragraph{Classical DP.} Dynasearch and Motzkin give the best schedules for every budget and every instance size, in both metaheuristics, and TS is better than SA for every neighborhood. One DP selection in these neighborhoods costs $O(mn^3)$ time, but one step improves the schedule much more than an adjacent swap. TS with the Fibonacci neighborhood gives the same result for every budget. The tabu list forbids only the repetition of the same set of swaps, and the search cycles among a few permutations reached by different sets.
 

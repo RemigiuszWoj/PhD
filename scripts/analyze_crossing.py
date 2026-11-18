@@ -43,7 +43,7 @@ def load(dirs, base=RES):
     """{(variant, file, inst, seed, tl): record}; the variant drops the 'cross_' prefix."""
     out = {}
     for d in dirs:
-        for p in (base / d).glob("*/result.json"):
+        for p in (base / d).glob("algo=ils__*/result.json"):  # ILS only (k-bonacci dirs also hold SA runs)
             r = json.loads(p.read_text())
             c = r["config"]
             f = Path(c["instance_file"]).stem
@@ -234,6 +234,48 @@ def anatomy(lines):
     return csv_rows
 
 
+CARD_BINS = [(1, 1), (2, 2), (3, 4), (5, 8), (9, 16), (17, 10**9)]
+
+
+def cardinality(lines):
+    """Realised/predicted ratio by move cardinality (swaps per move), pooled over anatomy states with an
+    improving single swap; separates geometry from the number of swaps (reviewer objection, 18.11)."""
+    fam_names = ["dyn", "c0", "pa1", "inv"]
+    rows = []  # (fam, swaps, ratio, nest, worse)
+    for p in sorted((RES / "anatomy").glob("*.json")):
+        for s in json.loads(p.read_text())["states"]:
+            if "fam" not in s or s["best_single"] >= 0:
+                continue
+            for k in fam_names:
+                x = s["fam"][k]
+                if x["pred"] < 0:
+                    rows.append((k, x["swaps"], x["real"] / x["pred"], x["nest"], x["vs_single"] == "worse"))
+    med = lambda v: statistics.median(v) if v else None
+    lab = lambda a, b: f"{a}" if a == b else (f"{a}-{b}" if b < 10**9 else f"{a}+")
+    t_ratio, t_worse, csv_rows = [], [], []
+    for a, b in CARD_BINS:
+        r = [med([q[2] for q in rows if q[0] == k and a <= q[1] <= b]) for k in fam_names]
+        w = [None if not (v := [q[4] for q in rows if q[0] == k and a <= q[1] <= b]) else 100 * statistics.mean(v)
+             for k in fam_names]
+        n = [sum(1 for q in rows if q[0] == k and a <= q[1] <= b) for k in fam_names]
+        t_ratio.append((lab(a, b), r + n))
+        t_worse.append((lab(a, b), w))
+        csv_rows.append({"swaps": lab(a, b), **{f"ratio_{k}": v for k, v in zip(fam_names, r)},
+                         **{f"worse_{k}": v for k, v in zip(fam_names, w)}, **{f"n_{k}": v for k, v in zip(fam_names, n)}})
+    sw = [(k, sorted(q[1] for q in rows if q[0] == k)) for k in fam_names]
+    nest = [(lab(a, b), [med([q[2] for q in rows if q[0] == "c0" and 3 <= q[1] <= 8 and a <= q[3] <= b]),
+                         sum(1 for q in rows if q[0] == "c0" and 3 <= q[1] <= 8 and a <= q[3] <= b)])
+            for a, b in [(0, 0), (1, 2), (3, 6), (7, 10**9)]]
+    lines.append("\n=== E1b cardinality: swaps per move vs additivity (anatomy states, pooled) ===")
+    lines.append("Swaps per move, median [q1, q3]: " + ", ".join(
+        f"{k} {v[len(v)//2]} [{v[len(v)//4]}, {v[3*len(v)//4]}]" for k, v in sw if v))
+    table(lines, "Median realised/predicted by swaps per move (then n states per family)",
+          fam_names + [f"n_{k}" for k in fam_names], t_ratio, "{:.2f}")
+    table(lines, "Compound move worse than best single swap [%] by swaps per move", fam_names, t_worse, "{:.0f}")
+    table(lines, "N0, 3-8 swaps: median realised/predicted by number of nestings", ["ratio", "n"], nest, "{:.2f}")
+    return csv_rows
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", type=Path, default=ROOT / "articles" / "crossings" / "tables")
@@ -319,6 +361,7 @@ def main():
     write_csv(a.out / "exploratory.csv", expl + eq + safe + abl + ref)
 
     write_csv(a.out / "anatomy.csv", anatomy(lines))
+    write_csv(a.out / "cardinality.csv", cardinality(lines))
     text = "\n".join(lines) + "\n"
     (a.out / "summary.txt").write_text(text)
     print(text)

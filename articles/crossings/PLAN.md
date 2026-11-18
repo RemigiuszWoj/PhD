@@ -1,10 +1,41 @@
 # Plan artykułu i badań: sąsiedztwa z krzyżowaniami (Motzkin → pojedyncze krzyżowania → inwolucje) ze studium parametru c
 
-Wersja 3 (11.11.2026; v2 po rundach krytyki z 01.11.2026, zmiany w §17), gałąź `claude/tender-thompson-ql1r4e`. Układ jak w planie k-bonacciego (`articles/kbonacci/PLAN.md` na gałęzi `kbonacci-icaps`).
+Wersja 4 (18.11.2026: cel IJCAI 2027 i nowe obliczenia, nota niżej; v3 z 11.11.2026; v2 po rundach krytyki z 01.11.2026, zmiany w §17), gałąź `claude/tender-thompson-ql1r4e`. Układ jak w planie k-bonacciego (`articles/kbonacci/PLAN.md` na gałęzi `kbonacci-icaps`).
 Powiązane: `articles/katalog_sasiedztw.md` (pozycje #7–#9), `ROADMAP.md` (fronty C i E).
 Skrypty i surowe wyniki pilotów: `articles/crossings/pilot/` (tabele z tego planu: `python analyze_pilots.py all`).
 
 ---
+
+## Zmiany v4 (18.11.2026): IJCAI 2027 i obliczenia po recenzji krytyka
+
+**Decyzja użytkownika (18.11.2026):** artykuł idzie na **IJCAI 2027** (Kioto, 7–13.08.2027; abstrakt **4.01.2027**, artykuł z dodatkiem
+**11.01.2027**, 23:59 AoE; 7 stron + 2 strony bibliografii; double-blind; recenzent wzajemny z grona autorów albo zwolnienie).
+Zgłoszenie „na chybił trafił”: k-bonacci idzie na ICAPS, więc to jedyna nasza praca w IJCAI (bez opłaty 100 USD). GECCO 2027
+dla tej pracy odpada (zakaz równoległego zgłoszenia; summary reject 25.02 przychodzi po terminie GECCO 25.01).
+Szablon IJCAI-27: `ijcai/` (`ijcai/main.tex` = mechaniczny port szkicu). Recenzja krytyka: `RECENZJA_IJCAI_2026-11-18.md` (3/10).
+
+**Analiza liczności (18.11, offline z anatomii, 2077 stanów):** przy tej samej liczbie zamian w ruchu stosunek zysku realnego do
+przewidywanego nadal spada wzdłuż osi (2 zamiany: Dyn 0,79, N₀ 0,38, P₁ 0,30, inw. 0,29; 3–4 zamiany: 0,70 / 0,20 / −0,07 / −0,19).
+W samym N₀ przy 3–8 zamianach: bez zagnieżdżeń 0,32, przy ≥ 3 zagnieżdżeniach ok. 0,09. Działają oba czynniki: geometria i liczność
+(mediana zamian w ruchu: Dyn 3, N₀ 15, inw. 21). Zastrzeżenie: rodziny wybierają różne ruchy, więc część różnicy to efekt selekcji.
+
+**Ramowanie:** bezpiecznik (E5) przechodzi do części głównej jako wynik, nie dodatek. Zamiast „jakość spada wzdłuż osi” piszemy o dwóch
+skokach (Dyn → N₀ i P₁ → inw.), a Dyn ≈ Swap trafia do abstraktu. Rodzina rozstrzygająca: n ≤ 100, efekty z przedziałami ufności.
+
+**Nowe obliczenia (po kampanii SA k-bonacciego, kolejność wg wartości):**
+1. porównanie rodzin przy równej liczności ruchu (ruch obcięty do K najlepszych zamian, K ∈ {2, 4, 8}), ILS 10 s, n ≤ 100;
+2. dokładna ocena top-k ruchów addytywnych (k = 5–10) jako mocniejsza reguła akceptacji;
+3. RPD do BKS oraz wiersze odniesienia NEH (start) i IG;
+4. wrażliwość na limity (rdzenie 400, skojarzenie 3000) przy n = 100–200;
+5. c₂ w anatomii (DP c = 2, MILP |C| ≤ 60);
+6. E4 (kwanty), wersja v4: QUBO z poprawkami par (zmierzone oddziaływania par zamian; tego DP nie umie, a QUBO tak) obok QUBO
+   inwolucji i N₀ z karą, stany n = 20 z K ≤ 16 (bez okien na Siriusie). Najpierw klasycznie (obliczenie 7), potem sprzęt:
+   D-Wave OPT 90 stanów × 3 QUBO = 270 wywołań ≈ 8–10 s; pętla ILS z QUBO z poprawkami na D-Wave, 100 iteracji × 10 instancji × 3 klasy
+   n = 20 ≈ 3000 wywołań ≈ 90 s (ok. 1/3 miesięcznej puli ~287 s, grudzień–styczeń, razem z k-bonaccim ≤ 54 s); IQM tylko MIN:
+   10 obwodów p = 1 ≈ 5–8 kr (OPT 30 obwodów ≈ 14–23 kr, jeśli zostaną kredyty po k-bonaccim). IQM w pętli odpada (1000 obwodów
+   ≈ 450–750 kr). Bez kosztu: transpilacja na fałszywym Siriusie (CZ, głębokość) i gęstość QUBO.
+7. model drugiego rzędu klasycznie: QUBO z poprawkami par rozwiązywane dokładnie (n = 20) i SA-samplerem, w anatomii (realny/przewidywany)
+   i w ILS 10 s; to on rozstrzyga, czy krzyżowania „naprawione” poprawkami par wracają do gry (E3 MAX z v3).
 
 ## Zmiany v3 (11.11.2026): decyzja o bezpieczniku i wyniki pilota z Maca
 
@@ -66,7 +97,7 @@ bloki = instancje, §7.4). Piloty anatomii, zejścia i QUBO to statystyki opisow
 
 | # | Decyzja | Propozycja |
 |---|---|---|
-| D1 | Konferencja | GECCO 2027: CFP jeszcze nieopublikowane, wcześniejsze terminy 29.01.2025 i 1.02.2024. Zapas: SOCO 2027 albo czasopismo. Punkt kontrolny 10.01.2027 |
+| D1 | Konferencja | **v4:** IJCAI 2027 (abstrakt 4.01, artykuł 11.01.2027). Zapas: czasopismo, ewentualnie wspólnie z k-bonaccim (D11) |
 | D2 | Start | permutacja identycznościowa, jak dotąd |
 | D3 | Budżety | 0,1 / 0,5 / 1 / 2 / 5 / 10 s, 5 ziaren (0–4); jeden przebieg 10 s + ekstrakcja (`scripts/extract_budgets.py` z `kbonacci-icaps`) |
 | D4 | ILS i SA | bez zmian (tabu 10, mushroom 10; SA: T0 = 1000, α = 0,99, podłoga 100, reheat 1,5, stagnacja 100 ms). Najpierw tylko ILS |
@@ -170,7 +201,7 @@ Przy K ≤ 16 QUBO mieści się na IQM **bez okien**: na stanach z trajektorii p
     przestaje mieć znaczenie. Robocza odpowiedź: zamiany nie powinny się krzyżować, a w tym protokole nawet zagnieżdżać.
   - Ruchy złożone w ogóle dają nad samą zamianą (Swap) ~1 pp przy n = 50 i ~0,1–0,3 pp przy n = 20.
   - Strona kwantowa: QUBO inwolucji jest najrzadsze, a tylko QUBO potrafi uwzględnić poprawki par (DP tego nie umie).
-- **Cel:** GECCO 2027 (termin do potwierdzenia, spodziewany koniec stycznia lub początek lutego 2027); zapas: SOCO 2027 albo czasopismo.
+- **Cel (v4):** IJCAI 2027 (abstrakt 4.01, artykuł 11.01.2027); zapas: czasopismo, ewentualnie wspólnie z k-bonaccim (D11).
   CPAIOR 2027 (abstrakt 1.12, artykuł 7.12.2026 wg beri.net) odpada, bo koliduje z ICAISC 15.11 i ICAPS 14.12.
 - **Co już mamy (01.11):**
   - liczności (J-ułamek + brute force n ≤ 11), prawo Poissona sprawdzone do n = 2000, stała wzrostu P₁;
@@ -519,7 +550,7 @@ instancje, średnia z ziaren), Page po łańcuchu, TOST dla H5, Friedman w klasi
 
 ---
 
-## 8. Struktura artykułu (GECCO: zwykle 8 stron + referencje, do potwierdzenia w CFP)
+## 8. Struktura artykułu (v4: IJCAI, 7 stron + 2 strony bibliografii, double-blind, szablon `ijcai/`; budżet stron niżej z v3 do przeliczenia)
 
 | § | Sekcja | Strony | Zawartość | Rysunki/tabele |
 |---|---|---|---|---|
@@ -561,8 +592,11 @@ instancje, średnia z ziaren), Page po łańcuchu, TOST dla H5, Friedman w klasi
 | 23.11–6.12 | Mac: E2 (ILS, ~25 h), E1, ablacja filtra; teoria §3–4 | dane do H1–H5 i H9 |
 | 7–20.12 | analiza, decyzja o SA; pierwszeństwo mają ICAPS (14.12) i ANNSIM (18.12) | — |
 | 21.12–10.01 | pisanie §1–6; kwanty MIN/OPT (po kredytach) | szkic bez §7 |
-| **10.01.2027** | **punkt kontrolny** | GECCO, jeśli E1–E2 są gotowe i jest szkic §3–6 |
-| do terminu GECCO (~koniec stycznia / początek lutego) | §7, poprawki promotora, anonimowy artefakt | zgłoszenie |
+| **v4:** 19.11–14.12 | nowe obliczenia 1–5 (Mac po SA k-bonacciego), szkic wyników | dane do odpowiedzi na recenzję krytyka |
+| **v4:** 15.12–3.01 | tekst w szablonie IJCAI, wersja PL, rundy krytyka | szkic pełny |
+| **v4: 4.01.2027** | abstrakt w systemie IJCAI | — |
+| **v4:** do 8.01 | runda promotora, anonimowy artefakt, lista powtarzalności | — |
+| **v4: 11.01.2027** | zgłoszenie | — |
 
 **Jeśli nie zdążymy:** SOCO 2027 (termin do potwierdzenia; SOCO 2026 miało 16.02) albo rozszerzona wersja do czasopisma
 (np. Journal of Heuristics, Computers & OR).
@@ -579,11 +613,11 @@ instancje, średnia z ziaren), Page po łańcuchu, TOST dla H5, Friedman w klasi
 | Gęste stany (start, n ≥ 100): koszt rdzeni i skojarzenia | średnie | wolny start przebiegu | limit top-K + log |
 | Mac zajęty kampanią k-bonacciego | wysokie | przesunięcie | E2 po k-bonaccim; MIN (~12 h) jako wariant awaryjny |
 | Kolizja z ICAISC (15.11), ICAPS (14.12), ANNSIM (18.12), a przy przesunięciu k-bonacciego także z IJCAI (~11–15.01) | wysokie | brak czasu | teoria w grudniu, eksperymenty na Macu w tle; D11 (połączenie z k-bonaccim) jako wyjście awaryjne |
-| Niepotwierdzone terminy GECCO i SOCO | średnie | przesunięcie | sprawdzić CFP w grudniu |
+| IJCAI: słabe dopasowanie (jeden problem, jedna metaheurystyka), krytyk 3/10 | wysokie | summary reject 25.02 | ramowanie jako zastępczy model addytywny przy powiększaniu sąsiedztwa (VLSN); obliczenia 1–4 z noty v4; zapas: czasopismo |
 | Nakładanie się z k-bonaccim (H5b tam: dokładna ocena najlepszej pojedynczej zamiany) | średnie | ten sam wynik w dwóch pracach | ustalić, gdzie opisujemy bezpiecznik (D3 w §12) |
 | Prawo Poissona (T2) jest już znane | średnie | mniejsza nowość C1 | sprawdzić literaturę i OEIS; w artykule i tak jako lemat |
 | Ruchy złożone dają mało ponad Swap (pilot: ≤ ~0,9 pp) | wysokie | recenzent: „po co to wszystko?” | uczciwie w tekście; wartością jest mechanizm (addytywność wg geometrii) i reguła akceptacji, a nie rekord |
-| Recenzent GECCO pyta o NEH/IG i stan wiedzy dla PFSP | średnie | słabsza ocena | ramowanie jako analiza sąsiedztw (jak w k-bonaccim A.6); ewentualnie dodatek z IG jako kontekst |
+| Recenzent pyta o NEH/IG i stan wiedzy dla PFSP (v4: obliczenie 3) | średnie | słabsza ocena | ramowanie jako analiza sąsiedztw (jak w k-bonaccim A.6); ewentualnie dodatek z IG jako kontekst |
 | Kampania k-bonacciego ruszy bez wariantów z bezpiecznikiem | pewne (decyzja v3) | brak porównania Dynasearch-safe w k-bonaccim | świadoma decyzja (D12 zamknięte); Dynasearch-safe tylko w naszym etapie E5, licznik offline w anatomii |
 
 ---
@@ -593,7 +627,7 @@ instancje, średnia z ziaren), Page po łańcuchu, TOST dla H5, Friedman w klasi
 | # | Decyzja | Rekomendacja |
 |---|---|---|
 | D1 | Główna oś: c (krzyżowania w całym ruchu, jak w katalogu) czy r (krzyżowania na łuk, P_r) | obie: N₁ i P₁ to dwa sposoby rozumienia „pojedynczych krzyżowań”; w kampanii c ∈ {0, 1, ∞} + P₁ |
-| D2 | Konferencja | GECCO 2027; zapas SOCO 2027 albo czasopismo |
+| D2 | Konferencja | **zamknięte (v4, decyzja 18.11.2026):** IJCAI 2027; zapas czasopismo |
 | D3 | Bezpiecznik: w tym artykule, w k-bonaccim, czy osobno | **zamknięte (v3):** tylko tutaj, jako osobny wariant dodatkowy (etap E5, osobna sekcja i tabela); w tabelach głównych go nie ma |
 | D4 | Wcześniejsze wyniki Motzkina przy n ≥ 50 | jedno uczciwe zdanie w tym artykule; co z pracami w recenzji, decyduje promotor |
 | D5 | Zakres kwantów | wyrocznia na stanach (MIN/OPT); pętla tylko w MAX |

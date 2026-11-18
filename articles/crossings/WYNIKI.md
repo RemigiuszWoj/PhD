@@ -49,6 +49,18 @@ Duże skoki są dwa: z Dynasearcha do N₀ (zagnieżdżanie) i z P₁ do inwoluc
   Razem z H3 daje to spójny obraz: model addytywny obiecuje przy krzyżowaniach coraz więcej, a sprzęt C_max
   daje coraz mniej.
 
+- **Liczność ruchu a geometria (E1b, 18.11, `tables/cardinality.csv`):** recenzent mógłby powiedzieć, że ruchy psują się tylko
+  dlatego, że większe rodziny wybierają więcej zamian naraz (mediana: Dyn 3, N₀ 15, P₁ 16, inwolucje 21 zamian w ruchu). Przy tej samej
+  liczbie zamian kolejność się jednak nie zmienia. Przy dwóch zamianach ruch daje medianowo 0,79 obiecanego zysku w Dynasearchu,
+  0,38 w N₀, 0,30 w P₁ i 0,29 w inwolucjach, a przy trzech lub czterech 0,70, 0,20, −0,07 i −0,19. W samym N₀ przy 3–8 zamianach ruch
+  bez zagnieżdżeń daje 0,32, a z co najmniej trzema zagnieżdżeniami około 0,09. Działają więc oba czynniki: geometria i liczność.
+  Zastrzeżenie: każda rodzina wybiera inne ruchy, więc część różnicy może wynikać z samego wyboru.
+
+## Poprawka 18.11
+
+Odniesienie do k-bonacciego czytało wszystkie przebiegi z katalogów k-bonacciego, także SA z bieżącej kampanii. Skrypt bierze teraz
+tylko ILS. Zmienił się wiersz tai20_5 dla k = 2…4 (np. k = 2: 3,49 zamiast 5,41). Wnioski powyżej się nie zmieniają.
+
 ## Czego jeszcze nie ma
 
 - c₂ w anatomii (DP dla c = 2 i MILP dla |C| ≤ 60): wymaga obliczeń, po kampanii SA k-bonacciego.

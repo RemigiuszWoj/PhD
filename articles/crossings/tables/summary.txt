@@ -435,7 +435,7 @@ Friedman over the six plain variants, mean rank per class (1 = best)
 
 Mean RPD at 10 s: dyn and c0 here, k-bonacci k = 2, 3, 4, 8, n
       file      dyn       c0       k2       k3       k4       k8       kn
-   tai20_5     2.52     2.62     5.41     4.51     3.36     2.53     2.52
+   tai20_5     2.52     2.62     3.49     3.23     2.99     2.53     2.52
   tai20_10     9.80    10.19    10.92    10.56    10.28     9.83     9.80
   tai20_20    21.29    21.44    22.02    21.71    21.49    21.22    21.29
    tai50_5     1.01     2.00     1.64     1.57     1.25     1.08     1.01
@@ -465,7 +465,7 @@ dyn vs k-bonacci k = n (two codes of the disjoint-swap family)  (diff = a - b in
 
 dyn vs k-bonacci k = 2 (Fibonacci)  (diff = a - b in RPD pp; wins = instances where a is better, of 10)
       file   rpd_a   rpd_b    diff  wins   A12        p   p_holm
-   tai20_5    2.52    5.41   -2.89    10  0.96   0.0020   0.0234*
+   tai20_5    2.52    3.49   -0.97    10  0.90   0.0020   0.0234*
   tai20_10    9.80   10.92   -1.11    10  0.92   0.0020   0.0234*
   tai20_20   21.29   22.02   -0.73    10  0.81   0.0020   0.0234*
    tai50_5    1.01    1.64   -0.63    10  0.94   0.0020   0.0234*
@@ -549,3 +549,31 @@ Smallest c with OPT_c = OPT_inv [% of states]
  tai100_20        1        0       99      210
  tai200_10        0        0       99      209
  tai200_20        0        0      100      175
+
+=== E1b cardinality: swaps per move vs additivity (anatomy states, pooled) ===
+Swaps per move, median [q1, q3]: dyn 3 [2, 5], c0 15 [6, 33], pa1 16 [6, 33], inv 21 [7, 45]
+
+Median realised/predicted by swaps per move (then n states per family)
+      file      dyn       c0      pa1      inv    n_dyn     n_c0    n_pa1    n_inv
+         1     1.00     1.00     1.00     1.00   269.00   127.00   109.00   109.00
+         2     0.79     0.38     0.30     0.29   424.00   101.00    86.00    66.00
+       3-4     0.70     0.20    -0.07    -0.19   693.00   194.00   182.00   127.00
+       5-8     0.60     0.10     0.06    -0.11   516.00   334.00   354.00   336.00
+      9-16     0.44     0.02    -0.02    -0.16   174.00   346.00   317.00   193.00
+       17+     0.15     0.06     0.06    -0.05     1.00   975.00  1029.00  1246.00
+
+Compound move worse than best single swap [%] by swaps per move
+      file      dyn       c0      pa1      inv
+         1        0        0        0        0
+         2       39       66       66       65
+       3-4       30       77       84       86
+       5-8       22       81       81       96
+      9-16       21       76       80       94
+       17+      100       55       55       88
+
+N0, 3-8 swaps: median realised/predicted by number of nestings
+      file    ratio        n
+         0     0.32    17.00
+       1-2     0.20    96.00
+       3-6     0.09   190.00
+        7+     0.10   225.00

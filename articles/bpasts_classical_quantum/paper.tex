@@ -36,7 +36,7 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% HEADER OF THE ARTICLE (Change all fields)
-\abtitle{\rev{Quantum and Classical Annealing for Neighborhood Search in PFSP}}
+\abtitle{\rev{Quantum and Classical Annealing in PFSP Neighborhood Search}}
 \title{\rev{Quantum and Classical Annealing for Very Large-Scale Neighborhood Search in the Permutation Flow Shop Problem}}
 
 \abauthor{Wojewódzki, Bożejko}
@@ -48,10 +48,10 @@ Wrocław University of Science and Technology, Wrocław, Poland}
 
 
 \Abstract{
-\rev{Compound neighborhoods for the permutation flow shop problem apply several compatible moves in one step, and choosing these moves is itself an optimization problem. We study this move selection step for four neighborhoods, Adjacent, Fibonacci, Dynasearch and Motzkin, used inside tabu search and simulated annealing to minimize the makespan. For each neighborhood the selection can be solved exactly by dynamic programming, and we also write it as a quadratic unconstrained binary optimization (QUBO) model. We give penalty weights that make every minimizer of these models feasible, the structure of their coefficient matrices and the cost of building them, and we keep the model separate from the solver: the same QUBO model can be solved by a classical algorithm or sampled on a quantum annealer. In the experiments the move selection is performed in four ways on Taillard instances with 20 jobs under equal wall-clock budgets: by dynamic programming, and by solving the QUBO model exactly with the Gurobi solver, approximately with a classical simulated annealing sampler, or by sampling on a real quantum processing unit (QPU), the D-Wave Advantage\_system6 quantum annealer, accessed through the Leap cloud service. Solving the models on a classical computer gives worse schedules than dynamic programming in most variants, because one call of a QUBO solver takes up to thousands of times longer, so the search performs fewer iterations within the same budget. On the QPU the schedules are worse still, because most of a call is spent outside the processor, on finding the minor embedding and in the network and queue of the cloud service, so the dense models allow about one call within ten seconds.}
+\rev{Compound neighborhoods for the permutation flow shop problem apply several compatible moves in one step, and choosing these moves is itself an optimization problem. We study this move selection for four neighborhoods, Adjacent, Fibonacci, Dynasearch and Motzkin, used inside tabu search and simulated annealing to minimize the makespan. For each neighborhood the selection can be solved exactly by dynamic programming, and we also write it as a quadratic unconstrained binary optimization (QUBO) model. We give penalty weights that make every minimizer of these models feasible, the structure of their coefficient matrices and the cost of building them, and we keep the model separate from the solver. In the experiments the move selection is performed in four ways on Taillard instances with 20 jobs under equal wall-clock budgets: by dynamic programming, and by solving the QUBO model exactly with Gurobi, approximately with a classical simulated annealing sampler, or by sampling on the D-Wave Advantage\_system6 quantum annealer. Solving the models on a classical computer gives worse schedules than dynamic programming in most variants, because one call of a QUBO solver takes up to thousands of times longer, so the search performs fewer iterations within the same budget. On the quantum processor the schedules are worse still, because most of a call is spent outside the processor, on finding the minor embedding and in the network and queue of the cloud service, so the dense models allow about one call within ten seconds.}
 }
 
-\Keywords{\rev{Permutation flow shop; Neighborhood search; Dynamic programming; QUBO; Quantum annealing; Very large-scale neighborhood search; D-Wave}}
+\Keywords{\rev{Permutation flow shop; Neighborhood search; QUBO; Quantum annealing; Very large-scale neighborhood search}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% EDITOR SECTION (Do not change)

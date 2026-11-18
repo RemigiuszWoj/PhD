@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Slug / gałąź / folder | `articles/bpasts_classical_quantum` / `pan-bpasts` (kod kampanii: `bpasts-rev-code`) / `~/Desktop/Doktorat/PhD-pan` |
+| Slug / gałąź / folder | `articles/bpasts_classical_quantum` / `pan-bpasts` (kod kampanii: `bpasts-rev-code`) / `~/Desktop/Doktorat/PhD-pan`; wersja wysłana 18.11 = gałąź `bpasts-rev` (fd092a1) |
 | Miejsce | Bulletin of the Polish Academy of Sciences: Technical Sciences (BPASTS) |
 | Format | bpasts.sty, dwie kolumny; po rewizji 9 stron; recenzja obustronnie anonimowa |
 | Abstrakt | ≤ 250 słów (nasz 240); słowa kluczowe 3–5; krótki tytuł ≤ 60 znaków |

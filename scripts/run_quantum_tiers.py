@@ -78,7 +78,13 @@ class IQMBlock:
 DWAVE_TIERS: Dict[str, List[DWaveBlock]] = {
     # Pilot for ICAPS (decision 18.11.2026): ILS only, every Taillard class, instances 0-4,
     # k in {3, 4, 8}; one block per seed so that a budget cap cuts whole seeds, not classes.
-    "pilot": [DWaveBlock(TAILLARD, ["ils"], [3, 4, 8], instances=range(5), seeds=[s]) for s in (0, 1, 2, 3, 4)],
+    # 19.11: n = 200 and 500 left out of the pilot for now (k = 8 does not embed, ~10 min per failed try).
+    "pilot": [DWaveBlock(TAILLARD[:9], ["ils"], [3, 4, 8], instances=range(5), seeds=[s]) for s in (0, 1, 2, 3, 4)],
+    # 20.11 stage 0 of the ICAPS QPU campaign (10 s, budgets cut later): sanity at n = 20,
+    # and whether n = 200 / 500 embed at all for k = 3, 4.
+    "stage0": [DWaveBlock(["tai20_5"], ["ils"], [3], instances=[0], seeds=[0]),
+               DWaveBlock(["tai200_10", "tai200_20"], ["ils"], [3, 4], instances=[0], seeds=[0]),
+               DWaveBlock(["tai500_20"], ["ils"], [3, 4], instances=[0], seeds=[0])],
     # Table "n = 20" of windowed_qubo: tai20_5, ILS + SA.
     "min": [DWaveBlock(["tai20_5"], ["ils", "sa"], [3, 4])],
     # + k = 8 at n = 20, + scaling rows of windowed_qubo (ILS, m = 10) for n = 20..100.
@@ -97,8 +103,19 @@ IQM_TIERS: Dict[str, List[IQMBlock]] = {
     "opt": [IQMBlock(["tai20_5"], [3, 4])],
     "max": [IQMBlock(["tai20_5"], [8]), IQMBlock(["tai20_10", "tai20_20"], [3, 4])],
 }
-TIER_ORDER = ["pilot", "min", "opt", "max"]
+TIER_ORDER = ["pilot", "stage0", "min", "opt", "max"]
 IQM_TIERS["pilot"] = []
+IQM_TIERS["stage0"] = []
+
+# 20.11.2026: ILS with the gate-model k-bonacci neighborhood on IQM, 10 s wall-clock limit
+# (shorter budgets are read off the move log by extract_budgets.py, as for the classical runs).
+IQM_ILS_TIERS: Dict[str, List[DWaveBlock]] = {
+    "i0": [DWaveBlock(["tai20_5"], ["ils"], [3, 4], instances=[0], seeds=[0])],
+    "i1": [DWaveBlock(["tai20_5", "tai20_10", "tai20_20"], ["ils"], [3, 4], instances=range(5), seeds=[0, 1, 2])],
+    "i2": [DWaveBlock(["tai50_5", "tai50_10", "tai50_20"], ["ils"], [3, 4], instances=range(5), seeds=[0, 1, 2])],
+    "i3": [DWaveBlock(["tai100_10"], ["ils"], [4, 3], instances=range(5), seeds=[0])],
+}
+IQM_CREDITS_PER_CIRCUIT_SAFE = 0.5  # 20.11.2026: sirius billed 5.40 cr for 2 jobs x 6 circuits = 0.45; small margin
 
 # IQM Resonance price list measured in gate_qaoa (credits): fee per job + per circuit.
 IQM_JOB_FEE = 0.25
@@ -307,10 +324,69 @@ def run_iqm(args) -> None:
             print(f"    {f:<9} k={k}: {statistics.mean(v):6.2f}  (n={len(v)})")
 
 
+def run_iqm_ils(args) -> None:
+    """ILS + gate_kbonacci_k<K> on IQM (or the local noisy simulator with --simulate)."""
+    from src.experiments.runner import ExperimentRunner, RunConfig
+    from src.neighborhoods.common import get_qpu_stats
+    from src.neighborhoods.gate_qaoa.kbonacci import window_plan
+    from src.parser import parser
+
+    if not args.simulate:
+        os.environ["IQM_COMPUTER"] = args.machine
+    res_dir = OUT / ("iqm_ils_sim" if args.simulate else f"iqm_ils_{args.machine}")
+    res_dir.mkdir(parents=True, exist_ok=True)
+    qc = {"qaoa_backend": "aer_noisy" if args.simulate else "iqm", "qaoa_p": 1, "qaoa_shots": 4096,
+          "qaoa_window_size": args.window, "qaoa_overlap_ratio": args.overlap}
+    ledger = load_ledger()
+    month = month_key()
+    for tier in args.tiers:
+        cfgs = []
+        for b in IQM_ILS_TIERS[tier]:
+            for f in b.files:
+                for k in b.ks:
+                    for i in b.instances:
+                        for sd in b.seeds:
+                            cfgs.append(RunConfig(algorithm="ils", neighborhood=f"gate_kbonacci_k{k}",
+                                                  instance_file=f"data/{f}.txt", instance_number=i, seed=sd,
+                                                  time_limit_ms=args.tl_ms, tabu_tenure=10))
+        runner = ExperimentRunner(base_results_dir=str(OUT), quantum_config=qc, resume_dir=str(res_dir))
+        todo = [c for c in cfgs if not runner._already_done(c)]
+        if args.limit:
+            todo = todo[: args.limit]
+
+        def circuits_per_move(c) -> int:
+            pt = parser(c.instance_file, c.instance_number)["processing_times"]
+            k = int(c.neighborhood.rsplit("k", 1)[1])
+            return len(window_plan(list(range(len(pt[0]))), pt, k, args.window, args.overlap))
+
+        cpm = {id(c): circuits_per_move(c) for c in todo}
+        moves_guess = max(1, math.ceil(args.tl_ms / 10000))  # ~10-12 s per move on sirius
+        est = sum(cpm[id(c)] * (moves_guess + 1) * IQM_CREDITS_PER_CIRCUIT_SAFE for c in todo)
+        used = ledger["iqm_credits"].get(month, 0.0)
+        print(f"\n=== IQM ILS tier {tier.upper()} ({'aer_noisy' if args.simulate else args.machine}): "
+              f"{len(cfgs)} runs, {len(todo)} to do | worst-case estimate {est:.0f} credits "
+              f"| month {month}: used {used:.1f} of {args.credits:.0f}")
+        if args.dry_run or not todo:
+            continue
+        for c in todo:
+            worst = cpm[id(c)] * (moves_guess + 1) * IQM_CREDITS_PER_CIRCUIT_SAFE
+            if not args.simulate and ledger["iqm_credits"].get(month, 0.0) + worst > args.credits:
+                print("    credit cap reached; stopping (re-run resumes).")
+                return
+            runner.run([c])
+            st = get_qpu_stats()
+            spent = st.get("gate_moves", 0) * cpm[id(c)] * IQM_CREDITS_PER_CIRCUIT_SAFE
+            if not args.simulate:
+                ledger["iqm_credits"][month] = ledger["iqm_credits"].get(month, 0.0) + spent
+                save_ledger(ledger)  # after EVERY paid run
+            print(f"    {c.instance_file} inst {c.instance_number} {c.neighborhood} seed {c.seed}: "
+                  f"{st.get('gate_moves', 0)} QAOA moves ({st.get('quantum_empty_moves', 0)} empty), {cpm[id(c)]} circuits/move, ~{spent:.1f} cr")
+
+
 # ----------------------------------------------------------------------------- main
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--backend", choices=["dwave", "iqm"], required=True)
+    ap.add_argument("--backend", choices=["dwave", "iqm", "iqm-ils"], required=True)
     ap.add_argument("--tiers", default="min,opt,max", help="comma list, in order (default min,opt,max)")
     ap.add_argument("--dry-run", action="store_true", help="only print plan and cost estimates")
     ap.add_argument("--simulate", action="store_true",
@@ -331,6 +407,13 @@ def main() -> None:
     ap.add_argument("--overlap", type=float, default=0.5)
     args = ap.parse_args()
     args.tiers = [t.strip() for t in args.tiers.split(",") if t.strip()]
+    if args.backend == "iqm-ils":
+        bad = [t for t in args.tiers if t not in IQM_ILS_TIERS]
+        if bad:
+            ap.error(f"unknown IQM ILS tiers {bad}; use {list(IQM_ILS_TIERS)}")
+        OUT.mkdir(parents=True, exist_ok=True)
+        run_iqm_ils(args)
+        return
     bad = [t for t in args.tiers if t not in TIER_ORDER]
     if bad:
         ap.error(f"unknown tiers {bad}; use {TIER_ORDER}")

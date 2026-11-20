@@ -1,7 +1,7 @@
 """Quantum k-bonacci neighborhood: interval-overlap QUBO with swap distance <= k-1.
 
 Same QUBO as ``quantum_qubo/dynasearch.py`` (shared common_qubo helpers, the
-same NPI block filter, the same delta-filter policy and fallback), with one
+same NPI block filter and delta-filter policy; no classical fallback), with one
 difference: the interval-length cap ``L_max = k`` is honoured on EVERY backend.
 ``quantum_dynasearch_neighborhood`` drops ``L_max`` when ``backend == 'dwave'``
 (full O(n^2) candidate space on the QPU), which is right for Dynasearch but
@@ -15,7 +15,7 @@ would silently turn k-bonacci into Dynasearch on the annealer.
 from typing import List, Tuple
 
 from src.neighborhoods.accelerator import validate_no_overlap_intervals
-from src.neighborhoods.common import solve_qubo
+from src.neighborhoods.common import _qpu_stats, solve_qubo
 from src.neighborhoods.common_qubo import (
     assemble_pairwise_qubo,
     enumerate_interval_candidates,
@@ -57,12 +57,7 @@ def quantum_kbonacci_neighborhood(
     else:
         candidates = list(all_candidates)
 
-    if not candidates:
-        best = min(all_candidates, key=lambda x: x[2])
-        if best[2] < 0:
-            new_pi = pi.copy()
-            new_pi[best[0]], new_pi[best[1]] = new_pi[best[1]], new_pi[best[0]]
-            return new_pi, c_max(new_pi, processing_times), [(best[0], best[1])]
+    if not candidates:  # no classical fallback (20.11.2026): quantum moves are quantum only
         return pi.copy(), c_max(pi, processing_times), []
 
     Q = assemble_pairwise_qubo(candidates, _intervals_overlap)
@@ -77,10 +72,9 @@ def quantum_kbonacci_neighborhood(
         num_spin_reversal_transforms=num_spin_reversal_transforms,
     )
     valid_swaps = validate_no_overlap_intervals(selected_intervals(solution, candidates))
+    # No classical fallback (20.11.2026): if the QPU selected nothing, the move is empty.
     if not valid_swaps:
-        best_k = min(range(len(candidates)), key=lambda t: candidates[t][2])
-        if candidates[best_k][2] < 0:
-            valid_swaps = [(candidates[best_k][0], candidates[best_k][1])]
+        _qpu_stats["quantum_empty_moves"] += 1
 
     new_pi = pi.copy()
     for i, j in sorted(valid_swaps):

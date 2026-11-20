@@ -14,7 +14,7 @@ from src.neighborhoods.accelerator import (
     intervals_overlap,
     validate_no_overlap_intervals,
 )
-from src.neighborhoods.common import compute_head, compute_tail
+from src.neighborhoods.common import _qpu_stats, compute_head, compute_tail
 from src.neighborhoods.common_qubo import enumerate_interval_candidates
 from src.neighborhoods.gate_qaoa.windowed import windowed_interval_swaps
 from src.permutation_procesing import c_max
@@ -40,12 +40,10 @@ def gate_kbonacci_neighborhood(
         window_size=window_size, overlap_ratio=overlap_ratio, filter_delta=False, L_max=k,
     )
     valid_swaps = validate_no_overlap_intervals(raw)
-    if not valid_swaps:  # fallback: best single improving swap (as gate_dynasearch)
-        all_c = enumerate_interval_candidates(pi, processing_times, L_max=k, filter_delta=False)
-        if all_c:
-            best = min(all_c, key=lambda c: c[2])
-            if best[2] < 0:
-                valid_swaps = [(best[0], best[1])]
+    _qpu_stats["gate_moves"] += 1
+    # No classical fallback (20.11.2026): if QAOA selected nothing, the move is empty.
+    if not valid_swaps:
+        _qpu_stats["quantum_empty_moves"] += 1
     new_pi = pi.copy()
     for i, j in sorted(valid_swaps):
         new_pi[i], new_pi[j] = new_pi[j], new_pi[i]

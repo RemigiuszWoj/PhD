@@ -44,6 +44,7 @@ from src.neighborhoods.quantum_qubo_enhanced.motzkin import quantum_motzkin_enha
 from src.neighborhoods.gate_qaoa.adjacent import gate_adjacent_neighborhood
 from src.neighborhoods.gate_qaoa.dynasearch import gate_dynasearch_neighborhood
 from src.neighborhoods.gate_qaoa.fibonacci import gate_fibonacci_neighborhood
+from src.neighborhoods.gate_qaoa.kbonacci import gate_kbonacci_neighborhood
 from src.neighborhoods.gate_qaoa.motzkin import gate_motzkin_neighborhood
 from src.permutation_procesing import c_max
 
@@ -401,6 +402,18 @@ def get_neighbor(
     # ------------------------------------------------------------------
     # GATE-MODEL QAOA
     # ------------------------------------------------------------------
+    elif neigh_mode.startswith("gate_kbonacci_k"):
+        # gate-model k-bonacci (windowed QAOA, swap distance < k inside every window)
+        k_g = int(neigh_mode[len("gate_kbonacci_k"):])
+        qp = _extract_quantum_params(quantum_config, "gate_dynasearch")
+        new_pi, new_c, swaps = gate_kbonacci_neighborhood(
+            current_pi, processing_times, k_g,
+            p=qp["p"], backend=qp["backend"], shots=qp["shots"],
+            window_size=qp.get("window_size") or 6,
+            overlap_ratio=qp.get("overlap_ratio", 0.5),
+        )
+        return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
+
     elif neigh_mode == "gate_adjacent":
         qp = _extract_quantum_params(quantum_config, neigh_mode)
         new_pi, new_c, move = gate_adjacent_neighborhood(

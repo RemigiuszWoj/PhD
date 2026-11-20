@@ -34,6 +34,8 @@ _qpu_stats: Dict[str, int] = {
     "fallback_embedding": 0,
     "fallback_other": 0,
     "simulator_calls": 0,
+    "gate_moves": 0,             # gate QAOA moves (one job with all windows)
+    "quantum_empty_moves": 0,    # moves where the QPU selected no valid swap (no classical fallback)
 }
 
 

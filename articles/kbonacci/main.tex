@@ -1,8 +1,8 @@
 % =====================================================================
 % DRAFT v3 (14.11.2026) -- k-bonacci neighborhoods for the PFSP
 % Changes are listed in PLAN.md, sections 9 and 9a. Polish version: wersja_pl.tex.
-% Target: IJCAI 2027 (abstract 4.01, paper 11.01.2027; 7 pages + 2 of
-% references) or GECCO, decision 22.11; double-blind.
+% Target: ICAPS 2027, Columbia SC (abstract 7.12, paper 14.12.2026; AAAI-27
+% author kit, 8 pages + references, supplement separate); double-blind.
 % Layout: plain article class for drafting; switch to the official template.
 % Every statement of Sections 4-5 is checked by scripts/kbonacci_theory_checks.py.
 % Protocol = identical to the previous papers of this line (same ILS/SA,
@@ -29,6 +29,10 @@
 \newtheorem{example}{Example}
 \newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
 \newcommand{\N}{\mathcal{N}}
+% Double-blind switch: \anontrue for submission, \anonfalse for camera-ready
+% (acknowledgments name the institution, so they appear only when \anonfalse).
+\newif\ifanon
+\anontrue
 
 \title{From Fibonacci to Dynasearch: the $k$-bonacci Family of\\
 Compound-Swap Neighborhoods for the Permutation Flow Shop}
@@ -920,6 +924,14 @@ small $k$ also keeps the QUBO of the move banded with bandwidth $k-1$, as
 the quantum neighborhood search of~\cite{windowed_own} requires.
 \todo{quantum paragraph only if the tiers are run} Swaps that cross are
 left for a separate study.
+
+\ifanon\else
+\section*{Acknowledgments}
+We thank the Wroc\l{}aw Centre for Networking and Supercomputing (WCSS)
+for access to its computing infrastructure, and the Department of
+Automatics and Quantum Computing, Wroc\l{}aw University of Science and
+Technology, for its support.
+\fi
 
 % ---------------------------------------------------------------------
 \begin{thebibliography}{99}\small

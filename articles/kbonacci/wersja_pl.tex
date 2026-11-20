@@ -1,6 +1,8 @@
 % =====================================================================
 % SZKIC v3 (14.11.2026) -- wersja polska (robocza, do dyskusji z promotorem)
 % Odpowiada main.tex (EN, v3); lista zmian w PLAN.md, punkty 9 i 9a.
+% Cel: ICAPS 2027, Columbia SC (abstrakt 7.12, artykuł 14.12.2026; szablon AAAI-27,
+% 8 stron + bibliografia); recenzja dwustronnie ślepa.
 % Protokół identyczny z poprzednimi pracami; nowa jest tylko klasa sąsiedztw.
 % Wyniki (14.11): kampania główna i etap `large` z filtrem dokładnym;
 % łącznie z etapami large500 i large_m10 (15.11) i relative_cp (16.11).
@@ -25,6 +27,9 @@
 \newtheorem{example}{Przykład}
 \newcommand{\todo}[1]{\textcolor{red}{[DO ZROBIENIA: #1]}}
 \newcommand{\N}{\mathcal{N}}
+% Przełącznik ślepej recenzji: \anontrue do zgłoszenia, \anonfalse do wersji finalnej.
+\newif\ifanon
+\anontrue
 
 \title{Od Fibonacciego do Dynasearch: rodzina sąsiedztw $k$-bonacci\\
 złożonych z zamian dla permutacyjnego problemu przepływowego}
@@ -853,6 +858,13 @@ w postaci pasmowej o szerokości $k-1$, której wymaga kwantowe
 przeszukiwanie sąsiedztwa z~\cite{windowed_own}. \todo{akapit kwantowy
 tylko jeśli policzymy poziomy} Zamiany krzyżujące się zostawiamy na
 osobne studium.
+
+\ifanon\else
+\section*{Podziękowania}
+Dziękujemy Wrocławskiemu Centrum Sieciowo-Superkomputerowemu (WCSS)
+za udostępnienie infrastruktury obliczeniowej, a Katedrze Automatyki
+i Obliczeń Kwantowych Politechniki Wrocławskiej za wsparcie.
+\fi
 
 \begin{thebibliography}{99}\small
 \bibitem{ahuja2002} R.K.~Ahuja, \"O.~Ergun, J.B.~Orlin, A.P.~Punnen.

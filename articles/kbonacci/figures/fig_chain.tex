@@ -15,9 +15,13 @@
 \node[fam,right=of dd]  (kn) {Dynasearch\\$k=n$: $512$};
 \node[nb,right=of kn]   (mo) {Motzkin\\$2188$};
 \node[nb,right=of mo]   (in) {involutions\\$9496$};
-\foreach \a/\b in {adj/k2,k2/k3,k3/k4,k4/dd,dd/kn,kn/mo,mo/in}{\node at ($(\a.east)!0.5!(\b.west)$) {$\subset$};}
+\node[nb,dashed,right=of in] (gi) {generalized\\involutions};
+\node[nb,right=of gi]   (ce) {complete\\enumeration\\$n!=3628800$};
+\foreach \a/\b in {adj/k2,k2/k3,k3/k4,k4/dd,dd/kn,kn/mo,mo/in,in/gi,gi/ce}{\node at ($(\a.east)!0.5!(\b.west)$) {$\subset$};}
 \draw[decorate,decoration={brace,mirror,amplitude=3pt}] ([yshift=-1.5mm]k2.south west) -- node[below=3pt]{$\mathcal N_k$: wider band, cost $O(mnk^2)$} ([yshift=-1.5mm]kn.south east);
 \node[below=5.2mm of mo,align=center,inner sep=0pt] {nested\\swaps};
 \node[below=5.2mm of in,align=center,inner sep=0pt] {crossing\\swaps};
+\node[below=5.2mm of gi,align=center,inner sep=0pt] {open};
+\node[below=2.6mm of ce,align=center,inner sep=0pt] {all\\permutations};
 \end{tikzpicture}
 \end{document}

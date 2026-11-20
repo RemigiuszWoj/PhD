@@ -17,7 +17,7 @@ Wersja 3 zaakceptowana 11.11.2026; wersja 4 (14.11) czeka na akceptację. Zastę
 | Anatomia ruchu (11.11, 16.11) | policzona dla n ≤ 100 (ok. 990 stanów, `anatomy/anatomy.json`) i dla n = 200, k ≤ 16 (194 stany, `anatomy/anatomy_n200.json`, `anatomy_summary_n200.txt`; 20 s obliczeń) |
 | Teoria | spisana z dowodami w `main.tex`, sprawdzona numerycznie (`scripts/kbonacci_theory_checks.py`) |
 | Szkic | `main.tex` (EN) ma rozdział Results i roboczy Conclusions, napisane 14.11 na filtrze dokładnym; `wersja_pl.tex` (PL) zsynchronizowana 14.11 i uzupełniona o braki wobec wersji angielskiej |
-| Terminy (potwierdzone na stronach konferencji 10.11) | ICAPS (14.12.2026) nie jest już realny. IJCAI: abstrakt 4.01, artykuł 11.01.2027, 7 stron + 2 strony bibliografii, opłata 100 USD za zgłoszenie |
+| Terminy (potwierdzone na icaps27.icaps-conference.org 18.11) | **Cel: ICAPS 2027 (decyzja 18.11).** Abstrakt 7.12, artykuł 14.12.2026, decyzja 26.02.2027; szablon AAAI-27, 8 stron treści + bibliografia, suplement osobno, double-blind, EasyChair. Abstrakt nowy, ok. 240 słów, opisowy |
 
 ## 2. Co chcemy zbadać
 
@@ -142,14 +142,12 @@ O cięciach decydujemy na końcu.
 | Kiedy | Co |
 |---|---|
 | do 16.11 | `large500` i `large_m10` kończą się 15.11; analiza obu; przenieść skrypt generujący wiersze tabel do `scripts/`; rozmowa z promotorem (punkty 8.1 i 8.2) |
-| 17–22.11 | rysunki z filtrem dokładnym, wiersze referencyjne, testy na średnich po instancjach (120 par) i między k, Friedman z Nemenyi CD; anatomia n = 200 i każdy bieg z zegarem (SA, D-Wave MIN) dopiero po końcu kampanii crossings; **decyzja 22.11: IJCAI czy GECCO**; decyzja o SA 22.11 |
-| 23.11–3.12 | rewizja BPASTS ma pierwszeństwo (termin 3.12) |
-| 4–18.12 | ANNSIM ma pierwszeństwo (termin 18.12); k-bonacci tylko D-Wave OPT |
-| 19.12–3.01 | cięcie do 7 stron, suplement z dowodami, szablon IJCAI, anonimizacja, bibliografia własna; SA (ok. 16 h) tylko w oknie 19–23.12, inaczej wiersze SA znikają z protokołu; abstrakt 4.01 |
-| 5–11.01 | tylko korekta, żadnych nowych obliczeń; artykuł 11.01 |
-| od 1.12 | D-Wave OPT po odnowieniu quoty |
+| 18–19.11 | SA z filtrem dokładnym (koniec ok. 19.11 7:00); decyzja ICAPS; rysunek łańcucha, podziękowania, nowy abstrakt |
+| od 19.11 | kwanty tylko ILS, 5 instancji: D-Wave 600 s, IQM 1000 kr (oba do rozszerzenia), najpierw n = 20, potem duże; każdy bieg za zgodą |
+| do 6.12 | szablon AAAI-27, cięcie z 11 do 8 stron, suplement z dowodami, anonimizacja; abstrakt w EasyChair 7.12 |
+| 7–14.12 | tylko korekta; artykuł 14.12; ANNSIM (18.12) równolegle |
 
-ICAPS (14.12) odpada; IJCAI albo GECCO, decyzja 22.11.
+Poprzedni plan (IJCAI 11.01 albo GECCO, decyzja 22.11) zastąpiony 18.11 decyzją o ICAPS.
 
 ## 7. Ryzyka
 
@@ -200,6 +198,7 @@ ICAPS (14.12) odpada; IJCAI albo GECCO, decyzja 22.11.
     **Wynik (16.11.2026):** etap `relative_cp` policzony (4350 przebiegów; 56 zepsutych uśpieniem komputera w nocy 15/16.11 powtórzono, kontrola `sleepcheck.py` czysta), tabele w `tables/relative_cp/`, wpisany do Results EN/PL. Tezy stoją: dla m = 20 i n ≥ 100 RPD nie maleje od k = 10 do k = n; 200×10 najlepsze k = 20 (płasko 16–40); m = 5 płasko dla k ≥ 12; 500×20 od k = 250 jeden ruch w 10 s. Zmienione: kolumna 10 s w tabeli najlepszego k, Insert lepszy w 7 z 11 klas (50×10 przechodzi na k = 15, 20×10 różnica < 0,01 pkt proc.), najlepsze k przy filtrze dokładnym 6–15 na tej samej siatce co filtr granic bloków (10–30).
 17a. **Stan 16.11 wieczór:** bibliografia zweryfikowana w Crossref (Ergun–Orlin, Grosso i in., Miles, Schilling; Balzereit i in. nadal tylko arXiv), własne prace wpisane (ICAISC 2026 w druku, SOCO 2026 z DOI, preprint SSRN); RPD do BKS w Results; opis listy tabu i języka w protokole. Zostało 14 `\todo`: decyzje (SA, część kwantowa, podział z promotorem, łańcuch w pracach grupy), cytowania Fellera i Gordona–Schillinga–Watermana, liczby z `check_block_filter.py`, źródło BKS (do potwierdzenia z promotorem), rysunek RPD od liczby iteracji, fig_distances/fig_cost.
 17b. **Stan 17.11 wieczór:** rysunek RPD od numeru iteracji (przebiegi 60 s, `fig_rpd_vs_iters_cp.pdf`, `figures/time_per_move.csv`, `plot_kbonacci.py --iters-runs results/kbonacci/large`), cytowania Feller 1968 i Gordon–Schilling–Waterman 1986 (DOI 10.1007/bf00699107 sprawdzony). Kampania SA (main + insert) liczy się od 17.11 19:47, koniec ok. 18.11 13:00. Zostało 11 `\todo`: SA (2, po kampanii), część kwantowa (4, decyzja), promotor (2), łańcuch w pracach grupy, `check_block_filter.py` (po SA), źródło BKS.
+17c. **Decyzja 17.11: część kwantowa zostaje** (Q8, poziomy jak w 4.4). Kolejność: po kampanii SA (koniec ok. 18.11 13:00) `run_quantum_tiers.py --dry-run`, sprawdzenie salda D-Wave i IQM przez właściciela, MIN (D-Wave + IQM) i OPT **wyłącznie po wyraźnej zgodzie właściciela na dany bieg** (polecenie 17.11), nawet dry-run tylko na jego prośbę. Cztery `\todo` kwantowe wypełnić z wyników MIN/OPT.
 17. **Najtańsze wzmocnienie tezy bez nowych długich obliczeń:** rysunek RPD względem liczby iteracji (oś logarytmiczna, krzywa dla każdego k, np. 100×5, 100×10, 100×20 i 500×20) z istniejących logów ruchów oraz mała tabela czasu ruchu w ms dla k i m. Do zrobienia po końcu biegów.
 
 ## 9. Zmiany szkicu v1 → v2 (zaakceptowane 11.11.2026)

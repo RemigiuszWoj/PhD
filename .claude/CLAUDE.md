@@ -32,10 +32,16 @@ W skrócie, każdy etap ma swój skill:
 | 7. Domknięcie: DOI, tabele, kalendarz, ORCID, druk | `/domkniecie` | wszystkie miejsca ze stanem zaktualizowane |
 | 8. Druk egzemplarza do półki | `/druk` | `druk/` z PDF do drukarni |
 | przekrojowo: stan wszystkich prac | `/stan-doktoratu` | przegląd terminów i tabel |
+| przekrojowo: baza wiedzy | `/wiki` | pytanie do bazy, nowe źródło, aktualizacja, przegląd |
 | **wejście do całości** | **`/doktorat`** | rozpoznaje etap i woła właściwy skill |
 
 ## Gdzie co jest (Mac)
 
+- **Baza wiedzy** (osobne prywatne repo `PhD-wiki`, folder `~/Desktop/Doktorat/PhD-wiki`): strony o każdym
+  artykule, pojęciach (sąsiedztwa, QUBO, QAOA, sprzęt), kodzie, procesie, literaturze (cytownik, prace promotora)
+  i uwagach promotora. Start: `index.md`, skill `/wiki`. Przed pracą nad artykułem przeczytaj jego stronę
+  w `publikacje/`, po zmianie stanu ją zaktualizuj (robi to `/domkniecie`). Treści z bazy (stany recenzji,
+  cytownik, szkice promotora) nie przenosimy do tego publicznego repo bez sprawdzenia.
 - Repo główne: `~/Desktop/PhD` (gałąź `main`). **Każdy artykuł ma osobną gałąź i osobny folder roboczy**
   `~/Desktop/PhD-<slug>` (git worktree), żeby sesje nie deptały sobie po plikach. Nazwy gałęzi jak dotąd:
   `icaisc-p-study`, `annsim-simulators`, `gate-all-instances`, `gcmm-rev`, `pan-bpasts`, `kbonacci-icaps`,

@@ -5,6 +5,10 @@ description: Pisanie artykułu doktoratu – plan artykułu (tytuły, teza, bud�
 
 # Artykuł
 
+**Baza wiedzy** (`~/Desktop/Doktorat/PhD-wiki`): przed planem przeczytaj stronę artykułu (`publikacje/`) i potrzebne pojęcia (definicje,
+notacja, liczności w `pojecia/`). Pełna lista zasad stylu i uwagi promotora: `proces/styl-pisania.md`,
+`proces/uwagi-promotora.md`. Po zatwierdzeniu planu wpisz tezę i wkład na stronę artykułu.
+
 ## Najpierw plan (`PLAN_ARTYKULU.md`, szablon w `articles/_szablon/`)
 
 1. Format: klasa, limit stron (z bibliografią?), ślepa recenzja, styl cytowań.

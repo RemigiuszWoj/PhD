@@ -10,6 +10,7 @@ description: Przegląd stanu całego doktoratu – wszystkie artykuły i ich eta
    (`git branch -r --no-merged origin/main`).
 2. Porównaj z pamięcią projektu (`project_konferencje_plan.md`), notatką DOKTORAT i kalendarzem PWR
    (najbliższe 60 dni).
+   Do tego `doktorat/plan-publikacji.md` i strony w `publikacje/` w bazie wiedzy (`~/Desktop/Doktorat/PhD-wiki`) – rozjazd też tam poprawić.
 3. Odpowiedz krótko, jedną tabelą: praca | miejsce | stan | następny krok | termin. Pod nią:
    - terminy w ciągu 14 dni (pogrubione),
    - rozjazdy między źródłami (co gdzie poprawić – zaproponuj `/domkniecie`),

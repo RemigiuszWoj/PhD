@@ -33,6 +33,8 @@ Zanim cokolwiek założysz, ustal z właścicielem w 2–3 zdaniach: temat (jedn
 6. **Notatka DOKTORAT**: wiersz w tabeli konferencji (konferencja, termin, artykuł). Patrz `/domkniecie` – sekcja
    o edycji notatki.
 7. **Pamięć projektu**: nowy `project_<slug>.md` (temat, gałąź, folder, terminy, decyzje) + wpis w `MEMORY.md`.
+   Baza wiedzy: strona `~/Desktop/Doktorat/PhD-wiki/publikacje/<slug>.md` (format w `CLAUDE.md` bazy) i wiersze w
+   `doktorat/plan-publikacji.md` oraz `doktorat/mapa-worktree.md` (`/wiki`). Temat wybieraj z `doktorat/pomysly.md`.
 8. Pierwszy commit na gałęzi: `<slug>: skeleton from template, venue requirements`. Bez pusha, chyba że właściciel
    chce.
 9. Przejdź do `/badania` (plan badań).

@@ -5,6 +5,10 @@ description: Bibliografia do artykułu doktoratu – cytownik katedry (Google Sh
 
 # Bibliografia
 
+**Baza wiedzy** (`~/Desktop/Doktorat/PhD-wiki/literatura/`): `kluczowe-zrodla.md` (najczęściej cytowane źródła i gdzie je cytujemy),
+`grupa-bozejki.md` (prace grupy z cytownika) i strony pojedynczych prac. Nowe ważne źródło → strona w `literatura/`
+(`/wiki`, dodanie źródła).
+
 ## Źródła pozycji
 
 1. **Cytownik katedry** (Google Sheets, prowadzi katedra – prace Bożejki, Uchrońskiego, Wodeckiego, Gnatowskiego,

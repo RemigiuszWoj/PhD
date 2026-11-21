@@ -7,6 +7,9 @@ description: Rundy krytycznego przeglądu artykułu doktoratu przed oddaniem pro
 
 Wzorzec: ANNSIM 5 rund, ACIIDS 10 rund, ICAISC 2027 8 rund, k-bonacci 5 rund + przeglądy na najmocniejszym modelu.
 
+**Baza wiedzy:** listę kontrolną `~/Desktop/Doktorat/PhD-wiki/proces/uwagi-promotora.md` i zasady `proces/styl-pisania.md` daj krytykom
+stylu. Istotne zarzuty, które zostają w tekście jako ograniczenia, dopisz do strony artykułu w `publikacje/`.
+
 ## Jedna runda
 
 Uruchom równolegle niezależnych krytyków (subagenci, każdy dostaje ścieżki plików i jedno zadanie, raport

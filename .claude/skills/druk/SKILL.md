@@ -9,6 +9,8 @@ Cel: każda opublikowana praca jako osobny zeszyt z okładką (jak cienka broszu
 Ustalenia z wątku „PDFy artykułów do druku i oprawy” (14.11.2026) – **jeśli ten wątek ustalił coś nowego
 (drukarnia, format, druk samodzielny), zaktualizuj ten plik.**
 
+**Baza wiedzy:** po zamówieniu albo odłożeniu druku zapisz stan na stronie artykułu (`~/Desktop/Doktorat/PhD-wiki/publikacje/`).
+
 ## Kiedy
 
 Warunki: jest DOI, wersja wydawcy (offprint) albo finalna wersja autorska jest w `articles/<slug>/`, recenzje

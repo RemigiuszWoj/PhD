@@ -26,6 +26,8 @@ przyjęty → korekta (proofs) → opublikowany (DOI) → wydrukowany`.
    typu „po decyzji dodać do ORCID” zostaw, dopóki nie są zrobione.
 5. **Pamięć projektu** (`project_<slug>.md`, `project_konferencje_plan.md`) – stan, gałęzie, commity, decyzje.
 6. **Gałęzie** – po wysyłce/akceptacji scalić do `main` (zapytać), push (zapytać).
+7. **Baza wiedzy** (`~/Desktop/Doktorat/PhD-wiki`): strona artykułu (`status`, `updated`, sekcja „Stan”), `doktorat/plan-publikacji.md`,
+   zdarzenie w `doktorat/historia-decyzji.md`, wpis w `log.md`, commit w repo bazy (`/wiki`, aktualizacja).
 
 ## Po publikacji (DOI działa)
 

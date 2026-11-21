@@ -8,6 +8,9 @@ description: Przygotowanie zgłoszenia artykułu doktoratu do konferencji/czasop
 **Nie wysyłam sam.** Przygotowuję pliki i pola; właściciel klika „Submit”. Jeśli właściciel prosi o wgranie
 przez przeglądarkę – każdy krok potwierdzam przed zatwierdzeniem formularza.
 
+**Baza wiedzy:** wymagania konferencji są też na stronie artykułu (`~/Desktop/Doktorat/PhD-wiki/publikacje/`). Tuż po wysyłce zaktualizuj
+tam `status` i `paper_id` i dopisz zdarzenie do `doktorat/historia-decyzji.md` (`/wiki`, aktualizacja).
+
 ## Pliki (`articles/<slug>/submission_<KONF>/`)
 
 - `README.md` – gdzie (URL systemu), terminy, wymagania ze strony (sprawdzone <data>), autorzy do formularza,

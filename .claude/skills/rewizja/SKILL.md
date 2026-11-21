@@ -7,6 +7,10 @@ description: Rewizja artykułu doktoratu po recenzjach i wersja finalna (camera-
 
 Wzorzec: GCMM 2026 Paper 59 (gałąź `gcmm-rev`), BPASTS (`pan-bpasts`).
 
+**Baza wiedzy:** na start strona artykułu (`~/Desktop/Doktorat/PhD-wiki/publikacje/`) i `proces/uwagi-promotora.md` (np. w odpowiedzi teksty
+recenzentów kursywą, nasze prosto). Po wgraniu streść uwagi recenzentów i nasze odpowiedzi w sekcji „Recenzje”
+strony artykułu.
+
 ## Start
 
 1. Gałąź `<konf>-rev` (albo `<konf>-camera-ready` założona po wysyłce) w osobnym folderze `~/Desktop/PhD-<konf>`.

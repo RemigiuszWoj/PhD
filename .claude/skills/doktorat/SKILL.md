@@ -45,6 +45,7 @@ Wywołaj odpowiedni skill narzędziem Skill i pracuj według niego. Po zakończe
 - Terminy: jeśli do terminu zgłoszenia/rewizji jest mniej niż 7 dni, powiedz to w pierwszym zdaniu.
 - Liczenie w tle: sprawdź, czy na Macu coś się liczy dla tego artykułu (postęp, godzina końca).
 - Niezacommitowane zmiany i pliki spoza rozmowy (`overleaf_source.zip`, `result.json`) – nie commituj cudzych.
+- Baza wiedzy: przeczytaj stronę artykułu w `~/Desktop/Doktorat/PhD-wiki/publikacje/` (spis w `index.md`); brak strony → utwórz ją (`/wiki`).
 
 ## 4. Przypomnienia przekrojowe (przy każdym użyciu, jedno zdanie, jeśli dotyczy)
 

@@ -12,6 +12,10 @@ Arkusz prowadzi katedra i jest **prywatny**. W repo (publicznym) nie ma ani link
 
 Brak `CYTOWNIK_ID` w `.env` → poproś właściciela o link do arkusza i dopisz sam identyfikator do `.env`.
 
+**Baza wiedzy:** po pobraniu zapisz kopię CSV do `~/Desktop/Doktorat/PhD-wiki/raw/cytownik/cytownik_<RRRR-MM-DD>.csv`
+(ten sam eksport co w `tools/bib_pool.py`, identyfikator z `.env`, nie wypisuj go) i zaktualizuj
+`literatura/grupa-bozejki.md` (nowe prace, nasze brakujące); wpis w `log.md` bazy.
+
 ## Arkusz → komputer
 
 1. Zachowaj poprzedni eksport do porównania (jeśli jest):

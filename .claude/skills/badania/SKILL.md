@@ -5,6 +5,10 @@ description: Prowadzenie badań do artykułu doktoratu (PFSP, sąsiedztwa, QUBO,
 
 # Badania
 
+**Baza wiedzy** (`~/Desktop/Doktorat/PhD-wiki`, skill `/wiki`): na start przeczytaj stronę artykułu (`publikacje/`), pojęcia, których dotyczy
+plan (`pojecia/`), oraz `kod/kampanie-i-dane.md` i `kod/backendy-kwantowe.md`. Po każdym etapie dopisz wnioski
+słownie do sekcji „Metoda” i „Wyniki” strony artykułu.
+
 ## Plan badań (`articles/<slug>/PLAN_BADAN.md`, szablon w `articles/_szablon/`)
 
 Układ sprawdzony w ICAISC 2027 i ANNSIM 2027:

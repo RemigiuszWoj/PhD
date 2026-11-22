@@ -1,0 +1,411 @@
+% Plan rewizji i szkic odpowiedzi do recenzentów — GCMM 2026, Paper 59
+% Wersja robocza PL (do zatwierdzenia). Kompilacja: lualatex plan_rewizji_pl.tex
+\documentclass[11pt,a4paper]{article}
+\usepackage[polish]{babel}
+\usepackage{fontspec}
+\setmainfont{TeX Gyre Pagella}
+\setsansfont{TeX Gyre Heros}
+\usepackage{amsmath,amssymb}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage[dvipsnames]{xcolor}
+\usepackage[most]{tcolorbox}
+\usepackage{booktabs,tabularx,array,longtable}
+\usepackage{enumitem}
+\usepackage{tikz}
+\usepackage[colorlinks=true,linkcolor=NavyBlue,urlcolor=NavyBlue]{hyperref}
+
+\sloppy\emergencystretch=3em
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\setlist{itemsep=2pt,topsep=3pt}
+
+% --- komentarz recenzenta (oryginał EN) ---
+\newtcolorbox{rev}[1]{enhanced,breakable,colback=gray!6,colframe=gray!55,
+  fonttitle=\sffamily\bfseries\small,title={#1},boxrule=0.5pt,arc=1.5pt,
+  left=5pt,right=5pt,top=3pt,bottom=3pt,fontupper=\small\itshape}
+% --- para teraz / po zmianie ---
+\newtcolorbox{teraz}{enhanced,breakable,colback=red!3,colframe=red!45,
+  title={Teraz},fonttitle=\sffamily\bfseries\scriptsize,boxrule=0.4pt,arc=1pt,
+  left=4pt,right=4pt,top=2pt,bottom=2pt,fontupper=\small}
+\newtcolorbox{pozmianie}{enhanced,breakable,colback=green!3,colframe=OliveGreen!70,
+  title={Po zmianie (propozycja, EN)},fonttitle=\sffamily\bfseries\scriptsize,
+  boxrule=0.4pt,arc=1pt,left=4pt,right=4pt,top=2pt,bottom=2pt,fontupper=\small}
+
+% --- etykiety rodzaju pracy ---
+\newcommand{\etk}[2]{\tikz[baseline=(t.base)]\node[fill=#1,text=white,rounded corners=1.5pt,
+  inner sep=1.6pt,font=\sffamily\scriptsize\bfseries](t){#2};}
+\newcommand{\TXT}{\etk{NavyBlue}{TEKST}}
+\newcommand{\FIG}{\etk{Plum}{RYSUNEK/TABELA}}
+\newcommand{\LIT}{\etk{Sepia}{LITERATURA}}
+\newcommand{\CALC}[1]{\etk{BrickRed}{OBLICZENIA #1}}
+\newcommand{\DEC}[1]{\etk{Orange}{DECYZJA #1}}
+
+\newcommand{\odp}{\par\textbf{\sffamily Odpowiedź (szkic):}\ }
+\newcommand{\zm}{\par\textbf{\sffamily Zmiana w artykule:}\ }
+\newcommand{\Cmax}{C_{\max}}
+
+\title{\sffamily\bfseries Rewizja GCMM 2026, Paper 59\\[2pt]
+\large Zebrane uwagi, plan prac i szkic odpowiedzi do recenzentów}
+\author{wersja robocza PL do zatwierdzenia}
+\date{10 listopada 2026}
+
+\begin{document}
+\maketitle
+
+\begin{center}\small
+\emph{Gate-Model Quantum Neighborhood Search for the Permutation Flow Shop Problem via Fixed-Angle QAOA}
+(Wojewódzki, Bożejko)\\
+Decyzja: \textbf{conditional acceptance}, obaj recenzenci: \emph{Accept with minor revisions}.\\
+Termin wgrania kompletu do EasyChair: \textbf{poniedziałek 16 listopada 2026}.
+\end{center}
+
+\tableofcontents
+
+% =====================================================================
+\section{Jak czytać ten dokument}
+
+Część~\ref{sec:zestawienie} zbiera wszystkie uwagi w jednej tabeli: 7 numerowanych punktów R1, 3~uwagi R1 z części opisowej, 3 punkty R2 i 13 wymogów z maila redakcji. Część~\ref{sec:fakty} opisuje, co znalazłem w kodzie i surowych danych, bo kilka odpowiedzi od tego zależy, a dwa znaleziska to niezgodności tekstu z kodem. Część~\ref{sec:dec} zbiera decyzje po Twojej stronie, a część~\ref{sec:calc} obliczenia. Wszystkie są na CPU, bez QPU i bez kredytów.
+
+Części~\ref{sec:r1} i~\ref{sec:r2} zawierają każdy zarzut w oryginale (szara ramka), szkic odpowiedzi po polsku i opis zmiany. Przy zmianach zdań podaję pary \emph{Teraz} / \emph{Po zmianie}. Proponowane zdania piszę od razu po angielsku. Odpowiedzi do recenzentów przetłumaczę po akceptacji.
+
+Etykiety: \TXT{} zmiana tekstu, \FIG{} rysunek lub tabela, \LIT{} bibliografia, \CALC{C$n$} obliczenia z części~\ref{sec:calc}, \DEC{D$n$} decyzja z części~\ref{sec:dec}.
+
+\textbf{Niczego jeszcze nie zmieniałem w artykule.} Pracuję w osobnym folderze \texttt{\textasciitilde/Desktop/PhD-gcmm} (gałąź \texttt{gcmm-rev} z \texttt{main}), plik \texttt{articles/qaoa\_gcmm/main.tex}.
+
+% =====================================================================
+\section{Zestawienie uwag}\label{sec:zestawienie}
+
+\small
+\begin{longtable}{@{}p{1.3cm}p{8.6cm}p{3.2cm}p{1.6cm}@{}}
+\toprule
+Nr & Uwaga (skrót) & Rodzaj & Wysiłek\\
+\midrule\endhead
+R1.a & Przegląd literatury: przewaga źródeł starszych niż 10 lat; nowość opiera się na własnych QUBO autorów & \LIT\ \TXT & średni\\
+R1.b & Powtarzalność: liczba shotów, układ kubitów, mitygacja błędów, kąty, rozmiar zbioru treningowego (odsyłacz do niedostępnej [20]) & \TXT\ \FIG & mały\\
+R1.c & Tab.~2: jedna wartość na wiersz, różnice mniejsze niż odchylenia; „sprawdzić” & \FIG\ \CALC{C2} & mały\\
+R1.1 & Kolejność bibliografii alfabetyczna zamiast kolejności cytowania & \LIT & mały\\
+R1.2 & Niezdefiniowane skróty (NISQ, ILS, SA, …) & \TXT & mały\\
+R1.3 & Ostatnie zdanie abstraktu („The paper sets out…”) nic nie mówi & \TXT & mały\\
+R1.4 & Brak oświadczenia o dostępności kodu i danych & \TXT\ \DEC{D3} & mały\\
+R1.5 & Nieczytelny tekst na rys.~1 i~2 & \FIG & średni\\
+R1.6 & Jednostki: „ms” w tabelach, „ten seconds”, „460 seconds” w tekście; „10,000 ms” vs „10000” & \TXT & mały\\
+R1.7 & Literatura: tylko 6 prac młodszych niż 5 lat; [18], [20] „under review”; DOI dla [19]; DOI w [7], [11], [13], [22] łamane & \LIT\ \DEC{D1} & średni\\
+R2.1 & Czas: każdy bieg QAOA zrobił jeden ruch i przekroczył 10~s. Tab.~2 jedną kolumną „PRD after one move”, w Tab.~3 oznaczyć QAOA jako po terminie i podać budżet pozostałych, na rys.~3 QAOA osobno & \FIG\ \TXT\ \DEC{D4,D5} & średni\\
+R2.2 & Jak próbka staje się ruchem: rozdz.~3.2 i 4.1 podają różne reguły; zastosowanie zamian, przeliczenie $\Cmax$, łączenie okien, duplikaty i konflikty & \TXT & średni\\
+\midrule
+M.1 & Abstrakt 150--250 słów, cel, podejście, wkład, znaczenie praktyczne, wyniki & \TXT & mały\\
+M.2 & Struktura sekcji & --- & zgodna\\
+M.3 & 15--25 źródeł, luka badawcza, krytyczne omówienie & \LIT & razem z R1.7\\
+M.4 & Nazwa i wersja oprogramowania; dostępność danych i kodu & \TXT & razem z R1.4\\
+M.5 & Wyniki wobec wcześniejszych prac, implikacje, ograniczenia & \TXT & mały\\
+M.6 & Autorzy, afiliacje, wskazany autor korespondencyjny & \TXT & mały\\
+M.7 & Rysunki cytowane, podpisy, $\geq$300 dpi & \FIG & razem z R1.5\\
+M.8 & Numeracja w kolejności cytowania, [4--6, 9] & \LIT & razem z R1.1\\
+M.9--M.11 & Bibliografia po angielsku, autocytowania $\leq$15\%, język & \LIT & razem z R1.7\\
+M.12 & Podziękowania tylko w wersji końcowej & \TXT & mały\\
+M.13 & Jawne ujawnienie użycia AI w artykule & \TXT & jest, sprawdzić\\
+\bottomrule
+\end{longtable}
+\normalsize
+
+Do EasyChair idą też dwa załączniki spoza tekstu artykułu. \textbf{Alt Text} to opisy wszystkich rysunków według szablonu ze strony GCMM: szablonu jeszcze nie pobrałem, a artykuł ma 3 rysunki, czyli 5 grafik razem z panelami rys.~2. \textbf{Licence to Publish} przyszła w załączniku maila i wymaga Twojego podpisu (autor korespondencyjny). Do tego wersja z zaznaczonymi zmianami (README zgłoszenia mówi: na niebiesko) oraz archiwum źródeł.
+
+% =====================================================================
+\section{Co znalazłem w kodzie i danych}\label{sec:fakty}
+
+Sprawdziłem kod \texttt{src/neighborhoods/gate\_qaoa/}, kalibrację kątów (\texttt{src/experiments/qaoa\_calibrate\_angles.py}, \texttt{data/qaoa\_angles.json}), skrypt kampanii \texttt{articles/gate\_qaoa/scripts/gate\_hw\_campaign.py} i 80 surowych plików \texttt{result.json} z \texttt{results/experiments/qaoa\_gate\_hw\_n20}.
+
+\begin{description}[leftmargin=0pt,style=nextline]
+\item[F1. Rozdz.~3.2 opisuje zły odczyt (R2.2).]
+Rozdz.~3.2 mówi „taking the most frequent bitstring”, a rozdz.~4.1 „lowest original-QUBO energy”. Kod i wszystkie wyniki używają najniższej energii: poprawka odczytu weszła 24.08 (commit \texttt{0fc9493}), kampania na \texttt{ibm\_fez} była 30.08. Zdanie w~3.2 zostało z wersji sprzed poprawki. Recenzent ma rację, to błąd tekstu, nie wyników.
+
+\item[F2. Kalibracja $p=1$ to sama siatka (R1.b).]
+Tekst mówi „exhaustive two-dimensional grid search over that range followed by local refinement”. Dla $p=1$ kod robi tylko siatkę $25\times13$ ($\gamma\in[0,\pi]$, $\beta\in[0,\pi/2]$), bez lokalnego doprecyzowania. Kąty w pliku leżą dokładnie na węzłach siatki (wielokrotności $\pi/24$). Nelder--Mead działa dopiero dla $p\geq2$, którego tu nie używamy. Wartości:
+
+\begin{center}\small
+\begin{tabular}{lcc}
+\toprule
+Sąsiedztwo & $\gamma^\star$ & $\beta^\star$\\
+\midrule
+Adjacent & $19\pi/24\approx2.487$ & $7\pi/24\approx0.916$\\
+Fibonacci & $21\pi/24\approx2.749$ & $5\pi/24\approx0.654$\\
+Dynasearch & $17\pi/24\approx2.225$ & $2\pi/24\approx0.262$\\
+Motzkin & $17\pi/24\approx2.225$ & $3\pi/24\approx0.393$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\item[F3. Zapowiedziana linia bazowa Wurtza--Lykova nie występuje w wynikach.]
+Rozdz.~3.3: „As a training-free baseline we also report the instance-independent $p=1$ angles … of Wurtz and Lykov”. Żadna tabela ani rysunek tego nie podaje. Recenzenci tego nie zauważyli, ale przy pytaniu o kąty (R1.b) ktoś może to sprawdzić. Proponuję usunąć to zdanie (\DEC{D6}).
+
+\item[F4. Zbiór treningowy kątów (R1.b).]
+Domyślne ustawienia skryptu kalibracji: 3 instancje Taillarda (\texttt{tai20\_5} nr 0 i 1, \texttt{tai20\_10} nr 0) $\times$ 3 permutacje (identyczność i 2 losowe, ziarno 0) $\times$ okna 6 pozycji z krokiem 3. To daje \textbf{63 QUBO} dla Adjacent i Fibonacci oraz \textbf{36} dla Dynasearch i Motzkin (policzone dziś). Muszę jeszcze potwierdzić, że plik z 24.08 powstał właśnie z tymi ustawieniami (\CALC{C1}). Do ujawnienia: dwie instancje treningowe (\texttt{tai20\_5} nr 0 i 1) należą do dziesięciu instancji testowych (\DEC{D7}).
+
+\item[F5. Od próbki do ruchu (R2.2), dokładnie według kodu.]
+\begin{enumerate}[nosep]
+\item Z 4096 shotów każdego obwodu wybieramy próbkę o najniższej energii \emph{oryginalnego} QUBO.
+\item Zmienne równe 1 zamieniamy na kandydatów-zamiany danego okna.
+\item Okna mają 6 pozycji i nakładają się w połowie (krok 3), wszystkie obwody jednego ruchu idą w jednym zadaniu. Wybrane zamiany ze wszystkich okien są sklejane w jedną listę.
+\item Naprawa dopuszczalności jest zachłanna, od lewej. W Dynasearch zamianę $(i,j)$ zostawiamy, gdy nie nachodzi na ostatnią przyjętą. W Motzkin odrzucamy zamiany, które krzyżują się z przyjętymi albo mają z nimi wspólny koniec. W Fibonaccim usuwamy nakładające się zamiany sąsiednie. Ta sama naprawa usuwa duplikaty z nakładających się okien: ta sama para $(i,j)$ z dwóch okien przechodzi raz.
+\item W Adjacent każde okno proponuje co najwyżej jedną zamianę, a bierzemy propozycję o najmniejszym $\delta$. To ten sam argmin co w globalnym QUBO one-hot.
+\item Zamiany po naprawie dotyczą rozłącznych pozycji, więc stosujemy je naraz. Następnie $\Cmax$ \textbf{liczymy od nowa w całości} ($O(nm)$), a nie przez sumę $\delta$.
+\item \textbf{Klasyczny zapas:} jeśli po naprawie nie zostaje żadna zamiana, kod bierze najlepszą pojedynczą zamianę poprawiającą, jeśli taka istnieje. Tego artykuł nie mówi.
+\end{enumerate}
+W surowych danych żaden raportowany ruch Dynasearch, Motzkin ani Fibonacci nie jest pojedynczą zamianą. Każdy przesuwa od 4 do 18 pozycji albo żadnej, a zapas dałby dokładnie 2. Zatem zapas nie wyprodukował żadnego raportowanego wyniku. Warto to napisać jednym zdaniem.
+
+\item[F6. Raportowane PRD to najlepszy widziany $\Cmax$.]
+Pętla zapisuje tylko poprawy, więc raportowane PRD to $\min(\Cmax^{\text{start}},\Cmax^{\text{po ruchu}})$. Start z identyczności ma średnie PRD \textbf{27.90} (odchylenie 9.80). W jednym biegu Adjacent i jednym Fibonacci (w ILS i SA) PRD równa się startowemu: ruch niczego nie poprawił. Z logów nie wynika, czy ruch pogorszył $\Cmax$, czy był pusty.
+
+\item[F7. ILS i SA różnią się na instancjach bardziej, niż mówi tekst (R1.c).]
+Tekst: „the ILS and SA values differ by hundredths of a percentage point, which is sampling noise”. To prawda dla średnich. Na pojedynczych instancjach różnica sięga \textbf{5.76 pp} (Dynasearch) i \textbf{4.08 pp} (Motzkin). Przy jednym ruchu z tego samego startu ILS i SA wykonują to samo, więc różnica to w całości losowość próbkowania na procesorze, a zbieżność średnich to efekt uśredniania. Adjacent daje w obu identyczne wyniki, bo jego odczyt jest prawie deterministyczny.
+
+\item[F8. Tab.~2 sprawdzona z surowymi danymi (R1.c).]
+Średnie z 80 plików \texttt{result.json} zgadzają się z Tab.~2 co do setnych. Odchylenie w tabeli liczy rozrzut między instancjami, a nie szum, więc nie nadaje się do porównywania sąsiedztw. Porównanie parami (ta sama instancja, ILS) wygląda tak:
+
+\begin{center}\small
+\begin{tabular}{lrrr}
+\toprule
+Para (A vs B) & śr.\ różnica PRD [pp] & A lepsze & B lepsze\\
+\midrule
+Dynasearch vs Adjacent & $-2.92$ & 8 & 1\\
+Fibonacci vs Adjacent & $-1.63$ & 7 & 1\\
+Motzkin vs Adjacent & $-1.92$ & 7 & 2\\
+Dynasearch vs Fibonacci & $-1.29$ & 6 & 3\\
+Dynasearch vs Motzkin & $-1.01$ & 5 & 2\\
+Motzkin vs Fibonacci & $-0.29$ & 3 & 6\\
+\bottomrule
+\end{tabular}
+\end{center}
+Uczciwy wniosek: na 10 instancjach trzy sąsiedztwa wielozamianowe są wyraźnie lepsze od Adjacent po jednym ruchu, a różnic między nimi samymi nie da się rozstrzygnąć.
+
+\item[F9. Układ kubitów i mitygacja (R1.b).]
+IBM: \texttt{generate\_preset\_pass\_manager(optimization\_level=1)}, układ wybiera transpiler przy każdym zadaniu (ziarno nie było ustalone, układ nie był zapisywany), \texttt{SamplerV2} bez ustawionych opcji. Domyślnie nie ma tam mitygacji błędów, dynamicznego odsprzęgania ani twirlingu (do potwierdzenia w dokumentacji \texttt{qiskit-ibm-runtime}). IQM: \texttt{transpile\_to\_IQM(optimization\_level=1)}, \texttt{backend.run}, bez mitygacji. Wszędzie 4096 shotów i $p=1$.
+
+\item[F10. Wersje oprogramowania (M.4).]
+Dziś w środowiskach: Python 3.11.13; \texttt{qiskit} 2.5.1, \texttt{qiskit-ibm-runtime} 0.48.0 (IBM); \texttt{qiskit} 2.1.2, \texttt{iqm-client} 35.0.3 (IQM, osobne środowisko z powodu konfliktu wersji). Artykuł podaje tylko \texttt{qiskit} 2.5.1. Nie mamy zapisu \texttt{pip freeze} z dnia kampanii (30.08 i 4.10), więc podam wersje z adnotacją, że to wersje środowiska użytego do pomiarów.
+
+\item[F11. Garnet: brak surowych danych.]
+Kolumna Crystal~20 w Tab.~4 (jedna instancja, 4 wartości) pochodzi z notatek, bo surowe dane przepadły (\texttt{measurements/README.md}). Przy deklaracji dostępności danych trzeba to uwzględnić (\DEC{D3}).
+\end{description}
+
+% =====================================================================
+\section{Decyzje po Twojej stronie}\label{sec:dec}
+
+\begin{description}[leftmargin=0pt,style=nextline]
+\item[D1. Prace „under review” {[18]} BPASTS i {[20]} C\&OR.]
+Recenzent chce źródeł, które da się sprawdzić. Windowed ma preprint SSRN z DOI \texttt{10.2139/ssrn.7411334} (sprawdzone w Crossref), więc proponuję cytować preprint. BPASTS jest w rewizji i nie ma preprintu. Proponuję go usunąć, a jego role przejmą: SOCO (kodowanie swap-selection, Motzkin), windowed (to samo QUBO) i opublikowana praca promotora o Fibonaccim w \emph{Sci.\ Rep.} 2026. \textbf{Polecam: usunąć BPASTS, windowed jako SSRN.}
+
+\item[D2. Liczba pozycji i autocytowania.]
+Wariant A, 28 pozycji: usuwam BPASTS i Venturelli 2015 (arXiv), dodaję 8 sprawdzonych w Crossref (część~\ref{sec:r1}, R1.7). Prace młodsze niż 5 lat: 14 z 28. Autocytowania: SOCO, windowed, CINTI 2024 i Sci.\ Rep.\ 2026 (prace z promotorem liczą się jako autocytowania), czyli 4/28 = 14,3\%, co mieści się w limicie 15\%. Wariant B, 25 pozycji: dodatkowo wypadają 3 starsze (np.\ Kadowaki 1998, Louren\c{c}o 2003, Ahuja 2002), ale wtedy 4/25 = 16\% przekracza limit i trzeba zrezygnować z jednej pracy grupy. Mail mówi „approximately 15–25”. \textbf{Polecam A.}
+
+\item[D3. Dostępność kodu i danych.]
+Repozytorium \texttt{github.com/RemigiuszWoj/PhD} jest publiczne. (a) Link do repozytorium plus migawka w Zenodo z DOI (wymaga założenia wpisu, ok.\ 15 min, robisz Ty albo ja w przeglądarce za Twoją zgodą). (b) Sam link do repozytorium. (c) „Available from the corresponding author on reasonable request”. Przy (a) i (b) zaznaczyć, że kolumna Crystal~20 pochodzi z notatek (F11). \textbf{Polecam (a)}, a jeśli brakuje czasu, to (b).
+
+\item[D4. Postać Tab.~2.]
+Propozycja zgodna z R2: jedna tabela, wiersze = sąsiedztwa, kolumny: \emph{Start} (27.90 dla wszystkich), \emph{PRD after one move} ILS i SA (średnia $\pm$ odchylenie), czas zegara ruchu (mediana) i czas QPU na ruch. Sześć jednakowych kolumn znika. Pod tabelą jedno zdanie o porównaniu parami (F8).
+
+\item[D5. Rys.~3.]
+(a) Krzywe klasyczne i wyżarzania bez zmian, a QAOA jako jeden punkt na zmierzonej medianie czasu ruchu (ok.\ 29~s) poza osią budżetu, z linią przerywaną oddzielającą „po terminie”. (b) Rys.~3 usunąć, bo Tab.~3 niesie to samo, i zyskać miejsce. \textbf{Polecam (b)}, chyba że chcesz zachować rysunek, wtedy (a).
+
+\item[D6. Linia bazowa Wurtza--Lykova (F3).]
+(a) Usunąć zdanie, bez obliczeń. (b) Policzyć ją. Na sprzęcie wymagałoby to nowych kredytów, więc odpada. \textbf{Polecam (a).}
+
+\item[D7. Instancje treningowe w zbiorze testowym (F4).]
+(a) Napisać to wprost jednym zdaniem: kąty $p=1$ są prawie stałe między instancjami, a dwie z dziesięciu instancji testowych należały do zbioru treningowego. (b) Przekalibrować na rozłącznych instancjach. Jeśli kąty wyjdą inne, wyniki sprzętowe przestają odpowiadać opisowi, a powtórka wymaga kredytów. \textbf{Polecam (a)}. Mogę też na CPU sprawdzić, czy kalibracja bez tych dwóch instancji daje te same węzły siatki (\CALC{C1}). Jeśli tak, piszemy to zamiast przyznania.
+
+\item[D8. Objętość.]
+Artykuł ma 15 stron przy limicie 10--15, a poprawki dodają tekst: oświadczenie o danych, opis ruchu, kąty, 6 nowych pozycji. Miejsce da usunięcie rys.~3 (D5 b) i skrócenie powtórzeń między wstępem a wnioskami. Wrócę do tego na końcu, po akceptacji treści.
+\end{description}
+
+% =====================================================================
+\section{Obliczenia (CPU, bez kredytów)}\label{sec:calc}
+
+\begin{description}[leftmargin=0pt,style=nextline]
+\item[C1. Odtworzenie kalibracji $p=1$] (kilka minut CPU): uruchomić kalibrację $p=1$ z domyślnymi ustawieniami i sprawdzić, czy daje te same kąty co \texttt{data/qaoa\_angles.json}. To potwierdza zbiór treningowy z F4. Wariant dodatkowy: bez instancji \texttt{tai20\_5} nr 0 i 1 (D7).
+\item[C2. Porównanie parami] (zrobione dziś, tabela w F8): wejdzie jako zdanie pod Tab.~2.
+\item[C3. Optimum tego samego QUBO dla pierwszego ruchu] (opcjonalne, sekundy CPU): dla każdego okna z pierwszego ruchu rozwiązać QUBO dokładnie i porównać z wyborem QAOA. Odpowiada wprost na pytanie, czy QAOA trafia optimum modelu (jak luka QPU vs DP w BPASTS). Nie wymaga sprzętu, bo QUBO odtwarzamy deterministycznie z permutacji startowej. Nie wiem jednak, jakie próbki zwrócił procesor, bo nie zapisywaliśmy zliczeń, więc da się porównać tylko \emph{wynik} ruchu ($\Cmax$ po ruchu) z \emph{optimum} ruchu.
+\item[C4. Sprawdzenie DOI] wszystkich 28 pozycji przez \texttt{doi.org} (sekundy).
+\end{description}
+Bez Twojej zgody niczego z tej listy nie uruchamiam, poza C4, które niczego nie liczy.
+
+% =====================================================================
+\section{Recenzent 1}\label{sec:r1}
+
+\subsection*{R1.a Literatura i nowość \LIT\ \TXT}
+\begin{rev}{R1, Scientific Quality}
+However, the literature review is dominated by source solder 10 years, and the novelty rests heavily on the authors’ own QUBO formulations.
+\end{rev}
+\odp Odświeżamy przegląd (R1.7): połowa pozycji z ostatnich 5 lat. Co do nowości: QUBO przejmujemy celowo bez zmian, żeby jedyną zmienną był solver. Wkład tej pracy leży gdzie indziej: potok bramkowy z ustalonymi kątami, analiza głębokości po kompilacji na czterech mapach sprzężeń i pomiary na trzech procesorach. Dopisujemy porównanie z pracami innych grup nad QAOA w szeregowaniu (Kurowski i in.\ 2023, Amaro i in.\ 2022), żeby pokazać, czym nasze podejście na poziomie sąsiedztwa różni się od kodowania całego problemu.
+\zm Na końcu akapitu o QUBO w rozdz.~2 jedno zdanie, które wprost nazywa wkład:
+\begin{pozmianie}
+The QUBOs are taken over unchanged on purpose, so that the solver is the only thing that differs between the annealing and the gate-model runs; the contribution of this paper lies in the gate-model pipeline, in the depth analysis across coupling maps, and in the measurements on three processors.
+\end{pozmianie}
+
+\subsection*{R1.b Powtarzalność \TXT\ \FIG}
+\begin{rev}{R1, Research Methodology}
+However, reproducibility is limited: the number of shots, qubit layout, error-mitigation use, the optimized angles, the training-set size (an unavailable reference [20]).
+\end{rev}
+\odp Wszystkie te dane podajemy w nowym akapicie rozdz.~3.6 i w małej tabeli kątów (F2, F4, F9). Poprawiamy też opis kalibracji, bo dla $p=1$ była to sama siatka (F2). Zbiór treningowy opisujemy w artykule, więc nie odsyłamy już do [20].
+\zm Rozdz.~3.3, opis kalibracji:
+\begin{teraz}
+… is optimized on a classical statevector simulation by an exhaustive two-dimensional grid search over that range followed by local refinement, by minimizing the expected cost …
+averaged over a small training set of representative QUBO instances of that neighborhood.
+\end{teraz}
+\begin{pozmianie}
+… is chosen on a classical statevector simulation by an exhaustive grid of $25\times13$ points over that range, by minimizing the expected cost …
+averaged over a training set of windowed QUBOs. The set comes from three Taillard instances (tai20\_5 nos.~0 and~1, tai20\_10 no.~0), each taken at the identity and at two random permutations, cut into windows of six positions with step three. This gives 63 QUBOs for Adjacent and Fibonacci and 36 for Dynasearch and Motzkin. Two of the training instances are also among the ten test instances; at $p=1$ the optimal angles are nearly constant across instances, so we do not expect this to bias the results. Table~\ref{tab:angles} lists the angles.
+\end{pozmianie}
+Do tego usunięcie zdania o Wurtzu--Lykovie (D6) i nowy akapit w rozdz.~3.6:
+\begin{pozmianie}
+Every circuit is sampled with 4096 shots at $p=1$. On \texttt{ibm\_fez} the circuits are transpiled with the Qiskit preset pass manager at optimization level~1, which chooses the qubit layout for each job, and executed through the Qiskit Runtime \texttt{SamplerV2} primitive with default options, that is, without error mitigation, dynamical decoupling or twirling. On the IQM devices the circuits are transpiled at optimization level~1 and executed without error mitigation. The software is Python 3.11, \texttt{qiskit}~2.5.1 and \texttt{qiskit-ibm-runtime}~0.48.0 for IBM, and \texttt{qiskit}~2.1.2 with \texttt{iqm-client}~35.0.3 for IQM.
+\end{pozmianie}
+Tabela \texttt{tab:angles}: 4 wiersze z F2, ok.\ 6 linii.
+
+\subsection*{R1.c Tab.~2 \FIG\ \CALC{C2}}
+\begin{rev}{R1, Results and Discussion}
+However, Table 2 effectively carries one value per row with differences smaller than the standard deviations. The authors is advised to examine the results presented in Table 2 and to double-check them.
+\end{rev}
+\odp Sprawdziliśmy wartości z surowymi danymi wszystkich 80 biegów i zgadzają się (F8). Jedna wartość na wiersz to skutek jednego ruchu na bieg, więc tabelę przebudowujemy według propozycji R2 (D4). Odchylenie w tabeli mierzy rozrzut trudności instancji, a nie szum pomiaru. Dlatego dodajemy porównanie parami na tych samych instancjach: Dynasearch jest lepszy od Adjacent na 8 z 10 instancji, a różnic między trzema sąsiedztwami wielozamianowymi nie rozstrzygamy. Poprawiamy też zdanie o „setnych” różnicach między ILS i SA (F7).
+\zm Rozdz.~4.2:
+\begin{teraz}
+For the other three neighborhoods the ILS and SA values differ by hundredths of a percentage point, which is sampling noise on the device rather than algorithmic behavior.
+\end{teraz}
+\begin{pozmianie}
+For the other three neighborhoods the ILS and SA means differ by less than half a percentage point, while single instances differ by up to 5.8 points. With one move from the same start the two loops perform the same computation, so these differences come from sampling on the device. The standard deviation in Table~\ref{tab:rpd_hw} measures how much the instances differ, not measurement noise; compared instance by instance, Dynasearch beats Adjacent on eight of the ten instances, Fibonacci and Motzkin on seven, while the three multi-swap neighborhoods cannot be separated from one another at this sample size.
+\end{pozmianie}
+
+\subsection*{R1.1 Kolejność bibliografii \LIT}
+\begin{rev}{R1, comment 1}
+Ordering of references. The list is alphabetical, but the instructions require the order of first appearance. …
+\end{rev}
+\odp Poprawione: bibliografia numerowana w kolejności pierwszego cytowania, zakresy w postaci [4--6]. \zm Przestawienie \texttt{\textbackslash bibitem} według pierwszego wystąpienia, \texttt{\textbackslash usepackage\{cite\}} dla zakresów.
+
+\subsection*{R1.2 Skróty \TXT}
+\begin{rev}{R1, comment 2}
+Abbreviations (NISQ, ILS, SA and so on) are not defined
+\end{rev}
+\odp Poprawione. Każdy skrót rozwijamy przy pierwszym użyciu w abstrakcie i ponownie w tekście głównym. \zm Lista do rozwinięcia: NISQ (noisy intermediate-scale quantum), ILS, SA, QPU (quantum processing unit), PRD (jest), LB (jest), CZ (controlled-Z), SWAP, MOVE (resonator move operation), QUBO i QAOA (są). W abstrakcie: „iterated local search (ILS) and simulated annealing (SA)”, „noisy intermediate-scale quantum (NISQ)”.
+
+\subsection*{R1.3 Abstrakt \TXT}
+\begin{rev}{R1, comment 3}
+The abstract sentence (“The paper sets out…”) is uninformative. Please provide a more detailed version.
+\end{rev}
+\odp Przepisaliśmy abstrakt według wymogów redakcji: cel, podejście, wkład, wyniki liczbowe, znaczenie praktyczne. Ostatnie zdanie podaje teraz wyniki. \zm Cały abstrakt (limit 250 słów, obecny ma 249, więc nowy zastępuje stary, a nie dopisuje się do niego):
+\begin{pozmianie}
+The permutation flow shop problem (PFSP) is an NP-hard scheduling problem, and local-search solvers for it spend most of their time evaluating neighborhood moves. Earlier work moved this evaluation to quantum annealers by writing each neighborhood as a quadratic unconstrained binary optimization (QUBO) problem. This paper asks whether the same QUBOs can be solved on gate-model processors. We embed the Quantum Approximate Optimization Algorithm (QAOA) in iterated local search (ILS) and simulated annealing (SA), reuse the annealing QUBOs of four neighborhoods (Adjacent, Fibonacci, Dynasearch, Motzkin), and fix the QAOA angles offline, so that each move costs one device submission on noisy intermediate-scale quantum (NISQ) hardware. We compile the four QUBOs onto four superconducting coupling maps and run them on three processors: IBM Heron~r2, IQM Crystal~20 and IQM Star~16. The density of the conflict graph sets the compiled depth, and the depth ordering of the neighborhoods is the same on every coupling map, which matches the feasibility ordering known from annealers. On ten Taillard $20\times5$ instances one QAOA move lowers the mean relative deviation from the lower bound from 27.9\% to between 22.1\% and 25.0\%. Short circuits return the same makespan on a 156-qubit and a 16-qubit device, instance by instance. Queueing stretches one move to 10--288~s, so no run reached a second move within the 10~s budget, and all quantum variants stay far behind classical neighborhood evaluation. The results give a hardware-independent rule for choosing neighborhoods and a measured cost per move.
+\end{pozmianie}
+Liczbę słów sprawdzę skryptem po akceptacji.
+
+\subsection*{R1.4 Dostępność kodu i danych \TXT\ \DEC{D3}}
+\begin{rev}{R1, comment 4}
+There are no statements regarding the availability of code or data.
+\end{rev}
+\odp Dodajemy oświadczenie przed bibliografią. \zm Wariant (a) z D3:
+\begin{pozmianie}
+\textbf{Data and code availability.} The code of the framework, the calibrated angles and the measured results are available at \url{https://github.com/RemigiuszWoj/PhD} (snapshot: Zenodo, DOI to be added). The raw output of the four Crystal~20 runs in Table~\ref{tab:arch} was lost, and the values reported there are taken from the laboratory notes.
+\end{pozmianie}
+
+\subsection*{R1.5 Czytelność rys.~1 i~2 \FIG}
+\begin{rev}{R1, comment 5}
+The text in figures 1 and 2 is illegible; the font size needs to be increased.
+\end{rev}
+\odp Poprawione: obwody narysowane od nowa z czcionką co najmniej takiej wielkości jak podpis rysunku. \zm Rys.~1 i trzy panele rys.~2 to rysunki obwodów z Qiskita na pełną szerokość, przez co czcionka się zmniejsza. Plan: mniejsze przykłady (np.\ 4--5 zmiennych dla Dynasearch i Motzkin), rysunek z \texttt{fold} na dwie linie, eksport do PDF z większą skalą czcionki. Nie znalazłem jeszcze skryptu, który je wygenerował, więc w razie potrzeby napiszę nowy w \texttt{articles/qaoa\_gcmm/figures/} (pokażę przed użyciem).
+
+\subsection*{R1.6 Jednostki \TXT}
+\begin{rev}{R1, comment 6}
+Units of measurement. The tables use the unit "ms", while the text mentions "ten seconds" and "460 seconds." … "10,000 ms" (Table 3) and "10000" (Table 2) should be made consistent.
+\end{rev}
+\odp Poprawione: wszędzie sekundy z symbolem „s” (10~s, 460~s, 288~s), w tabelach także. \zm Tab.~2 po przebudowie (D4) nie ma już kolumn budżetu. Podpis Tab.~3: „$t_{\max}=10$~s”. W tekście wszystkie „ten seconds”, „460 seconds”, „10 to 288 seconds”, „about three seconds”, „thirty seconds”, „twelve seconds” zamieniam na zapis liczbowy z „s”.
+
+\subsection*{R1.7 Literatura \LIT\ \DEC{D1,D2}}
+\begin{rev}{R1, comment 7}
+Only 6 papers are less 5 years old. … Two "under review" references ([18], [20]) cannot be verified. … For the paper [19], add the DOI. In papers [7], [11], [13], and [22], the DOIs are broken by line breaks; please check that the links work.
+\end{rev}
+\odp Dodaliśmy osiem prac z lat 2022--2026, usunęliśmy dwie, a prace „under review” zastąpiliśmy wersjami do sprawdzenia: preprint z DOI albo prace opublikowane. [19] ma teraz DOI (był ukryty tylko w wersji ślepej). Linki DOI sprawdziliśmy, a w PDF są klikalne niezależnie od łamania wiersza.
+\zm Nowe pozycje, każda sprawdzona dziś w Crossref:
+\begin{enumerate}[nosep,label=N\arabic*.]
+\item Kurowski, K.\ i in.: Application of quantum approximate optimization algorithm to job shop scheduling problem. EJOR 310, 518--528 (2023). \texttt{10.1016/j.ejor.2023.03.013}. Rozdz.~2, obok Amaro: QAOA dla JSSP na poziomie całego problemu.
+\item Blekos, K.\ i in.: A review on Quantum Approximate Optimization Algorithm and its variants. Phys.\ Rep.\ 1068, 1--66 (2024). \texttt{10.1016/j.physrep.2024.03.002}. Rozdz.~2, akapit o QAOA.
+\item Sureshbabu, S.H.\ i in.: Parameter setting in quantum approximate optimization of weighted problems. Quantum 8, 1231 (2024). \texttt{10.22331/q-2024-01-18-1231}. Przeniesienie kątów dla problemów ważonych, a nasze QUBO są ważone. Wzmacnia podstawę ustalonych kątów.
+\item Pelofske, E., Bärtschi, A., Eidenbenz, S.: Short-depth QAOA circuits and quantum annealing on higher-order Ising models. npj Quantum Inf.\ 10, 30 (2024). \texttt{10.1038/s41534-024-00825-w}. Bezpośrednie porównanie QAOA i wyżarzania na sprzęcie, czyli nasz temat.
+\item Kim, Y.\ i in.: Evidence for the utility of quantum computing before fault tolerance. Nature 618, 500--505 (2023). \texttt{10.1038/s41586-023-06096-3}. Procesory heavy-hex IBM w praktyce, akapit o sprzęcie.
+\item Carugno, C., Ferrari Dacrema, M., Cremonesi, P.: Evaluating the job shop scheduling problem on a D-Wave quantum annealer. Sci.\ Rep.\ 12, 6539 (2022). \texttt{10.1038/s41598-022-10169-0}. Zastępuje Venturelli 2015 (arXiv).
+\item Bożejko, W., Idzikowski, R., Jagielski, D., Klempous, R., Trotskyi, S.\ i in.: Hybrid quantum approximate algorithms for solving flow shop scheduling problem. CINTI 2024, 117--122. \texttt{10.1109/CINTI63048.2024.10830818}. Najbliższa praca bramkowa dla flow shop (grupa promotora). Bez niej recenzent łatwo zarzuci pominięcie.
+\item Bożejko, W., Uchroński, M., Wodecki, M.: The new exponential Fibonacci neighborhood as QUBO generated on a D-Wave quantum computing environment for the permutational scheduling problem. Sci.\ Rep.\ (2026). \texttt{10.1038/s41598-026-66284-9}. Źródło sąsiedztwa Fibonacciego. Tom i numer artykułu do uzupełnienia, Crossref ich nie podaje.
+\end{enumerate}
+Windowed zmienia się na preprint SSRN (\texttt{10.2139/ssrn.7411334}). Usuwam BPASTS i Venturelli 2015. Wynik: 28 pozycji, 14 z lat 2021--2026, 4 autocytowania (14,3\%).
+
+Nie znalazłem w Crossref dwóch prac, które chciałem dodać (Abbas i in.\ 2024 o wyzwaniach optymalizacji kwantowej, Shaydulin i in.\ 2024 o skalowaniu QAOA). Nie dodaję ich bez sprawdzenia.
+
+Łamanie DOI: \texttt{svproc} bez \texttt{hyperref} drukuje URL jako zwykły tekst, więc złamany link nie działa po kopiowaniu. Proponuję \texttt{\textbackslash usepackage[hidelinks]\{hyperref\}}: link pozostaje klikalny w całości mimo łamania. Komentarz w preambule mówi, żeby nie ładować \texttt{hyperref} w wersji końcowej. Sprawdzę w szablonie GCMM, czy to wymóg Springera, czy tylko ostrożność. Jeśli wymóg, to DOI w postaci \texttt{doi:10.xxx} w osobnym wierszu.
+
+% =====================================================================
+\section{Recenzent 2}\label{sec:r2}
+
+\subsection*{R2.1 Porównanie czasów \FIG\ \TXT\ \DEC{D4,D5}}
+\begin{rev}{R2}
+Clarify the timing comparison in Tables 2–3 and Fig. 3. Each QAOA run on the IBM processor completed one move and exceeded the nominal 10-second limit. In Table 2, replace the six repeated QAOA values with one column labeled “PRD after one move.” In Table 3, mark the QAOA results as obtained after the deadline and state the time budget used for the classical and annealing results. In Fig. 3, show the QAOA result separately from the time-budget curves.
+\end{rev}
+\odp Zgadzamy się w całości i robimy wszystkie trzy zmiany. Tab.~2 ma teraz jedną kolumnę „PRD after one move” obok PRD startu i czasów ruchu. W Tab.~3 kolumna QAOA ma oznaczenie, że wynik powstał po przekroczeniu terminu (mediana 29~s), a podpis podaje budżet 10~s dla pozostałych. Rys.~3: według D5.
+\zm Nowa Tab.~2 (szkic):
+
+\begin{center}\small
+\begin{tabular}{lrrrr}
+\toprule
+Neighborhood & Start & ILS, after one move & SA, after one move & Wall time per move [s]\\
+\midrule
+Adjacent & 27.90 & $25.04\pm10.0$ & $25.04\pm10.0$ & 25.1\\
+Fibonacci & 27.90 & $23.41\pm9.2$ & $23.48\pm9.0$ & 16.4\\
+Dynasearch & 27.90 & $\mathbf{22.12}\pm8.0$ & $\mathbf{22.38}\pm8.7$ & 33.2\\
+Motzkin & 27.90 & $23.12\pm8.0$ & $23.59\pm8.1$ & 29.9\\
+\bottomrule
+\end{tabular}
+\end{center}
+Ostatnia kolumna to mediana czasu zegara z \texttt{result.json} (ILS i SA razem). Zakres całości 10.4--287.6~s, mediana 29.3~s. Czasu QPU na ruch per sąsiedztwo nie ma w \texttt{result.json}, a tekst podaje „about three seconds … seven for the windowed”. Jeśli nie znajdę źródła tych liczb w logach, zostawiam je w tekście i nie wpisuję do tabeli.
+
+Tab.~3, nagłówek i podpis:
+\begin{pozmianie}
+PRD [\%] on Taillard $20\times5$, ten instances. The classical and annealing columns are taken at the time budget $t_{\max}=10$~s; the gate QAOA column$^{\dagger}$ reports the result after one move, which took 10--288~s (median 29~s) and therefore exceeded that budget.
+\end{pozmianie}
+Tekst rozdz.~4.2 do przepisania: zamiast „Every budget column therefore describes the same computation … marked as extrapolated” zdanie, że raportujemy jeden ruch, i dlaczego.
+
+\subsection*{R2.2 Od próbki do ruchu \TXT}
+\begin{rev}{R2}
+Clarify how a QAOA sample becomes a scheduling move. Sections 3.2 and 4.1 describe different selection rules. Please state whether the reported results use the most frequent bitstring or the sampled bitstring with the lowest QUBO energy. Explain how the selected swaps are applied to the current schedule and how the actual makespan is recomputed after the combined move. For overlapping windows, describe how their solutions are merged and how duplicate or conflicting swaps are resolved.
+\end{rev}
+\odp Recenzent ma rację: rozdz.~3.2 opisywał starszą regułę. Wszystkie wyniki używają próbki o najniższej energii QUBO (F1). Dodajemy nowy podrozdział „From a sample to a move”, który opisuje kroki z F5, w tym klasyczny zapas, i zaznacza, że w raportowanych biegach zapas nie zadziałał.
+\zm Rozdz.~3.2:
+\begin{teraz}
+Sampling the circuit and taking the most frequent bitstring yields the selected swap set, that is, the chosen neighborhood move.
+\end{teraz}
+\begin{pozmianie}
+Sampling the circuit gives a set of bitstrings, each a candidate swap set; Section~\ref{subsec:move} explains how one of them becomes the move.
+\end{pozmianie}
+Nowy podrozdział 3.4 (przed „Neighborhoods and their conflict graphs”), akapit z rozdz.~4.1 o odczycie przenoszę tutaj:
+\begin{pozmianie}
+\textbf{From a sample to a move.} Each circuit is sampled with 4096 shots, and we keep the sampled bitstring of lowest energy under the original QUBO~\eqref{eq:qubo}. The single most frequent bitstring of a $p=1$ state is usually the all-zeros assignment or a high-energy state with many ones, so it is a poor readout. The bits equal to one name the selected swap candidates. For the dense neighborhoods the permutation is cut into windows of six positions that overlap by half, all windows of a move are sent as one job, and the swaps selected in all windows are joined into one list. A greedy pass from left to right then restores feasibility: a Dynasearch swap $(i,j)$ is kept if it does not overlap the last kept swap, a Motzkin swap is kept if it neither crosses a kept swap nor shares an endpoint with it, and Fibonacci keeps adjacent swaps that do not share a position. The same pass drops a swap that two overlapping windows both selected. For Adjacent each window proposes at most one swap and the move takes the proposal with the smallest $\delta_k$, which is the minimizer of the global one-hot QUBO. The kept swaps touch disjoint positions, so they are applied at once, and the makespan of the new permutation is then computed from scratch in $O(nm)$ time rather than from the sum of the $\delta_k$. If no swap survives the repair, the method falls back to the best single improving swap; no move reported in Section~\ref{sec:results} came from this fallback, since every reported Fibonacci, Dynasearch and Motzkin move changes four or more positions.
+\end{pozmianie}
+
+\subsection*{R2 ogólnie}
+\begin{rev}{R2, summary}
+The paper presents a promising application of fixed-angle QAOA to production scheduling. The experiments on real quantum processors are a strength.
+\end{rev}
+\odp Jedno zdanie podziękowania na początku listu, bez podziękowań przy każdym punkcie.
+
+% =====================================================================
+\section{Wymogi z maila redakcji (lista kontrolna)}
+
+\begin{description}[leftmargin=0pt,style=nextline]
+\item[M.1 Abstrakt] nowy, R1.3; sprawdzić 150--250 słów.
+\item[M.2 Struktura] Introduction, Literature Review, Research Methodology, Results and Discussion, Conclusions, Acknowledgements: zgodna.
+\item[M.3, M.9--M.11] Bibliografia według R1.7 i D2. Wszystkie tytuły po angielsku: jest. Autocytowania 14,3\%.
+\item[M.4] Wersje oprogramowania (R1.b) i dostępność (R1.4).
+\item[M.5] Odniesienie do wcześniejszych prac jest (Tab.~3, wyżarzanie). Ograniczenia są we wnioskach. Dopisać jedno zdanie o implikacjach praktycznych: przy dzisiejszym dostępie chmurowym koszt ruchu zależy od kolejki, a nie od obliczeń.
+\item[M.6 Autorzy] Wojewódzki i Bożejko, afiliacja jest. Trzeba oznaczyć autora korespondencyjnego. Obecnie e-mail jest tylko u Bożejki, bez oznaczenia. \textbf{Do potwierdzenia}, kto jest autorem korespondencyjnym: w EasyChair to Ty (podpisujesz LtP), a w artykule e-mail promotora (wymóg uczelnianego adresu). Proponuję Ciebie z adresem \texttt{@pwr.edu.pl}, jeśli go masz, bo LtP podpisuje autor korespondencyjny. Dodać ORCID obu autorów (zalecane).
+\item[M.7 Rysunki] Wszystkie są cytowane. Grafiki to PDF wektorowe. Pliki PNG obok nie są używane, a gdyby były, trzeba sprawdzić 300 dpi.
+\item[M.8 Numeracja] R1.1.
+\item[M.12 Podziękowania] Obecnie zawierają tylko oświadczenie o AI. Brak finansowania do podziękowania? \textbf{Do potwierdzenia}: czy jest grant lub projekt do wpisania (np.\ dostęp do IQM Resonance lub IBM Quantum)?
+\item[M.13 AI] Jest w \texttt{Acknowledgements} pod \texttt{\textbackslash ifblind}, czyli w wersji końcowej się pojawi. Proponuję wydzielić osobny akapit „Disclosure of AI use”, tak jak w ICAISC.
+\end{description}
+
+\end{document}

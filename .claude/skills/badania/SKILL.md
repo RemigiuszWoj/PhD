@@ -34,6 +34,9 @@ Układ sprawdzony w ICAISC 2027 i ANNSIM 2027:
 - Dane surowe: `articles/<slug>/measurements/` (albo `data/`), nazwy z ustawieniami
   (`algo=ils__neigh=...__file=tai20_5__inst=0__tl=10000ms__seed=0`). Do repo idą dane stojące za tabelami
   i figurami (potem snapshot w Zenodo).
+- **Po zakończeniu każdej kampanii** surowe dane idą do prywatnego repo danych `~/Desktop/pfsp-neighborhoods-data`
+  (`tools/pack_campaign.py`, `scan_secrets.py`, `make_manifest.py`, `verify.py`, commit i push na `origin main`).
+  Nigdy w trakcie biegów z budżetem czasowym. Procedura: strona `kod/repo-danych.md` w bazie wiedzy.
 - Tabele i figury **tylko ze skryptu** czytającego dane (`tables/*.tex`, `figures/*_en.pdf`, `*_pl.pdf`).
   Liczby w tekście muszą się zgadzać z tabelami – sprawdzane przed wysyłką.
 - Statystyka: średnie ± odchylenie, test Wilcoxona na parach; uwaga na zależność ziaren tej samej instancji

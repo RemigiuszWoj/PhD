@@ -42,6 +42,19 @@ stany w `plan-publikacji.md` vs `~/Desktop/PhD/PUBLICATIONS.md` i pamięć `proj
 strony `updated` starsze niż 30 dni przy aktywnych artykułach; pojęcia używane bez własnej strony;
 punkty z `doktorat/do-wyjasnienia.md`. Raport: krótka lista „co poprawić”, poprawki po akceptacji.
 
+## SKRZYNKA w notatce DOKTORAT (przy każdym przeglądzie)
+
+Notatka „DOKTORAT” w Notatkach Apple ma sekcję **SKRZYNKA** na luźne zapiski właściciela (z telefonu, ze spotkań
+z promotorem). Przy przeglądzie:
+1. Odczyt tylko do czytania: `osascript -e 'tell application "Notes" to get plaintext of (first note whose name is "DOKTORAT")'`;
+   zapiski to linie między nagłówkiem SKRZYNKA a „KONFERENCJE”.
+2. Każdy zapisek rozłóż na właściwą stronę bazy (pomysł → `doktorat/pomysly.md`, uwaga promotora →
+   `proces/uwagi-promotora.md`, termin → `doktorat/plan-publikacji.md`, sprawa → `doktorat/do-wyjasnienia.md`), wpis w `log.md`.
+   Niejasny zapisek: zapytaj właściciela, nie zgaduj.
+3. Pokaż właścicielowi listę „zapisek → strona” i dopiero po akceptacji usuń zapiski z notatki – **tylko w aplikacji,
+   w trybie pełnego ekranu** (przeciągnięcie po zapiskach, Delete). Nigdy `set body` (kasuje zdjęcia) ani edycja w tle
+   (podmienia zły zakres). Przed i po: `get body` – liczba `<table` (4) i `<img` (2) bez zmian.
+
 ## Commit i prywatność
 
 - Po sesji zmian: `git -C ~/Desktop/Doktorat/PhD-wiki add -A && git commit -m "wiki: <co>"`. Push tylko na polecenie.

@@ -23,6 +23,9 @@ Plan v4 options (any order after the family; articles/crossings/PLAN.md, note v4
                selection with the t-th most improving arc of the first move removed; the best (real C_max) of
                these and of the best single swap is applied (_top1 = _safe)
     _lim<T>x<C>  caps TOP_K = T and CORE_K = C (cap-sensitivity ablation)
+    _cf<F>     crossing scale (inv only, F = 0..100): at most c = floor(F/100 * cr(sigma_inv)) crossing pairs,
+               where sigma_inv is the involution optimum on the same candidates; greedy repair (select_cf),
+               a heuristic for N_c, checked against the exact MILP in the anatomy (cf grid, plan v5)
     cross_q<K>  second-order (pair-corrected) QUBO over the K most improving candidates: linear terms are the
                exact single-swap deltas, quadratic terms the measured pair interactions
                C(pi o a o b) - C(pi) - delta_a - delta_b, swaps sharing an endpoint are forbidden; solved
@@ -373,6 +376,42 @@ def select_inv(cands: Dict[Arc, float]) -> Tuple[float, List[Arc]]:
     return float(sum(cands[a] for a in arcs)), arcs
 
 
+def _cross(x: Arc, y: Arc) -> bool:
+    (a, b), (c, d) = (x, y) if x < y else (y, x)
+    return c < b < d
+
+
+def select_cf(cands: Dict[Arc, float], frac: int) -> Tuple[float, List[Arc]]:
+    """Crossing scale, plan v5: at most c = floor(frac/100 * cr(sigma_inv)) crossing pairs, where sigma_inv is the
+    involution optimum on `cands`. Greedy repair: start from sigma_inv, drop the swap with the most crossings
+    inside the move (ties: the least improving one) until cr <= c, then add the remaining candidates in order
+    of improvement whenever both endpoints are free and the crossing budget allows. frac = 100 is sigma_inv."""
+    v_inv, inv = select_inv(cands)
+    total = crossings(inv)
+    c = (frac * total) // 100
+    if total <= c:
+        return v_inv, inv
+    S = list(inv)
+    cnt = {a: sum(_cross(a, b) for b in S if b != a) for a in S}
+    while total > c:
+        a = max(S, key=lambda x: (cnt[x], cands[x]))
+        S.remove(a)
+        total -= cnt.pop(a)
+        for b in S:
+            if _cross(a, b):
+                cnt[b] -= 1
+    used = {q for ab in S for q in ab}
+    for a, w in sorted(cands.items(), key=lambda kv: kv[1]):
+        if a[0] in used or a[1] in used:
+            continue
+        k = sum(_cross(a, b) for b in S)
+        if total + k <= c:
+            S.append(a)
+            used.update(a)
+            total += k
+    return float(sum(cands[a] for a in S)), sorted(S)
+
+
 # ---------------------------------------------------------------------------
 # Neighborhood
 # ---------------------------------------------------------------------------
@@ -381,12 +420,12 @@ Q_MAX = 20  # enumeration limit of the pair-corrected QUBO (cross_q<K>)
 
 def parse_crossing_options(mode: str) -> Optional[dict]:
     """'cross_inv_k4_cp' -> {'family': 'inv', 'rule': 'plain', 'boundary': 'critical_path', 'card': 4, ...};
-    None if not a crossing mode. Keys: family, rule, boundary, card, top, top_k, core_k, q."""
+    None if not a crossing mode. Keys: family, rule, boundary, card, top, top_k, core_k, q, cf."""
     if not mode.startswith("cross_"):
         return None
     head, *opts = mode[len("cross_"):].split("_")
     o = {"family": head, "rule": "plain", "boundary": "last_machine", "card": None, "top": None,
-         "top_k": TOP_K, "core_k": CORE_K, "q": None}
+         "top_k": TOP_K, "core_k": CORE_K, "q": None, "cf": None}
     if re.fullmatch(r"q\d+", head):
         o["family"], o["q"] = "q", int(head[1:])
         if not 2 <= o["q"] <= Q_MAX:
@@ -402,6 +441,8 @@ def parse_crossing_options(mode: str) -> Optional[dict]:
             o["card"] = int(m[1])
         elif m := re.fullmatch(r"top(\d+)", t):
             o["top"] = int(m[1])
+        elif m := re.fullmatch(r"cf(\d+)", t):
+            o["cf"] = int(m[1])
         elif m := re.fullmatch(r"lim(\d+)x(\d+)", t):
             o["top_k"], o["core_k"] = int(m[1]), int(m[2])
         else:
@@ -410,6 +451,8 @@ def parse_crossing_options(mode: str) -> Optional[dict]:
         raise ValueError(f"{mode!r}: cross_swap and cross_q<K> take no rule, _k or _top option")
     if o["top"] is not None and (o["top"] < 1 or o["rule"] != "plain"):
         raise ValueError(f"{mode!r}: _top<K> needs K >= 1 and no _safe/_prefix")
+    if o["cf"] is not None and (o["family"] != "inv" or not 0 <= o["cf"] <= 100):
+        raise ValueError(f"{mode!r}: _cf<F> needs the inv family and 0 <= F <= 100")
     if o["card"] is not None and o["card"] < 1:
         raise ValueError(f"{mode!r}: _k<K> needs K >= 1")
     return o
@@ -507,6 +550,7 @@ def crossing_neighborhood(
     card: Optional[int] = None,
     top: Optional[int] = None,
     q: Optional[int] = None,
+    cf: Optional[int] = None,
 ) -> Tuple[List[int], int, List[Arc]]:
     """Best compound move of one family under one acceptance rule. Returns (new_pi, new_cmax, swaps).
     card / top / q: plan v4 options (_k<K>, _top<K>, cross_q<K>), see the module docstring."""
@@ -537,7 +581,7 @@ def crossing_neighborhood(
             capped_core = capped_core or cc
             return pr, arcs
         if family == "inv":
-            return select_inv(c)
+            return select_inv(c) if cf is None else select_cf(c, cf)
         raise ValueError(family)
 
     def cut(arcs: List[Arc]) -> List[Arc]:

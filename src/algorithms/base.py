@@ -247,7 +247,7 @@ def get_neighbor(
         o = parse_crossing_options(neigh_mode)
         new_pi, new_c, swaps = crossing_neighborhood(
             current_pi, processing_times, o["family"], o["rule"], boundary_mode=o["boundary"],
-            top_k=o["top_k"], core_k=o["core_k"], card=o["card"], top=o["top"], q=o["q"],
+            top_k=o["top_k"], core_k=o["core_k"], card=o["card"], top=o["top"], q=o["q"], cf=o["cf"],
         )
         return new_pi, new_c, tuple(swaps) if swaps else tuple(new_pi), None
 

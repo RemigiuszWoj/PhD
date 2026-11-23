@@ -142,3 +142,74 @@ def test_ig_and_ils_neh_run():
         random.seed(0)
         best, c, *_ = iterated_local_search(p, max_time_ms=200, neigh_mode=mode)
         assert c == c_max(best, p)
+
+
+# ---------------------------------------------------------------------------
+# Plan v5: crossing scale _cf<F> (greedy repair towards N_c, c = F% of cr(sigma_inv))
+# ---------------------------------------------------------------------------
+def improving_of(p, pi):
+    _, cand = compute_candidates(pi, p, len(pi), True, "last_machine")
+    return {(i, j): d for i, j, d in cand if d < 0}
+
+
+def test_cf_parse_and_bounds():
+    assert cr.parse_crossing_options("cross_inv_cf30")["cf"] == 30
+    for bad in ("cross_c0_cf30", "cross_inv_cf101"):
+        with pytest.raises(ValueError):
+            cr.parse_crossing_options(bad)
+
+
+def test_cf_endpoints_and_budget():
+    for p, pi in states(12, n=16, m=5):
+        imp = improving_of(p, pi)
+        if not imp:
+            continue
+        v_inv, inv = cr.select_inv(imp)
+        assert cr.select_cf(imp, 100) == (v_inv, inv)
+        total = cr.crossings(inv)
+        v0, a0 = cr.select_cf(imp, 0)
+        assert cr.crossings(a0) == 0 and v0 >= cr.select_c0(imp)[0] - 1e-9   # repair never beats the exact c0
+        for f in (10, 30, 50, 70, 90):
+            v, arcs = cr.select_cf(imp, f)
+            assert len({x for a in arcs for x in a}) == 2 * len(arcs)        # a matching
+            assert cr.crossings(arcs) <= f * total // 100
+            assert v >= v_inv - 1e-9 and abs(v - sum(imp[a] for a in arcs)) < 1e-9
+
+
+def brute_nc(cands, c):
+    """Exact optimum with at most c crossing pairs by enumeration of matchings (small inputs)."""
+    arcs = sorted(cands)
+    best = [0.0]
+
+    def rec(x, chosen, used, val):
+        if x == len(arcs):
+            if val < best[0] and cr.crossings(chosen) <= c:
+                best[0] = val
+            return
+        rec(x + 1, chosen, used, val)
+        a = arcs[x]
+        if a[0] not in used and a[1] not in used and cr.crossings(chosen + [a]) <= c:
+            rec(x + 1, chosen + [a], used | set(a), val + cands[a])
+
+    rec(0, [], set(), 0.0)
+    return best[0]
+
+
+def test_milp_matches_brute_force():
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
+    from crossing_anatomy import select_milp
+    for p, pi in states(6, n=10, m=4):
+        imp = dict(sorted(improving_of(p, pi).items(), key=lambda kv: kv[1])[:14])
+        if len(imp) < 3:
+            continue
+        for c in (0, 1, 2, 4):
+            assert abs(select_milp(imp, c)[0] - brute_nc(imp, c)) < 1e-9
+
+
+def test_cf_mode_in_ils():
+    p = rand_instance(15, 5, 3)
+    random.seed(0)
+    best, c, *_ = iterated_local_search(p, max_time_ms=200, neigh_mode="cross_inv_cf40")
+    assert c == c_max(best, p)

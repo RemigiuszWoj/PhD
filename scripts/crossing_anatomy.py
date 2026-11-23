@@ -16,6 +16,12 @@ With --extras (plan v4; output in results/crossings/anatomy_v4/):
   - "q": the second-order (pair-corrected) QUBO over the 16 most improving candidates (cross_q16), its exact
     optimum and real gain, against dyn / c0 / inv restricted to the same 16 candidates; for n = 20 the QUBO
     itself is stored (linear terms, couplers, conflicts) for E4 (annealer and QAOA on the same states).
+With --cf (plan v5, crossing scale; output in results/crossings/anatomy_cf/), per state only:
+  - "full": the campaign candidates (TOP_K cap as in the ILS), involution optimum and its crossings, exact c0,
+    and the greedy repair select_cf for F = 0, 10, ..., 100 (predicted and real gain, swaps, crossings, time);
+  - "restricted": the 60 most improving candidates, exact optimum of N_c (MILP) for c = floor(F% cr(inv_R))
+    and for c in {1, 2, 4, 8, 16, 32}, with the repair on the same 60 for the gap; F = 0 is the c0 DP and
+    c >= cr(inv_R) the matching, both exact without MILP.
 
 Usage (repo root):
     python scripts/crossing_anatomy.py --dry-run
@@ -40,7 +46,7 @@ os.chdir(ROOT)
 import src.algorithms.ils as ils_mod  # noqa: E402
 from src.neighborhoods.classical.crossing import (  # noqa: E402
     _apply, crossing_neighborhood, crossings, max_crossings_per_arc, nestings, pair_corrected_qubo,
-    parse_crossing_mode, select_c0, select_c1, select_dyn, select_inv, solve_qubo_exact,
+    TOP_K, parse_crossing_mode, select_c0, select_c1, select_cf, select_dyn, select_inv, solve_qubo_exact,
 )
 from src.neighborhoods.classical.kbonacci import compute_candidates  # noqa: E402
 from src.parser import parser  # noqa: E402
@@ -56,10 +62,14 @@ FAMILIES = ["dyn", "c0", "c1", "pa1", "inv"]
 OUT = ROOT / "results" / "crossings" / "anatomy"
 EXTRAS = False          # set by --extras (plan v4); OUT then points at anatomy_v4
 R_SIZE, Q_SIZE = 60, 16
+CF = False              # set by --cf (plan v5); OUT then points at anatomy_cf
+GRID = list(range(0, 101, 10))
+ABS_C = [1, 2, 4, 8, 16, 32]
 
 
-def select_milp(cands, c, time_limit=60):
-    """Exact optimum with at most c crossing pairs (MILP, HiGHS); same as pilot/crossing_select.py."""
+def select_milp(cands, c, time_limit=60, with_status=False):
+    """Exact optimum with at most c crossing pairs (MILP, HiGHS); same as pilot/crossing_select.py.
+    with_status: also return whether HiGHS proved optimality within the time limit."""
     import numpy as np
     from scipy.optimize import Bounds, LinearConstraint, milp
     arcs = sorted(cands)
@@ -92,7 +102,50 @@ def select_milp(cands, c, time_limit=60):
     res = milp(obj, constraints=LinearConstraint(np.array(rows), -np.inf, ub), integrality=np.ones(nv),
                bounds=Bounds(0, 1), options={"time_limit": time_limit})
     chosen = [arcs[x] for x in range(A) if res.x[x] > 0.5]
+    if with_status:
+        return float(sum(cands[a] for a in chosen)), chosen, res.status == 0
     return float(sum(cands[a] for a in chosen)), chosen
+
+
+def cf_block(pi, p, base, improving, best1):
+    """Plan v5 crossing scale on one state (see the module docstring)."""
+    real = lambda arcs: c_max(_apply(pi, arcs), p) - base if arcs else 0
+    ordered = sorted(improving.items(), key=lambda kv: kv[1])
+    full = dict(ordered[:TOP_K])
+    v0, a0 = select_c0(full)
+    vi, inv = select_inv(full)
+    grid = {}
+    for f in GRID:
+        t0 = time.perf_counter()
+        v, a = select_cf(full, f)
+        grid[str(f)] = {"pred": v, "real": real(a), "swaps": len(a), "cr": crossings(a),
+                        "ms": (time.perf_counter() - t0) * 1000}
+    out = {"best_single": best1, "full": {"size": len(full), "cr_inv": crossings(inv), "swaps_inv": len(inv),
+                                          "inv_pred": vi, "c0": {"pred": v0, "real": real(a0), "swaps": len(a0)},
+                                          "grid": grid}}
+    R = dict(ordered[:R_SIZE])
+    vR, invR = select_inv(R)
+    CR = crossings(invR)
+
+    def exact(c):
+        t0 = time.perf_counter()
+        if c == 0:
+            v, a = select_c0(R)
+            ok = True
+        elif c >= CR:
+            v, a, ok = vR, invR, True
+        else:
+            v, a, ok = select_milp(R, c, with_status=True)
+        return {"c": c, "pred": v, "real": real(a), "swaps": len(a), "cr": crossings(a), "optimal": ok,
+                "ms": (time.perf_counter() - t0) * 1000}
+
+    rg = {}
+    for f in GRID:
+        rg[str(f)] = exact(f * CR // 100)
+        rg[str(f)]["repair_pred"] = select_cf(R, f)[0]
+    out["restricted"] = {"size": len(R), "cr_inv": CR, "inv_pred": vR, "grid": rg,
+                         "abs": {str(c): exact(c) for c in ABS_C}}
+    return out
 
 
 def extras(pi, p, base, improving, best1):
@@ -165,6 +218,9 @@ def analyse(pi, p, boundary, rng, n_pairs):
     rec = {"base": base, "n_cand": len(cand), "n_improving": len(improving), "best_single": best1}
     if not improving:
         return rec
+    if CF:
+        rec["cf"] = cf_block(pi, p, base, improving, best1)
+        return rec
     fam = {}
     for f in FAMILIES:
         st = {}
@@ -200,10 +256,12 @@ def analyse(pi, p, boundary, rng, n_pairs):
 
 
 def job(args):
-    global EXTRAS, OUT
-    file, inst, time_ms, k, n_pairs, extras_flag = args
+    global EXTRAS, CF, OUT
+    file, inst, time_ms, k, n_pairs, extras_flag, cf_flag = args
     if extras_flag:          # spawn-started workers do not inherit globals set in main()
         EXTRAS, OUT = True, ROOT / "results" / "crossings" / "anatomy_v4"
+    if cf_flag:
+        CF, OUT = True, ROOT / "results" / "crossings" / "anatomy_cf"
     out = OUT / f"{file}__inst={inst}.json"
     if out.exists():
         return out.name, "skip"
@@ -236,11 +294,16 @@ def main():
     ap.add_argument("--limit", type=int, default=0, help="at most N instances (smoke test)")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--extras", action="store_true", help="plan v4: c2 on 60 candidates + pair-corrected QUBO")
+    ap.add_argument("--cf", action="store_true", help="plan v5: crossing scale (repair grid + MILP on 60)")
     a = ap.parse_args()
-    global EXTRAS, OUT
+    global EXTRAS, CF, OUT
+    if a.extras and a.cf:
+        ap.error("--extras and --cf write different outputs; run them separately")
     if a.extras:
         EXTRAS, OUT = True, ROOT / "results" / "crossings" / "anatomy_v4"
-    jobs = [(f, i, a.time_ms, a.states, a.pairs, a.extras) for f in a.files.split(",") for i in map(int, a.instances.split(","))]
+    if a.cf:
+        CF, OUT = True, ROOT / "results" / "crossings" / "anatomy_cf"
+    jobs = [(f, i, a.time_ms, a.states, a.pairs, a.extras, a.cf) for f in a.files.split(",") for i in map(int, a.instances.split(","))]
     if a.limit:
         jobs = jobs[:a.limit]
     todo = [j for j in jobs if not (OUT / f"{j[0]}__inst={j[1]}.json").exists()]

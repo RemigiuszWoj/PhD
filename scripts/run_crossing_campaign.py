@@ -73,7 +73,10 @@ STAGES = {
     "lim": {"files": ["tai100_5", "tai100_10", "tai100_20", "tai200_10", "tai200_20"],
             "modes": ["cross_c0_lim10000x2000", "cross_inv_lim10000x2000",
                       "cross_c0_lim1000x100", "cross_inv_lim1000x100"]},
+    # plan v5: crossing scale, at most F% of the involution move's crossings (F = 0 / 100 are c0 / inv of "main")
+    "cf": {"files": [f for f in TAILLARD if f != "tai500_20"], "modes": [f"cross_inv_cf{f}" for f in range(10, 100, 10)]},
 }
+ORDER_V5 = ["anatomy_cf", "cf"]
 ORDER_V4 = ["anatomy_v4", "card", "top", "context", "qubo", "lim"]
 ORDER = ["main", "anatomy", "ablation", "safe"]  # "extra" only on explicit request (option MAXIMUM)
 # Wall-clock overrun of runs whose first evaluation outlasts the budget: all cross_* modes evaluate
@@ -103,10 +106,12 @@ def est_hours(cfgs) -> float:
 
 
 def run_stage(name: str, files, algos, dry: bool, limit: int, modes_filter) -> None:
-    if name in ("anatomy", "anatomy_v4"):
+    if name in ("anatomy", "anatomy_v4", "anatomy_cf"):
         cmd = [sys.executable, "scripts/crossing_anatomy.py", "--files", ",".join(f for f in files if f != "tai500_20")]
         if name == "anatomy_v4":
             cmd += ["--extras", "--workers", "4"]
+        if name == "anatomy_cf":
+            cmd += ["--cf", "--workers", "4"]
         if dry:
             cmd.append("--dry-run")
         if limit:
@@ -238,14 +243,14 @@ def main() -> None:
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--limit", type=int, default=0, help="at most N runs per stage (smoke test)")
     a = ap.parse_args()
-    stages = ORDER if a.stage == "all" else ORDER_V4 if a.stage == "v4" else [s.strip() for s in a.stage.split(",")]
+    stages = ORDER if a.stage == "all" else ORDER_V4 if a.stage == "v4" else ORDER_V5 if a.stage == "v5" else [s.strip() for s in a.stage.split(",")]
     files = [f.strip() for f in a.files.split(",")]
     algos = [x.strip() for x in a.algos.split(",")]
     modes_filter = {m.strip() for m in a.modes.split(",") if m.strip()}
     if any(x not in ALGOS for x in algos):
         ap.error(f"--algos must be from {ALGOS}")
     for s in stages:
-        if s not in STAGES and s not in ("anatomy", "anatomy_v4"):
+        if s not in STAGES and s not in ("anatomy", "anatomy_v4", "anatomy_cf"):
             ap.error(f"unknown stage {s}")
     if not a.dry_run:
         try:

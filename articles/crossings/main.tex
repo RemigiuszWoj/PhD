@@ -1,18 +1,9 @@
 % =====================================================================
-% DRAFT v1 (11.11.2026) -- crossing neighborhoods for the PFSP:
-% Dynasearch -> Motzkin -> single crossings -> involutions.
-% Target: GECCO 2027 (deadline unconfirmed); double-blind.
-% Layout: plain article class for drafting; switch to the official
-% template once the CFP is out.
-% Protocol = identical to the previous papers of this line (same ILS,
-% same constants, same budgets, same accelerator); the neighborhood
-% family is the only factor of the main study. The safeguard (safe rule)
-% is a separate variant with its own section and table (decision of
-% 11.11.2026: it changes the selection rule, not the neighborhood).
-% Tables marked PILOT hold pilot data (4 instances x 3 seeds, cloud
-% timings, 50x10 seeds not confirmed as ta041-ta044); they are
-% placeholders; numbers from the Mac rerun. The pilot used no block filter (all pairs). Table "main"
-% is a skeleton.
+% DRAFT v2 (23.11.2026) -- campaign results (main, safe, ablation,
+% anatomy) and stage v4 (card, top, context, qubo, lim, anatomy_v4) replace
+% the pilot. Target: IJCAI 2027 (11.01.2027), double-blind.
+% Numbers: tables/summary.txt and tables/summary_v4.txt
+% (scripts/analyze_crossing.py, scripts/analyze_crossing_v4.py).
 % Bibliography: every entry must be verified in Crossref before use.
 % =====================================================================
 \documentclass[10pt,twocolumn]{article}
@@ -60,7 +51,14 @@ is additivity. Two improving swaps on disjoint intervals realize a
 larger share of their predicted joint gain than two nested or crossing
 swaps. Under additive selection the quality of iterated local search
 should therefore fall along the axis, and disjoint swaps should be the
-best choice. \todo{headline result of the campaign}
+best choice. On the 120 Taillard instances, iterated local search with
+a $10$\,s budget confirms this order in every class, and Dynasearch is
+only slightly ahead of the best single swap. Two controls locate the
+cause. When each move keeps only its two most improving swaps, all
+families perform alike, so crossings hurt through the interaction of
+many simultaneous swaps. When the move is selected by a QUBO that adds
+the measured pair interactions, it realizes almost all of its predicted
+gain, and crossing moves reach the level of Dynasearch.
 \end{abstract}
 
 % ---------------------------------------------------------------------
@@ -111,9 +109,11 @@ kind predict more and deliver less. Fourth, it evaluates the families on
 the Taillard benchmark under the selection rule of the earlier studies
 and reports what compound moves add over the best single swap. A
 separate variant that checks the real makespan of the selected move
-once shows how much of the loss this check removes.
-\todo{optional fifth: QUBO density versus neighborhood size on quantum
-hardware, Section~\ref{sec:quantum}}
+once shows how much of the loss this check removes. The QUBO view of
+the family adds a fifth point. The largest neighborhood on the axis has
+the sparsest QUBO, and only a QUBO can carry the measured pair
+interactions that no interval program can express. Solved exactly on a
+small candidate set, this model removes the loss of the crossing moves.
 
 % ---------------------------------------------------------------------
 \section{Background}
@@ -390,42 +390,57 @@ a sufficient condition for $Q_{ab}=0$}
 
 \begin{table}[t]
 \centering
-\caption{PILOT: realized share of the predicted joint gain of two
-improving swaps on trajectory states; in parentheses the share of pairs
-that do not improve together.}
+\caption{Realized share of the predicted joint gain of two improving
+swaps by geometry, mean over pairs on trajectory states.}
 \label{tab:geometry}
 \small
-\begin{tabular}{@{}rccc@{}}
+\begin{tabular}{@{}lccc@{}}
 \toprule
-$n$ & disjoint & nested & crossing \\
+Class & disjoint & nested & crossing \\
 \midrule
-20 & 0.66 (7\%) & 0.30 (32\%) & 0.37 (27\%) \\
-50 & 0.61 (11\%) & 0.34 (25\%) & 0.23 (31\%) \\
-100 & 0.52 (12\%) & 0.22 (27\%) & 0.12 (34\%) \\
+$20\times10$ & 0.80 & 0.65 & 0.58 \\
+$20\times20$ & 0.72 & 0.60 & 0.46 \\
+$50\times10$ & 0.90 & 0.85 & 0.83 \\
+$50\times20$ & 0.82 & 0.76 & 0.71 \\
+$100\times10$ & 0.94 & 0.90 & 0.90 \\
+$100\times20$ & 0.87 & 0.81 & 0.79 \\
+$200\times20$ & 0.92 & 0.90 & 0.89 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:geometry} reports the pilot measurement. Disjoint pairs
-realize more than half of their predicted gain, and overlapping pairs
-realize between a tenth and a third. Nested and crossing pairs do not
-differ consistently: at $n=20$ nested pairs are worse, at $n\geq50$
-crossing pairs are. Overlap breaks additivity, and crossing as such does
-not. On start states all three geometries are close to additive, so the
-effect belongs to the region near local optima where the search spends
-its time.
+We sample about 2000 states from the ILS trajectories of the campaign,
+roughly 190 per class, and measure every pair of improving candidate
+swaps in each state. Table~\ref{tab:geometry} shows the result. In every
+class disjoint pairs keep more of their predicted gain than overlapping
+pairs (Wilcoxon test per class, $p<10^{-7}$). The gap is largest at
+$n=20$: at $20\times20$ disjoint pairs keep $0.72$, nested pairs $0.60$
+and crossing pairs $0.46$. Crossing pairs are never better than nested
+ones, and for $n\geq50$ the two are almost level. Overlap breaks
+additivity, and crossing adds little beyond it.
 
-The consequence for whole moves is that the families trade predicted
-gain for realized gain. On trajectory states the noncrossing optimum
-already holds most of the predicted gain of the involution optimum, and
-Dynasearch holds the least. Dynasearch, however, realizes a positive
-share of its prediction, whereas the moves selected from $\N_0$ and from
-the involutions make the makespan worse on average at $n\geq50$. The
-best involution also has many crossings, from a handful at $n=20$ to
-tens at $n=50$, so a small crossing budget does not reproduce it.
-\todo{E1: figure of predicted and realized gain along the axis, figure
-of additivity by geometry, histogram of crossings in the involution
-optimum; replace the pilot numbers}
+For whole moves the effect compounds. Dynasearch moves realize
+$0.46$--$0.88$ of their predicted gain, the moves from $\N_0$, $\N_1$
+and $\Pa_1$ only $0.03$--$0.21$, and the best involution makes the
+makespan worse on average in every class. The selected compound move is
+worse than the best single swap in 11--44\% of the states for
+Dynasearch, in 48--71\% for $\N_0$, $\N_1$ and $\Pa_1$, and in 74--91\%
+for the involutions. The involution optimum also needs many crossings.
+The smallest $c$ whose optimum reaches it is at least two in 65--100\%
+of the states, and on the 60 best candidates a budget of two crossings
+reaches it in at most 40\% of the states at $n=20$, in at most 11\% at
+$n=100$ and never at $n=200$.
+
+A larger family also selects more swaps per move, with a median of 3
+for Dynasearch, 15 for $\N_0$ and 21 for the involutions, so geometry
+and cardinality are confounded. At equal cardinality the order
+persists. Moves with two swaps realize a median $0.79$ of their
+prediction in Dynasearch, $0.38$ in $\N_0$, $0.30$ in $\Pa_1$ and $0.29$
+for the involutions, and moves with three or four swaps $0.70$, $0.20$,
+$-0.07$ and $-0.19$. Both factors matter. Each family selects different
+moves, so part of this difference may come from the selection itself;
+Section~\ref{sec:exp} therefore controls cardinality directly.
+\todo{figure: predicted and realized gain along the axis}
 
 % ---------------------------------------------------------------------
 \section{Experiments}\label{sec:exp}
@@ -457,33 +472,14 @@ along the chain
 $\N_{\mathrm{dyn}}\subset\N_0\subset\N_1\subset\Pa_1\subset\N_\infty$.
 All other comparisons are exploratory and reported as such. Families
 with crossings complete fewer iterations, so the first family is also
-analyzed at equal iteration counts.
-
-\begin{table}[t]
-\centering
-\caption{PILOT: mean RPD [\%] to the lower bound, ILS, 4 instances
-$\times$ 3 seeds per class, Apple M4 Pro.}
-\label{tab:pilot}
-\small
-\begin{tabular}{@{}lccc@{}}
-\toprule
- & $20\times5$ & $20\times10$ & $50\times10$ \\
-Variant & 1\,s / 5\,s & 1\,s / 5\,s & 1\,s / 5\,s \\
-\midrule
-Single swap & 3.68 / 3.18 & 9.53 / 9.00 & 6.88 / 5.91 \\
-Dynasearch & 3.49 / 3.08 & 9.32 / 8.84 & 6.24 / 4.93 \\
-$\N_0$ (Motzkin) & 3.41 / 3.10 & 9.42 / 8.76 & 17.84 / 13.69 \\
-$\N_1$ & 3.75 / 3.21 & 9.86 / 9.32 & 17.81 / 16.18 \\
-$\Pa_1$ & 3.75 / 3.27 & 10.17 / 9.41 & 19.27 / 16.89 \\
-Involutions & 6.44 / 4.41 & 16.95 / 12.91 & 24.16 / 22.82 \\
-\bottomrule
-\end{tabular}
-\end{table}
+analyzed at equal iteration counts. The controls of stage two use the
+same protocol on the nine classes with $n\leq100$, and the QUBO control
+on the six classes with $n\leq50$.
 
 \begin{table*}[t]
 \centering
-\caption{SKELETON: mean RPD [\%] to the lower bound at $10$\,s, ILS, per
-class (10 instances, 5 seeds).}
+\caption{Mean RPD [\%] to the lower bound at $10$\,s, ILS, per class
+(10 instances, 5 seeds).}
 \label{tab:main}
 \small
 \begin{tabular}{@{}l*{12}{c}@{}}
@@ -492,27 +488,39 @@ Variant & \multicolumn{3}{c}{$n=20$} & \multicolumn{3}{c}{$n=50$} &
 \multicolumn{3}{c}{$n=100$} & \multicolumn{2}{c}{$n=200$} & $n=500$ \\
 $m$ & 5 & 10 & 20 & 5 & 10 & 20 & 5 & 10 & 20 & 10 & 20 & 20 \\
 \midrule
-Single swap & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
-Dynasearch & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
-$\N_0$ (Motzkin) & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
-$\N_1$ & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
-$\Pa_1$ & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
-Involutions & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- & -- \\
+Single swap & 2.61 & 9.98 & 21.36 & 1.10 & 5.01 & 13.92 & 1.46 & 2.74 & 10.24 & 5.61 & 17.37 & 15.76 \\
+Dynasearch & 2.52 & 9.80 & 21.29 & 1.01 & 4.57 & 13.33 & 1.36 & 2.46 & 10.34 & 4.40 & 15.62 & 14.49 \\
+$\N_0$ (Motzkin) & 2.62 & 10.19 & 21.44 & 2.00 & 12.60 & 19.56 & 4.13 & 12.19 & 20.39 & 12.17 & 19.70 & 14.65 \\
+$\N_1$ & 2.66 & 10.30 & 21.56 & 2.43 & 12.09 & 21.10 & 7.05 & 12.84 & 20.15 & 12.98 & 19.67 & 14.65 \\
+$\Pa_1$ & 2.67 & 10.48 & 21.62 & 2.78 & 13.01 & 21.15 & 6.61 & 12.00 & 19.47 & 12.88 & 19.12 & 14.64 \\
+Involutions & 3.31 & 12.48 & 23.16 & 6.05 & 20.91 & 26.27 & 9.23 & 18.26 & 25.70 & 15.90 & 22.53 & 15.99 \\
 \bottomrule
 \end{tabular}
 \end{table*}
 
-\paragraph{Pilot.} Table~\ref{tab:pilot} shows the pilot. Its patterns
-are hypotheses until the campaign confirms them, and the pilot evaluated
-all pairs without the block filter. Quality falls along the axis.
-Involutions are worse than $\N_0$ in every instance of every class at
-both budgets, and at $50\times10$ the families with crossings are worse
-than $\N_0$ at $5$\,s, while at $1$\,s $\N_1$ and $\N_0$ are level.
-Dynasearch is the best family at $50\times10$, far ahead of $\N_0$. At
-$n=20$ Dynasearch and $\N_0$ are within a tenth of a point of each
-other, $\N_1$ and $\Pa_1$ trail them by up to $0.8$ points, and the
-involutions fall far behind. The best compound family gains $0.6$--$1.0$
-points over the single swap at $n=50$ and at most $0.3$ at $n=20$.
+\paragraph{Main result.} Table~\ref{tab:main} shows the campaign.
+Quality falls along the axis, and Page's trend test along
+$\N_{\mathrm{dyn}}\subset\N_0\subset\N_1\subset\Pa_1\subset\N_\infty$
+is significant in every class (pooled over $n\leq100$, $p\approx10^{-53}$).
+In the first pre-registered family the involutions are worse than
+$\N_0$ in all 12 classes, in all nine decisive ones after Holm
+correction, and also at equal iteration counts, so the loss does not
+come from slower moves. In the second family Dynasearch is better than
+$\N_0$ in seven of the nine decisive classes, and at $20\times5$ and
+$20\times20$ the two do not differ. The fall is uneven. $\N_1$ and
+$\Pa_1$ stay close to $\N_0$, and the two large steps lead from
+Dynasearch to $\N_0$, where nesting enters, and from $\Pa_1$ to the
+involutions, where crossings are no longer bounded. At $n=50$ and
+$n=100$ the overlapping families lose 1--10 points to Dynasearch and
+the involutions up to 16. The families with crossings also complete
+fewer moves, from about half the moves of Dynasearch at $20\times5$ to a
+quarter at $100\times5$.
+
+Compound moves add little over the best single swap. Dynasearch is ahead
+by $0.1$--$0.6$ points at $n\leq100$ and by $1.2$--$1.8$ points at
+$n=200$, and only the latter difference is significant after Holm
+correction. At $n=200$ a run makes 6--15 moves and at $n=500$ a single
+move, so these classes say nothing about $c$.
 
 These patterns fit the measurement of Section~\ref{sec:additivity}. ILS
 with a tabu list applies the selected move even when it makes the
@@ -521,10 +529,33 @@ overlapping swaps it is often much worse. The same mechanism accounts
 for the weak Motzkin results at $n\geq50$ in the earlier scaling
 study~\cite{windowed_own}, which used the same rule.
 \todo{wording agreed with the supervisor}
-\todo{replace with the campaign: Table~\ref{tab:main}, figure of RPD
-along the axis, iterations per budget, ablations (exact critical-path
-filter, cap on the candidates); in the anatomy, the share of states in
-which the selected move is worse than the best single swap}
+
+\paragraph{Controls.} Three controls test this explanation. First, we
+cut each move to its $K$ most improving swaps. With $K=2$ all families
+perform alike: of the 27 pairwise comparisons among Dynasearch, $\N_0$
+and the involutions only one is significant after Holm correction, and
+there the involutions win. The cut moves of $\N_0$ and of the
+involutions are better than the full ones by up to 11 and 16 points.
+With $K=4$ the involutions are already worse than $\N_0$ in four
+classes with $n\leq50$. Crossings therefore hurt through the
+interaction of many simultaneous swaps and not through a single crossing
+pair. Second, we accept the best of the first move, up to seven
+alternatives obtained by dropping one of its swaps, and the best single
+swap, all evaluated exactly. This top-8 rule is no better than the
+single check of Section~\ref{sec:safe} in any class. Third, a tighter cap
+on the candidates (1000 pairs, 100 in the core) makes each move cheaper
+and improves $\N_0$ and the involutions at $n\geq100$ by up to $2.5$
+points, but they stay far behind Dynasearch.
+
+\paragraph{Context.} Our ILS is a reference point and not a competitive
+flow shop solver. Started from NEH~\cite{nawaz1983} instead of the
+identity, it gains up to $1.9$ points at $n=100$, and Dynasearch is then
+within $0.13$ points of the single swap at every $n\leq100$. Iterated
+greedy~\cite{ruiz2007}, run in the same code base with the same budget,
+is better than both in seven of the nine classes after Holm correction,
+by up to $2.6$ points. Our comparison therefore concerns compound swap
+moves inside one metaheuristic, not the state of the art for the flow
+shop.
 
 % ---------------------------------------------------------------------
 \section{A Safeguarded Variant}\label{sec:safe}
@@ -539,35 +570,39 @@ neighborhood, so the variant stays out of the main tables and out of the
 pre-registered tests, and it is not comparable with the earlier
 Dynasearch and Motzkin results.
 
-\begin{table}[t]
+\begin{table*}[t]
 \centering
-\caption{PILOT, safeguarded variant: mean RPD [\%] to the lower bound,
-same runs as Table~\ref{tab:pilot}.}
+\caption{Safeguarded variant: mean RPD [\%] to the lower bound at
+$10$\,s, same protocol as Table~\ref{tab:main}.}
 \label{tab:safe}
 \small
-\begin{tabular}{@{}lccc@{}}
+\begin{tabular}{@{}l*{12}{c}@{}}
 \toprule
- & $20\times5$ & $20\times10$ & $50\times10$ \\
-Variant & 1\,s / 5\,s & 1\,s / 5\,s & 1\,s / 5\,s \\
+Variant & \multicolumn{3}{c}{$n=20$} & \multicolumn{3}{c}{$n=50$} &
+\multicolumn{3}{c}{$n=100$} & \multicolumn{2}{c}{$n=200$} & $n=500$ \\
+$m$ & 5 & 10 & 20 & 5 & 10 & 20 & 5 & 10 & 20 & 10 & 20 & 20 \\
 \midrule
-Dynasearch & 3.51 / 3.21 & 9.41 / 8.92 & 7.00 / 5.52 \\
-$\N_0$ (Motzkin) & 3.23 / 2.96 & 9.43 / 9.06 & 5.99 / 5.17 \\
-$\N_1$ & 3.16 / 2.96 & 9.33 / 8.86 & 6.30 / 5.34 \\
-$\Pa_1$ & 3.21 / 2.98 & 9.16 / 8.80 & 6.72 / 5.53 \\
-Involutions & 3.07 / 2.95 & 9.56 / 8.79 & 6.16 / 5.55 \\
+Dynasearch & 2.53 & 9.87 & 21.34 & 1.06 & 4.84 & 13.56 & 1.42 & 2.61 & 9.75 & 4.43 & 14.83 & 14.49 \\
+$\N_0$ (Motzkin) & 2.51 & 9.92 & 21.21 & 1.00 & 4.69 & 13.54 & 1.31 & 2.58 & 9.56 & 4.61 & 14.89 & 14.55 \\
+$\N_1$ & 2.49 & 9.90 & 21.22 & 1.04 & 4.82 & 13.42 & 1.33 & 2.46 & 9.45 & 4.80 & 14.92 & 14.48 \\
+$\Pa_1$ & 2.49 & 9.92 & 21.25 & 1.04 & 4.92 & 13.53 & 1.37 & 2.45 & 9.59 & 4.77 & 14.76 & 14.53 \\
+Involutions & 2.50 & 9.89 & 21.25 & 1.01 & 4.95 & 13.38 & 1.39 & 2.45 & 9.65 & 5.92 & 16.38 & 15.58 \\
 \bottomrule
 \end{tabular}
-\end{table}
+\end{table*}
 
-Table~\ref{tab:safe} shows that the check removes most of the loss of
-the overlapping families. At $50\times10$ it brings $\N_0$ from $17.84$
-to $5.99$ and the involutions from $24.16$ to $6.16$ at $1$\,s, and the
-four overlapping families then differ by less than one point. Dynasearch, in contrast, gets worse
-with the check. The safeguarded overlapping families end up close to
-Dynasearch without the check: at $1$\,s safeguarded $\N_0$ is slightly
-ahead of it, at $5$\,s Dynasearch is ahead of all of them. A cheap check of the real makespan thus matters more than the
-choice among overlapping families. \todo{replace with the campaign stage
-with the safeguard}
+Table~\ref{tab:safe} shows that the check removes the loss of the
+overlapping families. At $50\times10$ it brings $\N_0$ from $12.60$ to
+$4.69$ and the involutions from $20.91$ to $4.95$, and at $n\leq100$
+the five safeguarded families lie within half a point of each other in
+every class. For $\N_0$, $\N_1$, $\Pa_1$ and the involutions the check
+is significantly better than the plain rule in almost every class with
+$n\geq50$. Safeguarded $\N_0$ does not differ significantly from plain
+Dynasearch in any class: it is ahead by about $0.75$ points at
+$100\times20$ and $200\times20$ and behind by at most $0.2$ elsewhere.
+At $n\geq200$ the safeguarded involutions fall behind, because the cap
+on the candidates binds there. A cheap check of the real makespan
+matters more than the choice among the overlapping families.
 
 % ---------------------------------------------------------------------
 \section{QUBO Structure}\label{sec:quantum}
@@ -578,6 +613,19 @@ endpoint and pairs that cross. The involution QUBO penalizes only shared
 endpoints. The largest neighborhood on the axis therefore has the
 sparsest QUBO. A third model adds the measured terms $Q_{ab}$ and
 expresses what no interval program can; it is the densest.
+
+Before any processor is involved we test the third model classically.
+Inside the ILS, the pair-corrected QUBO over the 16 most improving
+swaps, solved exactly, replaces the additive selection. On the six
+classes with $n\leq50$ it is better than the plain involutions by
+$0.7$--$16$ points and better than $\N_0$ in five classes, it does not
+differ from Dynasearch, and it is better than the best single swap in
+two classes. On the anatomy states its optimum realizes a median
+$0.85$--$1.00$ of its predicted gain and is worse than the best single
+swap in at most 10\% of the states, against 11--71\% for the involution
+optimum over the same 16 candidates. The pair terms repair what
+additivity breaks, and they are the terms that an interval program
+cannot express.
 
 \begin{table}[t]
 \centering
@@ -605,16 +653,23 @@ the energy gap to the optimum of the sampled model and the share of
 feasible samples. Move quality is the real makespan change. The
 involution QUBO may win the first and lose the second, because its
 optimum contains more overlapping swaps. \todo{E4: annealer and
-gate-based results, or cut the section to one paragraph}
+gate-based results on the stored states}
 
 % ---------------------------------------------------------------------
 \section{Conclusions}
-\todo{depends on the campaign. Pilot reading: under additive
-selection swaps should not cross, and in this protocol not even nest;
-disjoint moves predict less and deliver more. With a makespan check the
-overlapping families recover, but they do not beat Dynasearch.
-Crossings could pay off only with a model of pair interactions, which a
-QUBO can express and a dynamic program cannot.}
+Under additive selection the swaps of a compound move should not
+cross, and in this protocol they should not even nest. Quality falls
+along the axis from Dynasearch to the involutions in every Taillard
+class, and the larger neighborhoods predict more gain and deliver less.
+The cause is the interaction of many overlapping swaps. Cut to two
+swaps per move, all families perform alike, and with a measured model of
+pair interactions, solved exactly as a QUBO, crossing moves reach the
+level of Dynasearch. A single check of the real makespan has the same
+effect at a lower cost. Compound swap moves of any shape add little over
+the best single swap in this ILS, and iterated greedy is well ahead of
+all of them. The open question is whether the pair-corrected model still
+pays off when the candidate set outgrows exact solution, which is where
+annealers and other QUBO samplers come in.
 
 % ---------------------------------------------------------------------
 % All entries to be verified in Crossref (authors, volume, pages, DOI).
@@ -667,6 +722,9 @@ prediction in energy-based models. \emph{J.\ Comput.\ Biol.}
 \bibitem{nussinov1978} R.~Nussinov, G.~Pieczenik, J.R.~Griggs,
 D.J.~Kleitman. Algorithms for loop matchings. \emph{SIAM J.\ Appl.\
 Math.} 35(1):68--82, 1978.
+\bibitem{nawaz1983} M.~Nawaz, E.E.~Enscore, I.~Ham. A heuristic algorithm
+for the $m$-machine, $n$-job flow-shop sequencing problem. \emph{Omega}
+11(1):91--95, 1983.
 \bibitem{page1963} E.B.~Page. Ordered hypotheses for multiple
 treatments: a significance test for linear ranks. \emph{J.\ Amer.\
 Statist.\ Assoc.} 58:216--230, 1963.

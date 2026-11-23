@@ -61,9 +61,26 @@ Duże skoki są dwa: z Dynasearcha do N₀ (zagnieżdżanie) i z P₁ do inwoluc
 Odniesienie do k-bonacciego czytało wszystkie przebiegi z katalogów k-bonacciego, także SA z bieżącej kampanii. Skrypt bierze teraz
 tylko ILS. Zmienił się wiersz tai20_5 dla k = 2…4 (np. k = 2: 3,49 zamiast 5,41). Wnioski powyżej się nie zmieniają.
 
+## Etap v4 (22–23.11.2026, `tables/summary_v4.txt`, skrypt `scripts/analyze_crossing_v4.py`)
+
+Wszystko eksploracyjne; RPD do LB po 10 s, bloki = instancje, Holm w obrębie porównania.
+
+- **card (ruch przycięty do K najlepszych zamian):** przy K = 2 rodziny wypadają tak samo (z 27 porównań Dyn/N₀/inw. istotne
+  jedno, inwolucje lepsze przy tai100_20); przycięte N₀ i inwolucje lepsze od pełnych o 11 i 16 pp. Przy K = 4 inwolucje już gorsze od N₀
+  w 4 klasach n ≤ 50. Wniosek: szkodzi oddziaływanie wielu nachodzących zamian naraz, nie pojedyncze krzyżowanie.
+- **top8 (dokładny wybór spośród 8 ruchów):** nie lepszy od bezpiecznika w żadnej klasie.
+- **context:** ILS z NEH zyskuje do 1,9 pp przy n = 100; Dyn vs Swap nadal ≤ 0,13 pp. IG lepszy od obu w 7/9 klas (do 2,6 pp).
+  ILS to punkt odniesienia, nie solver na poziomie stanu wiedzy.
+- **qubo (q16, QUBO z poprawkami par, rozwiązywane dokładnie, n ≤ 50):** lepsze od zwykłych inwolucji o 0,7–16 pp, od N₀ w 5/6 klas,
+  bez różnicy z Dynasearchem, lepsze od Swap w 2 klasach. W anatomii realny/przewidywany 0,85–1,00, gorszy od najlepszej pojedynczej
+  zamiany w ≤ 10% stanów (inwolucje na tych samych 16 kandydatach: 11–71%).
+- **lim (ostrzejszy limit kandydatów 1000×100):** pomaga N₀ i inwolucjom przy n ≥ 100 do 2,5 pp, nadal daleko za Dynasearchem;
+  limit 10000×2000 nic nie zmienia.
+- **anatomy_v4 (60 najlepszych kandydatów, MILP dla c = 2):** budżet dwóch krzyżowań osiąga optimum inwolucji w ≤ 40% stanów przy
+  n = 20, ≤ 11% przy n = 100 i nigdy przy n = 200.
+
 ## Czego jeszcze nie ma
 
-- c₂ w anatomii (DP dla c = 2 i MILP dla |C| ≤ 60): wymaga obliczeń, po kampanii SA k-bonacciego.
 - Wiersze starego Motzkina i Dynasearcha: stare kampanie (`results/experiments/2026070*`) szły innym protokołem
   (warianty `quantum_*` przez sampler), więc nie wstawiam ich bez decyzji (D4).
-- E4 (kwanty), SA, model drugiego rzędu (E3 MAX).
+- E4 (kwanty na sprzęcie i symulacje SA/Aer), RPD do BKS.

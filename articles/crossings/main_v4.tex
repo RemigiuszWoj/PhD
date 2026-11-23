@@ -1,0 +1,757 @@
+% =====================================================================
+% DRAFT v2 (23.11.2026) -- PROPOSAL: campaign results (main, safe, ablation,
+% anatomy) and stage v4 (card, top, context, qubo, lim, anatomy_v4) replace
+% the pilot. Target: IJCAI 2027 (11.01.2027), double-blind.
+% Numbers: tables/summary.txt and tables/summary_v4.txt
+% (scripts/analyze_crossing.py, scripts/analyze_crossing_v4.py).
+% Bibliography: every entry must be verified in Crossref before use.
+% =====================================================================
+\documentclass[10pt,twocolumn]{article}
+\usepackage[margin=0.75in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage[hidelinks]{hyperref}
+
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{definition}{Definition}
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\Pa}{\mathcal{P}}
+\newcommand{\ncr}{\operatorname{cr}}
+
+\title{Should Swaps Cross? Compound-Swap Neighborhoods from Motzkin\\
+to Involutions for the Permutation Flow Shop}
+\author{Anonymous submission}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A compound move for the permutation flow shop applies several endpoint
+swaps at once and is chosen by an exact algorithm that minimizes the sum
+of the individual makespan changes. Dynasearch allows only swaps on
+disjoint intervals, and the Motzkin neighborhood also allows nested
+ones. We complete this axis. The family $\N_c$ admits at most $c$
+crossing pairs of swaps, $\Pa_1$ lets every swap cross at most one
+other, and the largest member is the set of all involutions. We count
+these neighborhoods with a continued fraction and show that a bounded
+number of crossings multiplies the Motzkin number only by a polynomial
+factor, $|\N_c|\sim M_n (n/3)^c/c!$. The best move is found exactly by
+an interval dynamic program for $c=0$, by a dynamic program over
+two-arc cores for $c=1$ and $\Pa_1$, and by maximum-weight matching for
+involutions. All families share the candidate swaps and their deltas, so
+the selection adds little to the $O(mn^3)$ cost of the deltas. The limit
+is additivity. Two improving swaps on disjoint intervals realize a
+larger share of their predicted joint gain than two nested or crossing
+swaps. Under additive selection the quality of iterated local search
+should therefore fall along the axis, and disjoint swaps should be the
+best choice. On the 120 Taillard instances, iterated local search with
+a $10$\,s budget confirms this order in every class, and Dynasearch is
+only slightly ahead of the best single swap. Two controls locate the
+cause. When each move keeps only its two most improving swaps, all
+families perform alike, so crossings hurt through the interaction of
+many simultaneous swaps. When the move is selected by a QUBO that adds
+the measured pair interactions, it realizes almost all of its predicted
+gain, and crossing moves reach the level of Dynasearch.
+\end{abstract}
+
+% ---------------------------------------------------------------------
+\section{Introduction}
+
+The permutation flow shop scheduling problem with the makespan
+criterion, $F|prmu|C_{\max}$, is NP-hard for $m\geq 3$
+machines~\cite{garey1976} and is a standard testbed for local
+search~\cite{taillard1993,ruiz2007}. Dynasearch~\cite{congram2002}
+showed that an exponential set of independent pairwise interchanges can
+be searched exactly by dynamic programming, which makes a compound move
+the unit of search within very large-scale neighborhood
+search~\cite{ahuja2002}. For the flow shop, two compound neighborhoods
+of endpoint swaps are in use. Dynasearch combines swaps whose intervals
+are pairwise disjoint. The Motzkin neighborhood~\cite{motzkin_own} also
+admits nested swaps and is counted by the Motzkin numbers.
+
+Both neighborhoods forbid one configuration: two swaps $(a,b)$ and
+$(c,d)$ with $a<c<b<d$, which cross when drawn as arcs over the
+permutation. Nothing in the move itself requires this. Any set of swaps
+with pairwise distinct endpoints is an involution and defines a valid
+neighbor, and the best involution under an additive objective is a
+maximum-weight matching, which is polynomial. The ban on crossings
+exists because the interval dynamic program cannot express them. This
+paper asks whether the ban costs anything: \emph{should swaps in a
+compound move be allowed to cross?}
+
+We answer with a family of neighborhoods ordered by how much two swaps
+may overlap. It starts at Dynasearch, passes through Motzkin and through
+moves with a bounded number of crossings, and ends at all involutions.
+The whole family uses one set of candidate swaps and one set of deltas,
+so its members differ only in which subsets of candidates they may
+select. This isolates the effect of overlap from the effect of cost. We
+keep the metaheuristic, its parameters and the experimental protocol of
+the earlier studies~\cite{motzkin_own,windowed_own} unchanged, so every
+new number can be read against the published ones.
+
+The paper makes four contributions. First, it defines the crossing
+families $\N_c$ and $\Pa_r$ and counts them. A continued fraction gives
+the exact sizes, and a Poisson-type lemma shows that a constant number
+of crossings leaves the growth rate at $3^n$, whereas all involutions
+grow faster than any exponential. Second, it gives exact selection
+algorithms for every level of the axis and shows that they are cheap
+next to the deltas they consume. Third, it measures how additivity
+depends on the geometry of a pair of swaps: disjoint, nested or
+crossing. This measurement explains why larger neighborhoods of this
+kind predict more and deliver less. Fourth, it evaluates the families on
+the Taillard benchmark under the selection rule of the earlier studies
+and reports what compound moves add over the best single swap. A
+separate variant that checks the real makespan of the selected move
+once shows how much of the loss this check removes. The QUBO view of
+the family adds a fifth point. The largest neighborhood on the axis has
+the sparsest QUBO, and only a QUBO can carry the measured pair
+interactions that no interval program can express. Solved exactly on a
+small candidate set, this model removes the loss of the crossing moves.
+
+% ---------------------------------------------------------------------
+\section{Background}
+
+\paragraph{Compound moves in scheduling.} Dynasearch was introduced for
+single-machine total weighted tardiness~\cite{congram2002}; later work
+made its search faster~\cite{ergun2006} and added
+insertions~\cite{grosso2004}. Bo\.zejko and Wodecki analyzed swap
+multimoves for the flow shop~\cite{bozejko2007}. The Fibonacci
+neighborhood combines disjoint adjacent
+swaps~\cite{fibonacci_own,bozejko2026sr}, and the Motzkin neighborhood
+combines noncrossing swaps~\cite{motzkin_own}. In total weighted
+tardiness the cost changes of independent swaps add up and the dynamic
+program is exact. In the flow shop they do not, so every one of these
+neighborhoods optimizes a surrogate.
+
+\paragraph{Neighborhoods searched by matching.} Sarvanov and
+Doroshko~\cite{sarvanov1981} and Gutin~\cite{gutin1999} search
+factorial-size neighborhoods of the travelling salesman problem by an
+assignment problem, and Deineko and Woeginger~\cite{deineko2000} survey
+exponential neighborhoods for the travelling salesman and quadratic
+assignment problems. The involution neighborhood belongs to this
+tradition. What has not been studied is the axis between the interval
+program and the matching, and whether moving along it helps.
+
+\paragraph{RNA secondary structure.} The same axis exists in RNA
+folding, where base pairs are arcs over a sequence. Nussinov's
+algorithm~\cite{nussinov1978} is the noncrossing interval program.
+Pseudoknots are crossings: Rivas and Eddy~\cite{rivas1999} and
+Akutsu~\cite{akutsu2000} give dynamic programs for restricted classes,
+general pseudoknots are NP-hard in energy models~\cite{lyngso2000}, and
+Tabaska et al.~\cite{tabaska1998} obtain arbitrary pseudoknots from a
+maximum-weight matching when the score is additive. Our level $c=0$
+corresponds to Nussinov's algorithm, $c=1$ to a simple pseudoknot, and
+involutions to the matching approach.
+
+\paragraph{Crossings in matchings.} The distribution of crossings in
+matchings and involutions is classical~\cite{touchard1952,riordan1975}
+and has a continued-fraction form~\cite{flajolet1980}. Crossings and
+nestings are equidistributed~\cite{kasraoui2006}, and $k$-noncrossing
+matchings were counted by Chen et al.~\cite{chen2007}. We use these
+results to size the neighborhoods.
+
+% ---------------------------------------------------------------------
+\section{The Crossing Family}\label{sec:family}
+
+$n$ jobs are processed on machines $1,\dots,m$ in the order
+$\pi=(\pi(1),\dots,\pi(n))$, and $p_{r,j}$ is the processing time of job
+$j$ on machine $r$. Completion times satisfy
+$C_{r,t}=\max(C_{r-1,t},C_{r,t-1})+p_{r,\pi(t)}$ and
+$C_{\max}(\pi)=C_{m,n}$.
+
+\begin{definition}
+An \emph{elementary move} $s(i,j)$, $i<j$, exchanges $\pi(i)$ and
+$\pi(j)$ and leaves the jobs between them in place. A \emph{compound
+move} is a set $\sigma$ of elementary moves with pairwise distinct
+endpoints, that is, an involution of the positions; the neighbor is
+$\pi\circ\sigma$. Two swaps $(a,b)$ and $(c,d)$ with $a<c$ are
+\emph{disjoint} if $b<c$, \emph{nested} if $d<b$, and \emph{crossing} if
+$c<b<d$. $\ncr(\sigma)$ is the number of crossing pairs in $\sigma$.
+\end{definition}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[x=0.36cm,y=0.36cm,every node/.style={font=\scriptsize}]
+\foreach \o/\lab in {0/disjoint,7/nested,14/crossing}{
+  \draw[gray] (\o,0)--(\o+5,0);
+  \foreach \x in {0,...,5} \fill (\o+\x,0) circle (1.2pt);
+  \node at (\o+2.5,-0.9) {\lab};
+}
+\draw (0,0) to[out=70,in=110] (2,0);
+\draw (3,0) to[out=70,in=110] (5,0);
+\draw (7,0) to[out=70,in=110] (12,0);
+\draw (8.5,0) to[out=70,in=110] (10.5,0);
+\draw (14,0) to[out=70,in=110] (17,0);
+\draw (16,0) to[out=70,in=110] (19,0);
+\end{tikzpicture}
+\caption{The three geometries of a pair of swaps, drawn as arcs over
+positions.}
+\label{fig:geometry}
+\end{figure}
+
+\begin{definition}
+$\N_{\mathrm{dyn}}$ contains the moves whose swaps are pairwise
+disjoint. $\N_c=\{\sigma:\ncr(\sigma)\leq c\}$, and $\Pa_r$ contains the
+moves in which every swap crosses at most $r$ others. $\N_0=\Pa_0$ is
+the Motzkin neighborhood and $\N_\infty$ is the set of all involutions.
+\end{definition}
+
+``Single crossings'' can mean two things, and we study both: $\N_1$
+allows one crossing in the whole move, and $\Pa_1$ allows many crossing
+pairs as long as each swap takes part in at most one. The families form
+the chains
+$\N_{\mathrm{dyn}}\subset\N_0\subset\N_1\subset\N_2\subset\dots\subset\N_\infty$
+and $\N_0\subset\N_1\subset\Pa_1\subset\Pa_2\subset\dots\subset\N_\infty$,
+with strict inclusions for sufficiently large $n$; $\N_2$ and $\Pa_1$
+are incomparable. Figure~\ref{fig:geometry} shows the geometries and
+Table~\ref{tab:taxonomy} the sizes.
+
+\begin{table}[t]
+\centering
+\caption{Size and growth of the neighborhoods on the overlap axis.
+Sizes were verified by enumeration for $n\leq 11$.}
+\label{tab:taxonomy}
+\small
+\begin{tabular}{@{}lrrl@{}}
+\toprule
+Neighborhood & $n=10$ & $n=20$ & Growth \\
+\midrule
+Dynasearch & 512 & $5.2{\cdot}10^5$ & $2^n$ \\
+Motzkin $\N_0$ & 2\,188 & $5.1{\cdot}10^7$ & $3^n n^{-3/2}$ \\
+$\N_1$ & 5\,038 & $2.6{\cdot}10^8$ & $M_n\,n/3$ \\
+$\N_2$ & 7\,108 & $7.6{\cdot}10^8$ & $M_n\,(n/3)^2/2$ \\
+$\Pa_1$ & 5\,263 & $4.9{\cdot}10^8$ & $3.4626^n$ \\
+Involutions & 9\,496 & $2.4{\cdot}10^{10}$ & $(n/e)^{n/2}e^{\sqrt n}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{proposition}\label{prop:jfrac}
+Let $I_n(q)=\sum_{\sigma}q^{\ncr(\sigma)}$ over all involutions of $n$
+positions and $[h]_q=1+q+\dots+q^{h-1}$. Then
+\begin{equation}
+\sum_{n\geq0} I_n(q)\,x^n=
+\cfrac{1}{1-x-\cfrac{[1]_q\,x^2}{1-x-\cfrac{[2]_q\,x^2}{1-x-\cdots}}}.
+\end{equation}
+\end{proposition}
+\begin{proof}[Sketch]
+Read the positions from left to right as a Motzkin path: an opening
+endpoint is an up step, a closing endpoint a down step, a fixed point a
+level step. A down step from height $h$ may close any of the $h$ open
+arcs, and closing the arc that was opened $j$-th from the last creates
+$j$ crossings. The weight of the step is therefore $[h]_q$, and
+Flajolet's theorem~\cite{flajolet1980} gives the fraction.
+\end{proof}
+
+Setting $q=0$ gives the Motzkin numbers $M_n$ and $q=1$ the involution
+numbers. The coefficient of $q^c$ counts the moves with exactly $c$
+crossings.
+
+\begin{lemma}\label{lem:poisson}
+For fixed $c$, the number of involutions of $n$ positions with exactly
+$c$ crossings is $M_n\,(n/3)^c/c!\,(1+O(1/n))$. Hence
+$|\N_c|\sim M_n(n/3)^c/c!$, and $\N_c$ grows as $3^n$ for every fixed
+$c$.
+\end{lemma}
+\begin{proof}[Sketch]
+By Proposition~\ref{prop:jfrac} the coefficient of $q^c$ is a sum over
+Motzkin paths of the number of ways to distribute $c$ crossings over the
+down steps, where a step from height $h$ carries at most $h-1$. A
+typical path has $D\approx n/3$ down steps, of which a bounded number
+start at height~1, so the count is
+$\mathbb{E}\binom{D+c-1}{c}=(n/3)^c/c!\,(1+O(1/n))$ per path.
+\todo{full proof; check whether the statement is known for involutions,
+the perfect-matching analogue is Riordan's $\binom{2n}{n-2}$}
+\end{proof}
+
+Numerically the ratio of the exact count to the formula for $c=1$ is
+$0.82$ at $n=50$ and $0.995$ at $n=2000$. The practical reading is that
+a few crossings add little: at $n=50$ the neighborhood $\N_4$ still
+covers a fraction $3\cdot10^{-10}$ of all involutions. A uniformly
+random involution has about $n^2/24$ crossings, so $\N_c$ for constant
+$c$ is the almost-noncrossing corner of the involution set.
+
+\begin{proposition}\label{prop:pa1}
+The generating function $S(x)$ of $|\Pa_1|$ satisfies
+$S=1+xS+x^2S^2+x^4S^4$, and $|\Pa_1|$ grows as $\rho^{-n}$ with
+$\rho^{-1}=3.4626$.
+\end{proposition}
+\begin{proof}[Sketch]
+The first position is a fixed point, the left end of an uncrossed arc,
+or the left end of an arc crossed by exactly one other. In the last case
+the two arcs have four endpoints, and the three gaps between them and
+the remainder after them each hold an independent $\Pa_1$ structure.
+\end{proof}
+
+\begin{proposition}\label{prop:optima}
+Every family above contains all single swaps. Under additive selection a
+permutation is a local optimum of the family if and only if it is a
+local optimum of the single-swap neighborhood.
+\end{proposition}
+\begin{proof}
+If no single swap has a negative delta, no sum of deltas is negative.
+The converse holds because single swaps are moves of the family.
+\end{proof}
+
+Proposition~\ref{prop:optima} sets the overlap axis apart from axes that
+bound the reach of a swap. Overlap changes how far a step goes outside
+local optima, but it does not change the set of local optima. The
+single-swap neighborhood is therefore the natural control for the whole
+family.
+
+% ---------------------------------------------------------------------
+\section{Exact Move Selection}\label{sec:selection}
+
+For every candidate swap $a=(i,j)$ we compute
+$\delta_a=C_{\max}(\pi\circ s(i,j))-C_{\max}(\pi)$ with head and tail
+matrices at cost $O(m(j-i))$, which is $O(mn^3)$ for all pairs.
+Candidates pass the block-boundary filter of the earlier
+studies~\cite{windowed_own}. The predicted change of a compound move is
+$\sum_{a\in\sigma}\delta_a$, and selection minimizes it within the
+family.
+
+\paragraph{Pruning.} Each family is hereditary: a subset of an
+admissible move is admissible. An optimal move therefore uses only
+candidates with $\delta_a<0$, and positions that are not an endpoint of
+such a candidate can be dropped. Selection runs on the set $C$ of
+improving candidates and on their $E\leq 2|C|$ compressed endpoints.
+
+\paragraph{Disjoint and noncrossing moves.} For Dynasearch a positional
+program suffices,
+$B[p]=\min\bigl(B[p-1],\min_{i<p}B[i-1]+\delta_{ip}\bigr)$. For $\N_0$
+let $W[i][j]$ be the best predicted change of a noncrossing move inside
+positions $i..j$. Then
+\begin{multline}\label{eq:interval}
+W[i][j]=\min\Bigl(W[i{+}1][j],\\ \min_{(i,k)\in C,\,k\leq j}
+\delta_{ik}+W[i{+}1][k{-}1]+W[k{+}1][j]\Bigr),
+\end{multline}
+which takes $O(E^2+E|C|)$ time.
+
+\paragraph{Single crossings.} A crossing pair $(i,b),(a,d)$ with
+$i<a<b<d$ forms a two-arc core with three inner gaps. For $\Pa_1$ the
+recurrence~\eqref{eq:interval} gains one more option at position $i$:
+\begin{multline}
+\delta_{ib}+\delta_{ad}+W[i{+}1][a{-}1]+W[a{+}1][b{-}1]\\
++W[b{+}1][d{-}1]+W[d{+}1][j],
+\end{multline}
+minimized over the cores that start at $i$ and end by $j$. No arc inside
+a gap can cross a core arc, because the core arcs are already crossed
+once. For $\N_1$ the program keeps two tables, one for noncrossing moves
+and one for moves with exactly one core, and a core is closed with
+noncrossing gaps. The cores are enumerated from pairs of crossing
+candidates in $O(|C|^2)$ and the tables are filled in $O(E^3)$. For
+$c\geq2$ the connected components of the crossing graph have at most
+$c+1$ arcs, which gives cores of bounded size and a knapsack over the
+crossing budget. \todo{Algorithm~1: the $\Pa_1$ program as pseudocode;
+state the $c=2$ program or leave it to an appendix}
+
+\paragraph{Involutions.} Without a crossing constraint the candidates
+are the edges of a graph on the positions with weights $-\delta_a$, and
+the best move is a maximum-weight matching~\cite{edmonds1965}, found in
+$O(n^3)$.
+
+\paragraph{Cost.} \todo{E0 on the campaign machine.} In the pilot the
+selection on states taken from a search trajectory took at most
+$0.6$\,ms for $\N_0$, $4.5$\,ms for $\N_1$ and $\Pa_1$ and $1.3$\,ms for
+involutions, against $14$--$221$\,ms for the deltas at $n=50$--$100$.
+Dense states are the exception. Right after the start, or after a move
+that made the schedule much worse, thousands of candidates improve, and
+the core enumeration becomes the bottleneck. We therefore restrict the
+cores to the $400$ most improving candidates and the matching to the
+$3000$ most improving ones, and we record how often a cap is active.
+
+\paragraph{Acceptance.} The selected move is applied as it is; when no
+candidate improves, the best single swap is applied. This is the rule of
+the earlier Dynasearch and Motzkin implementations, and every result in
+the main study uses it. Section~\ref{sec:safe} treats a variant that
+checks the real makespan before applying the move.
+
+% ---------------------------------------------------------------------
+\section{Additivity by Pair Geometry}\label{sec:additivity}
+
+The selection optimizes a sum of deltas, but the makespan change of two
+swaps is not the sum of their changes. In the lattice-path view the
+makespan is the length of a longest path through the grid of operations,
+$C'_{\max}=\max_P\bigl[\ell(P)+\sum_a\Delta_a(P)\bigr]$. Two disjoint
+swaps interact only through the choice of the critical path. A nested or
+crossing pair also changes the jobs that lie inside each other's
+interval, so each delta is computed in a context that the other swap
+destroys. We write the second-order term as
+$Q_{ab}=\Delta_{ab}-\delta_a-\delta_b$, where $\Delta_{ab}$ is the real
+change of the pair. \todo{minimal counterexamples for each geometry and
+a sufficient condition for $Q_{ab}=0$}
+
+\begin{table}[t]
+\centering
+\caption{Realized share of the predicted joint gain of two improving
+swaps by geometry, mean over pairs on trajectory states.}
+\label{tab:geometry}
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Class & disjoint & nested & crossing \\
+\midrule
+$20\times10$ & 0.80 & 0.65 & 0.58 \\
+$20\times20$ & 0.72 & 0.60 & 0.46 \\
+$50\times10$ & 0.90 & 0.85 & 0.83 \\
+$50\times20$ & 0.82 & 0.76 & 0.71 \\
+$100\times10$ & 0.94 & 0.90 & 0.90 \\
+$100\times20$ & 0.87 & 0.81 & 0.79 \\
+$200\times20$ & 0.92 & 0.90 & 0.89 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+We sample about 2000 states from the ILS trajectories of the campaign,
+roughly 190 per class, and measure every pair of improving candidate
+swaps in each state. Table~\ref{tab:geometry} shows the result. In every
+class disjoint pairs keep more of their predicted gain than overlapping
+pairs (Wilcoxon test per class, $p<10^{-7}$). The gap is largest at
+$n=20$: at $20\times20$ disjoint pairs keep $0.72$, nested pairs $0.60$
+and crossing pairs $0.46$. Crossing pairs are never better than nested
+ones, and for $n\geq50$ the two are almost level. Overlap breaks
+additivity, and crossing adds little beyond it.
+
+For whole moves the effect compounds. Dynasearch moves realize
+$0.46$--$0.88$ of their predicted gain, the moves from $\N_0$, $\N_1$
+and $\Pa_1$ only $0.03$--$0.21$, and the best involution makes the
+makespan worse on average in every class. The selected compound move is
+worse than the best single swap in 11--44\% of the states for
+Dynasearch, in 48--71\% for $\N_0$, $\N_1$ and $\Pa_1$, and in 74--91\%
+for the involutions. The involution optimum also needs many crossings.
+The smallest $c$ whose optimum reaches it is at least two in 65--100\%
+of the states, and on the 60 best candidates a budget of two crossings
+reaches it in at most 40\% of the states at $n=20$, in at most 11\% at
+$n=100$ and never at $n=200$.
+
+A larger family also selects more swaps per move, with a median of 3
+for Dynasearch, 15 for $\N_0$ and 21 for the involutions, so geometry
+and cardinality are confounded. At equal cardinality the order
+persists. Moves with two swaps realize a median $0.79$ of their
+prediction in Dynasearch, $0.38$ in $\N_0$, $0.30$ in $\Pa_1$ and $0.29$
+for the involutions, and moves with three or four swaps $0.70$, $0.20$,
+$-0.07$ and $-0.19$. Both factors matter. Each family selects different
+moves, so part of this difference may come from the selection itself;
+Section~\ref{sec:exp} therefore controls cardinality directly.
+\todo{figure: predicted and realized gain along the axis}
+
+% ---------------------------------------------------------------------
+\section{Experiments}\label{sec:exp}
+
+The protocol is that of the earlier studies~\cite{windowed_own}, and the
+neighborhood family is the only factor. The
+instances are the 120 Taillard instances~\cite{taillard1993} in 12
+classes with $n\in\{20,50,100,200,500\}$ and $m\in\{5,10,20\}$. The
+metaheuristic is the unchanged ILS with a tabu list of tenure 10 and an
+elite pool of the 10 best solutions perturbed by double-bridge kicks,
+started from the identity permutation. Each configuration runs once for
+$10$\,s per seed with 5 seeds, and the incumbents at $0.1$, $0.5$, $1$,
+$2$ and $5$\,s are read from the trajectory log, which is valid because
+the time limit acts only as a stopping rule. The variants are
+Dynasearch, $\N_0$, $\N_1$, $\Pa_1$ and involutions, with the best
+single swap as a control. All
+variants share one implementation of candidates, deltas and filter. Runs
+are sequential on an Apple M4 Pro. The raw runs and the scripts that
+rebuild every table and figure will be released after the review.
+
+Quality is the relative percentage deviation (RPD) from the Taillard
+lower bound at $10$\,s. Conclusions are drawn only in classes where a
+$10$\,s run makes at least 30 moves, which we expect for $n\leq100$ (nine
+classes); at $n=500$ a run makes a single move. Two families of tests
+were fixed before the campaign, each with instances as blocks and Holm
+correction over the classes: involutions against $\N_0$, and Dynasearch
+against $\N_0$, two-sided. Page's trend test~\cite{page1963} is applied
+along the chain
+$\N_{\mathrm{dyn}}\subset\N_0\subset\N_1\subset\Pa_1\subset\N_\infty$.
+All other comparisons are exploratory and reported as such. Families
+with crossings complete fewer iterations, so the first family is also
+analyzed at equal iteration counts. The controls of stage two use the
+same protocol on the nine classes with $n\leq100$, and the QUBO control
+on the six classes with $n\leq50$.
+
+\begin{table*}[t]
+\centering
+\caption{Mean RPD [\%] to the lower bound at $10$\,s, ILS, per class
+(10 instances, 5 seeds).}
+\label{tab:main}
+\small
+\begin{tabular}{@{}l*{12}{c}@{}}
+\toprule
+Variant & \multicolumn{3}{c}{$n=20$} & \multicolumn{3}{c}{$n=50$} &
+\multicolumn{3}{c}{$n=100$} & \multicolumn{2}{c}{$n=200$} & $n=500$ \\
+$m$ & 5 & 10 & 20 & 5 & 10 & 20 & 5 & 10 & 20 & 10 & 20 & 20 \\
+\midrule
+Single swap & 2.61 & 9.98 & 21.36 & 1.10 & 5.01 & 13.92 & 1.46 & 2.74 & 10.24 & 5.61 & 17.37 & 15.76 \\
+Dynasearch & 2.52 & 9.80 & 21.29 & 1.01 & 4.57 & 13.33 & 1.36 & 2.46 & 10.34 & 4.40 & 15.62 & 14.49 \\
+$\N_0$ (Motzkin) & 2.62 & 10.19 & 21.44 & 2.00 & 12.60 & 19.56 & 4.13 & 12.19 & 20.39 & 12.17 & 19.70 & 14.65 \\
+$\N_1$ & 2.66 & 10.30 & 21.56 & 2.43 & 12.09 & 21.10 & 7.05 & 12.84 & 20.15 & 12.98 & 19.67 & 14.65 \\
+$\Pa_1$ & 2.67 & 10.48 & 21.62 & 2.78 & 13.01 & 21.15 & 6.61 & 12.00 & 19.47 & 12.88 & 19.12 & 14.64 \\
+Involutions & 3.31 & 12.48 & 23.16 & 6.05 & 20.91 & 26.27 & 9.23 & 18.26 & 25.70 & 15.90 & 22.53 & 15.99 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\paragraph{Main result.} Table~\ref{tab:main} shows the campaign.
+Quality falls along the axis, and Page's trend test along
+$\N_{\mathrm{dyn}}\subset\N_0\subset\N_1\subset\Pa_1\subset\N_\infty$
+is significant in every class (pooled over $n\leq100$, $p\approx10^{-53}$).
+In the first pre-registered family the involutions are worse than
+$\N_0$ in all 12 classes, in all nine decisive ones after Holm
+correction, and also at equal iteration counts, so the loss does not
+come from slower moves. In the second family Dynasearch is better than
+$\N_0$ in seven of the nine decisive classes, and at $20\times5$ and
+$20\times20$ the two do not differ. The fall is uneven. $\N_1$ and
+$\Pa_1$ stay close to $\N_0$, and the two large steps lead from
+Dynasearch to $\N_0$, where nesting enters, and from $\Pa_1$ to the
+involutions, where crossings are no longer bounded. At $n=50$ and
+$n=100$ the overlapping families lose 1--10 points to Dynasearch and
+the involutions up to 16. The families with crossings also complete
+fewer moves, from about half the moves of Dynasearch at $20\times5$ to a
+quarter at $100\times5$.
+
+Compound moves add little over the best single swap. Dynasearch is ahead
+by $0.1$--$0.6$ points at $n\leq100$ and by $1.2$--$1.8$ points at
+$n=200$, and only the latter difference is significant after Holm
+correction. At $n=200$ a run makes 6--15 moves and at $n=500$ a single
+move, so these classes say nothing about $c$.
+
+These patterns fit the measurement of Section~\ref{sec:additivity}. ILS
+with a tabu list applies the selected move even when it makes the
+schedule worse. For disjoint swaps such a move is mildly worse; for
+overlapping swaps it is often much worse. The same mechanism accounts
+for the weak Motzkin results at $n\geq50$ in the earlier scaling
+study~\cite{windowed_own}, which used the same rule.
+\todo{wording agreed with the supervisor}
+
+\paragraph{Controls.} Three controls test this explanation. First, we
+cut each move to its $K$ most improving swaps. With $K=2$ all families
+perform alike: of the 27 pairwise comparisons among Dynasearch, $\N_0$
+and the involutions only one is significant after Holm correction, and
+there the involutions win. The cut moves of $\N_0$ and of the
+involutions are better than the full ones by up to 11 and 16 points.
+With $K=4$ the involutions are already worse than $\N_0$ in four
+classes with $n\leq50$. Crossings therefore hurt through the
+interaction of many simultaneous swaps and not through a single crossing
+pair. Second, we accept the best of the first move, up to seven
+alternatives obtained by dropping one of its swaps, and the best single
+swap, all evaluated exactly. This top-8 rule is no better than the
+single check of Section~\ref{sec:safe} in any class. Third, a tighter cap
+on the candidates (1000 pairs, 100 in the core) makes each move cheaper
+and improves $\N_0$ and the involutions at $n\geq100$ by up to $2.5$
+points, but they stay far behind Dynasearch.
+
+\paragraph{Context.} Our ILS is a reference point and not a competitive
+flow shop solver. Started from NEH~\cite{nawaz1983} instead of the
+identity, it gains up to $1.9$ points at $n=100$, and Dynasearch is then
+within $0.13$ points of the single swap at every $n\leq100$. Iterated
+greedy~\cite{ruiz2007}, run in the same code base with the same budget,
+is better than both in seven of the nine classes after Holm correction,
+by up to $2.6$ points. Our comparison therefore concerns compound swap
+moves inside one metaheuristic, not the state of the art for the flow
+shop.
+
+% ---------------------------------------------------------------------
+\section{A Safeguarded Variant}\label{sec:safe}
+
+The pilot raises an obvious question: how much of the loss comes from
+moves that the search would reject if it looked at their real makespan?
+To answer it we run a separate variant. The makespan of the selected
+compound move is evaluated once, at cost $O(mn)$, and the better of this
+move and the best single swap is applied, so a step is never worse than
+the best single swap. This changes the selection rule and not the
+neighborhood, so the variant stays out of the main tables and out of the
+pre-registered tests, and it is not comparable with the earlier
+Dynasearch and Motzkin results.
+
+\begin{table*}[t]
+\centering
+\caption{Safeguarded variant: mean RPD [\%] to the lower bound at
+$10$\,s, same protocol as Table~\ref{tab:main}.}
+\label{tab:safe}
+\small
+\begin{tabular}{@{}l*{12}{c}@{}}
+\toprule
+Variant & \multicolumn{3}{c}{$n=20$} & \multicolumn{3}{c}{$n=50$} &
+\multicolumn{3}{c}{$n=100$} & \multicolumn{2}{c}{$n=200$} & $n=500$ \\
+$m$ & 5 & 10 & 20 & 5 & 10 & 20 & 5 & 10 & 20 & 10 & 20 & 20 \\
+\midrule
+Dynasearch & 2.53 & 9.87 & 21.34 & 1.06 & 4.84 & 13.56 & 1.42 & 2.61 & 9.75 & 4.43 & 14.83 & 14.49 \\
+$\N_0$ (Motzkin) & 2.51 & 9.92 & 21.21 & 1.00 & 4.69 & 13.54 & 1.31 & 2.58 & 9.56 & 4.61 & 14.89 & 14.55 \\
+$\N_1$ & 2.49 & 9.90 & 21.22 & 1.04 & 4.82 & 13.42 & 1.33 & 2.46 & 9.45 & 4.80 & 14.92 & 14.48 \\
+$\Pa_1$ & 2.49 & 9.92 & 21.25 & 1.04 & 4.92 & 13.53 & 1.37 & 2.45 & 9.59 & 4.77 & 14.76 & 14.53 \\
+Involutions & 2.50 & 9.89 & 21.25 & 1.01 & 4.95 & 13.38 & 1.39 & 2.45 & 9.65 & 5.92 & 16.38 & 15.58 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+Table~\ref{tab:safe} shows that the check removes the loss of the
+overlapping families. At $50\times10$ it brings $\N_0$ from $12.60$ to
+$4.69$ and the involutions from $20.91$ to $4.95$, and at $n\leq100$
+the five safeguarded families lie within half a point of each other in
+every class. For $\N_0$, $\N_1$, $\Pa_1$ and the involutions the check
+is significantly better than the plain rule in almost every class with
+$n\geq50$. Safeguarded $\N_0$ does not differ significantly from plain
+Dynasearch in any class: it is ahead by about $0.75$ points at
+$100\times20$ and $200\times20$ and behind by at most $0.2$ elsewhere.
+At $n\geq200$ the safeguarded involutions fall behind, because the cap
+on the candidates binds there. A cheap check of the real makespan
+matters more than the choice among the overlapping families.
+
+% ---------------------------------------------------------------------
+\section{QUBO Structure}\label{sec:quantum}
+
+As a QUBO over the candidate swaps, a family is a set of penalties on
+pairs of candidates. The Motzkin QUBO penalizes pairs that share an
+endpoint and pairs that cross. The involution QUBO penalizes only shared
+endpoints. The largest neighborhood on the axis therefore has the
+sparsest QUBO. A third model adds the measured terms $Q_{ab}$ and
+expresses what no interval program can; it is the densest.
+
+Before any processor is involved we test the third model classically.
+Inside the ILS, the pair-corrected QUBO over the 16 most improving
+swaps, solved exactly, replaces the additive selection. On the six
+classes with $n\leq50$ it is better than the plain involutions by
+$0.7$--$16$ points and better than $\N_0$ in five classes, it does not
+differ from Dynasearch, and it is better than the best single swap in
+two classes. On the anatomy states its optimum realizes a median
+$0.85$--$1.00$ of its predicted gain and is worse than the best single
+swap in at most 10\% of the states, against 11--71\% for the involution
+optimum over the same 16 candidates. The pair terms repair what
+additivity breaks, and they are the terms that an interval program
+cannot express.
+
+\begin{table}[t]
+\centering
+\caption{PILOT: couplers and physical qubits on a Pegasus graph for the
+Motzkin (M), involution (I) and pair-corrected (PQ) QUBO over the same
+$K$ candidates.}
+\label{tab:qubo}
+\small
+\begin{tabular}{@{}lrcc@{}}
+\toprule
+State & $K$ & Couplers M / I / PQ & Qubits M / I / PQ \\
+\midrule
+$20\times10$ & 18 & 59 / 41 / 140 & 26 / 22 / 45 \\
+$20\times20$ & 11 & 27 / 13 / 55 & 14 / 10 / 20 \\
+$50\times10$ & 105 & 2117 / 634 / -- & 1001 / 425 / -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:qubo} shows the structure on three trajectory states. We
+plan to use the processor as an oracle on stored states: for each state
+the three QUBOs over the same candidates are sampled and compared with
+the exact optimum. Two end points are kept apart. Hardware fidelity is
+the energy gap to the optimum of the sampled model and the share of
+feasible samples. Move quality is the real makespan change. The
+involution QUBO may win the first and lose the second, because its
+optimum contains more overlapping swaps. \todo{E4: annealer and
+gate-based results on the stored states}
+
+% ---------------------------------------------------------------------
+\section{Conclusions}
+Under additive selection the swaps of a compound move should not
+cross, and in this protocol they should not even nest. Quality falls
+along the axis from Dynasearch to the involutions in every Taillard
+class, and the larger neighborhoods predict more gain and deliver less.
+The cause is the interaction of many overlapping swaps. Cut to two
+swaps per move, all families perform alike, and with a measured model of
+pair interactions, solved exactly as a QUBO, crossing moves reach the
+level of Dynasearch. A single check of the real makespan has the same
+effect at a lower cost. Compound swap moves of any shape add little over
+the best single swap in this ILS, and iterated greedy is well ahead of
+all of them. The open question is whether the pair-corrected model still
+pays off when the candidate set outgrows exact solution, which is where
+annealers and other QUBO samplers come in.
+
+% ---------------------------------------------------------------------
+% All entries to be verified in Crossref (authors, volume, pages, DOI).
+\begin{thebibliography}{99}\small
+\bibitem{ahuja2002} R.K.~Ahuja, \"O.~Ergun, J.B.~Orlin, A.P.~Punnen.
+A survey of very large-scale neighborhood search techniques.
+\emph{Discrete Appl.\ Math.} 123:75--102, 2002.
+\bibitem{akutsu2000} T.~Akutsu. Dynamic programming algorithms for RNA
+secondary structure prediction with pseudoknots. \emph{Discrete Appl.\
+Math.} 104:45--62, 2000. \todo{verify}
+\bibitem{bozejko2007} W.~Bo\.zejko, M.~Wodecki. On the theoretical
+properties of swap multimoves. \emph{Oper.\ Res.\ Lett.} 35(2):227--231, 2007.
+\bibitem{bozejko2026sr} W.~Bo\.zejko, M.~Uchro\'nski, M.~Wodecki. The new
+exponential Fibonacci neighborhood as QUBO generated on a D-Wave quantum
+computing environment for the permutational scheduling problem.
+\emph{Sci.\ Rep.}, 2026.
+\bibitem{chen2007} W.Y.C.~Chen, E.Y.P.~Deng, R.R.X.~Du, R.P.~Stanley,
+C.H.~Yan. Crossings and nestings of matchings and partitions.
+\emph{Trans.\ Amer.\ Math.\ Soc.} 359:1555--1575, 2007. \todo{verify}
+\bibitem{congram2002} R.K.~Congram, C.N.~Potts, S.L.~van de Velde. An
+iterated dynasearch algorithm for the single-machine total weighted
+tardiness scheduling problem. \emph{INFORMS J.\ Comput.} 14(1):52--67, 2002.
+\bibitem{deineko2000} V.G.~Deineko, G.J.~Woeginger. A study of
+exponential neighborhoods for the travelling salesman problem and for
+the quadratic assignment problem. \emph{Math.\ Program.} 87:519--542,
+2000. \todo{verify}
+\bibitem{edmonds1965} J.~Edmonds. Paths, trees, and flowers.
+\emph{Canad.\ J.\ Math.} 17:449--467, 1965.
+\bibitem{ergun2006} \"O.~Ergun, J.B.~Orlin. Fast neighborhood search for
+the single machine total weighted tardiness problem. \emph{Oper.\ Res.\
+Lett.} 34(1):41--45, 2006. \todo{verify}
+\bibitem{fibonacci_own} \todo{own work, third person: Fibonacci neighborhood}
+\bibitem{flajolet1980} P.~Flajolet. Combinatorial aspects of continued
+fractions. \emph{Discrete Math.} 32(2):125--161, 1980.
+\bibitem{garey1976} M.R.~Garey, D.S.~Johnson, R.~Sethi. The complexity of
+flowshop and jobshop scheduling. \emph{Math.\ Oper.\ Res.} 1(2):117--129, 1976.
+\bibitem{grosso2004} A.~Grosso, F.~Della Croce, R.~Tadei. An enhanced
+dynasearch neighborhood for the single-machine total weighted tardiness
+scheduling problem. \emph{Oper.\ Res.\ Lett.} 32(1):68--72, 2004. \todo{verify}
+\bibitem{gutin1999} G.~Gutin. Exponential neighbourhood local search for
+the traveling salesman problem. \emph{Comput.\ Oper.\ Res.}
+26:313--320, 1999. \todo{verify}
+\bibitem{kasraoui2006} A.~Kasraoui, J.~Zeng. Distribution of crossings,
+nestings and alignments of two edges in matchings and partitions.
+\emph{Electron.\ J.\ Combin.} 13, R33, 2006. \todo{verify}
+\bibitem{lyngso2000} R.B.~Lyngs\o, C.N.S.~Pedersen. RNA pseudoknot
+prediction in energy-based models. \emph{J.\ Comput.\ Biol.}
+7(3--4):409--427, 2000. \todo{verify}
+\bibitem{motzkin_own} \todo{own work, third person: Motzkin neighborhood}
+\bibitem{nussinov1978} R.~Nussinov, G.~Pieczenik, J.R.~Griggs,
+D.J.~Kleitman. Algorithms for loop matchings. \emph{SIAM J.\ Appl.\
+Math.} 35(1):68--82, 1978.
+\bibitem{nawaz1983} M.~Nawaz, E.E.~Enscore, I.~Ham. A heuristic algorithm
+for the $m$-machine, $n$-job flow-shop sequencing problem. \emph{Omega}
+11(1):91--95, 1983.
+\bibitem{page1963} E.B.~Page. Ordered hypotheses for multiple
+treatments: a significance test for linear ranks. \emph{J.\ Amer.\
+Statist.\ Assoc.} 58:216--230, 1963.
+\bibitem{riordan1975} J.~Riordan. The distribution of crossings of
+chords joining pairs of $2n$ points on a circle. \emph{Math.\ Comp.}
+29:215--222, 1975.
+\bibitem{rivas1999} E.~Rivas, S.R.~Eddy. A dynamic programming algorithm
+for RNA structure prediction including pseudoknots. \emph{J.\ Mol.\
+Biol.} 285(5):2053--2068, 1999.
+\bibitem{ruiz2007} R.~Ruiz, T.~St\"utzle. A simple and effective iterated
+greedy algorithm for the permutation flowshop scheduling problem.
+\emph{Eur.\ J.\ Oper.\ Res.} 177(3):2033--2049, 2007.
+\bibitem{sarvanov1981} V.I.~Sarvanov, N.N.~Doroshko. Approximate
+solution of the travelling salesman problem by a local algorithm that
+searches neighbourhoods of factorial cardinality in cubic time.
+1981. \todo{verify source}
+\bibitem{schuirmann1987} D.J.~Schuirmann. A comparison of the two
+one-sided tests procedure and the power approach for assessing the
+equivalence of average bioavailability. \emph{J.\ Pharmacokinet.\
+Biopharm.} 15:657--680, 1987.
+\bibitem{tabaska1998} J.E.~Tabaska, R.B.~Cary, H.N.~Gabow, G.D.~Stormo.
+An RNA folding method capable of identifying pseudoknots and base
+triples. \emph{Bioinformatics} 14(8):691--699, 1998.
+\bibitem{taillard1993} E.~Taillard. Benchmarks for basic scheduling
+problems. \emph{Eur.\ J.\ Oper.\ Res.} 64(2):278--285, 1993.
+\bibitem{touchard1952} J.~Touchard. Sur un probl\`eme de configurations
+et sur les fractions continues. \emph{Canad.\ J.\ Math.} 4:2--25, 1952.
+\bibitem{windowed_own} \todo{own work, third person: windowed QUBO / classical--quantum neighborhoods}
+\end{thebibliography}
+\end{document}

@@ -1,0 +1,763 @@
+% Wersja polska (robocza) main_v4.tex, 23.11.2026; wiążąca jest angielska.
+\documentclass[10pt,twocolumn]{article}
+\usepackage[margin=0.75in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[polish]{babel}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage[hidelinks]{hyperref}
+
+\newtheorem{proposition}{Stwierdzenie}
+\newtheorem{lemma}{Lemat}
+\newtheorem{definition}{Definicja}
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+\newcommand{\N}{\mathcal{N}}
+\newcommand{\Pa}{\mathcal{P}}
+\newcommand{\ncr}{\operatorname{cr}}
+
+\title{Czy zamiany powinny się krzyżować? Sąsiedztwa zamian złożonych od Motzkina do inwolucji dla permutacyjnego problemu przepływowego}
+\author{Zgłoszenie anonimowe}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Ruch złożony w permutacyjnym problemie przepływowym stosuje naraz kilka
+zamian końców przedziałów i jest wybierany dokładnym algorytmem, który
+minimalizuje sumę zmian długości uszeregowania wywołanych przez
+poszczególne zamiany. Dynasearch dopuszcza tylko zamiany na przedziałach
+rozłącznych, a sąsiedztwo Motzkina dopuszcza także zamiany zagnieżdżone.
+Uzupełniamy tę oś. Rodzina $\N_c$ dopuszcza co najwyżej $c$ par
+krzyżujących się zamian, w $\Pa_1$ każda zamiana może krzyżować się
+z co najwyżej jedną inną, a największym członkiem rodziny jest zbiór
+wszystkich inwolucji. Liczymy te sąsiedztwa za pomocą ułamka łańcuchowego
+i pokazujemy, że ograniczona liczba krzyżowań mnoży liczbę Motzkina
+jedynie przez czynnik wielomianowy, $|\N_c|\sim M_n (n/3)^c/c!$.
+Najlepszy ruch znajdujemy dokładnie: dla $c=0$ programowaniem dynamicznym
+po przedziałach, dla $c=1$ i $\Pa_1$ programowaniem dynamicznym po
+rdzeniach z dwóch łuków, a dla inwolucji skojarzeniem o maksymalnej wadze.
+Wszystkie rodziny korzystają z tych samych zamian-kandydatów i ich delt,
+więc wybór ruchu dokłada niewiele do kosztu $O(mn^3)$ obliczania delt.
+Ograniczeniem jest addytywność. Dwie poprawiające zamiany na przedziałach
+rozłącznych realizują większą część przewidywanego wspólnego zysku niż
+dwie zamiany zagnieżdżone lub krzyżujące się. Przy wyborze addytywnym
+jakość iterowanego przeszukiwania lokalnego powinna więc maleć wzdłuż tej
+osi, a najlepszym wyborem powinny być zamiany rozłączne. Na 120
+instancjach Taillarda iterowane przeszukiwanie lokalne z budżetem
+$10$\,s potwierdza taką kolejność w każdej klasie, a Dynasearch wyprzedza
+najlepszą pojedynczą zamianę tylko nieznacznie. Dwie kontrole wskazują
+przyczynę. Gdy każdy ruch zachowuje tylko dwie najbardziej poprawiające
+zamiany, wszystkie rodziny działają podobnie, więc krzyżowania szkodzą
+przez oddziaływanie wielu jednoczesnych zamian. Gdy ruch jest wybierany
+przez QUBO, które uwzględnia zmierzone oddziaływania par, realizuje on
+niemal cały przewidywany zysk, a ruchy z krzyżowaniami dorównują
+Dynasearchowi.
+\end{abstract}
+
+% ---------------------------------------------------------------------
+\section{Wstęp}
+
+Permutacyjny problem przepływowy z kryterium długości uszeregowania,
+$F|prmu|C_{\max}$, jest NP-trudny dla $m\geq 3$
+maszyn~\cite{garey1976} i stanowi standardowe pole testowe dla
+przeszukiwania lokalnego~\cite{taillard1993,ruiz2007}. Dynasearch~\cite{congram2002}
+pokazał, że wykładniczy zbiór niezależnych zamian parami można przeszukać
+dokładnie programowaniem dynamicznym, co czyni ruch złożony jednostką
+przeszukiwania w ramach przeszukiwania sąsiedztw o bardzo dużym
+rozmiarze~\cite{ahuja2002}. W problemie przepływowym stosuje się dwa
+sąsiedztwa złożone z zamian końców przedziałów. Dynasearch łączy zamiany,
+których przedziały są parami rozłączne. Sąsiedztwo Motzkina~\cite{motzkin_own}
+dopuszcza także zamiany zagnieżdżone i jest liczone liczbami Motzkina.
+
+Oba sąsiedztwa zabraniają jednej konfiguracji: dwóch zamian $(a,b)$
+i $(c,d)$ z $a<c<b<d$, które krzyżują się po narysowaniu ich jako łuków
+nad permutacją. Sam ruch tego nie wymaga. Każdy zbiór zamian o parami
+różnych końcach jest inwolucją i wyznacza poprawnego sąsiada, a najlepsza
+inwolucja przy celu addytywnym jest skojarzeniem o maksymalnej wadze,
+które można znaleźć w czasie wielomianowym. Zakaz krzyżowań istnieje
+dlatego, że program dynamiczny po przedziałach nie potrafi ich wyrazić.
+Ten artykuł pyta, czy ten zakaz coś kosztuje: \emph{czy zamiany w ruchu
+złożonym powinny móc się krzyżować?}
+
+Odpowiadamy rodziną sąsiedztw uporządkowaną według tego, jak bardzo dwie
+zamiany mogą się nakładać. Zaczyna się od Dynasearcha, przechodzi przez
+sąsiedztwo Motzkina i przez ruchy z ograniczoną liczbą krzyżowań, a kończy
+na wszystkich inwolucjach. Cała rodzina używa jednego zbioru zamian-kandydatów
+i jednego zbioru delt, więc jej członkowie różnią się wyłącznie tym, jakie
+podzbiory kandydatów wolno im wybierać. Pozwala to oddzielić wpływ
+nakładania się od wpływu kosztu. Metaheurystykę, jej parametry
+i protokół eksperymentalny z wcześniejszych prac~\cite{motzkin_own,windowed_own}
+zostawiamy bez zmian, więc każdą nową liczbę można odczytać na tle
+opublikowanych.
+
+Artykuł wnosi cztery wyniki. Po pierwsze, definiuje rodziny z krzyżowaniami
+$\N_c$ i $\Pa_r$ oraz je liczy. Ułamek łańcuchowy daje dokładne rozmiary,
+a lemat typu Poissona pokazuje, że stała liczba krzyżowań zostawia tempo
+wzrostu na poziomie $3^n$, podczas gdy wszystkie inwolucje rosną szybciej
+niż każda funkcja wykładnicza. Po drugie, podaje dokładne algorytmy wyboru
+dla każdego poziomu osi i pokazuje, że są tanie w porównaniu z deltami,
+z których korzystają. Po trzecie, mierzy, jak addytywność zależy od
+geometrii pary zamian: rozłączne, zagnieżdżone lub krzyżujące się. Ten
+pomiar wyjaśnia, dlaczego większe sąsiedztwa tego rodzaju więcej
+przewidują, a mniej dostarczają. Po czwarte, ocenia rodziny na
+benchmarku Taillarda przy regule wyboru z wcześniejszych prac
+i podaje, co ruchy złożone dodają do najlepszej pojedynczej zamiany.
+Osobny wariant, który jednokrotnie sprawdza rzeczywistą długość
+uszeregowania wybranego ruchu, pokazuje, jak dużą część straty to
+sprawdzenie usuwa. Spojrzenie na rodzinę przez QUBO dodaje piąty punkt.
+Największe sąsiedztwo na osi ma najrzadsze QUBO, a tylko QUBO może
+przenieść zmierzone oddziaływania par, których żaden program po
+przedziałach nie wyrazi. Rozwiązany dokładnie na małym zbiorze kandydatów,
+ten model usuwa stratę ruchów z krzyżowaniami.
+
+% ---------------------------------------------------------------------
+\section{Tło}
+
+\paragraph{Ruchy złożone w szeregowaniu.} Dynasearch wprowadzono dla
+problemu jednej maszyny z sumaryczną ważoną spóźnialnością~\cite{congram2002};
+późniejsze prace przyspieszyły jego przeszukiwanie~\cite{ergun2006}
+i dodały wstawienia~\cite{grosso2004}. Bo\.zejko i Wodecki analizowali
+multiruchy zamian dla problemu przepływowego~\cite{bozejko2007}.
+Sąsiedztwo Fibonacciego łączy rozłączne zamiany sąsiednie~\cite{fibonacci_own,bozejko2026sr},
+a sąsiedztwo Motzkina łączy zamiany niekrzyżujące się~\cite{motzkin_own}.
+W problemie z sumaryczną ważoną spóźnialnością zmiany kosztu niezależnych
+zamian się sumują, a program dynamiczny jest dokładny. W problemie
+przepływowym tak nie jest, więc każde z tych sąsiedztw optymalizuje
+funkcję zastępczą.
+
+\paragraph{Sąsiedztwa przeszukiwane przez skojarzenia.} Sarvanov
+i Doroshko~\cite{sarvanov1981} oraz Gutin~\cite{gutin1999} przeszukują
+sąsiedztwa o rozmiarze silniowym dla problemu komiwojażera za pomocą
+zadania przydziału, a Deineko i Woeginger~\cite{deineko2000} przeglądają
+sąsiedztwa wykładnicze dla problemu komiwojażera i kwadratowego problemu
+przydziału. Sąsiedztwo inwolucji należy do tej tradycji. Nie zbadano
+natomiast osi pomiędzy programem po przedziałach a skojarzeniem ani tego,
+czy ruch wzdłuż niej pomaga.
+
+\paragraph{Struktura drugorzędowa RNA.} Ta sama oś istnieje w składaniu
+RNA, gdzie pary zasad są łukami nad sekwencją. Algorytm
+Nussinova~\cite{nussinov1978} jest programem po przedziałach bez
+krzyżowań. Pseudowęzły są krzyżowaniami: Rivas i Eddy~\cite{rivas1999}
+oraz Akutsu~\cite{akutsu2000} podają programy dynamiczne dla klas
+ograniczonych, ogólne pseudowęzły są NP-trudne w modelach
+energetycznych~\cite{lyngso2000}, a Tabaska i in.~\cite{tabaska1998}
+otrzymują dowolne pseudowęzły ze skojarzenia o maksymalnej wadze, gdy
+ocena jest addytywna. Nasz poziom $c=0$ odpowiada algorytmowi Nussinova,
+$c=1$ prostemu pseudowęzłowi, a inwolucje podejściu przez skojarzenia.
+
+\paragraph{Krzyżowania w skojarzeniach.} Rozkład liczby krzyżowań
+w skojarzeniach i inwolucjach jest klasyczny~\cite{touchard1952,riordan1975}
+i ma postać ułamka łańcuchowego~\cite{flajolet1980}. Krzyżowania
+i zagnieżdżenia mają ten sam rozkład~\cite{kasraoui2006}, a skojarzenia
+$k$-niekrzyżujące się policzyli Chen i in.~\cite{chen2007}. Wykorzystujemy
+te wyniki do oszacowania rozmiarów sąsiedztw.
+
+% ---------------------------------------------------------------------
+\section{Rodzina z krzyżowaniami}\label{sec:family}
+
+$n$ zadań jest wykonywanych na maszynach $1,\dots,m$ w kolejności
+$\pi=(\pi(1),\dots,\pi(n))$, a $p_{r,j}$ jest czasem wykonania zadania
+$j$ na maszynie $r$. Czasy zakończenia spełniają
+$C_{r,t}=\max(C_{r-1,t},C_{r,t-1})+p_{r,\pi(t)}$ oraz
+$C_{\max}(\pi)=C_{m,n}$.
+
+\begin{definition}
+\emph{Ruch elementarny} $s(i,j)$, $i<j$, zamienia miejscami $\pi(i)$
+i $\pi(j)$ i zostawia zadania pomiędzy nimi na miejscu. \emph{Ruch
+złożony} jest zbiorem $\sigma$ ruchów elementarnych o parami różnych
+końcach, czyli inwolucją pozycji; sąsiadem jest $\pi\circ\sigma$. Dwie
+zamiany $(a,b)$ i $(c,d)$ z $a<c$ są \emph{rozłączne}, jeśli $b<c$,
+\emph{zagnieżdżone}, jeśli $d<b$, i \emph{krzyżujące się}, jeśli $c<b<d$.
+$\ncr(\sigma)$ jest liczbą par krzyżujących się w $\sigma$.
+\end{definition}
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[x=0.36cm,y=0.36cm,every node/.style={font=\scriptsize}]
+\foreach \o/\lab in {0/rozłączne,7/zagnieżdżone,14/krzyżujące się}{
+  \draw[gray] (\o,0)--(\o+5,0);
+  \foreach \x in {0,...,5} \fill (\o+\x,0) circle (1.2pt);
+  \node at (\o+2.5,-0.9) {\lab};
+}
+\draw (0,0) to[out=70,in=110] (2,0);
+\draw (3,0) to[out=70,in=110] (5,0);
+\draw (7,0) to[out=70,in=110] (12,0);
+\draw (8.5,0) to[out=70,in=110] (10.5,0);
+\draw (14,0) to[out=70,in=110] (17,0);
+\draw (16,0) to[out=70,in=110] (19,0);
+\end{tikzpicture}
+\caption{Trzy geometrie pary zamian, narysowane jako łuki nad pozycjami.}
+\label{fig:geometry}
+\end{figure}
+
+\begin{definition}
+$\N_{\mathrm{dyn}}$ zawiera ruchy, których zamiany są parami rozłączne.
+$\N_c=\{\sigma:\ncr(\sigma)\leq c\}$, a $\Pa_r$ zawiera ruchy,
+w których każda zamiana krzyżuje się z co najwyżej $r$ innymi.
+$\N_0=\Pa_0$ jest sąsiedztwem Motzkina, a $\N_\infty$ jest zbiorem
+wszystkich inwolucji.
+\end{definition}
+
+„Pojedyncze krzyżowania” mogą oznaczać dwie rzeczy i badamy obie: $\N_1$
+dopuszcza jedno krzyżowanie w całym ruchu, a $\Pa_1$ dopuszcza wiele par
+krzyżujących się, o ile każda zamiana uczestniczy w co najwyżej jednej.
+Rodziny tworzą łańcuchy
+$\N_{\mathrm{dyn}}\subset\N_0\subset\N_1\subset\N_2\subset\dots\subset\N_\infty$
+oraz $\N_0\subset\N_1\subset\Pa_1\subset\Pa_2\subset\dots\subset\N_\infty$,
+z inkluzjami właściwymi dla dostatecznie dużych $n$; $\N_2$ i $\Pa_1$
+są nieporównywalne. Rysunek~\ref{fig:geometry} pokazuje geometrie,
+a Tabela~\ref{tab:taxonomy} rozmiary.
+
+\begin{table}[t]
+\centering
+\caption{Rozmiar i tempo wzrostu sąsiedztw na osi nakładania się.
+Rozmiary sprawdzono przez wyliczenie dla $n\leq 11$.}
+\label{tab:taxonomy}
+\small
+\begin{tabular}{@{}lrrl@{}}
+\toprule
+Sąsiedztwo & $n=10$ & $n=20$ & Wzrost \\
+\midrule
+Dynasearch & 512 & $5{,}2{\cdot}10^5$ & $2^n$ \\
+Motzkin $\N_0$ & 2\,188 & $5{,}1{\cdot}10^7$ & $3^n n^{-3/2}$ \\
+$\N_1$ & 5\,038 & $2{,}6{\cdot}10^8$ & $M_n\,n/3$ \\
+$\N_2$ & 7\,108 & $7{,}6{\cdot}10^8$ & $M_n\,(n/3)^2/2$ \\
+$\Pa_1$ & 5\,263 & $4{,}9{\cdot}10^8$ & $3{,}4626^n$ \\
+Inwolucje & 9\,496 & $2{,}4{\cdot}10^{10}$ & $(n/e)^{n/2}e^{\sqrt n}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{proposition}\label{prop:jfrac}
+Niech $I_n(q)=\sum_{\sigma}q^{\ncr(\sigma)}$ po wszystkich inwolucjach
+$n$ pozycji oraz $[h]_q=1+q+\dots+q^{h-1}$. Wtedy
+\begin{equation}
+\sum_{n\geq0} I_n(q)\,x^n=
+\cfrac{1}{1-x-\cfrac{[1]_q\,x^2}{1-x-\cfrac{[2]_q\,x^2}{1-x-\cdots}}}.
+\end{equation}
+\end{proposition}
+\begin{proof}[Szkic]
+Czytamy pozycje od lewej do prawej jako ścieżkę Motzkina: końcowi
+otwierającemu odpowiada krok w górę, końcowi zamykającemu krok w dół,
+punktowi stałemu krok poziomy. Krok w dół z wysokości $h$ może zamknąć
+każdy z $h$ otwartych łuków, a zamknięcie łuku otwartego jako $j$-ty od
+końca tworzy $j$ krzyżowań. Waga kroku wynosi zatem $[h]_q$,
+a twierdzenie Flajoleta~\cite{flajolet1980} daje ułamek.
+\end{proof}
+
+Dla $q=0$ otrzymujemy liczby Motzkina $M_n$, a dla $q=1$ liczby inwolucji.
+Współczynnik przy $q^c$ liczy ruchy z dokładnie $c$ krzyżowaniami.
+
+\begin{lemma}\label{lem:poisson}
+Dla ustalonego $c$ liczba inwolucji $n$ pozycji z dokładnie $c$
+krzyżowaniami wynosi $M_n\,(n/3)^c/c!\,(1+O(1/n))$. Stąd
+$|\N_c|\sim M_n(n/3)^c/c!$, a $\N_c$ rośnie jak $3^n$ dla każdego
+ustalonego $c$.
+\end{lemma}
+\begin{proof}[Szkic]
+Na mocy Stwierdzenia~\ref{prop:jfrac} współczynnik przy $q^c$ jest sumą
+po ścieżkach Motzkina z liczby sposobów rozdzielenia $c$ krzyżowań na
+kroki w dół, gdzie krok z wysokości $h$ niesie co najwyżej $h-1$.
+Typowa ścieżka ma $D\approx n/3$ kroków w dół, z których ograniczona
+liczba zaczyna się na wysokości~1, więc liczba ta wynosi
+$\mathbb{E}\binom{D+c-1}{c}=(n/3)^c/c!\,(1+O(1/n))$ na ścieżkę.
+\todo{pełny dowód; sprawdzić, czy to twierdzenie jest znane dla inwolucji,
+odpowiednikiem dla skojarzeń doskonałych jest $\binom{2n}{n-2}$ Riordana}
+\end{proof}
+
+Liczbowo stosunek dokładnej liczby do wzoru dla $c=1$ wynosi $0{,}82$ przy
+$n=50$ i $0{,}995$ przy $n=2000$. Praktyczny wniosek jest taki, że kilka
+krzyżowań niewiele dokłada: przy $n=50$ sąsiedztwo $\N_4$ obejmuje wciąż
+tylko ułamek $3\cdot10^{-10}$ wszystkich inwolucji. Jednostajnie losowa
+inwolucja ma około $n^2/24$ krzyżowań, więc $\N_c$ dla stałego $c$ jest
+narożnikiem zbioru inwolucji, w którym prawie nie ma krzyżowań.
+
+\begin{proposition}\label{prop:pa1}
+Funkcja tworząca $S(x)$ dla $|\Pa_1|$ spełnia
+$S=1+xS+x^2S^2+x^4S^4$, a $|\Pa_1|$ rośnie jak $\rho^{-n}$ z
+$\rho^{-1}=3{,}4626$.
+\end{proposition}
+\begin{proof}[Szkic]
+Pierwsza pozycja jest punktem stałym, lewym końcem łuku bez krzyżowań
+albo lewym końcem łuku skrzyżowanego z dokładnie jednym innym. W ostatnim
+przypadku te dwa łuki mają cztery końce, a trzy przerwy między nimi oraz
+reszta po nich zawierają każda niezależną strukturę $\Pa_1$.
+\end{proof}
+
+\begin{proposition}\label{prop:optima}
+Każda z powyższych rodzin zawiera wszystkie pojedyncze zamiany. Przy
+wyborze addytywnym permutacja jest optimum lokalnym rodziny wtedy
+i tylko wtedy, gdy jest optimum lokalnym sąsiedztwa pojedynczej zamiany.
+\end{proposition}
+\begin{proof}
+Jeśli żadna pojedyncza zamiana nie ma ujemnej delty, to żadna suma delt nie
+jest ujemna. Implikacja odwrotna zachodzi, ponieważ pojedyncze zamiany są
+ruchami rodziny.
+\end{proof}
+
+Stwierdzenie~\ref{prop:optima} odróżnia oś nakładania się od osi, które
+ograniczają zasięg zamiany. Nakładanie się zmienia to, jak daleko sięga
+krok poza optima lokalne, ale nie zmienia zbioru optimów lokalnych.
+Sąsiedztwo pojedynczej zamiany jest więc naturalną kontrolą dla całej
+rodziny.
+
+% ---------------------------------------------------------------------
+\section{Dokładny wybór ruchu}\label{sec:selection}
+
+Dla każdej zamiany-kandydata $a=(i,j)$ obliczamy
+$\delta_a=C_{\max}(\pi\circ s(i,j))-C_{\max}(\pi)$ za pomocą macierzy
+głów i ogonów w koszcie $O(m(j-i))$, czyli $O(mn^3)$ dla wszystkich par.
+Kandydaci przechodzą filtr granic bloków z wcześniejszych
+prac~\cite{windowed_own}. Przewidywana zmiana ruchu złożonego wynosi
+$\sum_{a\in\sigma}\delta_a$, a wybór minimalizuje ją w obrębie rodziny.
+
+\paragraph{Przycinanie.} Każda rodzina jest dziedziczna: podzbiór ruchu
+dopuszczalnego jest dopuszczalny. Ruch optymalny używa więc tylko
+kandydatów z $\delta_a<0$, a pozycje, które nie są końcem takiego
+kandydata, można pominąć. Wybór działa na zbiorze $C$ kandydatów
+poprawiających i na ich $E\leq 2|C|$ skompresowanych końcach.
+
+\paragraph{Ruchy rozłączne i niekrzyżujące się.} Dla Dynasearcha wystarcza
+program pozycyjny,
+$B[p]=\min\bigl(B[p-1],\min_{i<p}B[i-1]+\delta_{ip}\bigr)$. Dla $\N_0$
+niech $W[i][j]$ będzie najlepszą przewidywaną zmianą ruchu bez krzyżowań
+wewnątrz pozycji $i..j$. Wtedy
+\begin{multline}\label{eq:interval}
+W[i][j]=\min\Bigl(W[i{+}1][j],\\ \min_{(i,k)\in C,\,k\leq j}
+\delta_{ik}+W[i{+}1][k{-}1]+W[k{+}1][j]\Bigr),
+\end{multline}
+co zajmuje czas $O(E^2+E|C|)$.
+
+\paragraph{Pojedyncze krzyżowania.} Para krzyżująca się $(i,b),(a,d)$
+z $i<a<b<d$ tworzy rdzeń z dwóch łuków z trzema przerwami wewnętrznymi.
+Dla $\Pa_1$ rekurencja~\eqref{eq:interval} zyskuje na pozycji $i$ jeszcze
+jedną możliwość:
+\begin{multline}
+\delta_{ib}+\delta_{ad}+W[i{+}1][a{-}1]+W[a{+}1][b{-}1]\\
++W[b{+}1][d{-}1]+W[d{+}1][j],
+\end{multline}
+minimalizowaną po rdzeniach, które zaczynają się w $i$ i kończą do $j$.
+Żaden łuk wewnątrz przerwy nie może krzyżować się z łukiem rdzenia,
+ponieważ łuki rdzenia są już skrzyżowane jeden raz. Dla $\N_1$ program
+utrzymuje dwie tablice, jedną dla ruchów bez krzyżowań i jedną dla ruchów
+z dokładnie jednym rdzeniem, a rdzeń jest zamykany przerwami bez
+krzyżowań. Rdzenie wylicza się z par krzyżujących się kandydatów w czasie
+$O(|C|^2)$, a tablice wypełnia się w czasie $O(E^3)$. Dla $c\geq2$ spójne
+składowe grafu krzyżowań mają co najwyżej $c+1$ łuków, co daje rdzenie
+o ograniczonym rozmiarze i problem plecakowy po budżecie krzyżowań.
+\todo{Algorytm~1: program dla $\Pa_1$ jako pseudokod; podać program dla
+$c=2$ albo zostawić go dodatkowi}
+
+\paragraph{Inwolucje.} Bez ograniczenia na krzyżowania kandydaci są
+krawędziami grafu na pozycjach z wagami $-\delta_a$, a najlepszy ruch jest
+skojarzeniem o maksymalnej wadze~\cite{edmonds1965}, znajdowanym w czasie
+$O(n^3)$.
+
+\paragraph{Koszt.} \todo{E0 na maszynie kampanii.} W pilotażu wybór na
+stanach pobranych z trajektorii przeszukiwania zajmował co najwyżej
+$0{,}6$\,ms dla $\N_0$, $4{,}5$\,ms dla $\N_1$ i $\Pa_1$ oraz $1{,}3$\,ms
+dla inwolucji, wobec $14$--$221$\,ms na delty przy $n=50$--$100$.
+Wyjątkiem są stany gęste. Tuż po starcie albo po ruchu, który znacznie
+pogorszył uszeregowanie, poprawia się tysiące kandydatów, a wąskim
+gardłem staje się wyliczanie rdzeni. Dlatego ograniczamy rdzenie do $400$
+najbardziej poprawiających kandydatów, a skojarzenie do $3000$ najbardziej
+poprawiających, i zapisujemy, jak często ograniczenie jest aktywne.
+
+\paragraph{Akceptacja.} Wybrany ruch jest stosowany bez zmian; gdy żaden
+kandydat nie poprawia, stosowana jest najlepsza pojedyncza zamiana. Jest to
+reguła wcześniejszych implementacji Dynasearcha i Motzkina i używają jej
+wszystkie wyniki badania głównego. Sekcja~\ref{sec:safe} omawia wariant,
+który przed zastosowaniem ruchu sprawdza rzeczywistą długość
+uszeregowania.
+
+% ---------------------------------------------------------------------
+\section{Addytywność a geometria pary}\label{sec:additivity}
+
+Wybór optymalizuje sumę delt, ale zmiana długości uszeregowania po dwóch
+zamianach nie jest sumą ich zmian. W ujęciu ścieżek kratowych długość
+uszeregowania jest długością najdłuższej ścieżki przez siatkę operacji,
+$C'_{\max}=\max_P\bigl[\ell(P)+\sum_a\Delta_a(P)\bigr]$. Dwie zamiany
+rozłączne oddziałują ze sobą tylko przez wybór ścieżki krytycznej. Para
+zagnieżdżona lub krzyżująca się zmienia także zadania leżące wewnątrz
+przedziału drugiej zamiany, więc każda delta jest liczona w kontekście,
+który druga zamiana niszczy. Składnik drugiego rzędu zapisujemy jako
+$Q_{ab}=\Delta_{ab}-\delta_a-\delta_b$, gdzie $\Delta_{ab}$ jest
+rzeczywistą zmianą pary. \todo{minimalne kontrprzykłady dla każdej
+geometrii i warunek wystarczający na $Q_{ab}=0$}
+
+\begin{table}[t]
+\centering
+\caption{Zrealizowany udział przewidywanego wspólnego zysku dwóch
+poprawiających zamian według geometrii, średnia po parach na stanach
+z trajektorii.}
+\label{tab:geometry}
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Klasa & rozłączne & zagnieżdżone & krzyżujące się \\
+\midrule
+$20\times10$ & 0,80 & 0,65 & 0,58 \\
+$20\times20$ & 0,72 & 0,60 & 0,46 \\
+$50\times10$ & 0,90 & 0,85 & 0,83 \\
+$50\times20$ & 0,82 & 0,76 & 0,71 \\
+$100\times10$ & 0,94 & 0,90 & 0,90 \\
+$100\times20$ & 0,87 & 0,81 & 0,79 \\
+$200\times20$ & 0,92 & 0,90 & 0,89 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Pobieramy około 2000 stanów z trajektorii ILS z kampanii, około 190 na
+klasę, i mierzymy każdą parę poprawiających zamian-kandydatów w każdym
+stanie. Tabela~\ref{tab:geometry} pokazuje wynik. W każdej klasie pary
+rozłączne zachowują większą część przewidywanego zysku niż pary nakładające
+się (test Wilcoxona w każdej klasie, $p<10^{-7}$). Różnica jest największa
+dla $n=20$: dla $20\times20$ pary rozłączne zachowują $0{,}72$, zagnieżdżone
+$0{,}60$, a krzyżujące się $0{,}46$. Pary krzyżujące się nigdy nie są lepsze
+od zagnieżdżonych, a dla $n\geq50$ obie są prawie na tym samym poziomie.
+Nakładanie się psuje addytywność, a krzyżowanie niewiele dodaje poza tym.
+
+Dla całych ruchów efekt się kumuluje. Ruchy Dynasearcha realizują
+$0{,}46$--$0{,}88$ swojego przewidywanego zysku, ruchy z $\N_0$, $\N_1$
+i $\Pa_1$ tylko $0{,}03$--$0{,}21$, a najlepsza inwolucja pogarsza średnio
+długość uszeregowania w każdej klasie. Wybrany ruch złożony jest gorszy od
+najlepszej pojedynczej zamiany w 11--44\% stanów dla Dynasearcha,
+w 48--71\% dla $\N_0$, $\N_1$ i $\Pa_1$ oraz w 74--91\% dla inwolucji.
+Optimum inwolucyjne wymaga także wielu krzyżowań. Najmniejsze $c$,
+którego optimum je osiąga, wynosi co najmniej dwa w 65--100\% stanów,
+a na 60 najlepszych kandydatach budżet dwóch krzyżowań osiąga je w co
+najwyżej 40\% stanów przy $n=20$, w co najwyżej 11\% przy $n=100$ i nigdy
+przy $n=200$.
+
+Większa rodzina wybiera też więcej zamian na ruch, z medianą 3 dla
+Dynasearcha, 15 dla $\N_0$ i 21 dla inwolucji, więc geometria i liczność
+są pomieszane. Przy równej liczności porządek się utrzymuje. Ruchy
+z dwiema zamianami realizują medianę $0{,}79$ swojej prognozy
+w Dynasearchu, $0{,}38$ w $\N_0$, $0{,}30$ w $\Pa_1$ i $0{,}29$ dla
+inwolucji, a ruchy z trzema lub czterema zamianami $0{,}70$, $0{,}20$,
+$-0{,}07$ i $-0{,}19$. Oba czynniki mają znaczenie. Każda rodzina wybiera
+inne ruchy, więc część tej różnicy może pochodzić z samego wyboru;
+Sekcja~\ref{sec:exp} kontroluje zatem liczność bezpośrednio.
+\todo{rysunek: przewidywany i zrealizowany zysk wzdłuż osi}
+
+% ---------------------------------------------------------------------
+\section{Eksperymenty}\label{sec:exp}
+
+Protokół jest taki jak we wcześniejszych pracach~\cite{windowed_own},
+a rodzina sąsiedztw jest jedynym czynnikiem. Instancje to 120 instancji
+Taillarda~\cite{taillard1993} w 12 klasach z $n\in\{20,50,100,200,500\}$
+i $m\in\{5,10,20\}$. Metaheurystyką jest niezmienione ILS z listą tabu
+o długości 10 i pulą elitarną 10 najlepszych rozwiązań zaburzanych
+kopnięciami typu podwójny most (double-bridge), startujące z permutacji
+tożsamościowej. Każda konfiguracja jest uruchamiana jednokrotnie przez
+$10$\,s na ziarno, z 5 ziarnami, a najlepsze rozwiązania w chwilach $0{,}1$,
+$0{,}5$, $1$, $2$ i $5$\,s są odczytywane z dziennika trajektorii, co jest
+poprawne, ponieważ limit czasu działa tylko jako reguła zatrzymania.
+Warianty to Dynasearch, $\N_0$, $\N_1$, $\Pa_1$ i inwolucje, z najlepszą
+pojedynczą zamianą jako kontrolą. Wszystkie warianty używają jednej
+implementacji kandydatów, delt i filtra. Uruchomienia są sekwencyjne na
+Apple M4 Pro. Surowe przebiegi i skrypty odtwarzające każdą tabelę
+i rysunek zostaną udostępnione po zakończeniu recenzji.
+
+Jakością jest względne odchylenie procentowe (RPD) od dolnego ograniczenia
+Taillarda po $10$\,s. Wnioski wyciągamy tylko w klasach, w których
+$10$-sekundowy przebieg wykonuje co najmniej 30 ruchów, czego oczekujemy
+dla $n\leq100$ (dziewięć klas); przy $n=500$ przebieg wykonuje jeden ruch.
+Dwie rodziny testów ustalono przed kampanią, każdą z instancjami jako
+blokami i z poprawką Holma po klasach: inwolucje wobec $\N_0$ oraz
+Dynasearch wobec $\N_0$, testy dwustronne. Test trendu Page'a~\cite{page1963}
+stosujemy wzdłuż łańcucha
+$\N_{\mathrm{dyn}}\subset\N_0\subset\N_1\subset\Pa_1\subset\N_\infty$.
+Wszystkie pozostałe porównania są eksploracyjne i tak je podajemy. Rodziny
+z krzyżowaniami wykonują mniej iteracji, więc pierwszą rodzinę testów
+analizujemy także przy równej liczbie iteracji. Kontrole z drugiego etapu
+używają tego samego protokołu na dziewięciu klasach z $n\leq100$,
+a kontrola QUBO na sześciu klasach z $n\leq50$.
+
+\begin{table*}[t]
+\centering
+\caption{Średnie RPD [\%] do dolnego ograniczenia po $10$\,s, ILS, według
+klas (10 instancji, 5 ziaren).}
+\label{tab:main}
+\small
+\begin{tabular}{@{}l*{12}{c}@{}}
+\toprule
+Wariant & \multicolumn{3}{c}{$n=20$} & \multicolumn{3}{c}{$n=50$} &
+\multicolumn{3}{c}{$n=100$} & \multicolumn{2}{c}{$n=200$} & $n=500$ \\
+$m$ & 5 & 10 & 20 & 5 & 10 & 20 & 5 & 10 & 20 & 10 & 20 & 20 \\
+\midrule
+Pojedyncza zamiana & 2,61 & 9,98 & 21,36 & 1,10 & 5,01 & 13,92 & 1,46 & 2,74 & 10,24 & 5,61 & 17,37 & 15,76 \\
+Dynasearch & 2,52 & 9,80 & 21,29 & 1,01 & 4,57 & 13,33 & 1,36 & 2,46 & 10,34 & 4,40 & 15,62 & 14,49 \\
+$\N_0$ (Motzkin) & 2,62 & 10,19 & 21,44 & 2,00 & 12,60 & 19,56 & 4,13 & 12,19 & 20,39 & 12,17 & 19,70 & 14,65 \\
+$\N_1$ & 2,66 & 10,30 & 21,56 & 2,43 & 12,09 & 21,10 & 7,05 & 12,84 & 20,15 & 12,98 & 19,67 & 14,65 \\
+$\Pa_1$ & 2,67 & 10,48 & 21,62 & 2,78 & 13,01 & 21,15 & 6,61 & 12,00 & 19,47 & 12,88 & 19,12 & 14,64 \\
+Inwolucje & 3,31 & 12,48 & 23,16 & 6,05 & 20,91 & 26,27 & 9,23 & 18,26 & 25,70 & 15,90 & 22,53 & 15,99 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\paragraph{Wynik główny.} Tabela~\ref{tab:main} pokazuje kampanię.
+Jakość maleje wzdłuż osi, a test trendu Page'a wzdłuż
+$\N_{\mathrm{dyn}}\subset\N_0\subset\N_1\subset\Pa_1\subset\N_\infty$
+jest istotny w każdej klasie (łącznie dla $n\leq100$, $p\approx10^{-53}$).
+W pierwszej zarejestrowanej rodzinie testów inwolucje są gorsze od
+$\N_0$ we wszystkich 12 klasach, we wszystkich dziewięciu rozstrzygających
+po poprawce Holma, a także przy równej liczbie iteracji, więc strata nie
+wynika z wolniejszych ruchów. W drugiej rodzinie Dynasearch jest lepszy od
+$\N_0$ w siedmiu z dziewięciu klas rozstrzygających, a dla $20\times5$
+i $20\times20$ oba się nie różnią. Spadek jest nierówny. $\N_1$ i $\Pa_1$
+pozostają blisko $\N_0$, a dwa duże kroki prowadzą od Dynasearcha do
+$\N_0$, gdzie wchodzi zagnieżdżanie, oraz od $\Pa_1$ do inwolucji, gdzie
+krzyżowania przestają być ograniczone. Dla $n=50$ i $n=100$ rodziny
+nakładające się przegrywają z Dynasearchem o 1--10 punktów, a inwolucje
+o nawet 16. Rodziny z krzyżowaniami wykonują też mniej ruchów, od około
+połowy ruchów Dynasearcha dla $20\times5$ do jednej czwartej dla
+$100\times5$.
+
+Ruchy złożone dodają niewiele do najlepszej pojedynczej zamiany.
+Dynasearch wyprzedza ją o $0{,}1$--$0{,}6$ punktu dla $n\leq100$ i o
+$1{,}2$--$1{,}8$ punktu dla $n=200$, a po poprawce Holma istotna jest
+tylko ta druga różnica. Dla $n=200$ przebieg wykonuje 6--15 ruchów,
+a dla $n=500$ jeden ruch, więc te klasy nic nie mówią o $c$.
+
+Te wzorce zgadzają się z pomiarem z Sekcji~\ref{sec:additivity}. ILS
+z listą tabu stosuje wybrany ruch nawet wtedy, gdy pogarsza on
+uszeregowanie. Dla zamian rozłącznych taki ruch jest nieznacznie gorszy;
+dla zamian nakładających się często jest znacznie gorszy. Ten sam
+mechanizm tłumaczy słabe wyniki Motzkina dla $n\geq50$ we wcześniejszym
+badaniu skalowania~\cite{windowed_own}, które stosowało tę samą regułę.
+\todo{sformułowanie uzgodnione z promotorem}
+
+\paragraph{Kontrole.} Trzy kontrole sprawdzają to wyjaśnienie. Po
+pierwsze, tniemy każdy ruch do jego $K$ najbardziej poprawiających zamian.
+Dla $K=2$ wszystkie rodziny działają podobnie: spośród 27 porównań
+parami między Dynasearchem, $\N_0$ i inwolucjami tylko jedno jest istotne
+po poprawce Holma i tam wygrywają inwolucje. Ruchy ucięte dla $\N_0$
+i dla inwolucji są lepsze od pełnych o nawet 11 i 16 punktów. Dla $K=4$
+inwolucje są już gorsze od $\N_0$ w czterech klasach z $n\leq50$.
+Krzyżowania szkodzą więc przez oddziaływanie wielu jednoczesnych zamian,
+a nie przez pojedynczą parę krzyżującą się. Po drugie, akceptujemy
+najlepszy spośród pierwszego ruchu, do siedmiu jego alternatyw
+otrzymanych przez pominięcie jednej z jego zamian, oraz najlepszej
+pojedynczej zamiany, wszystkie ocenione dokładnie. Ta reguła top-8 nie
+jest lepsza od pojedynczego sprawdzenia z Sekcji~\ref{sec:safe} w żadnej
+klasie. Po trzecie, ciaśniejsze ograniczenie kandydatów (1000 par, 100
+w rdzeniu) czyni każdy ruch tańszym i poprawia $\N_0$ oraz inwolucje dla
+$n\geq100$ o nawet $2{,}5$ punktu, ale pozostają one daleko za
+Dynasearchem.
+
+\paragraph{Kontekst.} Nasze ILS jest punktem odniesienia, a nie
+konkurencyjnym solwerem problemu przepływowego. Uruchomione z NEH~\cite{nawaz1983}
+zamiast z permutacji tożsamościowej zyskuje do $1{,}9$ punktu dla
+$n=100$, a Dynasearch jest wtedy w granicach $0{,}13$ punktu od pojedynczej
+zamiany dla każdego $n\leq100$. Iterowany algorytm zachłanny~\cite{ruiz2007},
+uruchomiony w tej samej bazie kodu z tym samym budżetem, jest lepszy od
+obu w siedmiu z dziewięciu klas po poprawce Holma, o nawet $2{,}6$ punktu.
+Nasze porównanie dotyczy więc ruchów złożonych z zamian wewnątrz jednej
+metaheurystyki, a nie stanu wiedzy dla problemu przepływowego.
+
+% ---------------------------------------------------------------------
+\section{Wariant z bezpiecznikiem}\label{sec:safe}
+
+Pilotaż nasuwa oczywiste pytanie: jak dużą część straty dają ruchy, które
+przeszukiwanie by odrzuciło, gdyby spojrzało na ich rzeczywistą długość
+uszeregowania? Aby odpowiedzieć, uruchamiamy osobny wariant. Długość
+uszeregowania wybranego ruchu złożonego jest oceniana jednokrotnie
+w koszcie $O(mn)$, a stosowany jest lepszy z tego ruchu i najlepszej
+pojedynczej zamiany, więc krok nigdy nie jest gorszy od najlepszej
+pojedynczej zamiany. Zmienia to regułę wyboru, a nie sąsiedztwo, więc
+wariant pozostaje poza głównymi tabelami i poza zarejestrowanymi testami
+i nie jest porównywalny z wcześniejszymi wynikami Dynasearcha i Motzkina.
+
+\begin{table*}[t]
+\centering
+\caption{Wariant z bezpiecznikiem: średnie RPD [\%] do dolnego ograniczenia
+po $10$\,s, ten sam protokół co w Tabeli~\ref{tab:main}.}
+\label{tab:safe}
+\small
+\begin{tabular}{@{}l*{12}{c}@{}}
+\toprule
+Wariant & \multicolumn{3}{c}{$n=20$} & \multicolumn{3}{c}{$n=50$} &
+\multicolumn{3}{c}{$n=100$} & \multicolumn{2}{c}{$n=200$} & $n=500$ \\
+$m$ & 5 & 10 & 20 & 5 & 10 & 20 & 5 & 10 & 20 & 10 & 20 & 20 \\
+\midrule
+Dynasearch & 2,53 & 9,87 & 21,34 & 1,06 & 4,84 & 13,56 & 1,42 & 2,61 & 9,75 & 4,43 & 14,83 & 14,49 \\
+$\N_0$ (Motzkin) & 2,51 & 9,92 & 21,21 & 1,00 & 4,69 & 13,54 & 1,31 & 2,58 & 9,56 & 4,61 & 14,89 & 14,55 \\
+$\N_1$ & 2,49 & 9,90 & 21,22 & 1,04 & 4,82 & 13,42 & 1,33 & 2,46 & 9,45 & 4,80 & 14,92 & 14,48 \\
+$\Pa_1$ & 2,49 & 9,92 & 21,25 & 1,04 & 4,92 & 13,53 & 1,37 & 2,45 & 9,59 & 4,77 & 14,76 & 14,53 \\
+Inwolucje & 2,50 & 9,89 & 21,25 & 1,01 & 4,95 & 13,38 & 1,39 & 2,45 & 9,65 & 5,92 & 16,38 & 15,58 \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+Tabela~\ref{tab:safe} pokazuje, że sprawdzenie usuwa stratę rodzin
+nakładających się. Dla $50\times10$ obniża ono $\N_0$ z $12{,}60$ do
+$4{,}69$, a inwolucje z $20{,}91$ do $4{,}95$, a dla $n\leq100$ pięć
+rodzin z bezpiecznikiem leży w granicach pół punktu od siebie w każdej
+klasie. Dla $\N_0$, $\N_1$, $\Pa_1$ i inwolucji sprawdzenie jest istotnie
+lepsze od zwykłej reguły w prawie każdej klasie z $n\geq50$. $\N_0$
+z bezpiecznikiem nie różni się istotnie od zwykłego Dynasearcha w żadnej
+klasie: wyprzedza go o około $0{,}75$ punktu dla $100\times20$
+i $200\times20$ i ustępuje o co najwyżej $0{,}2$ w pozostałych.
+Dla $n\geq200$ inwolucje z bezpiecznikiem zostają w tyle, ponieważ
+działa tam ograniczenie liczby kandydatów. Tanie sprawdzenie rzeczywistej
+długości uszeregowania znaczy więcej niż wybór spośród rodzin
+nakładających się.
+
+% ---------------------------------------------------------------------
+\section{Struktura QUBO}\label{sec:quantum}
+
+Jako QUBO nad zamianami-kandydatami rodzina jest zbiorem kar na parach
+kandydatów. QUBO Motzkina karze pary, które mają wspólny koniec, oraz
+pary krzyżujące się. QUBO inwolucji karze tylko wspólne końce. Największe
+sąsiedztwo na osi ma więc najrzadsze QUBO. Trzeci model dodaje zmierzone
+składniki $Q_{ab}$ i wyraża to, czego nie wyrazi żaden program po
+przedziałach; jest najgęstszy.
+
+Zanim zaangażujemy jakikolwiek procesor, testujemy trzeci model
+klasycznie. Wewnątrz ILS QUBO z poprawką na pary, zbudowane nad 16
+najbardziej poprawiającymi zamianami i rozwiązane dokładnie, zastępuje
+wybór addytywny. Na sześciu klasach z $n\leq50$ jest lepsze od zwykłych
+inwolucji o $0{,}7$--$16$ punktów i lepsze od $\N_0$ w pięciu klasach, nie
+różni się od Dynasearcha i jest lepsze od najlepszej pojedynczej zamiany
+w dwóch klasach. Na stanach z analizy anatomii jego optimum realizuje
+medianę $0{,}85$--$1{,}00$ swojego przewidywanego zysku i jest gorsze od
+najlepszej pojedynczej zamiany w co najwyżej 10\% stanów, wobec 11--71\%
+dla optimum inwolucyjnego nad tymi samymi 16 kandydatami. Składniki par
+naprawiają to, co psuje addytywność, i są to składniki, których program po
+przedziałach nie wyrazi.
+
+\begin{table}[t]
+\centering
+\caption{PILOTAŻ: sprzężenia i fizyczne kubity na grafie Pegasus dla QUBO
+Motzkina (M), inwolucji (I) i z poprawką na pary (PQ) nad tymi samymi $K$
+kandydatami.}
+\label{tab:qubo}
+\small
+\begin{tabular}{@{}lrcc@{}}
+\toprule
+Stan & $K$ & Sprzężenia M / I / PQ & Kubity M / I / PQ \\
+\midrule
+$20\times10$ & 18 & 59 / 41 / 140 & 26 / 22 / 45 \\
+$20\times20$ & 11 & 27 / 13 / 55 & 14 / 10 / 20 \\
+$50\times10$ & 105 & 2117 / 634 / -- & 1001 / 425 / -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Tabela~\ref{tab:qubo} pokazuje strukturę na trzech stanach z trajektorii.
+Planujemy użyć procesora jako wyroczni na zapisanych stanach: dla każdego
+stanu trzy QUBO nad tymi samymi kandydatami są próbkowane i porównywane
+z optimum dokładnym. Rozróżniamy dwa punkty końcowe. Wierność sprzętu to
+odstęp energii od optimum próbkowanego modelu i udział próbek
+dopuszczalnych. Jakość ruchu to rzeczywista zmiana długości uszeregowania.
+QUBO inwolucji może wygrać w pierwszym i przegrać w drugim, ponieważ jego
+optimum zawiera więcej zamian nakładających się. \todo{E4: wyniki
+annealera i komputera bramkowego na zapisanych stanach}
+
+% ---------------------------------------------------------------------
+\section{Wnioski}
+Przy wyborze addytywnym zamiany ruchu złożonego nie powinny się
+krzyżować, a w tym protokole nie powinny nawet się zagnieżdżać. Jakość
+maleje wzdłuż osi od Dynasearcha do inwolucji w każdej klasie Taillarda,
+a większe sąsiedztwa więcej przewidują i mniej dostarczają. Przyczyną
+jest oddziaływanie wielu nakładających się zamian. Ucięte do dwóch zamian
+na ruch wszystkie rodziny działają podobnie, a przy zmierzonym modelu
+oddziaływań par, rozwiązanym dokładnie jako QUBO, ruchy z krzyżowaniami
+dorównują Dynasearchowi. Jednokrotne sprawdzenie rzeczywistej długości
+uszeregowania daje ten sam efekt przy niższym koszcie. Ruchy złożone
+z zamian dowolnego kształtu dodają w tym ILS niewiele do najlepszej
+pojedynczej zamiany, a iterowany algorytm zachłanny jest znacznie przed
+wszystkimi z nich. Otwarte pozostaje pytanie, czy model z poprawką na
+pary nadal się opłaca, gdy zbiór kandydatów przerasta rozwiązanie
+dokładne; w tym miejscu pojawiają się annealery i inne samplery QUBO.
+
+% ---------------------------------------------------------------------
+% All entries to be verified in Crossref (authors, volume, pages, DOI).
+\begin{thebibliography}{99}\small
+\bibitem{ahuja2002} R.K.~Ahuja, \"O.~Ergun, J.B.~Orlin, A.P.~Punnen.
+A survey of very large-scale neighborhood search techniques.
+\emph{Discrete Appl.\ Math.} 123:75--102, 2002.
+\bibitem{akutsu2000} T.~Akutsu. Dynamic programming algorithms for RNA
+secondary structure prediction with pseudoknots. \emph{Discrete Appl.\
+Math.} 104:45--62, 2000. \todo{verify}
+\bibitem{bozejko2007} W.~Bo\.zejko, M.~Wodecki. On the theoretical
+properties of swap multimoves. \emph{Oper.\ Res.\ Lett.} 35(2):227--231, 2007.
+\bibitem{bozejko2026sr} W.~Bo\.zejko, M.~Uchro\'nski, M.~Wodecki. The new
+exponential Fibonacci neighborhood as QUBO generated on a D-Wave quantum
+computing environment for the permutational scheduling problem.
+\emph{Sci.\ Rep.}, 2026.
+\bibitem{chen2007} W.Y.C.~Chen, E.Y.P.~Deng, R.R.X.~Du, R.P.~Stanley,
+C.H.~Yan. Crossings and nestings of matchings and partitions.
+\emph{Trans.\ Amer.\ Math.\ Soc.} 359:1555--1575, 2007. \todo{verify}
+\bibitem{congram2002} R.K.~Congram, C.N.~Potts, S.L.~van de Velde. An
+iterated dynasearch algorithm for the single-machine total weighted
+tardiness scheduling problem. \emph{INFORMS J.\ Comput.} 14(1):52--67, 2002.
+\bibitem{deineko2000} V.G.~Deineko, G.J.~Woeginger. A study of
+exponential neighborhoods for the travelling salesman problem and for
+the quadratic assignment problem. \emph{Math.\ Program.} 87:519--542,
+2000. \todo{verify}
+\bibitem{edmonds1965} J.~Edmonds. Paths, trees, and flowers.
+\emph{Canad.\ J.\ Math.} 17:449--467, 1965.
+\bibitem{ergun2006} \"O.~Ergun, J.B.~Orlin. Fast neighborhood search for
+the single machine total weighted tardiness problem. \emph{Oper.\ Res.\
+Lett.} 34(1):41--45, 2006. \todo{verify}
+\bibitem{fibonacci_own} \todo{own work, third person: Fibonacci neighborhood}
+\bibitem{flajolet1980} P.~Flajolet. Combinatorial aspects of continued
+fractions. \emph{Discrete Math.} 32(2):125--161, 1980.
+\bibitem{garey1976} M.R.~Garey, D.S.~Johnson, R.~Sethi. The complexity of
+flowshop and jobshop scheduling. \emph{Math.\ Oper.\ Res.} 1(2):117--129, 1976.
+\bibitem{grosso2004} A.~Grosso, F.~Della Croce, R.~Tadei. An enhanced
+dynasearch neighborhood for the single-machine total weighted tardiness
+scheduling problem. \emph{Oper.\ Res.\ Lett.} 32(1):68--72, 2004. \todo{verify}
+\bibitem{gutin1999} G.~Gutin. Exponential neighbourhood local search for
+the traveling salesman problem. \emph{Comput.\ Oper.\ Res.}
+26:313--320, 1999. \todo{verify}
+\bibitem{kasraoui2006} A.~Kasraoui, J.~Zeng. Distribution of crossings,
+nestings and alignments of two edges in matchings and partitions.
+\emph{Electron.\ J.\ Combin.} 13, R33, 2006. \todo{verify}
+\bibitem{lyngso2000} R.B.~Lyngs\o, C.N.S.~Pedersen. RNA pseudoknot
+prediction in energy-based models. \emph{J.\ Comput.\ Biol.}
+7(3--4):409--427, 2000. \todo{verify}
+\bibitem{motzkin_own} \todo{own work, third person: Motzkin neighborhood}
+\bibitem{nussinov1978} R.~Nussinov, G.~Pieczenik, J.R.~Griggs,
+D.J.~Kleitman. Algorithms for loop matchings. \emph{SIAM J.\ Appl.\
+Math.} 35(1):68--82, 1978.
+\bibitem{nawaz1983} M.~Nawaz, E.E.~Enscore, I.~Ham. A heuristic algorithm
+for the $m$-machine, $n$-job flow-shop sequencing problem. \emph{Omega}
+11(1):91--95, 1983.
+\bibitem{page1963} E.B.~Page. Ordered hypotheses for multiple
+treatments: a significance test for linear ranks. \emph{J.\ Amer.\
+Statist.\ Assoc.} 58:216--230, 1963.
+\bibitem{riordan1975} J.~Riordan. The distribution of crossings of
+chords joining pairs of $2n$ points on a circle. \emph{Math.\ Comp.}
+29:215--222, 1975.
+\bibitem{rivas1999} E.~Rivas, S.R.~Eddy. A dynamic programming algorithm
+for RNA structure prediction including pseudoknots. \emph{J.\ Mol.\
+Biol.} 285(5):2053--2068, 1999.
+\bibitem{ruiz2007} R.~Ruiz, T.~St\"utzle. A simple and effective iterated
+greedy algorithm for the permutation flowshop scheduling problem.
+\emph{Eur.\ J.\ Oper.\ Res.} 177(3):2033--2049, 2007.
+\bibitem{sarvanov1981} V.I.~Sarvanov, N.N.~Doroshko. Approximate
+solution of the travelling salesman problem by a local algorithm that
+searches neighbourhoods of factorial cardinality in cubic time.
+1981. \todo{verify source}
+\bibitem{schuirmann1987} D.J.~Schuirmann. A comparison of the two
+one-sided tests procedure and the power approach for assessing the
+equivalence of average bioavailability. \emph{J.\ Pharmacokinet.\
+Biopharm.} 15:657--680, 1987.
+\bibitem{tabaska1998} J.E.~Tabaska, R.B.~Cary, H.N.~Gabow, G.D.~Stormo.
+An RNA folding method capable of identifying pseudoknots and base
+triples. \emph{Bioinformatics} 14(8):691--699, 1998.
+\bibitem{taillard1993} E.~Taillard. Benchmarks for basic scheduling
+problems. \emph{Eur.\ J.\ Oper.\ Res.} 64(2):278--285, 1993.
+\bibitem{touchard1952} J.~Touchard. Sur un probl\`eme de configurations
+et sur les fractions continues. \emph{Canad.\ J.\ Math.} 4:2--25, 1952.
+\bibitem{windowed_own} \todo{own work, third person: windowed QUBO / classical--quantum neighborhoods}
+\end{thebibliography}
+\end{document}

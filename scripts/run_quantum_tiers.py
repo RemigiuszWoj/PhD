@@ -82,6 +82,10 @@ DWAVE_TIERS: Dict[str, List[DWaveBlock]] = {
     "pilot": [DWaveBlock(TAILLARD[:9], ["ils"], [3, 4, 8], instances=range(5), seeds=[s]) for s in (0, 1, 2, 3, 4)],
     # 20.11 stage 0 of the ICAPS QPU campaign (10 s, budgets cut later): sanity at n = 20,
     # and whether n = 200 / 500 embed at all for k = 3, 4.
+    # 22.11 ICAPS D-Wave campaign (10 s, quantum only, budgets cut later):
+    # stage0b = does k = 6, 8, 12 embed in each class; d1 = k in {2, 3, 4} on the full benchmark.
+    "stage0b": [DWaveBlock(TAILLARD, ["ils"], [6, 8, 12], instances=[0], seeds=[0])],
+    "d1": [DWaveBlock(TAILLARD, ["ils"], [2, 3, 4], instances=range(10), seeds=[s]) for s in (0, 1, 2, 3, 4)],
     "stage0": [DWaveBlock(["tai20_5"], ["ils"], [3], instances=[0], seeds=[0]),
                DWaveBlock(["tai200_10", "tai200_20"], ["ils"], [3, 4], instances=[0], seeds=[0]),
                DWaveBlock(["tai500_20"], ["ils"], [3, 4], instances=[0], seeds=[0])],
@@ -103,9 +107,11 @@ IQM_TIERS: Dict[str, List[IQMBlock]] = {
     "opt": [IQMBlock(["tai20_5"], [3, 4])],
     "max": [IQMBlock(["tai20_5"], [8]), IQMBlock(["tai20_10", "tai20_20"], [3, 4])],
 }
-TIER_ORDER = ["pilot", "stage0", "min", "opt", "max"]
+TIER_ORDER = ["pilot", "stage0", "stage0b", "d1", "min", "opt", "max"]
 IQM_TIERS["pilot"] = []
 IQM_TIERS["stage0"] = []
+IQM_TIERS["stage0b"] = []
+IQM_TIERS["d1"] = []
 
 # 20.11.2026: ILS with the gate-model k-bonacci neighborhood on IQM, 10 s wall-clock limit
 # (shorter budgets are read off the move log by extract_budgets.py, as for the classical runs).
@@ -148,7 +154,12 @@ def dwave_tier_configs(tier: str, tl_ms: int):
     from src.experiments.runner import RunConfig
 
     seen, out = set(), []
-    for t in TIER_ORDER[: TIER_ORDER.index(tier) + 1]:
+    # min/opt/max are cumulative; the ICAPS tiers (pilot, stage0, stage0b, d1) stand alone:
+    # their runs differ in time limit, so an earlier tier must not mask them.
+    standalone = ("pilot", "stage0", "stage0b", "d1")
+    chain = [tier] if tier in standalone else [t for t in TIER_ORDER[: TIER_ORDER.index(tier) + 1]
+                                              if t not in standalone]
+    for t in chain:
         for b in DWAVE_TIERS[t]:
             for f in b.files:
                 for algo in b.algos:

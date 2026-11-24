@@ -10,16 +10,23 @@
 % class is new. Results (14.11): main campaign and stage `large` with the exact
 % filter, stages large500 and large_m10 included (15.11), and stage relative_cp (16.11).
 % =====================================================================
-\documentclass[10pt,twocolumn]{article}
-\usepackage[margin=0.75in]{geometry}
-\usepackage[T1]{fontenc}
-\usepackage{amsmath,amssymb,amsthm}
+\documentclass[letterpaper]{article} % AAAI-27 author kit (template 2027.1)
+\usepackage[submission]{aaai2027}
+\usepackage[hyphens]{url}
 \usepackage{graphicx}
+\urlstyle{rm}
+\def\UrlFont{\rm}
+\usepackage{natbib}
+\usepackage{caption}
+\frenchspacing
+\pdfinfo{
+/TemplateVersion (2027.1)
+}
+\setcounter{secnumdepth}{2} % sections are referenced by number in the text
+\usepackage{amsmath,amssymb,amsthm}
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{xcolor}
-\usepackage[hidelinks]{hyperref}
-
 \newtheorem{proposition}{Proposition}
 \newtheorem{definition}{Definition}
 \newtheorem{lemma}{Lemma}
@@ -36,45 +43,26 @@
 
 \title{From Fibonacci to Dynasearch: the $k$-bonacci Family of\\
 Compound-Swap Neighborhoods for the Permutation Flow Shop}
-\author{Anonymous submission}
-\date{}
+\author{Anonymous Submission}
+\affiliations{}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-Compound-move neighborhoods search an exponential set of schedules in
-polynomial time by dynamic programming. For the permutation flow shop,
-the two best-known members of this family sit at opposite extremes. The
-Fibonacci neighborhood combines only adjacent swaps and is cheap.
-Dynasearch combines swaps of any distance and costs $O(mn^3)$ per
-evaluation. We introduce the \emph{$k$-bonacci} family that interpolates
-between them: a move is a set of endpoint swaps on disjoint intervals
-whose swap distance is at most $k-1$. The family is counted exactly by
-the $k$-bonacci numbers, so its size grows as $\lambda_k^n$, with
-$\lambda_2=1.618$ (Fibonacci), $\lambda_3=1.839$ (tribonacci) and
-$\lambda_k\to 2$ (Dynasearch). For $k=\lfloor\log_2 n\rfloor+2$ it
-contains 79--88\% of all Dynasearch moves for $n=20$--$500$. A positional dynamic program
-selects the compound move with the best predicted makespan change in
-$O(nk)$ time. We evaluate the family on the full
-Taillard benchmark inside the iterated local search of our earlier
-studies, with the same time budgets, so the new neighborhoods can be
-compared with the Adjacent, Fibonacci, Dynasearch and Motzkin results
-reported there. Under a fixed time budget the best reach is short. Coverage does not
-predict quality: on 500 jobs $k=6$, which contains under 2\% of the
-Dynasearch moves, beats $k=12$, which contains 94\%. The best $k$ falls
-with the number of machines and grows with the budget. With 20 machines and
-at least 100 jobs the best $k$ lies between 5 and 8 at every budget we
-ran, up to 60\,s for 200 and 500 jobs. With 5 machines every $k\geq 12$
-performs alike at 10\,s, and on 200 jobs with 10 machines the best $k$
-grows with the budget. An additional comparison at an equal number of
-iterations shows that a longer reach is then better on every class, so
-the limit on $k$ comes from the cost of a move. An exact critical-path
-filter, which replaces the
-block-boundary filter of the earlier studies, improves every $k\leq 16$
-at every instance size. Insert is better on most classes with up to 200 jobs. On 500 jobs with 20
-machines the compound swaps lead at every budget up to 300\,s, by 7 points
-at 10\,s and by 0.2 points at 300\,s. \todo{SA only if run}
+Local search for the permutation flow shop often uses compound moves:
+several swaps applied at once and chosen by dynamic programming. Two
+known neighborhoods of this kind lie at opposite ends. Fibonacci allows
+only swaps of adjacent jobs, while Dynasearch allows swaps of any length
+and is much more expensive to evaluate. We introduce the $k$-bonacci
+family, which fills the gap by limiting how far a single swap may reach.
+We count its moves, show how it covers most of Dynasearch with a short
+reach, and test it on the full Taillard benchmark within iterated local
+search. Under a fixed time budget a short reach wins: the best $k$ falls
+with the number of machines and grows with the budget, while at an equal
+number of iterations a longer reach is always better. We also solve the
+move on a quantum annealer and on a gate-based processor and compare
+both with the classical search.
 \end{abstract}
 
 % ---------------------------------------------------------------------
@@ -129,8 +117,9 @@ full Taillard benchmark ($n=20$--$500$) with six time budgets up to
 10\,s and with 60\,s runs on the largest classes. It covers
 solution quality, iterations within the budget, the distances of the
 selected swaps, and the measured additivity error as a function of $k$.
-\todo{optional fourth contribution: $k$-bonacci QUBO on a quantum annealer
-and on a gate-based device, same protocol as~\cite{windowed_own}}
+Fourth, we solve the $k$-bonacci move on a quantum annealer and on a
+gate-based processor inside the same search and compare both with the
+classical move under the same time budget.
 
 % ---------------------------------------------------------------------
 \section{Related Work}
@@ -191,6 +180,18 @@ permutations reachable by one compound move.
 For $k=2$ only adjacent jobs are exchanged, which gives the Fibonacci
 neighborhood. For $k=3$ a swap may also skip one job (tribonacci), and for
 $k=n$ any two jobs may be exchanged, which gives Dynasearch.
+Figure~\ref{fig:moves4} lists all 16 moves on five positions: the
+eight Fibonacci moves, five more for $k=3$, two for $k=4$ and one for
+$k=5$.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_moves_n4.pdf}
+\caption{All compound moves on $n=5$ positions, grouped by the smallest
+$k$ that contains them, and two moves on $n=12$. An arc joins two
+swapped jobs, and its colour gives the swap distance.}
+\label{fig:moves4}
+\end{figure*}
 
 \paragraph{Moves as rook placements.} A compound move is a permutation
 $\sigma$ of the positions, so it can be drawn as its permutation matrix:
@@ -217,7 +218,7 @@ because its corner rooks link row $1$ with column $L$, so the
 decomposition is unique.
 \end{proof}
 
-Figure~\ref{fig:boards} shows the four cases side by side. In the
+Figure~\ref{fig:boards} shows four values of $k$ and the Motzkin neighborhood side by side. In the
 Fibonacci board the rooks stay on the diagonal or in $2\times 2$ blocks
 next to it. Raising $k$ widens the band $|t-\sigma(t)|\leq k-1$ that the
 rooks may occupy, and for $k=n$ the band covers the whole board. The
@@ -232,18 +233,20 @@ long as no two intervals cross.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.85\textwidth]{figures/fig_boards.pdf}
-\caption{One compound move of each neighborhood for $n=8$, drawn as rooks
-on the board. Shaded cells form the band $|t-\sigma(t)|\leq k-1$ and
-thick squares mark the diagonal blocks of Lemma~\ref{lem:blocks}.}
+\includegraphics[width=\textwidth]{figures/fig_boards.pdf}
+\caption{The neighborhoods for $n=8$. Top: candidate swaps as arcs
+(faint arcs are already allowed at the previous $k$). Bottom: one move
+as rooks on the board; shaded cells form the band
+$|t-\sigma(t)|\leq k-1$ and thick squares mark the blocks of
+Lemma~\ref{lem:blocks}.}
 \label{fig:boards}
 \end{figure*}
 
 \paragraph{Counting.} Lemma~\ref{lem:blocks} turns a compound move into
 a sequence of block sizes, that is, a tiling of positions $1..n$ by tiles
-of length $1$ to $k$ (Fig.~\ref{fig:tiling}a). Fixing the length $L$ of
+of length $1$ to $k$ (the tiles in Fig.~\ref{fig:moves4}). Fixing the length $L$ of
 the first tile leaves an arbitrary move on the remaining $n-L$ positions
-(Fig.~\ref{fig:tiling}b), which yields the $k$-bonacci recurrence.
+which yields the $k$-bonacci recurrence.
 
 \begin{proposition}\label{prop:count}
 $|\N_k(\pi)|=a_n$, where $a_0=1$ and $a_p=\sum_{L=1}^{\min(k,p)}a_{p-L}$.
@@ -269,14 +272,6 @@ $2^k\geq k+1$, and $f(x_0)=2(1-2^{-k})^k\geq 2(1-k2^{-k})\geq 1=f(\lambda_k)$,
 hence $x_0\leq\lambda_k$.
 \end{proof}
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=\linewidth]{figures/fig_tiling.pdf}
-\caption{(a) The $k=3$ move of Fig.~\ref{fig:boards} as a tiling;
-arrows join the swapped jobs. (b) The first tile has length
-$L\in\{1,\dots,k\}$ and leaves a move on $n-L$ positions.}
-\label{fig:tiling}
-\end{figure}
 
 \paragraph{The hierarchy.} A move of $\N_k$ is also a move of
 $\N_{k+1}$, and the inclusion is strict whenever $k<n$, because a single
@@ -311,7 +306,7 @@ A block of length $L$ is then a run of $L-1$ gaps without a cut, so
 the share $|\N_k|/2^{n-1}$ is the probability that $n-1$ fair coin flips
 contain no run of $k$ consecutive gaps without a cut. The longest run of
 one symbol in $n$ fair coin flips has length about
-$\log_2 n-1$~\cite{schilling1990}, so this probability rises from $e^{-2}\approx 0.14$ at $k=\log_2 n-2$ to $e^{-1/8}\approx 0.88$ at $k=\log_2 n+2$ (Fig.~\ref{fig:share}). The next proposition makes this rise explicit.
+$\log_2 n-1$~\cite{schilling1990}, so this probability rises from $e^{-2}\approx 0.14$ at $k=\log_2 n-2$ to $e^{-1/8}\approx 0.88$ at $k=\log_2 n+2$. The next proposition makes this rise explicit.
 
 \begin{proposition}\label{prop:share}
 For fixed $k$, $a_n=c_k\lambda_k^n\,(1+o(1))$ with
@@ -345,20 +340,15 @@ therefore keeps most Dynasearch moves and drops only the rare moves with
 very long swaps. Whether the dropped moves matter for the search is an
 empirical question (Section~\ref{sec:exp}).
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.9\linewidth]{figures/fig_share.pdf}
-\caption{Share of Dynasearch moves contained in $\N_k$. Dashed lines mark
-$k=\lfloor\log_2 n\rfloor+2$.}
-\label{fig:share}
-\end{figure}
 
 \paragraph{Evaluation.} For every candidate $(i,j)$ we compute
 $\delta_{ij}=C_{\max}(\pi\circ s(i,j))-C_{\max}(\pi)$ with heads and
 tails. The candidates are the cells of the band above the diagonal,
 $(k-1)n-k(k-1)/2<n(k-1)$ of them, against $n(n-1)/2$ for Dynasearch. A
 candidate of distance $d$ costs $O(md)$, so all deltas cost $O(mnk^2)$
-instead of $O(mn^3)$.
+instead of $O(mn^3)$. Every arc in Fig.~\ref{fig:boards} is one candidate, a cell of the
+band above the diagonal, and each step of $k$ adds one diagonal.
+
 
 \paragraph{Filtering.} Block properties~\cite{nowicki1996,grabowski2004}
 remove candidates that cannot improve the makespan. Fix one critical path
@@ -398,9 +388,9 @@ The earlier studies~\cite{windowed_own} use a simpler test that marks a
 position as a boundary when the last machine starts a job immediately
 after the previous machine finishes it, and keep a swap only if a
 boundary lies in $[i,j]$. This test is a heuristic: on local optima it
-discards 2--6\% of the improving swaps and keeps two to five times more
-candidates than the filter of Proposition~\ref{prop:filter}
-\todo{numbers from scripts/check\_block\_filter.py}. We run every $k$
+discards 2--6\% of the improving swaps and keeps 1.6--4.8 times more
+candidates at $k=4$ and up to 1.7 times more at $k=n$ than the filter of
+Proposition~\ref{prop:filter}. We run every $k$
 with both tests and call the earlier one the block-boundary filter. The
 exact filter is the main variant, and the block-boundary filter is an
 ablation that keeps the link to the published results
@@ -457,8 +447,7 @@ The DP thus exchanges a maximum of sums for a sum of maxima. The error
 has a simple form when the move is cut at a column. Let $S_1$ contain the
 swaps to the left of the border between columns $c$ and $c+1$ and $S_2$
 the swaps to its right, with changes $\delta_1$ and $\delta_2$ when
-applied alone and $\Delta$ when applied together
-(Fig.~\ref{fig:paths}). Write $w_r=H_{r,c}+T_{r,c+1}$,
+applied alone and $\Delta$ when applied together. Write $w_r=H_{r,c}+T_{r,c+1}$,
 $a_r=H^{S_1}_{r,c}-H_{r,c}$ and $b_r=T^{S_2}_{r,c+1}-T_{r,c+1}$.
 
 \begin{proposition}\label{prop:join}
@@ -481,14 +470,6 @@ $w_{r^\ast}\leq C_{\max}(\pi)$. The last claim turns both inequalities
 into equalities.
 \end{proof}
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=\linewidth]{figures/fig_paths.pdf}
-\caption{Two swaps $S_1$ and $S_2$ separated by a border. The paths $P$
-and $Q$ cross the border on different machines, and the makespan after
-both swaps is a maximum over the crossing machine.}
-\label{fig:paths}
-\end{figure}
 
 The condition of the third claim says that after either part of the move
 a critical path crosses the border on the same machine. The sum $\delta_1+\delta_2$ is then exact or optimistic. On states sampled along descents the
@@ -524,12 +505,7 @@ change the neighborhood.
       verified against Taillard's generator.
 \item \textbf{Metaheuristics} (unchanged): ILS with a tabu list (tenure
       10) and an elite pool of the 10 best solutions, perturbed by
-      double-bridge kicks. SA with $T_0=1000$, $\alpha=0.99$ and a
-      temperature floor of 100; after 100\,ms without improvement the
-      temperature is reset to $T_0$ and the next elite solution receives a
-      double-bridge kick. Both start from the identity permutation.
-      \todo{SA rows only if the SA campaign is run (decided after the ILS
-      campaign)}
+      double-bridge kicks, started from the identity permutation.
 \item \textbf{Budgets:} $t_{\max}\in\{0.1,0.5,1,2,5,10\}$\,s,
       5 seeds per instance (seeds 0--4). The classes $200\times 10$,
       $200\times 20$ and $500\times 20$ are also run for 60\,s.
@@ -547,25 +523,21 @@ change the neighborhood.
 \item \textbf{Metric:} RPD to the Taillard lower bound and the two-sided
       Wilcoxon signed-rank test, $\alpha=0.05$, as before. In addition:
       Holm-adjusted $p$-values, the Friedman test with the Nemenyi
-      critical difference, RPD to Taillard's 1993 upper bounds, and RPD to
-      the current best-known solutions \todo{cite the source of the
-      best-known values}.
+      critical difference, and RPD to Taillard's 1993 upper bounds.
 \item \textbf{Hardware:} classical runs on an Apple M4 Pro, executed
       sequentially, as in the earlier campaign. The code is written in Python. The tabu list stores the
       whole compound move, that is the set of its swaps, for 10
       iterations. When the best move is tabu and does not improve the
       best makespan, the search continues from a double-bridge
       perturbation of a solution from the pool. Quantum runs on the
-      D-Wave Advantage annealer (Pegasus topology, about 5\,600 qubits;
-      Leap cloud, \texttt{EmbeddingComposite}, the solver identifier is
-      recorded at run time) and on IQM gate-based processors via IQM
-      Resonance: Sirius (16 qubits, star topology) and Garnet (20 qubits,
-      square lattice) \todo{list the machines actually used}.
+      D-Wave Advantage\_system6 annealer (Pegasus topology, 5\,760
+      qubits; Leap cloud, \texttt{EmbeddingComposite}) and on the IQM
+      Sirius gate-based processor (16 qubits, star topology) via IQM
+      Resonance.
 \end{itemize}
 
-\paragraph{One run per budget family.} Neither ILS nor SA uses the time
-limit except as a stopping rule; cooling, tabu tenure and the elite pool
-depend on iterations, and the reheat on a fixed stagnation time. A run
+\paragraph{One run per budget family.} ILS uses the time limit only as a
+stopping rule; the tabu tenure and the elite pool depend on iterations. A run
 with budget $t$ is therefore a prefix of the run with budget $10$\,s and
 the same seed. Each configuration is run once with $t_{\max}=10$\,s, and
 the trajectory log yields the incumbent for every smaller budget. The
@@ -574,11 +546,7 @@ counted, exactly as in an independent run. Where a single iteration
 exceeds the budget (Insert at $n=500$ below 1\,s, $k=n$ at $n=500$) the
 reported value is that of the first iteration. ILS is deterministic for a
 given seed, and the extracted values coincide with independent runs up to
-the timing jitter of at most one move. SA
-is not: its reheat is triggered by a wall-clock stagnation timer, so even
-two runs with the same seed and budget diverge after the first kick. For
-SA the extracted values agree with independent runs within this
-run-to-run noise.
+the timing jitter of at most one move.
 
 On two classes ($20\times 5$ and $50\times 10$,
 $k\in\{3,8\}$) the extracted and the independent ILS values differ by at
@@ -603,12 +571,18 @@ For $n=200$ the same experiment uses $k\leq 16$ and gives 194 states.
 quantum studies~\cite{windowed_own} and differ only in the neighborhood.
 On the annealer the $k$-bonacci move is an interval-overlap QUBO with
 interval length at most $k$ (the length cap also holds on the QPU),
-100 reads per call, inside the same ILS and SA with $t_{\max}=5$\,s
-(smaller budgets extracted as above). On the gate-based processors one
-move is made from the identity permutation by a fixed-angle QAOA
-($p=1$, 4096 shots) on windows of six positions with 50\% overlap. All
-windows of a move are submitted as one job.
-\todo{tiers actually run (MIN/OPT/MAX) and QPU time / credits used}
+100 reads per call, inside the same ILS with $t_{\max}=10$\,s. On the
+gate-based processor (IQM Sirius, 16 qubits) the move comes from a
+fixed-angle QAOA ($p=1$, 4096 shots) on windows of six positions with
+50\% overlap, and all windows of a move are submitted as one job.
+Neither platform has a classical fallback: a move that the QPU does not
+return ends the run with an error. All quantum results use instances
+0--4 and seeds 0--2, the set computed on both platforms, and the
+classical values they are compared with come from the same runs of the
+main experiment. The annealer ran $k\in\{2,3,4\}$ on all twelve classes
+(540 runs; 195\,s of QPU time for the whole study, pilot included). The
+gate-based processor ran $k\in\{3,4\}$ on the classes with $n\leq 50$
+and on $100\times 10$, where only seed 0 was run (190 runs).
 
 % ---------------------------------------------------------------------
 \section{Results}\label{sec:exp}
@@ -661,10 +635,6 @@ row $k=n$ is the
 Dynasearch neighborhood in the current implementation, which is faster
 on large instances. Every $k$ from 4 to 16 with the exact filter is ahead
 of the four earlier neighborhoods at 10\,s for $n\geq 50$.
-Measured against the best-known solutions, the RPD at 10\,s of the best
-$k$ is 0.21, 1.55, 1.90, 3.13 and 4.86\% for $n=20$, 50, 100, 200 and
-500, and that of Insert is 0.14, 1.48, 1.68, 3.04 and 12.14\%. The
-ranking of the methods does not change.
 
 \paragraph{Reach.} Most of the gain comes from the first steps of $k$
 (Table~\ref{tab:main}). Going from $k=2$ to $k=6$ removes between 0.9
@@ -699,32 +669,26 @@ $n\geq 100$ the RPD does not fall at any step of the grid from $k=10$ up
 to $k=n$, so the values between 16 and $n$ hide no second optimum. On
 $500\times 20$ every $k\geq 250$ completes a single move in 10\,s and
 returns the result of $k=n$. No fixed fraction of $n$ works across
-sizes. Figure~\ref{fig:rpdk} shows the RPD against $k$ for
-every budget, and Figure~\ref{fig:itersk} the number of iterations
-completed in 10\,s.
+sizes. The 10\,s column of Table~\ref{tab:bestk} includes these values of
+$k$, and a range in it stands for all grid values between its ends. Figure~\ref{fig:rpdk} shows the RPD against $k$ for
+every budget and the number of iterations completed in 10\,s.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\textwidth]{figures/fig_rpd_vs_k_cp.pdf}
-\caption{Mean RPD against $k$ for each budget (ILS, exact filter). The
-dotted line is Insert at 10\,s.}
+\includegraphics[width=0.75\textwidth]{figures/fig_rpd_vs_k_cp.pdf}\hfill
+\includegraphics[width=0.24\textwidth]{figures/fig_iters_vs_k_cp.pdf}
+\caption{Mean RPD against $k$ for each budget (left; the dotted line is
+Insert at 10\,s) and iterations completed in 10\,s (right). ILS, exact
+filter.}
 \label{fig:rpdk}
 \end{figure*}
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.9\linewidth]{figures/fig_iters_vs_k_cp.pdf}
-\caption{Iterations completed in 10\,s against $k$ (ILS, exact filter).}
-\label{fig:itersk}
-\end{figure}
 
 \begin{table}[t]
 \centering
-\caption{Best $k$ per class (exact filter), with every $k$ within 0.05
-percentage points of the best; an asterisk marks cells in which Insert
-beats every $k$. The 10\,s column also covers the values of $k$ from the
-fraction-of-$n$ experiment, and a range stands for all grid values
-between its ends.}
+\caption{Best $k$ per class and budget (ILS, exact filter). Values
+within 0.05 points of the best are listed, and an asterisk marks cells
+where Insert is better.}
 \label{tab:bestk}
 \small
 \setlength{\tabcolsep}{2.5pt}
@@ -761,36 +725,10 @@ sampled states of the anatomy experiment the sum of deltas overstates
 the gain more for $m=20$ than for $m=5$. It is not the main cause, as the comparison at equal iterations below
 shows.
 
-\begin{table}[t]
-\centering
-\caption{Long runs: mean RPD [\%] to the lower bound at 10\,s and 60\,s
-(ILS, exact filter).}
-\label{tab:long}
-\small
-\setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}lcccccc@{}}
-\toprule
- & \multicolumn{2}{c}{$200\times 10$} & \multicolumn{2}{c}{$200\times 20$}
- & \multicolumn{2}{c}{$500\times 20$} \\
-\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(l){6-7}
- & 10\,s & 60\,s & 10\,s & 60\,s & 10\,s & 60\,s \\
-\midrule
-Insert & \textbf{1.63} & \textbf{1.28} & 6.58 & 4.66 & 12.69 & 5.34 \\
-\midrule
-$k=4$ & 2.91 & 2.35 & 7.29 & 5.63 & 5.65 & 3.79 \\
-$k=6$ & 2.57 & 2.04 & 6.16 & 4.65 & \textbf{5.27} & 2.94 \\
-$k=8$ & 2.30 & 1.87 & \textbf{6.13} & \textbf{4.61} & 5.43 & \textbf{2.71} \\
-$k=12$ & 2.07 & 1.65 & 6.93 & 5.00 & 5.90 & 3.16 \\
-$k=16$ & 1.88 & 1.51 & 7.25 & 5.09 & 6.40 & 3.68 \\
-$k=24$ & 1.88 & 1.48 & 8.53 & 5.58 & 7.04 & 4.62 \\
-$k=32$ & 1.94 & 1.42 & 8.92 & 5.76 & 7.75 & 5.13 \\
-\bottomrule
-\end{tabular}
-\end{table}
 
 \paragraph{Long budgets.} A best $k$ of 6 at $n=500$ could be an effect
 of the 10\,s limit, because no variant has converged by then. The 60\,s
-runs (Table~\ref{tab:long}) show that the best $k$ stays small with 20
+runs (last column of Table~\ref{tab:bestk}) show that the best $k$ stays small with 20
 machines. On $500\times 20$ it moves from 6 to 8 between 20\,s and
 30\,s, and on $200\times 20$ the values $k=6$ and $k=8$ stay within 0.07
 points of each other from 10\,s to 60\,s. On $200\times 10$ the best
@@ -800,7 +738,7 @@ $k$ keeps growing with the budget, from 6 or 8 at 0.1\,s through 16 at
 $500\times 20$ the 300\,s runs keep $k=8$ ahead of $k=12$ at every
 budget. The long runs are separate executions. Insert finishes only 11 iterations in
 10\,s on $500\times 20$, so timing jitter moves its 10\,s mean by 0.1
-points between Tables~\ref{tab:main} and~\ref{tab:long}.
+points between the long runs and Table~\ref{tab:main}.
 
 
 \paragraph{Filter.} At equal time budgets the exact filter of
@@ -840,7 +778,7 @@ One Insert iteration costs $O(mn^2)$, which leaves 111 iterations in
 $m$. On $200\times 10$ Insert beats every $k$ from 5\,s on and is still
 ahead at 60\,s. On $200\times 20$ the best $k$ is ahead up to 30\,s, and
 at 60\,s the two differ by 0.05 points. On $500\times 20$ the best $k$
-leads by 7.4 points at 10\,s (Table~\ref{tab:long}) and by 2.6 points at 60\,s. In the 300\,s runs Insert closes most of
+leads by 7.4 points at 10\,s and by 2.6 points at 60\,s. In the 300\,s runs Insert closes most of
 this gap but does not catch up: 0.9 points remain at 120\,s and 0.2 at
 300\,s, where $k=8$ reaches 2.02 and Insert 2.26 ($p<0.001$ on
 instance--seed pairs).
@@ -853,7 +791,7 @@ After about 690 iterations on $500\times 20$ the RPD is 7.6 for $k=4$,
 6.7 for $k=6$ and 6.4 for $k=8$, and after 4\,000 iterations of the long
 runs it falls from 5.2 for $k=4$ to 3.3 for $k=12$. A longer reach thus
 gives better moves, and the short best $k$ under a time budget reflects
-what a move costs. Figure~\ref{fig:rpditers} shows the same on the 60\,s runs. At every
+what a move costs. The 60\,s runs show the same. At every
 iteration count a larger $k$ is ahead: after 1\,000 iterations on
 $500\times 20$ the RPD falls from 7.07 for $k=4$ to 5.11 for $k=16$, and
 on $200\times 10$ from 4.41 to 2.17. One move, however, takes 3.5\,ms
@@ -862,18 +800,66 @@ values of $k$ the time per move grows 27 times on $200\times 10$ and 48
 times on $200\times 20$, so more machines make a long reach more
 expensive.
 
+
+\paragraph{Quantum moves.} Table~\ref{tab:quantum} compares the three
+solvers of the same move on the runs made on all of them, 15 per class
+and $k$ (5 on $100\times 10$). In 10\,s the gate-based processor
+completes one move: a move takes about 12\,s on $n=20$ and about 50\,s
+on $n=100$. This one move improves the start in 183 of 190 runs. The
+annealer makes 1.5 to 5.2 moves on average. Each call uses about 29\,ms of
+QPU time but takes 1.5--2\,s with the network, and this round trip sets
+the number of moves. The annealer ends below the gate-based processor
+in 159 of the 190 paired runs (Fig.~\ref{fig:qtime}). Both stay far
+above the classical ILS, which makes $10^4$--$10^5$ moves in the same
+time and is better in all 540 annealer runs on the twelve classes. Only 24 of the 2\,324 annealer moves selected no
+swap. At this budget the comparison measures the cost of a call more
+than the quality of a move.
+
+\begin{table}[t]
+\centering
+\caption{Mean RPD [\%] after 10\,s of ILS on the runs made on all three
+platforms, and the mean number of moves per run. The gate-based
+processor makes one move per run.}
+\label{tab:quantum}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lcrrrrrr@{}}
+\toprule
+ & & \multicolumn{4}{c}{RPD} & \multicolumn{2}{c}{moves} \\
+\cmidrule(lr){3-6}\cmidrule(lr){7-8}
+$n\times m$ & $k$ & start & IQM & D-Wave & classical & D-Wave & classical \\
+\midrule
+$20\times 5$   & 3 & 28.8 & 22.9 & 19.0 & 3.7  & 5.1 & 141\,449 \\
+               & 4 & 28.8 & 22.4 & 18.7 & 3.5  & 4.9 & 108\,342 \\
+$20\times 10$  & 3 & 37.6 & 30.8 & 26.1 & 9.1  & 4.9 & 71\,748 \\
+               & 4 & 37.6 & 30.2 & 26.8 & 8.7  & 4.9 & 52\,367 \\
+$20\times 20$  & 3 & 47.9 & 43.7 & 40.0 & 23.9 & 4.9 & 37\,269 \\
+               & 4 & 47.9 & 43.7 & 40.3 & 23.4 & 4.7 & 27\,646 \\
+$50\times 5$   & 3 & 14.3 & 12.8 & 10.6 & 1.4  & 4.9 & 69\,338 \\
+               & 4 & 14.3 & 12.7 & 11.5 & 1.1  & 4.3 & 53\,073 \\
+$50\times 10$  & 3 & 28.2 & 25.2 & 22.6 & 6.6  & 4.7 & 35\,342 \\
+               & 4 & 28.2 & 24.4 & 24.3 & 6.1  & 3.9 & 26\,327 \\
+$50\times 20$  & 3 & 41.7 & 36.4 & 35.0 & 16.2 & 4.8 & 18\,524 \\
+               & 4 & 41.7 & 37.0 & 36.0 & 15.7 & 3.7 & 13\,819 \\
+$100\times 10$ & 3 & 23.2 & 22.2 & 19.6 & 4.6  & 4.8 & 19\,318 \\
+               & 4 & 23.2 & 21.4 & 20.4 & 4.1  & 3.0 & 14\,159 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.8\textwidth]{figures/fig_rpd_vs_iters_cp.pdf}
-\caption{Mean RPD against the iteration number in the 60\,s runs (ILS,
-exact filter). Each curve ends at the smallest iteration count of its
-50 runs.}
-\label{fig:rpditers}
+\includegraphics[width=0.9\textwidth]{figures/fig_quantum_time.pdf}
+\caption{Best RPD against time, $k=3$, on the runs made on all three
+platforms. The vertical line marks the 10\,s budget; a gate-based move
+that started before it is counted.}
+\label{fig:qtime}
 \end{figure*}
 
 
 \paragraph{Move anatomy.}
-Figure~\ref{fig:additivity} shows the additivity error on states sampled
+We measure the additivity error on states sampled
 from descents on the instances with $n\leq 100$, with the exact filter. The number of machines drives it more than $k$ does. For $m=5$ and $k\leq 8$
 the move delivers 72--83\% of the predicted gain and the prediction is
 optimistic in 38--56\% of the states. For $m=20$ the move delivers 57\%
@@ -892,14 +878,6 @@ at least 99\% of the states. On $200\times 20$ the real gain of a move
 stays between 95 and 99 from $k=4$ to $k=8$, while the evaluation time
 grows from 1.8 to 4.9\,ms.
 
-\begin{figure*}[t]
-\centering
-\includegraphics[width=0.8\textwidth]{figures/fig_additivity.pdf}
-\caption{Additivity on sampled search states: share of the predicted
-gain that the selected move delivers (left) and share of states with an
-optimistic prediction (right).}
-\label{fig:additivity}
-\end{figure*}
 
 % ---------------------------------------------------------------------
 \section{Conclusions}
@@ -922,7 +900,10 @@ additivity error is not the cause, although the sum of single-swap
 deltas promises more than the move delivers, more so for 20 machines. A
 small $k$ also keeps the QUBO of the move banded with bandwidth $k-1$, as
 the quantum neighborhood search of~\cite{windowed_own} requires.
-\todo{quantum paragraph only if the tiers are run} Swaps that cross are
+The move with $k\leq 4$ embeds on the annealer up to $n=500$, but a
+10\,s budget leaves room for one gate-based move or a few annealer
+calls, so on both platforms the search stays far behind the classical
+one. Swaps that cross are
 left for a separate study.
 
 \ifanon\else

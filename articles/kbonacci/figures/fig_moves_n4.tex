@@ -1,0 +1,42 @@
+% All 16 compound moves on n = 5 positions, grouped by the smallest k that contains them
+% (8 Fibonacci + 5 + 2 + 1 = 2^{n-1}), and two moves on n = 12. A tile marks one swap
+% (block of Lemma 1); colour = swap distance.
+\documentclass[tikz,border=3pt]{standalone}
+\usepackage{xcolor}
+\begin{document}
+\definecolor{d1}{RGB}{31,119,180}\definecolor{d2}{RGB}{230,120,20}
+\definecolor{d3}{RGB}{44,160,44}\definecolor{d4}{RGB}{200,40,40}
+\definecolor{d5}{RGB}{148,103,189}\definecolor{d6}{RGB}{120,80,50}
+\begin{tikzpicture}[x=0.36cm,y=0.36cm,font=\footnotesize]
+% \mv{x}{y}{n}{swaps a/b,...}  (use 0/0 for the identity)
+\newcommand{\mv}[4]{%
+  \edef\lst{#4}\foreach \a/\b in \lst{\ifnum\a>0
+    \pgfmathtruncatemacro{\d}{\b-\a}%
+    \fill[d\d!14,rounded corners=2pt] (#1+\a-0.4,#2-0.38) rectangle (#1+\b+0.4,#2+0.38);
+    \draw[d\d,rounded corners=2pt,thin] (#1+\a-0.4,#2-0.38) rectangle (#1+\b+0.4,#2+0.38);
+    \draw[d\d,very thick] (#1+\a,#2+0.2) .. controls (#1+\a,#2+0.2+0.55*\d) and (#1+\b,#2+0.2+0.55*\d) .. (#1+\b,#2+0.2);
+  \fi}%
+  \foreach \i in {1,...,#3}{\fill (#1+\i,#2) circle (0.15);}}
+\def\gap{6.4}
+% k = 2: the Fibonacci moves
+\node[anchor=east] at (0,0) {$n=5$,\ $k=2$: 8 moves};
+\foreach [count=\c from 0] \s in {{0/0},{1/2},{2/3},{3/4},{4/5},{1/2,3/4},{1/2,4/5},{2/3,4/5}}{\mv{\c*\gap}{0}{5}{\s}}
+% new at k = 3
+\node[anchor=east] at (0,-3) {$k=3$: $+5=13$};
+\foreach [count=\c from 0] \s in {{1/3},{2/4},{3/5},{1/3,4/5},{1/2,3/5}}{\mv{\c*\gap}{-3}{5}{\s}}
+% new at k = 4 and k = 5
+\node[anchor=east] at (0,-6.2) {$k=4$: $+2=15$};
+\foreach [count=\c from 0] \s in {{1/4},{2/5}}{\mv{\c*\gap}{-6.2}{5}{\s}}
+\node[anchor=east] at (5*\gap+0.2,-6.2) {$k=n$: $+1=16=2^{n-1}$};
+\mv{5*\gap+0.4}{-6.2}{5}{1/5}
+% two moves on n = 12
+\draw[gray!50] (-12,-8.4) -- (8*\gap,-8.4);
+\node[anchor=east] at (0,-11.2) {$n=12$,\ $k=3$};
+\mv{0}{-11.2}{12}{1/3,4/5,7/9,11/12}
+\node[anchor=east] at (17.6,-11.2) {$k=n$};
+\mv{17.6}{-11.2}{12}{1/6,7/8,9/12}
+% legend
+\node[anchor=west] at (32.5,-10.6) {swap distance};
+\foreach \d in {1,...,5}{\fill[d\d] (32.6+1.9*\d-1.9,-11.8) rectangle ++(1.2,0.5); \node[anchor=west] at (33.7+1.9*\d-1.9,-11.55) {\scriptsize\d};}
+\end{tikzpicture}
+\end{document}

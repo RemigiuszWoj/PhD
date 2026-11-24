@@ -1,36 +1,62 @@
-% Moves of N_k as rook placements on an n x n board (n = 8).
-% Rows = positions t, columns = jobs' new positions sigma(t); shaded = band |t - s| <= k-1.
-\documentclass[tikz,border=2pt]{standalone}
-\usepackage{amsmath}
+% N_k for n = 8 (merges the former rook-board and band figures).
+% Top: candidate swaps as arcs (faint = already allowed at the previous k; Motzkin: the arcs of its move).
+% Bottom: one move as rooks; shaded = band |t - sigma(t)| <= k-1 coloured by swap distance; thick = blocks of Lemma 1.
+\documentclass[tikz,border=3pt]{standalone}
+\usepackage{xcolor}
 \begin{document}
-\begin{tikzpicture}[x=0.36cm,y=0.36cm,font=\footnotesize]
-% \board{x-offset}{band width k-1}{sigma(1..8)}{title}
-\newcommand{\board}[4]{%
-  \begin{scope}[xshift=#1 cm]
-    \foreach \r in {1,...,8}{\foreach \c in {1,...,8}{%
-      \pgfmathtruncatemacro{\dd}{abs(\r-\c)}%
-      \ifnum\dd<\numexpr#2+1\relax
-        \fill[gray!22] (\c-1,-\r) rectangle (\c,-\r+1);
-      \fi}}
-    \foreach \i in {1,...,7}{\draw[gray!55,very thin] (\i,-8) -- (\i,0); \draw[gray!55,very thin] (0,-\i) -- (8,-\i);}
-    \draw (0,-8) rectangle (8,0);
-    \foreach [count=\r] \c in {#3}{\fill (\c-0.5,-\r+0.5) circle (0.28);}
-    \node[above] at (4,0) {#4};
-  \end{scope}}
-% block outline on the diagonal: \blk{x-offset}{first}{last}
-\newcommand{\blk}[3]{\draw[very thick,xshift=#1 cm] (#2-1,-#3) rectangle (#3,-#2+1);}
-
-\board{0}{1}{2,1,3,5,4,6,8,7}{$k=2$ (Fibonacci)}
-\blk{0}{1}{2}\blk{0}{4}{5}\blk{0}{7}{8}
-
-\board{3.4}{2}{3,2,1,4,6,5,8,7}{$k=3$ (tribonacci)}
-\blk{3.4}{1}{3}\blk{3.4}{5}{6}\blk{3.4}{7}{8}
-
-\board{6.8}{7}{6,2,3,4,5,1,8,7}{$k=n$ (Dynasearch)}
-\blk{6.8}{1}{6}\blk{6.8}{7}{8}
-
-\board{10.2}{7}{6,2,4,3,5,1,8,7}{Motzkin (nested)}
-\blk{10.2}{1}{6}\blk{10.2}{7}{8}
-\draw[very thick,dashed,xshift=10.2cm] (2,-4) rectangle (4,-2);
+\definecolor{d1}{RGB}{31,119,180}\definecolor{d2}{RGB}{230,120,20}
+\definecolor{d3}{RGB}{44,160,44}\definecolor{d4}{RGB}{200,40,40}
+\definecolor{d5}{RGB}{148,103,189}\definecolor{d6}{RGB}{140,86,75}
+\definecolor{d7}{RGB}{227,119,194}
+\begin{tikzpicture}[x=0.34cm,y=0.34cm,font=\footnotesize]
+% \arcs{k}{previous k}: all candidate swaps of N_k
+\newcommand{\arcs}[2]{%
+  \foreach \i in {1,...,8}{\foreach \j in {1,...,8}{%
+    \pgfmathtruncatemacro{\d}{\j-\i}%
+    \ifnum\d>0 \ifnum\d<#1
+      \pgfmathsetmacro{\h}{0.5*\d}%
+      \ifnum\d<#2 \def\op{0.28}\else\def\op{1}\fi
+      \draw[d\d,thick,opacity=\op] (\i-0.5,0.3) .. controls (\i-0.5,0.3+\h) and (\j-0.5,0.3+\h) .. (\j-0.5,0.3);
+    \fi\fi}}%
+  \foreach \i in {1,...,8}{\fill (\i-0.5,0.3) circle (0.14);}}
+% \board{k}{sigma(1..8)}
+\newcommand{\board}[2]{%
+  \foreach \r in {1,...,8}{\foreach \c in {1,...,8}{%
+    \pgfmathtruncatemacro{\d}{abs(\r-\c)}%
+    \ifnum\d>0 \ifnum\d<#1 \fill[d\d!22] (\c-1,-1-\r) rectangle (\c,-\r);\fi\fi
+    \ifnum\d=0 \fill[gray!14] (\c-1,-1-\r) rectangle (\c,-\r);\fi}}
+  \foreach \i in {1,...,7}{\draw[gray!45,very thin] (\i,-9) -- (\i,-1); \draw[gray!45,very thin] (0,-1-\i) -- (8,-1-\i);}
+  \draw (0,-9) rectangle (8,-1);
+  \foreach [count=\r] \c in {#2}{\fill (\c-0.5,-\r-0.5) circle (0.27);}}
+\newcommand{\blk}[2]{\draw[very thick] (#1-1,-1-#2) rectangle (#2,-#1);}
+\begin{scope}[shift={(0,0)}]
+  \node at (4,4.4) {$k=2$ (Fibonacci)};
+  \arcs{2}{1}\board{2}{2,1,3,5,4,6,8,7}\blk{1}{2}\blk{4}{5}\blk{7}{8}
+  \node at (4,-10) {7 candidates};
+\end{scope}
+\begin{scope}[shift={(10,0)}]
+  \node at (4,4.4) {$k=3$};
+  \arcs{3}{2}\board{3}{3,2,1,4,6,5,8,7}\blk{1}{3}\blk{5}{6}\blk{7}{8}
+  \node at (4,-10) {13 candidates};
+\end{scope}
+\begin{scope}[shift={(20,0)}]
+  \node at (4,4.4) {$k=4$};
+  \arcs{4}{3}\board{4}{4,2,3,1,6,5,8,7}\blk{1}{4}\blk{5}{6}\blk{7}{8}
+  \node at (4,-10) {18 candidates};
+\end{scope}
+\begin{scope}[shift={(30,0)}]
+  \node at (4,4.4) {$k=n$ (Dynasearch)};
+  \arcs{8}{4}\board{8}{6,2,3,4,5,1,8,7}\blk{1}{6}\blk{7}{8}
+  \node at (4,-10) {28 candidates};
+\end{scope}
+\begin{scope}[shift={(40,0)}]
+  \node at (4,4.4) {Motzkin};
+  \foreach \a/\b in {1/6,3/4,7/8}{\pgfmathtruncatemacro{\d}{\b-\a}%
+    \draw[d\d,very thick] (\a-0.5,0.3) .. controls (\a-0.5,0.3+0.5*\d) and (\b-0.5,0.3+0.5*\d) .. (\b-0.5,0.3);}
+  \foreach \i in {1,...,8}{\fill (\i-0.5,0.3) circle (0.14);}
+  \board{8}{6,2,4,3,5,1,8,7}\blk{1}{6}\blk{7}{8}
+  \draw[very thick,dashed] (2,-5) rectangle (4,-3);
+  \node at (4,-10) {nested swaps};
+\end{scope}
 \end{tikzpicture}
 \end{document}

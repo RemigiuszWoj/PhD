@@ -7,18 +7,26 @@
 % Wyniki (14.11): kampania główna i etap `large` z filtrem dokładnym;
 % łącznie z etapami large500 i large_m10 (15.11) i relative_cp (16.11).
 % =====================================================================
-\documentclass[10pt,twocolumn]{article}
-\usepackage[margin=0.75in]{geometry}
+\documentclass[letterpaper]{article} % AAAI-27 author kit (template 2027.1)
+\usepackage[submission]{aaai2027}
+\usepackage[hyphens]{url}
+\usepackage{graphicx}
+\urlstyle{rm}
+\def\UrlFont{\rm}
+\usepackage{natbib}
+\usepackage{caption}
+\frenchspacing
+\pdfinfo{
+/TemplateVersion (2027.1)
+}
+\setcounter{secnumdepth}{2} % sections are referenced by number in the text
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage[polish]{babel}
 \usepackage{amsmath,amssymb,amsthm}
-\usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{xcolor}
-\usepackage[hidelinks]{hyperref}
-
 \newtheorem{proposition}{Stwierdzenie}
 \newtheorem{definition}{Definicja}
 \newtheorem{lemma}{Lemat}
@@ -33,45 +41,27 @@
 
 \title{Od Fibonacciego do Dynasearch: rodzina sąsiedztw $k$-bonacci\\
 złożonych z zamian dla permutacyjnego problemu przepływowego}
-\author{Zgłoszenie anonimowe}
-\date{}
+\author{Anonymous Submission}
+\affiliations{}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-Sąsiedztwa ruchów złożonych pozwalają przeszukać wykładniczo wiele
-uszeregowań w czasie wielomianowym metodą programowania dynamicznego.
-Dwa najbardziej znane sąsiedztwa tego typu dla permutacyjnego problemu
-przepływowego leżą na przeciwnych biegunach. Sąsiedztwo
-Fibonacciego łączy tylko zamiany sąsiednie i jest tanie, natomiast
-Dynasearch łączy zamiany na dowolną odległość i kosztuje $O(mn^3)$ na
-ocenę. Proponujemy rodzinę \emph{$k$-bonacci}, która wypełnia lukę między
-nimi: ruch to zbiór zamian końców na rozłącznych przedziałach, przy
-odległości zamiany co najwyżej $k-1$. Liczność rodziny wyznaczają
-dokładnie liczby $k$-bonacciego, więc rośnie ona jak $\lambda_k^n$, gdzie
-$\lambda_2=1{,}618$ (Fibonacci), $\lambda_3=1{,}839$ (tribonacci)
-i $\lambda_k\to 2$ (Dynasearch). Dla $k=\lfloor\log_2 n\rfloor+2$ rodzina
-zawiera 79--88\% wszystkich ruchów Dynasearch dla $n=20$--$500$. Pozycyjne programowanie
-dynamiczne wybiera ruch o najlepszej przewidywanej zmianie makespanu w czasie
-$O(nk)$. Rodzinę badamy na pełnym benchmarku Taillarda wewnątrz iterowanego przeszukiwania lokalnego (ILS) z naszych wcześniejszych prac, przy tych samych budżetach czasu, więc
-nowe sąsiedztwa można porównać z opublikowanymi wynikami dla sąsiedztw
-Adjacent, Fibonacciego, Dynasearch i Motzkina. Przy ustalonym budżecie czasu najlepszy zasięg jest krótki. Pokrycie nie
-przewiduje jakości: dla 500 zadań $k=6$, które zawiera poniżej 2\% ruchów Dynasearch,
-wygrywa z $k=12$, które zawiera 94\%. Najlepsze $k$ maleje z liczbą maszyn
-i rośnie z budżetem. Przy 20
-maszynach i co najmniej 100 zadaniach najlepsze $k$ leży między 5 a 8
-przy każdym badanym budżecie, do 60\,s dla 200 i 500
-zadań. Przy 5 maszynach każde $k\geq 12$ daje przy 10\,s podobną jakość,
-a dla 200 zadań i 10 maszyn najlepsze $k$ rośnie z budżetem. Dodatkowe porównanie przy równej liczbie
-iteracji pokazuje, że dłuższy zasięg jest wtedy lepszy w każdej klasie,
-więc ograniczenie $k$ wynika z kosztu ruchu. Dokładny filtr ścieżki
-krytycznej, który zastępuje filtr granic bloków z wcześniejszych
-prac, poprawia każde $k\leq 16$ przy każdym rozmiarze instancji.
-Insert jest lepszy dla większości klas do 200 zadań. Dla 500 zadań i 20
-maszyn zamiany złożone prowadzą przy każdym budżecie do 300\,s, o 7 pkt
-proc. przy 10\,s i o 0,2 pkt proc. przy 300\,s. \todo{SA tylko jeśli
-policzymy}
+Przeszukiwanie lokalne dla permutacyjnego problemu przepływowego często
+korzysta z ruchów złożonych: kilku zamian wykonywanych naraz i wybieranych
+programowaniem dynamicznym. Dwa znane sąsiedztwa tego rodzaju leżą na
+przeciwnych krańcach. Sąsiedztwo Fibonacciego pozwala zamieniać tylko
+sąsiednie zadania, a Dynasearch pozwala na zamiany dowolnej długości
+i jest znacznie droższe w ocenie. Wprowadzamy rodzinę $k$-bonacci, która
+wypełnia tę lukę, ograniczając zasięg pojedynczej zamiany. Liczymy jej
+ruchy, pokazujemy, że przy krótkim zasięgu obejmuje większość Dynasearch,
+i badamy ją na pełnym zbiorze Taillarda w iteracyjnym przeszukiwaniu
+lokalnym. Przy stałym budżecie czasu wygrywa krótki zasięg: najlepsze $k$
+maleje z liczbą maszyn i rośnie z budżetem, a przy równej liczbie
+iteracji dłuższy zasięg jest zawsze lepszy. Ruch wyznaczamy też na
+wyżarzaczu kwantowym i na procesorze bramkowym i porównujemy oba
+z przeszukiwaniem klasycznym.
 \end{abstract}
 
 \section{Wstęp}
@@ -114,8 +104,9 @@ sześciu budżetach czasu do 10\,s i przy przebiegach 60\,s na największych
 klasach. Obejmuje jakość rozwiązań, liczbę iteracji
 w budżecie, odległości wybieranych zamian i zmierzony błąd addytywności
 w funkcji $k$.
-\todo{opcjonalnie czwarty wkład: QUBO $k$-bonacciego na wyżarzaczu
-kwantowym i komputerze bramkowym, protokół jak w~\cite{windowed_own}}
+Po czwarte, ruch $k$-bonacci wyznaczamy na wyżarzaczu kwantowym i na
+procesorze bramkowym w tym samym przeszukiwaniu i porównujemy oba
+z ruchem klasycznym przy tym samym budżecie czasu.
 
 \section{Prace pokrewne}
 \paragraph{Ruchy złożone.} Dynasearch wprowadzono dla jednomaszynowego problemu sumy ważonych spóźnień~\cite{congram2002}.
@@ -155,7 +146,18 @@ o parami rozłącznych przedziałach $[i,j]$. $\N_k(\pi)$ to zbiór permutacji o
 Dla $k=2$ zamieniane są tylko zadania sąsiednie, co daje sąsiedztwo
 Fibonacciego. Dla $k=3$ zamiana może też przeskoczyć jedno zadanie
 (tribonacci), a dla $k=n$ można zamienić dowolne dwa zadania, co daje
-Dynasearch.
+Dynasearch. Rysunek~\ref{fig:moves4} pokazuje wszystkie 16 ruchów na pięciu
+pozycjach: osiem ruchów Fibonacciego, pięć kolejnych dla $k=3$, dwa dla
+$k=4$ i jeden dla $k=5$.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/fig_moves_n4.pdf}
+\caption{Wszystkie ruchy złożone na $n=5$ pozycjach, pogrupowane według
+najmniejszego $k$, które je zawiera, oraz dwa ruchy na $n=12$. Łuk łączy
+dwa zamieniane zadania, a jego kolor oznacza odległość zamiany.}
+\label{fig:moves4}
+\end{figure*}
 
 \paragraph{Ruchy jako ustawienia wież.} Ruch złożony jest permutacją
 pozycji $\sigma$, więc można go narysować jako macierz permutacji:
@@ -183,7 +185,7 @@ podzielić, bo jego narożne wieże łączą wiersz $1$ z kolumną $L$, więc
 rozkład jest jednoznaczny.
 \end{proof}
 
-Rysunek~\ref{fig:plansze} pokazuje cztery przypadki obok siebie. Na szachownicy Fibonacciego wieże leżą na przekątnej albo w blokach $2\times 2$ przy niej. Zwiększanie $k$
+Rysunek~\ref{fig:plansze} pokazuje obok siebie cztery wartości $k$ i sąsiedztwo Motzkina. Na szachownicy Fibonacciego wieże leżą na przekątnej albo w blokach $2\times 2$ przy niej. Zwiększanie $k$
 poszerza pasmo $|t-\sigma(t)|\leq k-1$, które mogą zajmować wieże, a dla
 $k=n$ pasmo pokrywa całą szachownicę. Struktura blokowa jest drugim
 ograniczeniem i samo pasmo jej nie wymusza: $3$-cykl $\sigma=(2,3,1)$
@@ -195,17 +197,18 @@ nie krzyżują.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.85\textwidth]{figures/fig_boards.pdf}
-\caption{Po jednym ruchu złożonym każdego sąsiedztwa dla $n=8$ jako
-ustawienie wież. Zacieniowane komórki tworzą pasmo
+\includegraphics[width=\textwidth]{figures/fig_boards.pdf}
+\caption{Sąsiedztwa dla $n=8$. U góry: kandydaci do zamiany jako łuki
+(blade łuki były dozwolone już przy poprzednim $k$). U dołu: jeden ruch
+jako ustawienie wież; zacieniowane komórki tworzą pasmo
 $|t-\sigma(t)|\leq k-1$, a grube kwadraty oznaczają bloki
 z lematu~\ref{lem:bloki}.}
 \label{fig:plansze}
 \end{figure*}
 
 \paragraph{Liczność.} Lemat~\ref{lem:bloki} zamienia ruch złożony w ciąg
-rozmiarów bloków, czyli w kafelkowanie pozycji $1..n$ kafelkami długości od $1$ do $k$ (rys.~\ref{fig:kafelki}a). Ustalenie długości $L$ pierwszego
-kafelka zostawia dowolny ruch na pozostałych $n-L$ pozycjach (rys.~\ref{fig:kafelki}b), co daje rekurencję $k$-bonacciego.
+rozmiarów bloków, czyli w kafelkowanie pozycji $1..n$ kafelkami długości od $1$ do $k$ (kafelki na rys.~\ref{fig:moves4}). Ustalenie długości $L$ pierwszego
+kafelka zostawia dowolny ruch na pozostałych $n-L$ pozycjach, co daje rekurencję $k$-bonacciego.
 
 \begin{proposition}\label{prop:licznosc}
 $|\N_k|=a_n$, gdzie $a_0=1$ oraz $a_p=\sum_{L=1}^{\min(k,p)}a_{p-L}$.
@@ -231,13 +234,6 @@ $f(x_0)=2(1-2^{-k})^k\geq 2(1-k2^{-k})\geq 1=f(\lambda_k)$, zatem
 $x_0\leq\lambda_k$.
 \end{proof}
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=\linewidth]{figures/fig_tiling.pdf}
-\caption{(a) Ruch dla $k=3$ z rys.~\ref{fig:plansze} jako kafelkowanie; strzałki łączą zamieniane zadania. (b) Pierwszy kafelek ma
-długość $L\in\{1,\dots,k\}$ i zostawia ruch na $n-L$ pozycjach.}
-\label{fig:kafelki}
-\end{figure}
 
 \paragraph{Hierarchia.} Ruch z $\N_k$ jest też ruchem z $\N_{k+1}$,
 a zawieranie jest ostre, gdy $k<n$, bo pojedyncza zamiana o odległości $k$ należy dopiero do $\N_{k+1}$. Razem z sąsiedztwami z wcześniejszych
@@ -265,7 +261,7 @@ kompozycji $n$ nie przekracza $k$, czyli że w $n-1$ rzutach symetryczną
 monetą nie ma serii $k$ kolejnych odstępów bez cięcia. Najdłuższa seria
 jednego symbolu w $n$ rzutach symetryczną monetą ma długość około
 $\log_2 n-1$~\cite{schilling1990}, więc
-prawdopodobieństwo to rośnie od $e^{-2}\approx 0{,}14$ przy $k=\log_2 n-2$ do $e^{-1/8}\approx 0{,}88$ przy $k=\log_2 n+2$ (rys.~\ref{fig:udzial}). Następne stwierdzenie podaje ten wzrost jawnie.
+prawdopodobieństwo to rośnie od $e^{-2}\approx 0{,}14$ przy $k=\log_2 n-2$ do $e^{-1/8}\approx 0{,}88$ przy $k=\log_2 n+2$. Następne stwierdzenie podaje ten wzrost jawnie.
 
 \begin{proposition}\label{prop:udzial}
 Dla ustalonego $k$ zachodzi $a_n=c_k\lambda_k^n\,(1+o(1))$, gdzie
@@ -300,19 +296,14 @@ zachowuje więc większość ruchów Dynasearch i odrzuca tylko rzadkie ruchy
 z bardzo długimi zamianami. To, czy odrzucone ruchy mają znaczenie dla
 przeszukiwania, jest pytaniem empirycznym (rozdz.~\ref{sec:wyniki}).
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.9\linewidth]{figures/fig_share.pdf}
-\caption{Udział ruchów Dynasearch zawartych w $\N_k$. Linie przerywane
-oznaczają $k=\lfloor\log_2 n\rfloor+2$.}
-\label{fig:udzial}
-\end{figure}
 
 \paragraph{Ocena.} Dla każdego kandydata $(i,j)$ liczymy
 $\delta_{ij}=C_{\max}(\pi\circ s(i,j))-C_{\max}(\pi)$ z macierzy Head
 i Tail. Kandydatów jest $(k-1)n-k(k-1)/2<n(k-1)$, a w Dynasearch
 $n(n-1)/2$. Kandydat o odległości $d$ kosztuje $O(md)$, więc wszystkie
-delty kosztują $O(mnk^2)$ zamiast $O(mn^3)$.
+delty kosztują $O(mnk^2)$ zamiast $O(mn^3)$. Każdy łuk na rys.~\ref{fig:plansze} to jeden kandydat, czyli komórka
+pasma nad przekątną, a każdy krok $k$ dokłada jedną przekątną.
+
 
 \paragraph{Filtrowanie.} Własności blokowe~\cite{nowicki1996,grabowski2004}
 usuwają kandydatów, którzy nie mogą poprawić makespanu. Ustalmy jedną
@@ -352,9 +343,9 @@ Wcześniejsze prace~\cite{windowed_own} używają prostszego testu, który
 uznaje pozycję za granicę, gdy ostatnia maszyna zaczyna zadanie zaraz po
 tym, jak poprzednia je skończy, i zostawia zamianę tylko wtedy, gdy
 granica leży w $[i,j]$. Ten test jest heurystyką: na optimach lokalnych
-odrzuca 2--6\% zamian poprawiających i zostawia od dwóch do pięciu razy
-więcej kandydatów niż filtr ze stwierdzenia~\ref{prop:filtr}
-\todo{liczby z scripts/check\_block\_filter.py}. Dla każdego $k$
+odrzuca 2--6\% zamian poprawiających i zostawia 1,6--4,8 razy więcej
+kandydatów przy $k=4$ i do 1,7 razy więcej przy $k=n$ niż filtr ze
+stwierdzenia~\ref{prop:filtr}. Dla każdego $k$
 uruchamiamy oba testy i wcześniejszy nazywamy filtrem granic bloków.
 Filtr dokładny jest wariantem głównym, a filtr granic bloków ablacją,
 która zachowuje związek z opublikowanymi wynikami
@@ -413,7 +404,7 @@ DP zamienia więc maksimum sum na sumę maksimów. Błąd ma prostą postać,
 gdy ruch rozetniemy w kolumnie. Niech $S_1$ zawiera zamiany na lewo od
 granicy między kolumnami $c$ i $c+1$, a $S_2$ zamiany na prawo od niej;
 $\delta_1$ i $\delta_2$ to zmiany przy zastosowaniu ich osobno,
-a $\Delta$ przy zastosowaniu razem (rys.~\ref{fig:sciezki}). Oznaczmy
+a $\Delta$ przy zastosowaniu razem. Oznaczmy
 $w_r=H_{r,c}+T_{r,c+1}$, $a_r=H^{S_1}_{r,c}-H_{r,c}$
 oraz $b_r=T^{S_2}_{r,c+1}-T_{r,c+1}$.
 
@@ -438,14 +429,6 @@ $w_{r^\ast}\leq C_{\max}(\pi)$. Ostatnie założenie zamienia obie
 nierówności w równości.
 \end{proof}
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=\linewidth]{figures/fig_paths.pdf}
-\caption{Dwie zamiany $S_1$ i $S_2$ rozdzielone granicą. Ścieżki $P$
-i $Q$ przekraczają granicę na różnych maszynach, a makespan po obu
-zamianach jest maksimum po maszynie przekroczenia.}
-\label{fig:sciezki}
-\end{figure}
 
 Warunek z trzeciej części mówi, że po każdej z dwóch części ruchu
 pewna ścieżka krytyczna przekracza granicę na tej samej maszynie. Suma $\delta_1+\delta_2$ jest wtedy dokładna albo optymistyczna. Na stanach pobranych wzdłuż zejść
@@ -477,10 +460,7 @@ i zmieniamy sąsiedztwo.
 \item \textbf{Instancje:} 120 instancji Taillarda~\cite{taillard1993} (12 klas,
       $n\in\{20,50,100,200,500\}$, $m\in\{5,10,20\}$), zweryfikowanych generatorem Taillarda.
 \item \textbf{Metaheurystyki} (bez zmian): ILS z listą tabu (kadencja 10)
-      i pulą 10 najlepszych rozwiązań z zaburzeniem double-bridge. SA
-      z $T_0=1000$, $\alpha=0{,}99$ i dolną granicą temperatury 100; po 100\,ms
-      bez poprawy temperatura wraca do $T_0$, a kolejne rozwiązanie
-      z puli dostaje zaburzenie double-bridge. Oba algorytmy startują z permutacji identycznościowej. \todo{wiersze SA tylko jeśli policzymy SA}
+      i pulą 10 najlepszych rozwiązań z zaburzeniem double-bridge, start z permutacji identycznościowej.
 \item \textbf{Budżety:} $\{0{,}1;\,0{,}5;\,1;\,2;\,5;\,10\}$\,s,
       5 ziaren (0--4). Klasy $200\times 10$, $200\times 20$ i $500\times 20$
       uruchamiamy też na 60\,s. Klasę $500\times 20$ uruchamiamy też na 300\,s
@@ -495,32 +475,26 @@ i zmieniamy sąsiedztwo.
       Fibonacci, Dynasearch i Motzkin z wcześniejszej kampanii na tej samej
       maszynie.
 \item \textbf{Miara:} RPD do dolnego ograniczenia Taillarda i dwustronny test znaków rangowanych Wilcoxona, $\alpha=0{,}05$, jak wcześniej. Dodatkowo: korekta Holma,
-      test Friedmana z różnicą krytyczną Nemenyi, RPD do górnych ograniczeń
-      Taillarda z 1993 roku oraz RPD do aktualnych najlepszych znanych
-      rozwiązań \todo{źródło listy BKS}.
+      test Friedmana z różnicą krytyczną Nemenyi oraz RPD do górnych ograniczeń
+      Taillarda z 1993 roku.
 \item \textbf{Sprzęt:} obliczenia klasyczne na Apple M4 Pro, przebiegi
       sekwencyjne, jak wcześniej. Kod jest napisany w Pythonie. Lista tabu
       przechowuje cały ruch złożony, czyli zbiór jego zamian, przez 10
       iteracji. Gdy najlepszy ruch jest tabu i nie poprawia najlepszego
       makespanu, przeszukiwanie rusza dalej z zaburzenia double-bridge
       rozwiązania z puli. Obliczenia kwantowe na wyżarzaczu D-Wave
-      Advantage (topologia Pegasus, ok. 5\,600 kubitów; chmura Leap,
-      \texttt{EmbeddingComposite}, identyfikator solvera zapisywany przy
-      uruchomieniu) oraz na procesorach bramkowych IQM przez IQM Resonance:
-      Sirius (16 kubitów, topologia gwiazdy) i Garnet (20 kubitów, krata
-      kwadratowa) \todo{wpisać faktycznie użyte maszyny}.
+      Advantage\_system6 (topologia Pegasus, 5\,760 kubitów; chmura Leap,
+      \texttt{EmbeddingComposite}) oraz na procesorze bramkowym IQM
+      Sirius (16 kubitów, topologia gwiazdy) przez IQM Resonance.
 \end{itemize}
-\paragraph{Jeden przebieg na rodzinę budżetów.} ILS i SA używają limitu czasu wyłącznie jako warunku stopu; schładzanie, kadencja tabu i pula elitarna zależą od liczby iteracji, a ponowne podgrzanie od stałego czasu stagnacji. Przebieg z budżetem $t$ jest więc prefiksem przebiegu 10\,s z tym samym ziarnem. Każdą konfigurację
+\paragraph{Jeden przebieg na rodzinę budżetów.} ILS używa limitu czasu wyłącznie jako warunku stopu; kadencja tabu i pula elitarna zależą od liczby iteracji. Przebieg z budżetem $t$ jest więc prefiksem przebiegu 10\,s z tym samym ziarnem. Każdą konfigurację
 uruchamiamy raz na 10\,s, a wynik dla mniejszych budżetów odczytujemy
 z logu trajektorii. Pętla sprawdza zegar przed każdym ruchem, więc ruch rozpoczęty przed czasem $t$ jest liczony, tak jak w niezależnym przebiegu. Tam, gdzie jedna iteracja
 przekracza budżet (Insert dla $n=500$ poniżej 1\,s, $k=n$ dla $n=500$),
 podana wartość jest wartością pierwszej iteracji. ILS jest
 deterministyczny przy danym ziarnie i wartości odczytane z logu pokrywają
 się z niezależnymi przebiegami z dokładnością do rozrzutu pomiaru czasu (co najwyżej
-jeden ruch). SA nie jest deterministyczny: ponowne podgrzanie wyzwala licznik stagnacji mierzony zegarem, więc nawet dwa przebiegi
-z tym samym ziarnem i budżetem rozchodzą się po pierwszym zaburzeniu double-bridge. Dla SA
-wartości z logu zgadzają się z niezależnymi przebiegami w granicach tego
-szumu.
+jeden ruch).
 
 Na dwóch klasach ($20\times 5$ i $50\times 10$, $k\in\{3,8\}$) wartości
 odczytane z logu i niezależne wartości ILS różnią się co najwyżej
@@ -543,11 +517,19 @@ Dla $n=200$ ten sam eksperyment obejmuje $k\leq 16$ i daje 194 stany.
 
 \paragraph{Protokół kwantowy.} Obliczenia kwantowe przebiegają jak we wcześniejszych pracach~\cite{windowed_own}, zmienia się tylko sąsiedztwo. Na wyżarzaczu ruch $k$-bonacci to QUBO
 nakładania przedziałów o długości co najwyżej $k$ (ograniczenie działa
-także na QPU), 100 odczytów na wywołanie, w tych samych ILS i SA
-z $t_{\max}=5$\,s (mniejsze budżety odczytane jak wyżej). Na procesorach bramkowych jeden ruch z permutacji
-identycznościowej wykonuje QAOA o stałych kątach ($p=1$, 4096 pomiarów)
-na oknach po 6 pozycji z nakładaniem 50\%; wszystkie okna ruchu wysyłamy jako jedno zadanie. \todo{które poziomy policzono i zużyty czas QPU /
-kredyty}
+także na QPU), 100 odczytów na wywołanie, w tym samym ILS
+z $t_{\max}=10$\,s. Na procesorze bramkowym (IQM Sirius, 16 kubitów) ruch
+wyznacza QAOA o stałych kątach ($p=1$, 4096 pomiarów) na oknach po 6
+pozycji z nakładaniem 50\%, a wszystkie okna ruchu wysyłamy jako jedno
+zadanie. Żadna z platform nie ma klasycznego zastępstwa: ruch, którego
+QPU nie zwróci, kończy przebieg błędem. Wszystkie wyniki kwantowe
+dotyczą instancji 0--4 i ziaren 0--2, czyli zbioru policzonego na obu
+platformach, a wartości klasyczne do porównania pochodzą z tych samych
+przebiegów głównego eksperymentu. Wyżarzacz liczył $k\in\{2,3,4\}$ na
+wszystkich dwunastu klasach (540 przebiegów; 195\,s czasu QPU na całe
+badanie razem z pilotem). Procesor bramkowy liczył $k\in\{3,4\}$ na
+klasach z $n\leq 50$ oraz na $100\times 10$, gdzie policzono tylko
+ziarno 0 (190 przebiegów).
 
 \section{Wyniki}\label{sec:wyniki}
 \begin{table*}[t]
@@ -597,10 +579,6 @@ powtarzają wartość z 10\,s. Wiersz
 $k=n$ to sąsiedztwo Dynasearch w bieżącej implementacji, szybszej na
 dużych instancjach. Każde $k$ od 4 do 16 z filtrem dokładnym wyprzedza
 cztery wcześniejsze sąsiedztwa przy 10\,s dla $n\geq 50$.
-Względem najlepszych znanych rozwiązań RPD przy 10\,s dla najlepszego
-$k$ wynosi 0,21, 1,55, 1,90, 3,13 i 4,86\% dla $n=20$, 50, 100, 200
-i 500, a dla Inserta 0,14, 1,48, 1,68, 3,04 i 12,14\%. Kolejność metod
-się nie zmienia.
 
 \paragraph{Zasięg.} Większość zysku daje pierwszych kilka kroków $k$
 (tab.~\ref{tab:main}). Przejście od $k=2$ do $k=6$ obniża RPD o 0,9--2,8 pkt proc. przy 10\,s, a powyżej $k=8$ krzywa jest płaska albo
@@ -634,33 +612,26 @@ i $n\geq 100$ RPD nie maleje na żadnym kroku siatki od $k=10$ do $k=n$,
 więc wartości między 16 a $n$ nie kryją drugiego optimum. Dla
 $500\times 20$ każde $k\geq 250$ wykonuje w 10\,s jeden ruch i zwraca
 wynik $k=n$. Żaden stały ułamek $n$ nie sprawdza się dla wszystkich
-rozmiarów. Rysunek~\ref{fig:rpdk} pokazuje RPD w funkcji $k$
-dla każdego budżetu, a rysunek~\ref{fig:itersk} liczbę iteracji
-wykonanych w 10\,s.
+rozmiarów. Kolumna 10\,s tabeli~\ref{tab:bestk} obejmuje też te wartości
+$k$, a zakres oznacza w niej wszystkie wartości siatki między końcami. Rysunek~\ref{fig:rpdk} pokazuje RPD w funkcji $k$
+dla każdego budżetu i liczbę iteracji wykonanych w 10\,s.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\textwidth]{figures/fig_rpd_vs_k_cp.pdf}
-\caption{Średnie RPD w funkcji $k$ dla każdego budżetu (ILS, filtr
-dokładny). Linia kropkowana to Insert przy 10\,s.}
+\includegraphics[width=0.75\textwidth]{figures/fig_rpd_vs_k_cp.pdf}\hfill
+\includegraphics[width=0.24\textwidth]{figures/fig_iters_vs_k_cp.pdf}
+\caption{Średnie RPD w funkcji $k$ dla każdego budżetu (z lewej; kropkowana
+linia to Insert przy 10\,s) i liczba iteracji wykonanych w 10\,s
+(z prawej). ILS, filtr dokładny.}
 \label{fig:rpdk}
 \end{figure*}
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.9\linewidth]{figures/fig_iters_vs_k_cp.pdf}
-\caption{Liczba iteracji wykonanych w 10\,s w funkcji $k$ (ILS, filtr
-dokładny).}
-\label{fig:itersk}
-\end{figure}
 
 \begin{table}[t]
 \centering
-\caption{Najlepsze $k$ dla klasy (filtr dokładny) wraz z każdym $k$
-w granicach 0,05 pkt proc. od najlepszego; gwiazdka oznacza komórki,
-w których Insert wygrywa z każdym $k$. Kolumna 10\,s obejmuje także
-wartości $k$ z eksperymentu z ułamkiem $n$, a zakres oznacza wszystkie
-wartości siatki między jego końcami.}
+\caption{Najlepsze $k$ dla klasy i budżetu (ILS, filtr dokładny). Podajemy
+wartości w granicach 0,05 pkt proc. od najlepszej, a gwiazdka oznacza
+komórki, w których lepszy jest Insert.}
 \label{tab:bestk}
 \small
 \setlength{\tabcolsep}{2.5pt}
@@ -697,36 +668,10 @@ na pobranych stanach eksperymentu z anatomią ruchu suma delt zawyża zysk
 silniej dla $m=20$ niż dla $m=5$. Nie jest to jednak główna przyczyna, co
 pokazuje porównanie przy równej liczbie iteracji poniżej.
 
-\begin{table}[t]
-\centering
-\caption{Długie przebiegi: średnie RPD [\%] do dolnego ograniczenia przy
-10\,s i 60\,s (ILS, filtr dokładny).}
-\label{tab:long}
-\small
-\setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}lcccccc@{}}
-\toprule
- & \multicolumn{2}{c}{$200\times 10$} & \multicolumn{2}{c}{$200\times 20$}
- & \multicolumn{2}{c}{$500\times 20$} \\
-\cmidrule(lr){2-3}\cmidrule(lr){4-5}\cmidrule(l){6-7}
- & 10\,s & 60\,s & 10\,s & 60\,s & 10\,s & 60\,s \\
-\midrule
-Insert & \textbf{1{,}63} & \textbf{1{,}28} & 6{,}58 & 4{,}66 & 12{,}69 & 5{,}34 \\
-\midrule
-$k=4$ & 2{,}91 & 2{,}35 & 7{,}29 & 5{,}63 & 5{,}65 & 3{,}79 \\
-$k=6$ & 2{,}57 & 2{,}04 & 6{,}16 & 4{,}65 & \textbf{5{,}27} & 2{,}94 \\
-$k=8$ & 2{,}30 & 1{,}87 & \textbf{6{,}13} & \textbf{4{,}61} & 5{,}43 & \textbf{2{,}71} \\
-$k=12$ & 2{,}07 & 1{,}65 & 6{,}93 & 5{,}00 & 5{,}90 & 3{,}16 \\
-$k=16$ & 1{,}88 & 1{,}51 & 7{,}25 & 5{,}09 & 6{,}40 & 3{,}68 \\
-$k=24$ & 1{,}88 & 1{,}48 & 8{,}53 & 5{,}58 & 7{,}04 & 4{,}62 \\
-$k=32$ & 1{,}94 & 1{,}42 & 8{,}92 & 5{,}76 & 7{,}75 & 5{,}13 \\
-\bottomrule
-\end{tabular}
-\end{table}
 
 \paragraph{Długie budżety.} Najlepsze $k$ równe 6 dla $n=500$ mogłoby
 wynikać z limitu 10\,s, bo do tego czasu żaden wariant nie osiąga
-zbieżności. Przebiegi 60\,s (tab.~\ref{tab:long}) pokazują, że przy 20
+zbieżności. Przebiegi 60\,s (ostatnia kolumna tab.~\ref{tab:bestk}) pokazują, że przy 20
 maszynach najlepsze $k$ pozostaje małe. Dla $500\times 20$ przechodzi
 z 6 na 8 między 20\,s a 30\,s, a dla $200\times 20$ wartości $k=6$
 i $k=8$ pozostają w granicach 0,07 pkt proc. od siebie od 10\,s do 60\,s. Dla $200\times 10$ najlepsze $k$ rośnie dalej z budżetem,
@@ -736,7 +681,7 @@ w granicach 0,05 pkt proc. od siebie, a $k=n$ jest o 0,1 pkt proc. gorsze.
 Dla $500\times 20$ w przebiegach 300\,s $k=8$ wyprzedza $k=12$ przy każdym
 budżecie. Długie przebiegi to osobne uruchomienia. Insert kończy tylko 11 iteracji w 10\,s dla
 $500\times 20$, więc rozrzut pomiaru czasu przesuwa jego średnią przy 10\,s
-o 0,1 pkt proc. między tabelami~\ref{tab:main} i~\ref{tab:long}.
+o 0,1 pkt proc. między długimi przebiegami a tab.~\ref{tab:main}.
 
 
 \paragraph{Filtr.} Przy równych budżetach czasu filtr dokładny ze
@@ -774,7 +719,7 @@ złożone wygrywają tam, gdzie Insert jest wolny. Jedna iteracja Inserta
 kosztuje $O(mn^2)$, więc w 10\,s mieści się 111 iteracji dla $n=200$ i 11 dla $n=500$. Dla $n=200$ wynik zależy od $m$. Dla $200\times 10$ Insert
 wygrywa z każdym $k$ od 5\,s i prowadzi jeszcze przy 60\,s. Dla
 $200\times 20$ najlepsze $k$ prowadzi do 30\,s, a przy 60\,s różnica między nimi wynosi 0,05 pkt proc. Dla $500\times 20$ najlepsze $k$ prowadzi o 7,4 pkt proc.
-przy 10\,s (tab.~\ref{tab:long}) i o 2,6 pkt proc. przy 60\,s. W przebiegach 300\,s Insert odrabia
+przy 10\,s i o 2,6 pkt proc. przy 60\,s. W przebiegach 300\,s Insert odrabia
 większość tej różnicy, ale nie dogania: przy 120\,s zostaje 0,9 pkt proc.,
 a przy 300\,s 0,2 pkt proc. ($k=8$ osiąga 2,02, Insert 2,26; $p<0{,}001$
 na parach instancja--ziarno).
@@ -787,7 +732,7 @@ przy 20 maszynach. Po około 690 iteracjach na $500\times 20$ RPD wynosi
 7,6 dla $k=4$, 6,7 dla $k=6$ i 6,4 dla $k=8$, a po 4\,000 iteracji
 długich przebiegów spada z 5,2 dla $k=4$ do 3,3 dla $k=12$. Dłuższy
 zasięg daje więc lepsze ruchy, a krótkie najlepsze $k$ przy budżecie
-czasu odzwierciedla koszt ruchu. Rysunek~\ref{fig:rpditers} pokazuje to samo na przebiegach 60\,s. Przy
+czasu odzwierciedla koszt ruchu. Przebiegi 60\,s pokazują to samo. Przy
 każdej liczbie iteracji większe $k$ prowadzi: po 1\,000 iteracji dla
 $500\times 20$ RPD spada z 7,07 dla $k=4$ do 5,11 dla $k=16$, a dla
 $200\times 10$ z 4,41 do 2,17. Jeden ruch trwa jednak 3,5\,ms przy $k=4$
@@ -796,18 +741,67 @@ $k$ czas ruchu rośnie 27 razy dla $200\times 10$ i 48 razy dla
 $200\times 20$, więc przy większej liczbie maszyn długi zasięg kosztuje
 więcej.
 
+
+\paragraph{Ruchy kwantowe.} Tabela~\ref{tab:quantum} porównuje trzy
+sposoby wyznaczania tego samego ruchu na przebiegach policzonych na
+wszystkich platformach, po 15 na klasę i $k$ (5 na $100\times 10$).
+W ciągu 10\,s procesor bramkowy kończy jeden ruch: ruch trwa około 12\,s
+przy $n=20$ i około 50\,s przy $n=100$. Ten jeden ruch poprawia start
+w 183 ze 190 przebiegów. Wyżarzacz robi średnio od 1,5 do 5,2 ruchu.
+Każde wywołanie zużywa około 29\,ms czasu QPU, ale razem z siecią trwa
+1,5--2\,s, i to ten czas wyznacza liczbę ruchów. Wyżarzacz kończy niżej
+niż procesor bramkowy w 159 ze 190 sparowanych przebiegów
+(rys.~\ref{fig:qtime}). Oba zostają daleko za klasycznym ILS, który
+w tym samym czasie robi $10^4$--$10^5$ ruchów i jest lepszy we
+wszystkich 540 przebiegach wyżarzacza na dwunastu klasach. Tylko 24 z 2\,324 ruchów wyżarzacza nie wybrały
+żadnej zamiany. Przy takim budżecie porównanie mierzy bardziej koszt
+wywołania niż jakość ruchu.
+
+\begin{table}[t]
+\centering
+\caption{Średnie RPD [\%] po 10\,s ILS na przebiegach policzonych na
+wszystkich trzech platformach i średnia liczba ruchów na przebieg.
+Procesor bramkowy robi jeden ruch na przebieg.}
+\label{tab:quantum}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lcrrrrrr@{}}
+\toprule
+ & & \multicolumn{4}{c}{RPD} & \multicolumn{2}{c}{ruchy} \\
+\cmidrule(lr){3-6}\cmidrule(lr){7-8}
+$n\times m$ & $k$ & start & IQM & D-Wave & klas. & D-Wave & klas. \\
+\midrule
+$20\times 5$   & 3 & 28,8 & 22,9 & 19,0 & 3,7  & 5,1 & 141\,449 \\
+               & 4 & 28,8 & 22,4 & 18,7 & 3,5  & 4,9 & 108\,342 \\
+$20\times 10$  & 3 & 37,6 & 30,8 & 26,1 & 9,1  & 4,9 & 71\,748 \\
+               & 4 & 37,6 & 30,2 & 26,8 & 8,7  & 4,9 & 52\,367 \\
+$20\times 20$  & 3 & 47,9 & 43,7 & 40,0 & 23,9 & 4,9 & 37\,269 \\
+               & 4 & 47,9 & 43,7 & 40,3 & 23,4 & 4,7 & 27\,646 \\
+$50\times 5$   & 3 & 14,3 & 12,8 & 10,6 & 1,4  & 4,9 & 69\,338 \\
+               & 4 & 14,3 & 12,7 & 11,5 & 1,1  & 4,3 & 53\,073 \\
+$50\times 10$  & 3 & 28,2 & 25,2 & 22,6 & 6,6  & 4,7 & 35\,342 \\
+               & 4 & 28,2 & 24,4 & 24,3 & 6,1  & 3,9 & 26\,327 \\
+$50\times 20$  & 3 & 41,7 & 36,4 & 35,0 & 16,2 & 4,8 & 18\,524 \\
+               & 4 & 41,7 & 37,0 & 36,0 & 15,7 & 3,7 & 13\,819 \\
+$100\times 10$ & 3 & 23,2 & 22,2 & 19,6 & 4,6  & 4,8 & 19\,318 \\
+               & 4 & 23,2 & 21,4 & 20,4 & 4,1  & 3,0 & 14\,159 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.8\textwidth]{figures/fig_rpd_vs_iters_cp.pdf}
-\caption{Średnie RPD w funkcji numeru iteracji w przebiegach 60\,s
-(ILS, filtr dokładny). Każda krzywa kończy się na najmniejszej liczbie
-iteracji spośród swoich 50 przebiegów.}
-\label{fig:rpditers}
+\includegraphics[width=0.9\textwidth]{figures/fig_quantum_time.pdf}
+\caption{Najlepsze RPD w funkcji czasu, $k=3$, na przebiegach
+policzonych na wszystkich trzech platformach. Pionowa linia oznacza
+budżet 10\,s; liczy się ruch bramkowy rozpoczęty przed nią.}
+\label{fig:qtime}
 \end{figure*}
 
 
 \paragraph{Anatomia ruchu.}
-Rysunek~\ref{fig:addytywnosc} pokazuje błąd addytywności na stanach
+Błąd addytywności mierzymy na stanach
 pobranych z zejść dla instancji z $n\leq 100$, z filtrem dokładnym.
 Liczba maszyn wpływa na niego silniej niż $k$. Dla $m=5$ i $k\leq 8$ ruch
 daje 72--83\% przewidywanego zysku, a prognoza jest optymistyczna
@@ -826,14 +820,6 @@ optymistyczna w co najmniej 99\% stanów. Dla $200\times 20$ rzeczywisty
 zysk ruchu pozostaje między 95 a 99 od $k=4$ do $k=8$, a czas oceny
 rośnie z 1,8 do 4,9\,ms.
 
-\begin{figure*}[t]
-\centering
-\includegraphics[width=0.8\textwidth]{figures/fig_additivity.pdf}
-\caption{Addytywność na pobranych stanach przeszukiwania: część
-przewidywanego zysku, którą daje wybrany ruch (po lewej), i udział stanów
-z optymistyczną prognozą (po prawej).}
-\label{fig:addytywnosc}
-\end{figure*}
 
 \section{Wnioski}
 Zamiana wewnątrz ruchu złożonego dla problemu przepływowego powinna sięgać
@@ -855,8 +841,10 @@ rośnie szybciej niż liniowo względem $k$ i $m$. Przyczyną nie jest błąd
 addytywności, chociaż suma delt pojedynczych zamian obiecuje więcej, niż
 ruch daje, tym bardziej dla 20 maszyn. Małe $k$ utrzymuje też QUBO ruchu
 w postaci pasmowej o szerokości $k-1$, której wymaga kwantowe
-przeszukiwanie sąsiedztwa z~\cite{windowed_own}. \todo{akapit kwantowy
-tylko jeśli policzymy poziomy} Zamiany krzyżujące się zostawiamy na
+przeszukiwanie sąsiedztwa z~\cite{windowed_own}. Ruch z $k\leq 4$ osadza się na wyżarzaczu aż do
+$n=500$, ale budżet 10\,s mieści jeden ruch bramkowy albo kilka wywołań
+wyżarzacza, więc na obu platformach przeszukiwanie zostaje daleko za
+klasycznym. Zamiany krzyżujące się zostawiamy na
 osobne studium.
 
 \ifanon\else

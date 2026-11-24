@@ -698,7 +698,12 @@ Under additive selection the swaps of a compound move should not
 cross, and in this protocol they should not even nest. Quality falls
 along the axis from Dynasearch to the involutions in every Taillard
 class, and the larger neighborhoods predict more gain and deliver less.
-The cause is the interaction of many overlapping swaps. Cut to two
+The cause is the interaction of many overlapping swaps. The number of
+crossings matters as well: quality falls steadily as more of the
+involution move's crossings are admitted, and a greedy repair to zero
+crossings beats the exact noncrossing optimum, because exact selection
+under the additive model picks the swaps on which the model is most
+wrong. Cut to two
 swaps per move, all families perform alike, and with a measured model of
 pair interactions, solved exactly as a QUBO, crossing moves reach the
 level of Dynasearch. A single check of the real makespan has the same

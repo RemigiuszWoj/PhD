@@ -13,6 +13,7 @@
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{xcolor}
+\usepackage{graphicx}
 \usepackage{tikz}
 \usepackage[hidelinks]{hyperref}
 
@@ -546,6 +547,42 @@ single check of Section~\ref{sec:safe} in any class. Third, a tighter cap
 on the candidates (1000 pairs, 100 in the core) makes each move cheaper
 and improves $\N_0$ and the involutions at $n\geq100$ by up to $2.5$
 points, but they stay far behind Dynasearch.
+
+\paragraph{Crossing scale.} We also bound the number of crossings and
+not only their presence. For a share $F\in\{10,20,\dots,90\}\,\%$ we take
+the involution move with cr crossing pairs, allow
+$c=\lfloor F\cdot\mathrm{cr}/100\rfloor$ of them, and repair the move
+greedily: we drop the swap with the most crossings until at most $c$
+remain, and then refill free positions with the most improving swaps
+that keep the bound. The repair is a heuristic. Against an exact MILP on
+the 60 most improving swaps it loses a median 3--8\,\% of the predicted
+gain. Figure~\ref{fig:cf} shows the ILS results against $\N_0$ ($F=0$)
+and the involutions ($F=100$). Quality falls steadily as $F$ grows. From
+$F=50$ the repaired moves are worse than $\N_0$ in at least five of the
+11 classes after Holm correction, and from $F=80$ in all of them, while
+every share remains better than the unbounded involutions in at least
+five classes. At $n=20$ the curve stays flat up to $F=90$, because a
+move there has only a few crossings. At $n\geq100$ the shares $F=10$ and $20\,\%$ are about two points better
+than $\N_0$, but the gain does not come from the crossings. The same
+greedy repair run down to zero crossings is better than $\N_0$ by
+2.4--3.9 points in all five classes with $n\geq100$ after Holm
+correction, and better than $F=10\,\%$ in three of them. The exact $\N_0$
+move has the largest predicted gain and a poor real one: at $n=100$ it
+predicts a mean change of $-1547$ and delivers $-72$, while the repaired
+move predicts $-1059$ and delivers $-203$. Optimizing the additive model
+exactly picks the swaps on which the model is most wrong. The repaired
+move still stays behind Dynasearch, and at $n=200$ a run makes only
+6--13 moves.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.55\textwidth]{figures/cf_scale.pdf}
+\caption{RPD difference to $\N_0$ against the allowed share $F$ of the
+involution move's crossings, mean over the classes of each $n$. $F=0$ is
+$\N_0$ and $F=100$ the involutions; open markers: the repair run down
+to zero crossings.}
+\label{fig:cf}
+\end{figure}
 
 \paragraph{Context.} Our ILS is a reference point and not a competitive
 flow shop solver. Started from NEH~\cite{nawaz1983} instead of the

@@ -79,6 +79,27 @@ Wszystko eksploracyjne; RPD do LB po 10 s, bloki = instancje, Holm w obrębie po
 - **anatomy_v4 (60 najlepszych kandydatów, MILP dla c = 2):** budżet dwóch krzyżowań osiąga optimum inwolucji w ≤ 40% stanów przy
   n = 20, ≤ 11% przy n = 100 i nigdy przy n = 200.
 
+## Etap v5: skala krzyżowań (23–24.11.2026, `tables/summary_v5.txt`, `scripts/analyze_crossing_v5.py`)
+
+Selektor `cross_inv_cf<F>`: ruch inwolucji naprawiany zachłannie do najwyżej F% jego krzyżowań. ILS 10 s,
+11 klas (bez 500×20), F = 10…90, 4950 biegów; F = 0 to dokładne N₀ (c0), F = 100 to inwolucja (oba z `main`).
+Figura `figures/cf_scale.pdf` (`scripts/fig_crossing_cf.py`).
+
+- RPD rośnie płynnie z F. Względem c0 (Holm, 11 klas): cf10 i cf20 lepsze w 2 klasach (n ≥ 100), cf30–40
+  gorsze w 1, cf50–60 gorsze w 5–6, cf70 w 10, cf80–90 w 11. Każde cf lepsze od inwolucji (cf10–60 w 11/11,
+  cf90 w 5/11). Przy n = 20 krzywa płaska aż do F = 90.
+- Anatomia (`anatomy_cf`, 110 instancji): MILP (HiGHS, top 60) optymalny we wszystkich 22 792 problemach;
+  naprawa traci do MILP w medianie 3,3% (n = 20) i 7–8% (n ≥ 50) przewidywanego zysku inwolucji.
+- Rzeczywista zmiana Cmax ruchu (średnia) pogarsza się monotonicznie z F, np. n = 100: −203 (F = 0, naprawa),
+  −208 (10), −46 (50), +127 (100). **Naprawiony ruch z F = 0 jest dużo lepszy od dokładnego c0** (n = 100:
+  −203 vs −72, n = 200: −361 vs −153), więc przewaga cf10 nad c0 może pochodzić z samej naprawy, nie z krzyżowań.
+  Kontrola: etap `cf0` (naprawa do zera krzyżowań, n ≥ 100, 250 biegów, 24.11).
+- **Kontrola cf0 (24.11, 250 biegów, skończona 12:52):** naprawa do zera krzyżowań lepsza od c0 we wszystkich
+  5 klasach n ≥ 100 (o 2,4–3,9 pp, Holm), lepsza od cf10 w 3/5 i od cf20 w 3/5. Krzyżowania nie pomagają;
+  przewaga cf10 nad c0 pochodziła z naprawy. Dokładne N₀ optymalizuje addytywny model tam, gdzie myli się
+  najbardziej. cf0 nadal wyraźnie gorsze od Dynasearcha (np. 100×10: 8,32 vs 2,46).
+- Zastrzeżenie: przy n = 200 tylko 6–13 ruchów w 10 s i wiąże cap TOP_K.
+
 ## Czego jeszcze nie ma
 
 - Wiersze starego Motzkina i Dynasearcha: stare kampanie (`results/experiments/2026070*`) szły innym protokołem

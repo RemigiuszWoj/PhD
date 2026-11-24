@@ -75,6 +75,7 @@ STAGES = {
                       "cross_c0_lim1000x100", "cross_inv_lim1000x100"]},
     # plan v5: crossing scale, at most F% of the involution move's crossings (F = 0 / 100 are c0 / inv of "main")
     "cf": {"files": [f for f in TAILLARD if f != "tai500_20"], "modes": [f"cross_inv_cf{f}" for f in range(10, 100, 10)]},
+    "cf0": {"files": ["tai100_5", "tai100_10", "tai100_20", "tai200_10", "tai200_20"], "modes": ["cross_inv_cf0"]},  # control: repair to 0 crossings vs exact c0
 }
 ORDER_V5 = ["anatomy_cf", "cf"]
 ORDER_V4 = ["anatomy_v4", "card", "top", "context", "qubo", "lim"]

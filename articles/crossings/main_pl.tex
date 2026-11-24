@@ -8,6 +8,7 @@
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{xcolor}
+\usepackage{graphicx}
 \usepackage{tikz}
 \usepackage[hidelinks]{hyperref}
 
@@ -550,6 +551,41 @@ klasie. Po trzecie, ciaśniejsze ograniczenie kandydatów (1000 par, 100
 w rdzeniu) czyni każdy ruch tańszym i poprawia $\N_0$ oraz inwolucje dla
 $n\geq100$ o nawet $2{,}5$ punktu, ale pozostają one daleko za
 Dynasearchem.
+
+\paragraph{Skala krzyżowań.} Ograniczamy też liczbę krzyżowań, a nie
+tylko ich obecność. Dla udziału $F\in\{10,20,\dots,90\}\,\%$ bierzemy ruch
+inwolucji z cr parami krzyżującymi się, dopuszczamy
+$c=\lfloor F\cdot\mathrm{cr}/100\rfloor$ z nich i naprawiamy ruch
+zachłannie: usuwamy zamianę o największej liczbie krzyżowań, aż zostanie
+najwyżej $c$, a potem wolne pozycje uzupełniamy najbardziej
+poprawiającymi zamianami, które mieszczą się w limicie. Naprawa jest
+heurystyką. W porównaniu z dokładnym MILP na 60 najlepszych zamianach
+traci w medianie 3--8\,\% przewidywanego zysku. Rysunek~\ref{fig:cf}
+pokazuje wyniki ILS na tle $\N_0$ ($F=0$) i inwolucji ($F=100$). Jakość
+spada równomiernie wraz z $F$. Od $F=50$ naprawione ruchy są gorsze od
+$\N_0$ w co najmniej pięciu z 11 klas po korekcie Holma, a od $F=80$ we
+wszystkich, przy czym każdy udział pozostaje lepszy od nieograniczonych
+inwolucji w co najmniej pięciu klasach. Przy $n=20$ krzywa jest płaska aż
+do $F=90$, bo ruch ma tam tylko kilka krzyżowań. Przy $n\geq100$ udziały $F=10$ i $20\,\%$ są o około dwa punkty lepsze
+od $\N_0$, ale zysk nie pochodzi z krzyżowań. Ta sama zachłanna naprawa
+doprowadzona do zera krzyżowań jest lepsza od $\N_0$ o 2,4--3,9 punktu
+we wszystkich pięciu klasach z $n\geq100$ po korekcie Holma, a od
+$F=10\,\%$ w trzech z nich. Dokładny ruch $\N_0$ ma największy
+przewidywany zysk i słaby rzeczywisty: przy $n=100$ przewiduje średnią
+zmianę $-1547$, a daje $-72$, podczas gdy naprawiony ruch przewiduje
+$-1059$ i daje $-203$. Dokładna optymalizacja modelu addytywnego wybiera
+zamiany, przy których model myli się najbardziej. Naprawiony ruch nadal
+ustępuje Dynasearchowi, a przy $n=200$ bieg wykonuje tylko 6--13 ruchów.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.55\textwidth]{figures/cf_scale.pdf}
+\caption{Różnica RPD względem $\N_0$ w zależności od dopuszczonego udziału
+$F$ krzyżowań ruchu inwolucji, średnia po klasach danego $n$. $F=0$ to
+$\N_0$, a $F=100$ to inwolucje; puste znaczniki: naprawa doprowadzona do
+zera krzyżowań.}
+\label{fig:cf}
+\end{figure}
 
 \paragraph{Kontekst.} Nasze ILS jest punktem odniesienia, a nie
 konkurencyjnym solwerem problemu przepływowego. Uruchomione z NEH~\cite{nawaz1983}

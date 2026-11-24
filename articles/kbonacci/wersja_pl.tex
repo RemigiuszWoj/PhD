@@ -66,20 +66,20 @@ z przeszukiwaniem klasycznym.
 
 \section{Wstęp}
 Permutacyjny problem przepływowy z kryterium $C_{\max}$,
-$F|prmu|C_{\max}$, jest NP-trudny dla $m\geq 3$ maszyn~\cite{garey1976}. Jest też standardowym poligonem dla przeszukiwania lokalnego~\cite{taillard1993,ruiz2007}.
+$F|prmu|C_{\max}$, jest NP-trudny dla $m\geq 3$ maszyn~\cite{garey1976}. Jest też standardowym poligonem dla przeszukiwania lokalnego~\cite{taillard1993,ruizmaroto2005,ruiz2007,wodecki2002parallel}.
 O jakości przeszukiwania lokalnego decydują przede wszystkim dwie rzeczy:
 struktura ruchu oraz własności blokowe ścieżki krytycznej, które pozwalają
 ten ruch przycinać~\cite{nowicki1996,grabowski2004}.
 
 Dynasearch~\cite{congram2002} pokazał, że wykładniczo duże sąsiedztwo
 \emph{niezależnych} zamian można przeszukać dokładnie metodą programowania
-dynamicznego. Ruch złożony staje się dzięki temu jednostką przeszukiwania, co jest ideą przeszukiwania sąsiedztw bardzo dużej skali (VLSN)~\cite{ahuja2002}. Dla PFSP znane są też dwa inne sąsiedztwa złożone, których rozmiary zliczają klasyczne ciągi całkowitoliczbowe: sąsiedztwo Fibonacciego, złożone z rozłącznych zamian sąsiednich~\cite{fibonacci_own,bozejko2026sr}, oraz sąsiedztwo Motzkina, złożone z niekrzyżujących się, być może zagnieżdżonych zamian~\cite{motzkin_own}. Te sąsiedztwa różnią się
+dynamicznego. Ruch złożony staje się dzięki temu jednostką przeszukiwania, co jest ideą przeszukiwania sąsiedztw bardzo dużej skali (VLSN)~\cite{ahuja2002survey}. Dla PFSP znane są też dwa inne sąsiedztwa złożone, których rozmiary zliczają klasyczne ciągi całkowitoliczbowe: sąsiedztwo Fibonacciego, złożone z rozłącznych zamian sąsiednich~\cite{wojewodzki2026icaisc,bozejko2026new}, oraz sąsiedztwo Motzkina, złożone z niekrzyżujących się, być może zagnieżdżonych zamian~\cite{wojewodzki2026soco}. Te sąsiedztwa różnią się
 o rzędy wielkości rozmiarem i kosztem, a mimo to porównywano je dotąd
 wyłącznie jako odosobnione punkty. Praca wypełnia przestrzeń między
 Fibonaccim a Dynasearch jednoparametrową rodziną i pyta: \emph{jak daleko
 powinna sięgać zamiana?} Metaheurystyki, ich parametry i protokół
 eksperymentu celowo pozostawiamy takie jak w poprzednich
-pracach~\cite{fibonacci_own,motzkin_own,windowed_own}. Jedynym czynnikiem
+pracach~\cite{wojewodzki2026icaisc,wojewodzki2026soco,wojewodzki2026windowed}. Jedynym czynnikiem
 eksperymentalnym jest sąsiedztwo, więc każdą nową liczbę można zestawić
 z wynikami już opublikowanymi.
 
@@ -112,17 +112,13 @@ z ruchem klasycznym przy tym samym budżecie czasu.
 \paragraph{Ruchy złożone.} Dynasearch wprowadzono dla jednomaszynowego problemu sumy ważonych spóźnień~\cite{congram2002}.
 Ergun i Orlin~\cite{ergun2006} przyspieszyli przeszukiwanie do $O(n^2)$,
 a Grosso i in.~\cite{grosso2004} dodali wstawienia. Bożejko i Wodecki przeanalizowali multiruchy zamian dla PFSP~\cite{bozejko2007}. W jednomaszynowym problemie sumy ważonych spóźnień zmiany kosztu niezależnych zamian się sumują, co czyni DP dokładnym. W PFSP tak nie jest (rozdz.~\ref{sec:addytywnosc}).
-\paragraph{Sąsiedztwa zliczane ciągami.} Sąsiedztwo Fibonacciego~\cite{fibonacci_own}, jego postać QUBO na wyżarzaczu kwantowym~\cite{bozejko2026sr} i sąsiedztwo Motzkina~\cite{motzkin_own} mają rozmiary zliczane klasycznymi ciągami całkowitoliczbowymi. \todo{sprawdzić, czy Sci Rep 2026 i IFAC 2025 nie zawierają już tej hierarchii}
+\paragraph{Sąsiedztwa zliczane ciągami.} Sąsiedztwo Fibonacciego~\cite{wojewodzki2026icaisc}, jego postać QUBO na wyżarzaczu kwantowym~\cite{bozejko2026new} i sąsiedztwo Motzkina~\cite{wojewodzki2026soco} mają rozmiary zliczane klasycznymi ciągami całkowitoliczbowymi~\cite{aigner1998}. Wyżarzanie kwantowe stosowano do szeregowania gniazdowego~\cite{venturelli2015}, jednomaszynowego~\cite{bozejko2022distributed,bozejko2025noncrossing} i przepływowego~\cite{bozejko2026huge,bozejko2024cinti}.
 \paragraph{Ruchy o ograniczonym zasięgu.} Ograniczanie zasięgu ruchu to znane narzędzie w problemach trasowania: Or-opt i sąsiedztwa
 granularne~\cite{toth2003}. Balzereit i in.~\cite{balzereit2024} badają
 przeszukiwanie lokalne z ograniczonym promieniem dla szeregowania na
 jednej maszynie z rodzinami przezbrojeń i analizują jego złożoność
 parametryzowaną promieniem. My badamy ten sam rodzaj kompromisu między
 promieniem a czasem dla sąsiedztwa złożonego w problemie przepływowym.
-\todo{sąsiedztwa zamian o ograniczonej odległości dla jednomaszynowego
-problemu ważonych spóźnień na wyżarzaczu kwantowym bada równolegle grupa
-promotora (praca nieopublikowana); uzgodnić cytowanie i podział przed
-zgłoszeniem}
 
 \section{Problem i notacja}\label{sec:problem}
 Mamy $n$ zadań wykonywanych na maszynach $1,\dots,m$ w tej samej kolejności $\pi=(\pi(1),\dots,\pi(n))$. Symbol $p_{r,j}$ oznacza czas przetwarzania zadania $j$ na maszynie $r$. Czasy zakończenia spełniają $C_{r,t}=\max(C_{r-1,t},C_{r,t-1})+p_{r,\pi(t)}$, a $C_{\max}(\pi)=C_{m,n}$, przy $C_{0,t}=C_{r,0}=0$. Macierze Head i Tail, $H$ i $T$ (najdłuższe ścieżki w przód i w tył), pozwalają ocenić makespan po dowolnej modyfikacji odcinka $[i,j]$, przeliczając tylko ten odcinek, $C_{\max}=\max_r\bigl(H'_{r,j}+T_{r,j+1}\bigr)$, w czasie $O(m(j-i+1))$.
@@ -192,7 +188,7 @@ ograniczeniem i samo pasmo jej nie wymusza: $3$-cykl $\sigma=(2,3,1)$
 mieści się w paśmie dla $k=3$, ale nie jest inwolucją. Symetria też nie wystarcza: $\sigma=(3,4,1,2)$
 jest inwolucją mieszczącą się w paśmie dla $k=3$, ale jej dwie zamiany
 się krzyżują. Sąsiedztwo
-Motzkina~\cite{motzkin_own} osłabia strukturę blokową inaczej: dopuszcza zamianę wewnątrz przedziału innej zamiany (blok przerywany na rys.~\ref{fig:plansze}), o ile żadne dwa przedziały się
+Motzkina~\cite{wojewodzki2026soco} osłabia strukturę blokową inaczej: dopuszcza zamianę wewnątrz przedziału innej zamiany (blok przerywany na rys.~\ref{fig:plansze}), o ile żadne dwa przedziały się
 nie krzyżują.
 
 \begin{figure*}[t]
@@ -245,8 +241,6 @@ prac daje to łańcuch
 gdzie $\mathcal I_n$ to zbiór wszystkich inwolucji
 (rys.~\ref{fig:lancuch}); ostatnie dwa zawierania są ostre dla $n\geq 4$. Pierwsza część łańcucha poszerza pasmo, krok do
 Motzkina dopuszcza zagnieżdżone bloki, a ostatni krok dopuszcza zamiany krzyżujące się. Dla $n=10$ rozmiary wynoszą $89$, $274$, $401$, $492$ i $512$ dla $k=2,3,4,6,n$, następnie $2188$ dla Motzkina i $9496$ dla wszystkich inwolucji.
-\todo{sprawdzić, czy \cite{bozejko2026sr} albo praca IFAC 2025 podają już
-ten łańcuch; Fibonacci i Motzkin to wspólna praca z promotorem}
 
 \begin{figure*}[t]
 \centering
@@ -339,7 +333,7 @@ czyli najlepsza pojedyncza zamiana (niżej), jest wybierany spośród
 pozostałych kandydatów, więc gdy nie istnieje ruch poprawiający, przeszukiwanie z filtrem i bez
 niego może wybrać różne ruchy.
 
-Wcześniejsze prace~\cite{windowed_own} używają prostszego testu, który
+Wcześniejsze prace~\cite{wojewodzki2026windowed} używają prostszego testu, który
 uznaje pozycję za granicę, gdy ostatnia maszyna zaczyna zadanie zaraz po
 tym, jak poprzednia je skończy, i zostawia zamianę tylko wtedy, gdy
 granica leży w $[i,j]$. Ten test jest heurystyką: na optimach lokalnych
@@ -454,12 +448,12 @@ błąd rośnie z liczbą maszyn, na których ścieżki mogą przekroczyć granic
 czyli z $m$.
 
 \section{Protokół eksperymentu}
-Zachowujemy protokół wcześniejszych prac~\cite{windowed_own}
+Zachowujemy protokół wcześniejszych prac~\cite{wojewodzki2026windowed}
 i zmieniamy sąsiedztwo.
 \begin{itemize}
 \item \textbf{Instancje:} 120 instancji Taillarda~\cite{taillard1993} (12 klas,
       $n\in\{20,50,100,200,500\}$, $m\in\{5,10,20\}$), zweryfikowanych generatorem Taillarda.
-\item \textbf{Metaheurystyki} (bez zmian): ILS z listą tabu (kadencja 10)
+\item \textbf{Metaheurystyki} (bez zmian): ILS~\cite{lourenco2003} z listą tabu~\cite{glover1997} (kadencja 10)
       i pulą 10 najlepszych rozwiązań z zaburzeniem double-bridge, start z permutacji identycznościowej.
 \item \textbf{Budżety:} $\{0{,}1;\,0{,}5;\,1;\,2;\,5;\,10\}$\,s,
       5 ziaren (0--4). Klasy $200\times 10$, $200\times 20$ i $500\times 20$
@@ -474,7 +468,7 @@ i zmieniamy sąsiedztwo.
       akceleracja Taillarda), liczony w tej samej kampanii, oraz Adjacent,
       Fibonacci, Dynasearch i Motzkin z wcześniejszej kampanii na tej samej
       maszynie.
-\item \textbf{Miara:} RPD do dolnego ograniczenia Taillarda i dwustronny test znaków rangowanych Wilcoxona, $\alpha=0{,}05$, jak wcześniej. Dodatkowo: korekta Holma,
+\item \textbf{Miara:} RPD do dolnego ograniczenia Taillarda i dwustronny test znaków rangowanych Wilcoxona~\cite{wilcoxon1945}, $\alpha=0{,}05$, jak wcześniej. Dodatkowo: korekta Holma~\cite{holm1979},
       test Friedmana z różnicą krytyczną Nemenyi oraz RPD do górnych ograniczeń
       Taillarda z 1993 roku.
 \item \textbf{Sprzęt:} obliczenia klasyczne na Apple M4 Pro, przebiegi
@@ -484,7 +478,7 @@ i zmieniamy sąsiedztwo.
       makespanu, przeszukiwanie rusza dalej z zaburzenia double-bridge
       rozwiązania z puli. Obliczenia kwantowe na wyżarzaczu D-Wave
       Advantage\_system6 (topologia Pegasus, 5\,760 kubitów; chmura Leap,
-      \texttt{EmbeddingComposite}) oraz na procesorze bramkowym IQM
+      \texttt{EmbeddingComposite}~\cite{choi2008minor}) oraz na procesorze bramkowym IQM
       Sirius (16 kubitów, topologia gwiazdy) przez IQM Resonance.
 \end{itemize}
 \paragraph{Jeden przebieg na rodzinę budżetów.} ILS używa limitu czasu wyłącznie jako warunku stopu; kadencja tabu i pula elitarna zależą od liczby iteracji. Przebieg z budżetem $t$ jest więc prefiksem przebiegu 10\,s z tym samym ziarnem. Każdą konfigurację
@@ -515,11 +509,11 @@ sparowane. Zapisujemy przewidywaną i rzeczywistą zmianę makespanu,
 odległości wybranych zamian, liczbę kandydatów i czas oceny.
 Dla $n=200$ ten sam eksperyment obejmuje $k\leq 16$ i daje 194 stany.
 
-\paragraph{Protokół kwantowy.} Obliczenia kwantowe przebiegają jak we wcześniejszych pracach~\cite{windowed_own}, zmienia się tylko sąsiedztwo. Na wyżarzaczu ruch $k$-bonacci to QUBO
-nakładania przedziałów o długości co najwyżej $k$ (ograniczenie działa
+\paragraph{Protokół kwantowy.} Obliczenia kwantowe przebiegają jak we wcześniejszych pracach~\cite{wojewodzki2026windowed}, zmienia się tylko sąsiedztwo. Na wyżarzaczu ruch $k$-bonacci to QUBO
+nakładania przedziałów~\cite{lucas2014ising,kadowaki1998} o długości co najwyżej $k$ (ograniczenie działa
 także na QPU), 100 odczytów na wywołanie, w tym samym ILS
 z $t_{\max}=10$\,s. Na procesorze bramkowym (IQM Sirius, 16 kubitów) ruch
-wyznacza QAOA o stałych kątach ($p=1$, 4096 pomiarów) na oknach po 6
+wyznacza QAOA o stałych kątach~\cite{farhi2014qaoa,wojewodzki2026gcmm} ($p=1$, 4096 pomiarów) na oknach po 6
 pozycji z nakładaniem 50\%, a wszystkie okna ruchu wysyłamy jako jedno
 zadanie. Żadna z platform nie ma klasycznego zastępstwa: ruch, którego
 QPU nie zwróci, kończy przebieg błędem. Wszystkie wyniki kwantowe
@@ -750,8 +744,7 @@ przy $n=20$ i około 50\,s przy $n=100$. Ten jeden ruch poprawia start
 w 183 ze 190 przebiegów. Wyżarzacz robi średnio od 1,5 do 5,2 ruchu.
 Każde wywołanie zużywa około 29\,ms czasu QPU, ale razem z siecią trwa
 1,5--2\,s, i to ten czas wyznacza liczbę ruchów. Wyżarzacz kończy niżej
-niż procesor bramkowy w 159 ze 190 sparowanych przebiegów
-(rys.~\ref{fig:qtime}). Oba zostają daleko za klasycznym ILS, który
+niż procesor bramkowy w 159 ze 190 sparowanych przebiegów. Oba zostają daleko za klasycznym ILS, który
 w tym samym czasie robi $10^4$--$10^5$ ruchów i jest lepszy we
 wszystkich 540 przebiegach wyżarzacza na dwunastu klasach. Tylko 24 z 2\,324 ruchów wyżarzacza nie wybrały
 żadnej zamiany. Przy takim budżecie porównanie mierzy bardziej koszt
@@ -790,14 +783,6 @@ $100\times 10$ & 3 & 23,2 & 22,2 & 19,6 & 4,6  & 4,8 & 19\,318 \\
 \end{table}
 
 
-\begin{figure*}[t]
-\centering
-\includegraphics[width=0.9\textwidth]{figures/fig_quantum_time.pdf}
-\caption{Najlepsze RPD w funkcji czasu, $k=3$, na przebiegach
-policzonych na wszystkich trzech platformach. Pionowa linia oznacza
-budżet 10\,s; liczy się ruch bramkowy rozpoczęty przed nią.}
-\label{fig:qtime}
-\end{figure*}
 
 
 \paragraph{Anatomia ruchu.}
@@ -813,12 +798,6 @@ przez 64 przy $k=8$ do 134 przy $k=n$. Jedna ocena trwa jednak 0,3\,ms
 przy $k=2$, 1,2\,ms przy $k=8$ i 105\,ms przy $k=n$, więc zysk na
 milisekundę spada z około 145 dla $k\leq 3$ do około 1 dla $k=n$. Zamiany
 wybierane przy $k=n$ są zwykle krótkie (mediana odległości 3--11 dla $m\geq 10$), ale rozkład ma długi ogon.
-Dla $n=200$ obraz jest taki sam. Dla $200\times 10$ średni rzeczywisty
-zysk stanowi 65\% średniego przewidywanego zysku przy $k=2$ i 48\% przy
-$k=8$. Dla $200\times 20$ jest to 48\% i 27\%, a prognoza jest
-optymistyczna w co najmniej 99\% stanów. Dla $200\times 20$ rzeczywisty
-zysk ruchu pozostaje między 95 a 99 od $k=4$ do $k=8$, a czas oceny
-rośnie z 1,8 do 4,9\,ms.
 
 
 \section{Wnioski}
@@ -834,17 +813,10 @@ krytycznej poprawia każde $k\leq 16$ przy każdym rozmiarze instancji.
 Insert jest lepszy dla 7 z 11 klas do 200 zadań przy 10\,s. Zamiany
 złożone prowadzą dla $500\times 20$ przy każdym budżecie do 300\,s, przy
 czym przewaga maleje tam do 0,2 pkt proc., oraz dla pozostałych dużych
-klas przy krótkich budżetach, gdy jedna iteracja Inserta jest zbyt droga. Dodatkowe porównanie przy równej liczbie iteracji pokazuje,
-skąd bierze się ograniczenie $k$. Dłuższy zasięg jest wtedy lepszy
-w każdej klasie, więc przy budżecie czasu ogranicza go koszt ruchu, który
-rośnie szybciej niż liniowo względem $k$ i $m$. Przyczyną nie jest błąd
-addytywności, chociaż suma delt pojedynczych zamian obiecuje więcej, niż
-ruch daje, tym bardziej dla 20 maszyn. Małe $k$ utrzymuje też QUBO ruchu
+klas przy krótkich budżetach, gdy jedna iteracja Inserta jest zbyt droga. Przy równej liczbie iteracji dłuższy zasięg jest lepszy w każdej klasie, więc ograniczenie $k$ wynika z kosztu ruchu, który rośnie szybciej niż liniowo względem $k$ i $m$, a nie z błędu addytywności. Małe $k$ utrzymuje też QUBO ruchu
 w postaci pasmowej o szerokości $k-1$, której wymaga kwantowe
-przeszukiwanie sąsiedztwa z~\cite{windowed_own}. Ruch z $k\leq 4$ osadza się na wyżarzaczu aż do
-$n=500$, ale budżet 10\,s mieści jeden ruch bramkowy albo kilka wywołań
-wyżarzacza, więc na obu platformach przeszukiwanie zostaje daleko za
-klasycznym. Zamiany krzyżujące się zostawiamy na
+przeszukiwanie sąsiedztwa z~\cite{wojewodzki2026windowed}. Ruch z $k\leq 4$ osadza się na wyżarzaczu aż do
+$n=500$, ale 10\,s mieści jeden ruch bramkowy albo kilka wywołań wyżarzacza, więc obie platformy zostają daleko za przeszukiwaniem klasycznym. Zamiany krzyżujące się zostawiamy na
 osobne studium.
 
 \ifanon\else
@@ -854,63 +826,5 @@ za udostępnienie infrastruktury obliczeniowej, a Katedrze Automatyki
 i Obliczeń Kwantowych Politechniki Wrocławskiej za wsparcie.
 \fi
 
-\begin{thebibliography}{99}\small
-\bibitem{ahuja2002} R.K.~Ahuja, \"O.~Ergun, J.B.~Orlin, A.P.~Punnen.
-A survey of very large-scale neighborhood search techniques.
-\emph{Discrete Appl.\ Math.} 123:75--102, 2002.
-\bibitem{balzereit2024} K.~Balzereit, N.~Gr\"uttemeier, N.~Morawietz,
-D.~Reinhardt, S.~Windmann, P.~Wolf. Scalable neighborhood local search
-for single-machine scheduling with family setup times. arXiv:2409.00771,
-2024.
-\bibitem{bozejko2007} W.~Bo\.zejko, M.~Wodecki. On the theoretical
-properties of swap multimoves. \emph{Oper.\ Res.\ Lett.} 35(2):227--231, 2007.
-\bibitem{bozejko2026sr} W.~Bo\.zejko, M.~Uchro\'nski, M.~Wodecki. The new
-exponential Fibonacci neighborhood as QUBO generated on a D-Wave quantum
-computing environment for the permutational scheduling problem.
-\emph{Sci.\ Rep.}, 2026.
-\bibitem{congram2002} R.K.~Congram, C.N.~Potts, S.L.~van de Velde. An
-iterated dynasearch algorithm for the single-machine total weighted
-tardiness scheduling problem. \emph{INFORMS J.\ Comput.} 14(1):52--67, 2002.
-\bibitem{ergun2006} \"O.~Ergun, J.B.~Orlin. Fast neighborhood search for
-the single machine total weighted tardiness problem. \emph{Oper.\ Res.\
-Lett.} 34(1):41--45, 2006.
-\bibitem{feller1968} W.~Feller. \emph{An Introduction to Probability Theory and Its
-Applications}, Vol.~I, 3rd ed. Wiley, New York, 1968.
-\bibitem{fibonacci_own} R.~Wojew\'odzki, W.~Bo\.zejko. Hybrid neighborhood evaluation in tabu
-search and simulated annealing for the permutation flow shop problem. In:
-\emph{Artificial Intelligence and Soft Computing -- ICAISC 2026, Part II},
-LNAI 16858. Springer, 2026. In press.
-\bibitem{garey1976} M.R.~Garey, D.S.~Johnson, R.~Sethi. The complexity of
-flowshop and jobshop scheduling. \emph{Math.\ Oper.\ Res.} 1(2):117--129, 1976.
-\bibitem{gordon1986} L.~Gordon, M.F.~Schilling, M.S.~Waterman. An extreme value theory
-for long head runs. \emph{Probab.\ Theory Related Fields} 72(2):279--287, 1986.
-\bibitem{grabowski2004} J.~Grabowski, M.~Wodecki. A very fast tabu search
-algorithm for the permutation flow shop problem with makespan criterion.
-\emph{Comput.\ Oper.\ Res.} 31(11):1891--1909, 2004.
-\bibitem{grosso2004} A.~Grosso, F.~Della Croce, R.~Tadei. An enhanced
-dynasearch neighborhood for the single-machine total weighted tardiness
-scheduling problem. \emph{Oper.\ Res.\ Lett.} 32(1):68--72, 2004.
-\bibitem{miles1960} E.P.~Miles~Jr. Generalized Fibonacci numbers and
-associated matrices. \emph{Amer.\ Math.\ Monthly} 67(8):745--752, 1960.
-\bibitem{motzkin_own} R.~Wojew\'odzki, W.~Bo\.zejko. Motzkin neighborhood evaluation in
-iterated local search and simulated annealing for the permutational flow
-shop problem. In: \emph{Soft Computing Models in Industrial and
-Environmental Applications}, CCIS 3046, pp.~144--155. Springer, 2026.
-\bibitem{nowicki1996} E.~Nowicki, C.~Smutnicki. A fast tabu search
-algorithm for the permutation flow-shop problem. \emph{Eur.\ J.\ Oper.\ Res.}
-91(1):160--175, 1996.
-\bibitem{ruiz2007} R.~Ruiz, T.~St\"utzle. A simple and effective iterated
-greedy algorithm for the permutation flowshop scheduling problem.
-\emph{Eur.\ J.\ Oper.\ Res.} 177(3):2033--2049, 2007.
-\bibitem{schilling1990} M.F.~Schilling. The longest run of heads.
-\emph{College Math.\ J.} 21(3):196--207, 1990.
-\bibitem{taillard1993} E.~Taillard. Benchmarks for basic scheduling
-problems. \emph{Eur.\ J.\ Oper.\ Res.} 64(2):278--285, 1993.
-\bibitem{toth2003} P.~Toth, D.~Vigo. The granular tabu search and its
-application to the vehicle-routing problem. \emph{INFORMS J.\ Comput.}
-15(4):333--346, 2003.
-\bibitem{windowed_own} R.~Wojew\'odzki, W.~Bo\.zejko. Scalable quantum neighborhood search
-for the permutation flow shop problem via windowed QUBO decomposition.
-SSRN preprint, doi:10.2139/ssrn.7411334, 2026.
-\end{thebibliography}
+\bibliography{references}
 \end{document}

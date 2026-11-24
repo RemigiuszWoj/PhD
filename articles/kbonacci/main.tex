@@ -71,7 +71,7 @@ both with the classical search.
 The permutation flow shop scheduling problem (PFSP) with makespan
 criterion, $F|prmu|C_{\max}$, is NP-hard for $m\geq 3$
 machines~\cite{garey1976}. It remains a standard testbed for local
-search~\cite{taillard1993,ruiz2007}. Two design decisions dominate the
+search~\cite{taillard1993,ruizmaroto2005,ruiz2007,wodecki2002parallel}. Two design decisions dominate the
 performance of a local search for the PFSP: the move structure, and the
 critical-path (block) properties that prune it~\cite{nowicki1996,grabowski2004}.
 
@@ -79,18 +79,18 @@ Dynasearch~\cite{congram2002} showed that an exponentially large
 neighborhood of \emph{independent} pairwise interchanges can be searched
 exactly by dynamic programming. This turns a compound move into the unit
 of search, an idea within very large-scale neighborhood search
-(VLSN)~\cite{ahuja2002}. Two further compound neighborhoods for the PFSP
+(VLSN)~\cite{ahuja2002survey}. Two further compound neighborhoods for the PFSP
 have sizes counted by classical integer sequences: the Fibonacci
-neighborhood of disjoint adjacent swaps~\cite{fibonacci_own,bozejko2026sr}
+neighborhood of disjoint adjacent swaps~\cite{wojewodzki2026icaisc,bozejko2026new}
 and the Motzkin neighborhood of non-crossing, possibly nested
-swaps~\cite{motzkin_own}.
+swaps~\cite{wojewodzki2026soco}.
 
 These neighborhoods differ by orders of magnitude in size and cost, yet
 they have only been compared as isolated points. This paper fills the
 space between Fibonacci and Dynasearch with a one-parameter family and
 asks a simple question: \emph{how far should a swap reach?} We deliberately
 keep the metaheuristics, their parameters and the experimental protocol of
-the earlier studies~\cite{fibonacci_own,motzkin_own,windowed_own}
+the earlier studies~\cite{wojewodzki2026icaisc,wojewodzki2026soco,wojewodzki2026windowed}
 unchanged. The neighborhood is the only experimental factor, so every new
 number can be read against the published ones.
 
@@ -132,8 +132,7 @@ Wodecki analyzed swap multimoves for the PFSP~\cite{bozejko2007}. In
 single-machine total weighted tardiness the cost changes of independent
 swaps add up, which makes the DP exact. In the PFSP they do not
 (Section~\ref{sec:additivity}).
-\paragraph{Sequence-counted neighborhoods.} The Fibonacci neighborhood~\cite{fibonacci_own}, its QUBO form on a quantum annealer~\cite{bozejko2026sr} and the Motzkin neighborhood~\cite{motzkin_own} have sizes counted by classical integer sequences. \todo{verify that Sci.\ Rep.\ 2026 and IFAC
-2025 do not already contain the bounded-distance hierarchy}
+\paragraph{Sequence-counted neighborhoods.} The Fibonacci neighborhood~\cite{wojewodzki2026icaisc}, its QUBO form on a quantum annealer~\cite{bozejko2026new} and the Motzkin neighborhood~\cite{wojewodzki2026soco} have sizes counted by classical integer sequences~\cite{aigner1998}. Quantum annealing has been applied to job shop~\cite{venturelli2015}, single-machine~\cite{bozejko2022distributed,bozejko2025noncrossing} and flow shop scheduling~\cite{bozejko2026huge,bozejko2024cinti}.
 \paragraph{Bounded-reach moves.} Restricting how far a move may reach is a
 standard device in routing, e.g., Or-opt segments and granular
 neighborhoods~\cite{toth2003}. Balzereit et al.~\cite{balzereit2024}
@@ -141,10 +140,6 @@ study local search with a bounded search radius for single-machine
 scheduling with family setup times and analyze its parameterized
 complexity in the radius. We study the same kind of radius--runtime
 trade-off for a compound neighborhood of the flow shop.
-\todo{bounded-distance swap neighborhoods for single-machine weighted
-tardiness on a quantum annealer are studied in parallel by the
-supervisor's group (unpublished); agree on the citation and the split
-before submission}
 
 % ---------------------------------------------------------------------
 \section{Problem and Notation}\label{sec:problem}
@@ -226,7 +221,7 @@ block structure is the second constraint, and the band alone does not
 imply it: the $3$-cycle $\sigma=(2,3,1)$ stays within the band of $k=3$
 but is not an involution. Symmetry does not suffice either:
 $\sigma=(3,4,1,2)$ is an involution inside the band of $k=3$, but its two
-swaps cross. The Motzkin neighborhood~\cite{motzkin_own}
+swaps cross. The Motzkin neighborhood~\cite{wojewodzki2026soco}
 relaxes the block structure in a different way. It allows a swap inside
 the interval of another swap (dashed block in Fig.~\ref{fig:boards}), as
 long as no two intervals cross.
@@ -295,9 +290,6 @@ involutions.
 for $n=10$. The shaded part is the $k$-bonacci family.}
 \label{fig:chain}
 \end{figure*}
-\todo{check whether \cite{bozejko2026sr} or the IFAC 2025 paper already
-state this chain; Fibonacci and Motzkin are joint work with the
-supervisor}
 
 \paragraph{How much of Dynasearch does $\N_k$ cover?} Every Dynasearch
 move is a composition of $n$, and a uniformly random composition places
@@ -384,7 +376,7 @@ fallback to the best single swap (below) is taken over the remaining
 candidates, so whenever no improving move exists the filtered and the unfiltered search can
 choose different moves.
 
-The earlier studies~\cite{windowed_own} use a simpler test that marks a
+The earlier studies~\cite{wojewodzki2026windowed} use a simpler test that marks a
 position as a boundary when the last machine starts a job immediately
 after the previous machine finishes it, and keep a swap only if a
 boundary lies in $[i,j]$. This test is a heuristic: on local optima it
@@ -497,13 +489,13 @@ border, that is, with $m$.
 % ---------------------------------------------------------------------
 \section{Experimental Protocol}\label{sec:setup}
 
-We keep the protocol of the earlier studies~\cite{windowed_own} and
+We keep the protocol of the earlier studies~\cite{wojewodzki2026windowed} and
 change the neighborhood.
 \begin{itemize}
 \item \textbf{Instances:} all 120 Taillard instances~\cite{taillard1993}
       (12 classes, $n\in\{20,50,100,200,500\}$, $m\in\{5,10,20\}$),
       verified against Taillard's generator.
-\item \textbf{Metaheuristics} (unchanged): ILS with a tabu list (tenure
+\item \textbf{Metaheuristics} (unchanged): ILS~\cite{lourenco2003} with a tabu list~\cite{glover1997} (tenure
       10) and an elite pool of the 10 best solutions, perturbed by
       double-bridge kicks, started from the identity permutation.
 \item \textbf{Budgets:} $t_{\max}\in\{0.1,0.5,1,2,5,10\}$\,s,
@@ -521,8 +513,8 @@ change the neighborhood.
       Fibonacci, Dynasearch and Motzkin from the earlier campaign on the
       same machine.
 \item \textbf{Metric:} RPD to the Taillard lower bound and the two-sided
-      Wilcoxon signed-rank test, $\alpha=0.05$, as before. In addition:
-      Holm-adjusted $p$-values, the Friedman test with the Nemenyi
+      Wilcoxon signed-rank test~\cite{wilcoxon1945}, $\alpha=0.05$, as before. In addition:
+      Holm-adjusted $p$-values~\cite{holm1979}, the Friedman test with the Nemenyi
       critical difference, and RPD to Taillard's 1993 upper bounds.
 \item \textbf{Hardware:} classical runs on an Apple M4 Pro, executed
       sequentially, as in the earlier campaign. The code is written in Python. The tabu list stores the
@@ -531,7 +523,7 @@ change the neighborhood.
       best makespan, the search continues from a double-bridge
       perturbation of a solution from the pool. Quantum runs on the
       D-Wave Advantage\_system6 annealer (Pegasus topology, 5\,760
-      qubits; Leap cloud, \texttt{EmbeddingComposite}) and on the IQM
+      qubits; Leap cloud, \texttt{EmbeddingComposite}~\cite{choi2008minor}) and on the IQM
       Sirius gate-based processor (16 qubits, star topology) via IQM
       Resonance.
 \end{itemize}
@@ -568,12 +560,12 @@ swaps, the number of candidates and the evaluation time.
 For $n=200$ the same experiment uses $k\leq 16$ and gives 194 states.
 
 \paragraph{Quantum protocol.} The quantum runs follow the earlier
-quantum studies~\cite{windowed_own} and differ only in the neighborhood.
-On the annealer the $k$-bonacci move is an interval-overlap QUBO with
+quantum studies~\cite{wojewodzki2026windowed} and differ only in the neighborhood.
+On the annealer the $k$-bonacci move is an interval-overlap QUBO~\cite{lucas2014ising,kadowaki1998} with
 interval length at most $k$ (the length cap also holds on the QPU),
 100 reads per call, inside the same ILS with $t_{\max}=10$\,s. On the
 gate-based processor (IQM Sirius, 16 qubits) the move comes from a
-fixed-angle QAOA ($p=1$, 4096 shots) on windows of six positions with
+fixed-angle QAOA~\cite{farhi2014qaoa,wojewodzki2026gcmm} ($p=1$, 4096 shots) on windows of six positions with
 50\% overlap, and all windows of a move are submitted as one job.
 Neither platform has a classical fallback: a move that the QPU does not
 return ends the run with an error. All quantum results use instances
@@ -809,7 +801,7 @@ on $n=100$. This one move improves the start in 183 of 190 runs. The
 annealer makes 1.5 to 5.2 moves on average. Each call uses about 29\,ms of
 QPU time but takes 1.5--2\,s with the network, and this round trip sets
 the number of moves. The annealer ends below the gate-based processor
-in 159 of the 190 paired runs (Fig.~\ref{fig:qtime}). Both stay far
+in 159 of the 190 paired runs. Both stay far
 above the classical ILS, which makes $10^4$--$10^5$ moves in the same
 time and is better in all 540 annealer runs on the twelve classes. Only 24 of the 2\,324 annealer moves selected no
 swap. At this budget the comparison measures the cost of a call more
@@ -848,14 +840,6 @@ $100\times 10$ & 3 & 23.2 & 22.2 & 19.6 & 4.6  & 4.8 & 19\,318 \\
 \end{table}
 
 
-\begin{figure*}[t]
-\centering
-\includegraphics[width=0.9\textwidth]{figures/fig_quantum_time.pdf}
-\caption{Best RPD against time, $k=3$, on the runs made on all three
-platforms. The vertical line marks the 10\,s budget; a gate-based move
-that started before it is counted.}
-\label{fig:qtime}
-\end{figure*}
 
 
 \paragraph{Move anatomy.}
@@ -871,12 +855,7 @@ One evaluation, however, takes 0.3\,ms at $k=2$, 1.2\,ms at $k=8$ and
 105\,ms at $k=n$, so the gain per millisecond falls from about 145 at
 $k\leq 3$ to about 1 at $k=n$. The swaps selected at $k=n$ are short in
 the median (distance 3--11 for $m\geq 10$) with a long tail.
-The picture is the same on $n=200$. On $200\times 10$ the mean real
-gain is 65\% of the mean predicted gain at $k=2$ and 48\% at $k=8$. On
-$200\times 20$ it is 48\% and 27\%, and the prediction is optimistic in
-at least 99\% of the states. On $200\times 20$ the real gain of a move
-stays between 95 and 99 from $k=4$ to $k=8$, while the evaluation time
-grows from 1.8 to 4.9\,ms.
+
 
 
 % ---------------------------------------------------------------------
@@ -892,18 +871,10 @@ budget. The exact critical-path filter improves every $k\leq 16$ at
 every instance size. Insert is better on 7 of the 11 classes with up to
 200 jobs at 10\,s. The compound swaps lead on $500\times 20$ at every budget up to 300\,s,
 where the lead has shrunk to 0.2 points, and on the other large classes
-at short budgets, where one Insert iteration is too expensive. The additional comparison at an equal number of
-iterations shows where the limit on $k$ comes from. A longer reach is
-then better on every class, so what limits it under a time budget is the
-cost of a move, which grows faster than linearly in $k$ and in $m$. The
-additivity error is not the cause, although the sum of single-swap
-deltas promises more than the move delivers, more so for 20 machines. A
+at short budgets, where one Insert iteration is too expensive. At an equal number of iterations a longer reach is better on every class, so the limit on $k$ comes from the cost of a move, which grows faster than linearly in $k$ and in $m$, and not from the additivity error. A
 small $k$ also keeps the QUBO of the move banded with bandwidth $k-1$, as
-the quantum neighborhood search of~\cite{windowed_own} requires.
-The move with $k\leq 4$ embeds on the annealer up to $n=500$, but a
-10\,s budget leaves room for one gate-based move or a few annealer
-calls, so on both platforms the search stays far behind the classical
-one. Swaps that cross are
+the quantum neighborhood search of~\cite{wojewodzki2026windowed} requires.
+The move with $k\leq 4$ embeds on the annealer up to $n=500$, but 10\,s leave room for one gate-based move or a few annealer calls, so both platforms stay far behind the classical search. Swaps that cross are
 left for a separate study.
 
 \ifanon\else
@@ -915,63 +886,5 @@ Technology, for its support.
 \fi
 
 % ---------------------------------------------------------------------
-\begin{thebibliography}{99}\small
-\bibitem{ahuja2002} R.K.~Ahuja, \"O.~Ergun, J.B.~Orlin, A.P.~Punnen.
-A survey of very large-scale neighborhood search techniques.
-\emph{Discrete Appl.\ Math.} 123:75--102, 2002.
-\bibitem{balzereit2024} K.~Balzereit, N.~Gr\"uttemeier, N.~Morawietz,
-D.~Reinhardt, S.~Windmann, P.~Wolf. Scalable neighborhood local search
-for single-machine scheduling with family setup times. arXiv:2409.00771,
-2024.
-\bibitem{bozejko2007} W.~Bo\.zejko, M.~Wodecki. On the theoretical
-properties of swap multimoves. \emph{Oper.\ Res.\ Lett.} 35(2):227--231, 2007.
-\bibitem{bozejko2026sr} W.~Bo\.zejko, M.~Uchro\'nski, M.~Wodecki. The new
-exponential Fibonacci neighborhood as QUBO generated on a D-Wave quantum
-computing environment for the permutational scheduling problem.
-\emph{Sci.\ Rep.}, 2026.
-\bibitem{congram2002} R.K.~Congram, C.N.~Potts, S.L.~van de Velde. An
-iterated dynasearch algorithm for the single-machine total weighted
-tardiness scheduling problem. \emph{INFORMS J.\ Comput.} 14(1):52--67, 2002.
-\bibitem{ergun2006} \"O.~Ergun, J.B.~Orlin. Fast neighborhood search for
-the single machine total weighted tardiness problem. \emph{Oper.\ Res.\
-Lett.} 34(1):41--45, 2006.
-\bibitem{feller1968} W.~Feller. \emph{An Introduction to Probability Theory and Its
-Applications}, Vol.~I, 3rd ed. Wiley, New York, 1968.
-\bibitem{fibonacci_own} R.~Wojew\'odzki, W.~Bo\.zejko. Hybrid neighborhood evaluation in tabu
-search and simulated annealing for the permutation flow shop problem. In:
-\emph{Artificial Intelligence and Soft Computing -- ICAISC 2026, Part II},
-LNAI 16858. Springer, 2026. In press.
-\bibitem{garey1976} M.R.~Garey, D.S.~Johnson, R.~Sethi. The complexity of
-flowshop and jobshop scheduling. \emph{Math.\ Oper.\ Res.} 1(2):117--129, 1976.
-\bibitem{gordon1986} L.~Gordon, M.F.~Schilling, M.S.~Waterman. An extreme value theory
-for long head runs. \emph{Probab.\ Theory Related Fields} 72(2):279--287, 1986.
-\bibitem{grabowski2004} J.~Grabowski, M.~Wodecki. A very fast tabu search
-algorithm for the permutation flow shop problem with makespan criterion.
-\emph{Comput.\ Oper.\ Res.} 31(11):1891--1909, 2004.
-\bibitem{grosso2004} A.~Grosso, F.~Della Croce, R.~Tadei. An enhanced
-dynasearch neighborhood for the single-machine total weighted tardiness
-scheduling problem. \emph{Oper.\ Res.\ Lett.} 32(1):68--72, 2004.
-\bibitem{miles1960} E.P.~Miles~Jr. Generalized Fibonacci numbers and
-associated matrices. \emph{Amer.\ Math.\ Monthly} 67(8):745--752, 1960.
-\bibitem{motzkin_own} R.~Wojew\'odzki, W.~Bo\.zejko. Motzkin neighborhood evaluation in
-iterated local search and simulated annealing for the permutational flow
-shop problem. In: \emph{Soft Computing Models in Industrial and
-Environmental Applications}, CCIS 3046, pp.~144--155. Springer, 2026.
-\bibitem{nowicki1996} E.~Nowicki, C.~Smutnicki. A fast tabu search
-algorithm for the permutation flow-shop problem. \emph{Eur.\ J.\ Oper.\ Res.}
-91(1):160--175, 1996.
-\bibitem{ruiz2007} R.~Ruiz, T.~St\"utzle. A simple and effective iterated
-greedy algorithm for the permutation flowshop scheduling problem.
-\emph{Eur.\ J.\ Oper.\ Res.} 177(3):2033--2049, 2007.
-\bibitem{schilling1990} M.F.~Schilling. The longest run of heads.
-\emph{College Math.\ J.} 21(3):196--207, 1990.
-\bibitem{taillard1993} E.~Taillard. Benchmarks for basic scheduling
-problems. \emph{Eur.\ J.\ Oper.\ Res.} 64(2):278--285, 1993.
-\bibitem{toth2003} P.~Toth, D.~Vigo. The granular tabu search and its
-application to the vehicle-routing problem. \emph{INFORMS J.\ Comput.}
-15(4):333--346, 2003.
-\bibitem{windowed_own} R.~Wojew\'odzki, W.~Bo\.zejko. Scalable quantum neighborhood search
-for the permutation flow shop problem via windowed QUBO decomposition.
-SSRN preprint, doi:10.2139/ssrn.7411334, 2026.
-\end{thebibliography}
+\bibliography{references}
 \end{document}

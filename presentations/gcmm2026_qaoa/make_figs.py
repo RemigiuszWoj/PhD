@@ -158,7 +158,7 @@ def coupling_maps(size=(16, 5), name="coupling_maps.png"):
     sq = nx.grid_2d_graph(4, 5)
     st = nx.star_graph(16)
     specs = [(hh, nx.kamada_kawai_layout(hh), "heavy-hex (Heron r2)"),
-             (sq, {v: v for v in sq}, "square (Crystal 20)"),
+             (sq, {v: v for v in sq}, "square (Crystal 20, 54)"),
              (st, nx.spring_layout(st, seed=1), "star (Star 16)")]
     for ax, (G, pos, t) in zip(axes, specs):
         nx.draw_networkx_edges(G, pos, ax=ax, edge_color="#888", width=1.6)

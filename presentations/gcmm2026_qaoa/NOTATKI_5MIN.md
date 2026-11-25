@@ -7,7 +7,7 @@ Plakat czyta się kolumnami z góry na dół:
 | One QUBO, two quantum back-ends | Circuit size of one move | Gate model, annealer and classical |
 | Four neighborhoods, four conflict graphs | *Circuit size: same order on every chip* (ramka) | Same circuits on three chips |
 | One circuit per move, angles frozen (mapa kątów) | IBM Heron r2: one move, ten instances | *Short circuits agree, long ones do not* (ramka) |
-| Four chips, same four QUBOs | Why only one move: the queue | Conclusions · QR do Zenodo |
+| Three chip layouts, same four QUBOs | Why only one move: the queue | Conclusions · QR do Zenodo |
 
 Dwie rzeczy do zapamiętania przez widza są w różowych ramkach. Poniżej najpierw tekst do powiedzenia
 (po angielsku, około 650 słów, czyli 5 minut spokojnym tempem), a potem po polsku wyjaśnienia trudniejszych
@@ -38,8 +38,10 @@ Krótsza wersja (30 s), gdy ktoś tylko przechodzi:
 *Pokaż łańcuch Fibonacciego i gęsty Dynasearch.*
 
 > "We use four neighborhoods. Each candidate swap becomes one qubit, and each pair of swaps that cannot be
-> applied together becomes one two-qubit gate. Fibonacci gives a simple chain, while Adjacent and Dynasearch
-> give almost complete graphs. This density decides everything that follows."
+> applied together becomes one two-qubit gate. Fibonacci gives a simple chain; the other three are dense –
+> Adjacent is even complete, Dynasearch and Motzkin are close to it. Adjacent still stays small, because it
+> has only a few candidates per window, while Dynasearch and Motzkin have many more. Density and the number
+> of candidates together decide everything that follows."
 
 ### 3. One circuit per move, angles frozen – ok. 40 s
 *Pokaż gwiazdkę na mapie.*
@@ -56,7 +58,8 @@ Krótsza wersja (30 s), gdy ktoś tylko przechodzi:
 
 > "Real chips cannot connect every pair of qubits. IBM uses a sparse heavy-hex lattice, IQM uses square
 > lattices and a star with a central resonator. Whenever the circuit needs a link the chip does not have,
-> the compiler adds extra gates. We compiled the same four QUBOs onto four chips. The absolute numbers move
+> the compiler adds extra gates. We compiled the same four QUBOs onto four chips with three layouts – the two
+> IQM Crystal chips, with 20 and 54 qubits, share the square lattice. The absolute numbers move
 > by about a factor of two – heavy-hex is the least favourable – but the order never changes: Fibonacci is
 > tiny, with fourteen CZ gates on every chip, Adjacent is next, and Motzkin and Dynasearch need well over a
 > thousand. A deeper circuit collects more noise. And this is the same order in which the neighborhoods fit

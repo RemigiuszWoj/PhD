@@ -126,9 +126,9 @@ $(C_{\max}-\mathrm{LB})/\mathrm{LB}\cdot100\%$.}
 \begin{block}{Four neighborhoods, four conflict graphs}
 \vspace*{2mm}
 \fig[0.7]{p_conflict_graphs.png}
-Each candidate swap is one qubit and each pair of clashing swaps is one
-two-qubit gate; the percentage is the share of all possible pairs.
-Fibonacci is a chain; the other three are dense.
+Each candidate swap is one qubit and each clashing pair is one two-qubit
+gate (percentage = share of all pairs).
+Fibonacci is a sparse chain; Adjacent is complete, Dynasearch and Motzkin are dense.
 \vspace*{2mm}
 \end{block}
 
@@ -145,7 +145,7 @@ and the sample with the lowest QUBO value becomes the move.
 
 \vfill
 
-\begin{block}{Four chips, same four QUBOs}
+\begin{block}{Three chip layouts, same four QUBOs}
 \vspace*{2mm}
 \fig{p_coupling_maps.png}
 A chip can apply a two-qubit gate only along its links, so the compiler

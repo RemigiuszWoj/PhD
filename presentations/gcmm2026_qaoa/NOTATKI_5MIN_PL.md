@@ -33,8 +33,10 @@ Plakat czyta się kolumnami z góry na dół: **lewa to metoda**, **środkowa to
 *Pokaż łańcuch Fibonacciego i gęsty Dynasearch.*
 
 > „Używamy czterech sąsiedztw. Każda kandydująca zamiana to jeden kubit, a każda para zamian, których nie
-> można wykonać razem, to jedna bramka dwukubitowa. Fibonacci daje prosty łańcuch, a Adjacent i Dynasearch
-> prawie pełne grafy. Od tej gęstości zależy wszystko, co dalej.”
+> można wykonać razem, to jedna bramka dwukubitowa. Fibonacci daje prosty łańcuch, a pozostałe trzy są gęste:
+> Adjacent jest wręcz pełny, Dynasearch i Motzkin są blisko pełnego. Adjacent i tak zostaje mały, bo ma tylko
+> kilka kandydatów w oknie, a Dynasearch i Motzkin mają ich dużo więcej. Gęstość razem z liczbą kandydatów
+> decyduje o wszystkim, co dalej.”
 
 ### 3. One circuit per move, angles frozen – ok. 40 s
 *Pokaż gwiazdkę na mapie.*
@@ -51,7 +53,8 @@ Plakat czyta się kolumnami z góry na dół: **lewa to metoda**, **środkowa to
 
 > „Prawdziwe chipy nie łączą każdej pary kubitów. IBM ma rzadką kratę heavy-hex, IQM ma kraty kwadratowe
 > i gwiazdę z centralnym rezonatorem. Gdy obwód potrzebuje połączenia, którego chip nie ma, kompilator dokłada
-> dodatkowe bramki. Skompilowaliśmy te same cztery QUBO na cztery chipy. Wartości bezwzględne zmieniają się
+> dodatkowe bramki. Skompilowaliśmy te same cztery QUBO na cztery chipy o trzech układach połączeń, bo oba
+> chipy IQM Crystal, 20- i 54-kubitowy, mają tę samą kwadratową kratę. Wartości bezwzględne zmieniają się
 > mniej więcej dwukrotnie, a heavy-hex wypada najgorzej, ale kolejność się nie zmienia. Fibonacci jest
 > malutki, ma czternaście bramek CZ na każdym chipie, potem jest Adjacent, a Motzkin i Dynasearch potrzebują
 > grubo ponad tysiąca. Im głębszy obwód, tym więcej szumu. To jest ta sama kolejność, w jakiej sąsiedztwa

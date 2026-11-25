@@ -27,6 +27,9 @@
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{positioning,calc,decorations.pathreplacing}
+\usepackage{standalone} % TikZ figures are compiled from figures/*.tex
 \newtheorem{proposition}{Proposition}
 \newtheorem{definition}{Definition}
 \newtheorem{lemma}{Lemma}
@@ -180,7 +183,7 @@ $k=5$.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\textwidth]{figures/fig_moves_n4.pdf}
+\includestandalone[width=\textwidth]{figures/fig_moves_n4}
 \caption{All compound moves on $n=5$ positions, grouped by the smallest
 $k$ that contains them, and two moves on $n=12$. An arc joins two
 swapped jobs, and its color gives the swap distance.}
@@ -227,7 +230,7 @@ long as no two intervals cross.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\textwidth]{figures/fig_boards.pdf}
+\includestandalone[width=\textwidth]{figures/fig_boards}
 \caption{The neighborhoods for $n=8$. Top: candidate swaps as arcs
 (faint arcs are already allowed at the previous $k$). Bottom: one move
 as its permutation matrix (ones in bold); shaded cells form the band
@@ -286,7 +289,7 @@ involutions.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.8\textwidth]{figures/fig_chain.pdf}
+\includestandalone[width=0.8\textwidth]{figures/fig_chain}
 \caption{The inclusion chain of the swap neighborhoods with their sizes
 for $n=10$. The shaded part is the $k$-bonacci family.}
 \label{fig:chain}

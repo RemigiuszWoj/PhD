@@ -23,10 +23,14 @@
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage[polish]{babel}
+\linespread{0.955} % PL only: Polish text runs ~4% longer than EN; keeps the same 8 pages (PL is not submitted)
 \usepackage{amsmath,amssymb,amsthm}
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{positioning,calc,decorations.pathreplacing}
+\usepackage{standalone} % TikZ figures are compiled from figures/*.tex
 \newtheorem{proposition}{Stwierdzenie}
 \newtheorem{definition}{Definicja}
 \newtheorem{lemma}{Lemat}
@@ -147,7 +151,7 @@ $k=4$ i jeden dla $k=5$.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\textwidth]{figures/fig_moves_n4.pdf}
+\includestandalone[width=\textwidth]{figures/fig_moves_n4}
 \caption{Wszystkie ruchy złożone na $n=5$ pozycjach, pogrupowane według
 najmniejszego $k$, które je zawiera, oraz dwa ruchy na $n=12$. Łuk łączy
 dwa zamieniane zadania, a jego kolor oznacza odległość zamiany.}
@@ -192,7 +196,7 @@ nie krzyżują.
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\textwidth]{figures/fig_boards.pdf}
+\includestandalone[width=\textwidth]{figures/fig_boards}
 \caption{Sąsiedztwa dla $n=8$. U góry: kandydaci do zamiany jako łuki
 (blade łuki były dozwolone już przy poprzednim $k$). U dołu: jeden ruch
 jako macierz permutacji (pogrubione jedynki); zacieniowane komórki tworzą pasmo
@@ -245,7 +249,7 @@ Motzkina dopuszcza zagnieżdżone bloki, a ostatni krok dopuszcza zamiany krzyż
 
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.8\textwidth]{figures/fig_chain.pdf}
+\includestandalone[width=0.8\textwidth]{figures/fig_chain}
 \caption{Łańcuch zawierań sąsiedztw zamian z licznościami dla $n=10$.
 Część zacieniowana to rodzina $k$-bonacci.}
 \label{fig:lancuch}

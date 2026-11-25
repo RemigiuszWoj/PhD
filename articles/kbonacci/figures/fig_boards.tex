@@ -27,7 +27,7 @@
     \ifnum\d=0 \fill[gray!14] (\c-1,-1-\r) rectangle (\c,-\r);\fi}}
   \foreach \i in {1,...,7}{\draw[gray!45,very thin] (\i,-9) -- (\i,-1); \draw[gray!45,very thin] (0,-1-\i) -- (8,-1-\i);}
   \draw (0,-9) rectangle (8,-1);
-  \foreach [count=\r] \c in {#2}{\fill (\c-0.5,-\r-0.5) circle (0.27);}}
+  \foreach [count=\r] \c in {#2}{\node[inner sep=0pt,font=\scriptsize] at (\c-0.5,-\r-0.5) {$\mathbf{1}$};}}
 \newcommand{\blk}[2]{\draw[very thick] (#1-1,-1-#2) rectangle (#2,-#1);}
 \begin{scope}[shift={(0,0)}]
   \node at (4,4.4) {$k=2$ (Fibonacci)};

@@ -1,0 +1,293 @@
+% GCMM 2026 poster (Paper 59), layout of the ICAISC 2026 poster — adapted from W. Bożejko's PWr poster template
+% (ICCS 2023, "Determination of the lower bounds...", Warsaw beamer
+% theme, green structure colour, Times font, 3-column block layout).
+
+\documentclass[final]{beamer}
+  \mode<presentation>
+  {
+      \usetheme{Warsaw}
+  }
+
+% --- Cyberpunk neon palette ----------------------------------------
+\definecolor{cyberviolet}{HTML}{6A1B9A}   % deep violet  (block headers)
+\definecolor{cybermagenta}{HTML}{F72585}  % neon magenta (Fibonacci / alert)
+\definecolor{cybercyan}{HTML}{4CC9F0}     % neon cyan    (accents)
+\usecolortheme[named=cyberviolet]{structure}
+
+% block headers: violet bar, white text, faint violet body tint
+\setbeamercolor{block title}{fg=white,bg=cyberviolet}
+\setbeamercolor{block body}{fg=black,bg=cyberviolet!6}
+% alert (key-result) block: neon magenta
+\setbeamercolor{block title alerted}{fg=white,bg=cybermagenta}
+\setbeamercolor{block body alerted}{fg=black,bg=cybermagenta!10}
+% header band + title text
+\setbeamercolor{headline}{fg=white,bg=cyberviolet}
+\setbeamercolor{title in headline}{fg=white}
+\setbeamercolor{author in headline}{fg=cybercyan}
+\setbeamercolor{institute in headline}{fg=white}
+
+\usepackage{times}
+\usepackage{amsmath,amssymb}
+\usepackage[english]{babel}
+\usepackage[orientation=portrait,size=a0,scale=1.0]{beamerposter}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tikz}
+\usepackage{qrcode}
+\definecolor{cadj}{HTML}{5B7DB1}
+\definecolor{cfib}{HTML}{9A342D}
+\definecolor{cdyn}{HTML}{E08A1E}
+\definecolor{cmot}{HTML}{2A9D8F}
+\newlength{\colh}\setlength{\colh}{0.83\textheight}
+\newcommand{\fig}[2][0.98]{\begin{center}\includegraphics[width=#1\columnwidth]{img/#2}\end{center}}
+\usetikzlibrary{positioning,arrows.meta}
+
+\title{Gate-Model Quantum Neighborhood Search for the Permutation Flow Shop Problem via Fixed-Angle QAOA}
+
+\author[Wojew\'odzki \& Bo\.{z}ejko]
+  {Remigiusz Wojew\'odzki$^1$ \and Wojciech Bo\.{z}ejko$^1$}
+
+\institute[Wroc\l aw University of Science and Technology]
+  {$^1$\,Department of Control and Quantum Computing,
+    Wroc\l aw University of Science and Technology, Poland\\[1ex]
+    \texttt{remigiusz.wojewodzki@pwr.edu.pl} \quad
+    \texttt{wojciech.bozejko@pwr.edu.pl}}
+
+\date{GCMM 2026, Wroc\l aw, Poland}
+
+\begin{document}
+\begin{frame}
+\frametitle{
+  \begin{columns}[T]
+    \begin{column}{.01\paperwidth}\end{column}
+    \begin{column}{.10\paperwidth}
+      \begin{center}
+        \setlength{\fboxsep}{6mm}\colorbox{white}{\includegraphics[height=11cm]{logo_PWR_square.png}}
+      \end{center}
+    \end{column}
+    \begin{column}{.86\paperwidth}
+      \begin{center}
+        \usebeamercolor{title in headline}{\color{fg}\textbf{\veryHuge{\inserttitle}}\\[1ex]}
+        \usebeamercolor{author in headline}{\color{fg}\LARGE{\insertauthor}\\[1ex]}
+        \usebeamercolor{institute in headline}{\color{fg}\large{\insertinstitute}\\[1ex]}
+      \end{center}
+    \end{column}
+    \begin{column}{.01\paperwidth}\end{column}
+  \end{columns}
+}
+
+{\large
+\begin{columns}[T]
+\setlength{\columnsep}{45mm}
+
+% =====================================================================
+% LEFT COLUMN: the method
+% =====================================================================
+\column{0.31\textwidth}
+\begin{minipage}[t][\colh][s]{\linewidth}
+
+\begin{block}{One QUBO, two quantum back-ends}
+\vspace*{2mm}
+\textbf{PFSP:} $n$ jobs visit $m$ machines in one common order, and we look
+for the order with the smallest makespan $C_{\max}$. Local search improves the
+order by \textbf{moves}, i.e.\ sets of job swaps; a \textbf{neighborhood} is the
+family of moves the search may try. Earlier work wrote the choice
+of a move as a \textbf{QUBO} and solved it on a quantum annealer; here the
+\textbf{same QUBOs} run on \textbf{gate-model} chips through QAOA.
+\vspace{2mm}
+
+{\normalsize\textbf{QUBO}: a quadratic optimisation over 0/1 variables.
+\textbf{QAOA}: a short quantum circuit whose samples are good 0/1 answers.
+\textbf{PRD}: percent above the Taillard lower bound,
+$(C_{\max}-\mathrm{LB})/\mathrm{LB}\cdot100\%$.}
+\vspace{4mm}
+\begin{center}
+\resizebox{0.97\columnwidth}{!}{%
+\begin{tikzpicture}[
+    box/.style={draw,rounded corners,align=center,minimum height=50mm,line width=2pt},
+    >={Stealth[length=8mm]}, line width=2pt]
+  \node[box,fill=cyberviolet!15,minimum width=80mm] (ls) at (0,0) {\textbf{ILS / SA}\\current order};
+  \node[box,fill=cybermagenta!20,minimum width=110mm] (q) at (16,0) {\textbf{choice of move}\\\textbf{as QUBO}};
+  \node[box,fill=black!8,minimum width=110mm,minimum height=36mm] (a) at (34,4) {quantum annealer\\earlier work};
+  \node[box,fill=cyberviolet,text=white,minimum width=110mm,minimum height=36mm] (g) at (34,-4) {\textbf{gate-model QAOA}\\this work};
+  \draw[->] (ls)--(q);
+  \draw[->] (q.east)--(a.west);
+  \draw[->] (q.east)--(g.west);
+  \draw[->,dashed] (g.south)--++(0,-2.5)-|(ls.south) node[pos=.25,below]{new order};
+\end{tikzpicture}}
+\end{center}
+\vspace*{2mm}
+\end{block}
+
+\vfill
+
+\begin{block}{Four neighborhoods, four conflict graphs}
+\vspace*{2mm}
+\fig[0.7]{p_conflict_graphs.png}
+Each candidate swap is one qubit and each pair of clashing swaps is one
+two-qubit gate; the percentage is the share of all possible pairs.
+Fibonacci is a chain; the other three are dense.
+\vspace*{2mm}
+\end{block}
+
+\vfill
+
+\begin{block}{One circuit per move, angles frozen}
+\vspace*{2mm}
+\fig[0.85]{p_landscape1.png}
+The two QAOA angles are tuned once on a simulator (star) and then frozen, so
+every move on hardware is one submission. Each circuit is sampled 4096 times
+and the sample with the lowest QUBO value becomes the move.
+\vspace*{2mm}
+\end{block}
+
+\vfill
+
+\begin{block}{Four chips, same four QUBOs}
+\vspace*{2mm}
+\fig{p_coupling_maps.png}
+A chip can apply a two-qubit gate only along its links, so the compiler
+inserts extra gates for every missing link.
+\vspace*{2mm}
+\end{block}
+
+\end{minipage}
+
+% =====================================================================
+% MIDDLE COLUMN: compilation and IBM hardware
+% =====================================================================
+\column{0.31\textwidth}
+\begin{minipage}[t][\colh][s]{\linewidth}
+
+\begin{block}{Circuit size of one move after compilation}
+\vspace*{2mm}
+\fig[0.95]{p_depth.png}
+Log scale. Star~16 counts include MOVE operations (CZ alone: 14 for Fibonacci).
+\vspace*{2mm}
+\end{block}
+
+\vfill
+
+\begin{alertblock}{Circuit size: same order on every chip}
+\vspace*{2mm}
+\begin{center}
+{\large\mbox{Fibonacci $\ll$ Adjacent $\ll$ Motzkin $<$ Dynasearch}}
+\end{center}
+\vspace{1mm}
+A deeper circuit collects more noise. Compiled size ranks the neighborhoods
+identically on all four chips, and the same order decides which neighborhoods
+fit on a quantum annealer.
+\vspace*{2mm}
+\end{alertblock}
+
+\vfill
+
+\begin{block}{IBM Heron r2: one move, ten instances}
+\vspace*{2mm}
+\fig[0.95]{p_hw_prd1.png}
+\begin{center}
+{\LARGE \textbf{27.9\,\%} $\rightarrow$ \textbf{22.1--25.0\,\%}}
+\end{center}
+Mean PRD before and after one move; 80 runs, about 460~s of QPU time. ILS and SA differ by less than half a
+point, because one move from the same start is the same computation.
+\vspace*{2mm}
+\end{block}
+
+\vfill
+
+\begin{block}{Why only one move: the queue}
+\vspace*{2mm}
+\fig[0.75]{p_hw_time.png}
+A move needs 3--7~s of QPU time but took 10--288~s on the clock, so no run
+reached a second move within the 10~s budget.
+\vspace*{2mm}
+\end{block}
+
+\end{minipage}
+
+% =====================================================================
+% RIGHT COLUMN: comparison and conclusions
+% =====================================================================
+\column{0.31\textwidth}
+\begin{minipage}[t][\colh][s]{\linewidth}
+
+\begin{block}{Gate model, annealer and classical search (ILS)}
+\vspace*{2mm}
+\fig{p_compare.png}
+One gate-model move is compared with 10~s of annealer or classical search.
+No quantum back-end comes close to classical ILS (about 3\,\%) at $n=20$.
+\vspace*{2mm}
+\end{block}
+
+\vfill
+
+\begin{block}{Same circuits on three chips}
+\vspace*{2mm}
+\fig[0.95]{p_arch1.png}
+On the first instance, Adjacent and Fibonacci give almost the same result on
+every chip, while Dynasearch and Motzkin change from chip to chip.
+\vspace*{2mm}
+\end{block}
+
+\vfill
+
+\begin{alertblock}{Short circuits agree across chips, long ones do not}
+\vspace*{2mm}
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{lrp{0.55\columnwidth}}
+\textbf{Fibonacci} & 14 CZ   & same $C_{\max}$ on 6 of 9 instances, rest within 0.85 points\\
+\textbf{Adjacent}  & 195 CZ  & same $C_{\max}$ on 9 of 9 instances\\
+\textbf{Motzkin}   & 1455 CZ & PRD 16.96 on Heron~r2, 13.31 on Star~16 (one instance)\\
+\end{tabular}
+\end{center}
+\vspace*{1mm}
+CZ = two-qubit gate, counted on Heron~r2; instances are those that fit
+16 qubits. With one instance for the deep circuits, the chip and sampling
+noise cannot be separated yet.
+\vspace*{2mm}
+\end{alertblock}
+
+\vfill
+
+\begin{block}{Conclusions}
+\vspace*{2mm}
+\begin{itemize}
+  \item One QUBO per neighborhood drives both a quantum annealer and a QAOA
+    circuit with frozen angles.
+  \item One QAOA move lowers PRD from 27.9\,\% to 22.1--25.0\,\%; classical
+    ILS is still far better at $n=20$.
+  \item Compiled circuit size ranks the neighborhoods the same way on every
+    chip; a move costs one submission and about 30~s, and the cost grows
+    linearly with $n$.
+  \item Next: the full protocol (10 instances $\times$ 5 seeds $\times$
+    6 budgets) on every chip, and larger $n$.
+\end{itemize}
+\vspace*{2mm}
+\end{block}
+
+\vfill
+
+\begin{block}{Data and selected references}
+\vspace*{1mm}
+\begin{minipage}[c]{0.24\columnwidth}\qrcode[height=5cm]{https://doi.org/10.5281/zenodo.24106982}\end{minipage}\hfill
+\begin{minipage}[c]{0.73\columnwidth}Code, frozen angles and all hardware runs:\\
+{\small\texttt{doi.org/10.5281/zenodo.24106982}}\end{minipage}\\[1.2ex]
+{\small
+[1] Farhi, E., Goldstone, J., Gutmann, S. \emph{A quantum approximate
+    optimization algorithm.} arXiv:1411.4028 (2014).\\[0.4ex]
+[2] Bo\.zejko, W., Uchro\'nski, M., Wodecki, M. \emph{The new exponential
+    Fibonacci neighborhood as QUBO\ldots} Sci.\ Rep.\ (2026).\\[0.4ex]
+[3] Wojew\'odzki, R., Bo\.zejko, W. \emph{Scalable quantum neighborhood
+    search for the PFSP via windowed QUBO decomposition.} SSRN (2026).
+}
+\vspace*{1mm}
+\end{block}
+
+\end{minipage}
+\end{columns}
+}
+\end{frame}
+\end{document}

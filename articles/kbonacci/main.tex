@@ -392,7 +392,7 @@ ablation that keeps the link to the published results
 compound move restricted to positions $1..p$. By Lemma~\ref{lem:blocks}
 the last block ends at $p$ and has length $1$ or $d+1\leq k$, so
 \begin{equation}
-B[p]=\min\Bigl(B[p-1],\ \min_{1\le d\le \min(k-1,p-1)} B[p-d-1]+\delta_{p-d,p}\Bigr),
+B[p]=\min\Bigl(B[p-1],\ \hspace*{-2mm}\min_{1\le d\le \min(k-1,p-1)}\hspace*{-2mm} B[p-d-1]+\delta_{p-d,p}\Bigr),
 \end{equation}
 with $B[0]=0$, which takes $O(nk)$ time and memory. When no move improves
 the predicted makespan, the best single swap is applied, as in the
@@ -484,7 +484,7 @@ Every DP-based compound neighborhood for the PFSP (Fibonacci, Dynasearch,
 Motzkin, $k$-bonacci) therefore optimizes a surrogate. For $m=1$ the
 surrogate is exact, and Proposition~\ref{prop:join} suggests that the
 error grows with the number of machines on which paths can cross a
-border, that is, with $m$.
+border, that is, with~$m$.
 
 % ---------------------------------------------------------------------
 \section{Experimental Protocol}\label{sec:setup}
@@ -686,7 +686,7 @@ where Insert is better.}
 \setlength{\tabcolsep}{2.5pt}
 \begin{tabular}{@{}lcccc@{}}
 \toprule
-Class & 0.1\,s & 1\,s & 10\,s & 60\,s \\
+Instance & 0.1\,s & 1\,s & 10\,s & 60\,s \\
 \midrule
 $20\times5$ & 6, 8 & 16, $n$ & 10--$n$ & -- \\
 $20\times10$ & 12$^\ast$ & 6, 12, 16$^\ast$ & 12, 14$^\ast$ & -- \\

@@ -61,8 +61,8 @@ def conflict_graphs(grid=(1, 4), size=(16, 4.4), name="conflict_graphs.png"):
         nx.draw_networkx_edges(G, pos, ax=ax, edge_color=COL[nb], alpha=.55, width=1.4)
         nx.draw_networkx_nodes(G, pos, ax=ax, node_color=COL[nb], node_size=110)
         dens = 2 * G.number_of_edges() / (len(nodes) * (len(nodes) - 1))
-        ax.set_title(f"{nb}\n{len(nodes)} q, {G.number_of_edges()} $R_{{ZZ}}$ ({dens:.0%})",
-                     color=COL[nb], fontweight="bold")
+        ax.set_title(f"{nb}\n{len(nodes)} qubits, {G.number_of_edges()} gates\n{dens:.0%} of pairs",
+                     color=COL[nb], fontweight="bold", fontsize="medium")
         ax.axis("off")
     save(fig, name)
 
@@ -247,14 +247,14 @@ def hw_time(rows, size=(11, 5), name="hw_time.png"):
     ax.set_yscale("log")
     ax.set_xticks(range(4), NB)
     ax.set_ylabel("wall-clock time of one move [s] (log)")
-    ax.set_title("dots: runs · bar: billed QPU · line: median", fontsize="medium")
+    ax.set_title("dots: runs · bar: billed quantum time · line: median", fontsize="medium")
     save(fig, name)
 
 
 # ---------- 6. annealer vs gate (Table 3, ILS) ----------
 def compare(size=(14, 5.4), name="compare.png"):
     data = {"Classical (10 s)": [3.41, 3.82, 2.68, 2.64], "Annealer (10 s)": [20.17, 17.94, 25.85, 19.02],
-            "Annealer, in windows (10 s)": [20.03, 18.20, 26.24, 25.22], "Gate QAOA (one move, 10–288 s)": [25.04, 23.41, 22.12, 23.12]}
+            "Annealer, split into windows (10 s)": [20.03, 18.20, 26.24, 25.22], "Gate QAOA (one move, 10–288 s)": [25.04, 23.41, 22.12, 23.12]}
     cols = ["#BBBBBB", "#B4A7D6", "#5E3C99", "#F72585"]
     x = np.arange(4)
     w = .2
@@ -282,7 +282,7 @@ def arch(grid=(1, 2), size=(16, 5.4), name="arch.png"):
     ax.axhline(17.53, color="black", ls="--", lw=1.2)
     ax.text(2, 17.2, "identity start 17.5", ha="right", fontsize="small")
     ax.set_ylabel("PRD after one move [%]")
-    ax.set_title("ta001, same QUBOs, angles, shots")
+    ax.set_title("first instance: same QUBOs, angles, shots")
     ax.legend(frameon=False, ncol=4, fontsize="small", loc="upper center", bbox_to_anchor=(.5, -.1))
     if len(axes) == 1:
         fig.tight_layout()

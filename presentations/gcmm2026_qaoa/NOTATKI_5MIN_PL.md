@@ -33,10 +33,9 @@ Plakat czyta się kolumnami z góry na dół: **lewa to metoda**, **środkowa to
 *Pokaż łańcuch Fibonacciego i gęsty Dynasearch.*
 
 > „Używamy czterech sąsiedztw. Każda kandydująca zamiana to jeden kubit, a każda para zamian, których nie
-> można wykonać razem, to jedna bramka dwukubitowa. Fibonacci daje prosty łańcuch, a pozostałe trzy są gęste:
-> Adjacent jest wręcz pełny, Dynasearch i Motzkin są blisko pełnego. Adjacent i tak zostaje mały, bo ma tylko
-> kilka kandydatów w oknie, a Dynasearch i Motzkin mają ich dużo więcej. Gęstość razem z liczbą kandydatów
-> decyduje o wszystkim, co dalej.”
+> można wykonać razem, to jedna bramka dwukubitowa. Fibonacci daje prosty łańcuch. W Adjacent każda para
+> się wyklucza, Dynasearch i Motzkin też są gęste, ale Adjacent ma w oknie tylko pięciu kandydatów, a one
+> po piętnastu. Gęstość i wielkość decydują o wszystkim, co dalej.”
 
 ### 3. One circuit per move, angles frozen – ok. 40 s
 *Pokaż gwiazdkę na mapie.*
@@ -57,7 +56,7 @@ Plakat czyta się kolumnami z góry na dół: **lewa to metoda**, **środkowa to
 > chipy IQM Crystal, 20- i 54-kubitowy, mają tę samą kwadratową kratę. Wartości bezwzględne zmieniają się
 > mniej więcej dwukrotnie, a heavy-hex wypada najgorzej, ale kolejność się nie zmienia. Fibonacci jest
 > malutki, ma czternaście bramek CZ na każdym chipie, potem jest Adjacent, a Motzkin i Dynasearch potrzebują
-> grubo ponad tysiąca. Im głębszy obwód, tym więcej szumu. To jest ta sama kolejność, w jakiej sąsiedztwa
+> od około sześciuset do grubo ponad tysiąca bramek dwukubitowych, zależnie od chipu. Im głębszy obwód, tym więcej szumu. To jest ta sama kolejność, w jakiej sąsiedztwa
 > mieszczą się na annealerze, tylko z zupełnie innego powodu.”
 
 ### 7–8. Wyniki na IBM Heron i kolejka (środek, dół) – ok. 60 s
@@ -75,7 +74,8 @@ Plakat czyta się kolumnami z góry na dół: **lewa to metoda**, **środkowa to
 *Pokaż szare słupki przy zerze.*
 
 > „Tu jest uczciwe porównanie. Słupki bramkowe są po jednym ruchu, pozostałe po 10 sekundach. Na Dynasearch
-> jeden ruch bramkowy wypada niżej niż annealer, na pozostałych trzech sąsiedztwach wyżej. Ale wszystkie
+> jeden ruch bramkowy daje najniższy słupek kwantowy, na Motzkinie wypada między dwiema wersjami annealera,
+> a na Adjacent i Fibonaccim wyżej. Ale wszystkie
 > wersje kwantowe są daleko za klasycznym przeszukiwaniem lokalnym, które przy tej wielkości dochodzi do
 > około 3 procent. Ta praca jest o tym, czy cały potok działa i ile kosztuje, a nie o szybkości.”
 

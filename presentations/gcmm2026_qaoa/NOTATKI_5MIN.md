@@ -10,7 +10,8 @@ Plakat czyta się kolumnami z góry na dół:
 | Three chip layouts, same four QUBOs | Why only one move: the queue | Conclusions · QR do Zenodo |
 
 Dwie rzeczy do zapamiętania przez widza są w różowych ramkach. Poniżej najpierw tekst do powiedzenia
-(po angielsku, około 650 słów, czyli 5 minut spokojnym tempem), a potem po polsku wyjaśnienia trudniejszych
+(po angielsku, około 780 słów, czyli 5–6 minut spokojnym tempem; gdy czasu brakuje, pomiń
+kafelek 9 albo 10–11), a potem po polsku wyjaśnienia trudniejszych
 miejsc i odpowiedzi na pytania, które mogą paść.
 
 Krótsza wersja (30 s), gdy ktoś tylko przechodzi:
@@ -38,10 +39,9 @@ Krótsza wersja (30 s), gdy ktoś tylko przechodzi:
 *Pokaż łańcuch Fibonacciego i gęsty Dynasearch.*
 
 > "We use four neighborhoods. Each candidate swap becomes one qubit, and each pair of swaps that cannot be
-> applied together becomes one two-qubit gate. Fibonacci gives a simple chain; the other three are dense –
-> Adjacent is even complete, Dynasearch and Motzkin are close to it. Adjacent still stays small, because it
-> has only a few candidates per window, while Dynasearch and Motzkin have many more. Density and the number
-> of candidates together decide everything that follows."
+> applied together becomes one two-qubit gate. Fibonacci gives a simple chain. In Adjacent every pair
+> clashes, and Dynasearch and Motzkin are dense too, but Adjacent has only five candidates in a window
+> against their fifteen. Density and size decide everything that follows."
 
 ### 3. One circuit per move, angles frozen – ok. 40 s
 *Pokaż gwiazdkę na mapie.*
@@ -61,8 +61,8 @@ Krótsza wersja (30 s), gdy ktoś tylko przechodzi:
 > the compiler adds extra gates. We compiled the same four QUBOs onto four chips with three layouts – the two
 > IQM Crystal chips, with 20 and 54 qubits, share the square lattice. The absolute numbers move
 > by about a factor of two – heavy-hex is the least favourable – but the order never changes: Fibonacci is
-> tiny, with fourteen CZ gates on every chip, Adjacent is next, and Motzkin and Dynasearch need well over a
-> thousand. A deeper circuit collects more noise. And this is the same order in which the neighborhoods fit
+> tiny, with fourteen CZ gates on every chip, Adjacent is next, and Motzkin and Dynasearch need from about
+> six hundred to well over a thousand two-qubit gates, depending on the chip. A deeper circuit collects more noise. And this is the same order in which the neighborhoods fit
 > on the annealer, for a completely different reason."
 
 ### 7–8. IBM Heron results and the queue (środek, dół) – ok. 60 s
@@ -79,7 +79,8 @@ Krótsza wersja (30 s), gdy ktoś tylko przechodzi:
 *Pokaż szare słupki przy zerze.*
 
 > "Here is the honest comparison. The gate-model bars are after one move, the others after 10 seconds. On
-> Dynasearch the single gate move lands lower than the annealer, on the other three it is higher. But all
+> Dynasearch the single gate move is the lowest quantum bar, on Motzkin it falls between the two annealer
+> variants, and on Adjacent and Fibonacci it is higher. But all
 > quantum versions are far from classical local search, which reaches about 3 percent at this size. This
 > paper is about whether the pipeline works and what it costs, not about speed."
 
@@ -118,8 +119,8 @@ Krótsza wersja (30 s), gdy ktoś tylko przechodzi:
   permutacji tożsamościowej, cięte na okna po 6 pozycji z krokiem 3. Daje to 21 QUBO dla Adjacent i
   Fibonacciego oraz 11 dla Dynasearch i Motzkina.
 - **Po co to wszystko.** Kąty są zamrożone, więc na sprzęcie nie ma pętli strojenia. Jeden ruch to jedno
-  zadanie na QPU, jak jedno wywołanie annealera. Bez tego przy ~10 minutach QPU miesięcznie nie dałoby się
-  zrobić ani jednego biegu.
+  zadanie na QPU, jak jedno wywołanie annealera. Bez tego jeden ruch kosztowałby dziesiątki do setek
+  wykonań obwodu, a przy ~10 minutach QPU miesięcznie cały protokół by się nie zmieścił.
 - **Obwód** (bramki R_Z, R_ZZ, R_X) usunąłem z plakatu, bo z metra był nieczytelny. Jeśli ktoś spyta, jak
   wygląda: warstwa Hadamardów, potem po jednej bramce R_ZZ na każdą krawędź grafu konfliktów, potem R_X na
   każdym kubicie (rysunek jest w artykule, Fig. 1).
@@ -139,7 +140,8 @@ Krótsza wersja (30 s), gdy ktoś tylko przechodzi:
 
 ### Wykres porównania – czego nie mówić
 - Nie mówić, że bramkowy jest „lepszy od annealera”. Na Dynasearch jeden ruch bramkowy daje 22,1 wobec 25,9 przy
-  10 s annealera. Na pozostałych trzech sąsiedztwach jest gorszy o ok. 5 punktów, a budżety nie są te same.
+  10 s annealera. Na Motzkinie jest lepszy od annealera w oknach (23,1 wobec 25,2), ale gorszy od pełnego
+  annealera. Na Adjacent i Fibonaccim jest gorszy o 5–5,5 punktu. Budżety nie są te same.
 - Przy budżetach ≤ 1 s, gdzie annealer też robi jeden ruch, wiersze annealera i bramkowe dla Adjacent i
   Fibonacciego różnią się o kilka dziesiątych punktu. Część luki to więc czas dostępu, a nie jakość.
 - Nie używać słów „quantum advantage” ani „first”.
@@ -155,12 +157,15 @@ Różnice (< 0,5 punktu średnio, do 5,8 na pojedynczej instancji) biorą się z
 | Pytanie | Odpowiedź (sedno) |
 |---|---|
 | Why not tune the angles on the device? | It costs tens to hundreds of circuit runs per move; the IBM Open plan gives about 10 minutes of QPU time per 28 days. Fixed angles make one move = one submission. |
-| Why only p = 1? | Deeper circuits are too noisy on current chips and need far more runs than our quota. Depth p is studied separately. |
+| Why only p = 1? | Deeper circuits are too noisy on current chips and need more angles to fix in advance. Larger p is outside this paper. |
 | Why the lowest-energy sample and not the most frequent one? | At p = 1 the most frequent bitstring is usually all zeros (no swap) or a bad state; the lowest-energy sample is the useful readout. |
 | Why only n = 20? | Quota. Dense moves are cut into windows of 6 positions; at n = 20 a move needs 6 circuits, at n = 500 it would need 166, and billing is per circuit. One of the ten instances did not even fit the 16 qubits of the IQM star. |
 | How expensive is the full protocol? | About 550 credits per processor for 10 instances × 5 seeds × 6 budgets × 2 metaheuristics, against 30 credits a month. |
 | Is it faster than classical? | No. Classical local search reaches about 3 % at this size; all quantum versions stay above 17 %. The contribution is the pipeline, the depth analysis and the measured cost. |
 | What is the "threshold"? | Below some circuit size the chip does not change the answer (Adjacent identical on 9/9 instances); above it the chip matters (Motzkin 17 → 13 %). Dense rows: one instance only. |
 | Does the queue count against the algorithm? | Under a strict wall-clock rule yes, and that is an open methodological question: identical jobs wait times that differ by an order of magnitude. |
+| Are the training instances also test instances? | Two of the three are. Every run starts from the identity, so their first moves meet the training windows; at p = 1 the best angles are nearly the same across instances, so we do not expect a bias (stated in the paper). |
+| Why 30 s per move, and is that the chip? | It is mostly the queue on a shared processor. The same move took 12 s on a less heavily shared processor. |
+| Where do the Crystal 20 numbers come from? | The raw output of the four Crystal 20 runs was lost; the values come from the lab notes, and the paper says so. |
 | Error mitigation? | None: no mitigation, no dynamical decoupling, no twirling; optimisation level 1. |
 | Where is the code? | QR code → Zenodo 10.5281/zenodo.24106982 (code, angles, all hardware runs). |

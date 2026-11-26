@@ -127,8 +127,8 @@ $(C_{\max}-\mathrm{LB})/\mathrm{LB}\cdot100\%$.}
 \vspace*{2mm}
 \fig[0.7]{p_conflict_graphs.png}
 Each candidate swap is one qubit and each clashing pair is one two-qubit
-gate (percentage = share of all pairs).
-Fibonacci is a sparse chain; Adjacent is complete, Dynasearch and Motzkin are dense.
+gate.
+Fibonacci is a sparse chain; in Adjacent every pair clashes, and Dynasearch and Motzkin are dense.
 \vspace*{2mm}
 \end{block}
 
@@ -163,8 +163,9 @@ inserts extra gates for every missing link.
 
 \begin{block}{Circuit size of one move after compilation}
 \vspace*{2mm}
-\fig[0.95]{p_depth.png}
-Log scale. Star~16 counts include MOVE operations (CZ alone: 14 for Fibonacci).
+\fig[1.0]{p_depth.png}
+Log scale; CZ is the chip's two-qubit gate. Star~16 counts include MOVE operations
+(CZ alone: Fibonacci 14, Motzkin 576, Dynasearch 696).
 \vspace*{2mm}
 \end{block}
 
@@ -177,8 +178,8 @@ Log scale. Star~16 counts include MOVE operations (CZ alone: 14 for Fibonacci).
 \end{center}
 \vspace{1mm}
 A deeper circuit collects more noise. Compiled size ranks the neighborhoods
-identically on all four chips, and the same order decides which neighborhoods
-fit on a quantum annealer.
+identically on all four chips, the same order in which the neighborhoods fit
+on the quantum annealer of our earlier work.
 \vspace*{2mm}
 \end{alertblock}
 
@@ -199,7 +200,7 @@ point, because one move from the same start is the same computation.
 
 \begin{block}{Why only one move: the queue}
 \vspace*{2mm}
-\fig[0.75]{p_hw_time.png}
+\fig[0.85]{p_hw_time.png}
 A move needs 3--7~s of QPU time but took 10--288~s on the clock, so no run
 reached a second move within the 10~s budget.
 \vspace*{2mm}
@@ -216,8 +217,10 @@ reached a second move within the 10~s budget.
 \begin{block}{Gate model, annealer and classical search (ILS)}
 \vspace*{2mm}
 \fig{p_compare.png}
-One gate-model move is compared with 10~s of annealer or classical search.
-No quantum back-end comes close to classical ILS (about 3\,\%) at $n=20$.
+One gate-model move is compared with 10~s of annealer or classical search, so
+the quantum back-ends are not ranked: the gate move is lowest on Dynasearch,
+the full annealer on the other three. No quantum back-end comes close to
+classical ILS (about 3\,\%) at $n=20$.
 \vspace*{2mm}
 \end{block}
 
@@ -260,8 +263,8 @@ noise cannot be separated yet.
   \item One QAOA move lowers PRD from 27.9\,\% to 22.1--25.0\,\%; classical
     ILS is still far better at $n=20$.
   \item Compiled circuit size ranks the neighborhoods the same way on every
-    chip; a move costs one submission and about 30~s, and the cost grows
-    linearly with $n$.
+    chip; a move is one submission and about 30~s on the clock, and the
+    number of billed circuits grows linearly with $n$.
   \item Next: the full protocol (10 instances $\times$ 5 seeds $\times$
     6 budgets) on every chip, and larger $n$.
 \end{itemize}

@@ -29,7 +29,6 @@
 \usepackage{xcolor}
 \usepackage{tikz}
 \usetikzlibrary{positioning,calc,decorations.pathreplacing}
-\usepackage{standalone} % TikZ figures are compiled from figures/*.tex
 \newtheorem{proposition}{Proposition}
 \newtheorem{definition}{Definition}
 \newtheorem{lemma}{Lemma}
@@ -81,8 +80,7 @@ critical-path (block) properties that prune it~\cite{nowicki1996,grabowski2004}.
 Dynasearch~\cite{congram2002} showed that an exponentially large
 neighborhood of \emph{independent} pairwise interchanges can be searched
 exactly by dynamic programming (DP). This turns a compound move into the unit
-of search, an idea within very large-scale neighborhood search
-(VLSN)~\cite{ahuja2002survey}. Two further compound neighborhoods for the PFSP
+of search, an idea within very large-scale neighborhood search~\cite{ahuja2002survey}. Two further compound neighborhoods for the PFSP
 have sizes counted by classical integer sequences: the Fibonacci
 neighborhood of disjoint adjacent swaps~\cite{wojewodzki2026icaisc,bozejko2026new}
 and the Motzkin neighborhood of non-crossing, possibly nested
@@ -91,10 +89,9 @@ swaps~\cite{wojewodzki2026soco}.
 These neighborhoods differ by orders of magnitude in size and cost, yet
 they have only been compared as isolated points. This paper fills the
 space between Fibonacci and Dynasearch with a one-parameter family and
-asks a simple question: \emph{how far should a swap reach?} We adopt the metaheuristics, parameters and protocol
-of~\cite{wojewodzki2026icaisc,wojewodzki2026soco,wojewodzki2026windowed}
-unchanged, so the neighborhood is the only experimental factor and every
-new number can be read against the published ones.
+asks a simple question: \emph{how far should a swap reach?} We use the metaheuristics, parameters and protocol
+of \citet{wojewodzki2026icaisc,wojewodzki2026soco,wojewodzki2026windowed},
+so the neighborhood is the only experimental factor.
 
 The paper makes four contributions. The first is the $k$-bonacci
 neighborhood $\N_k$ and the chain
@@ -119,25 +116,23 @@ full Taillard benchmark ($n=20$--$500$) with six time budgets up to
 10\,s and with 60\,s runs on the largest classes. It covers
 solution quality, iterations within the budget, the distances of the
 selected swaps, and the measured additivity error as a function of $k$.
-The fourth is that we solve the $k$-bonacci move on a quantum annealer and on a
-gate-based processor inside the same search and compare both with the
+The fourth is the solution of the $k$-bonacci move on a quantum annealer and on a
+gate-based processor inside the same search, compared with the
 classical move under the same time budget.
 
 % ---------------------------------------------------------------------
 \section{Related Work}
 
 \paragraph{Compound moves.} Dynasearch was introduced for single-machine
-total weighted tardiness~\cite{congram2002}. Ergun and
-Orlin~\cite{ergun2006} reduced its swap-neighborhood search to $O(n^2)$,
-and Grosso et al.~\cite{grosso2004} added insertions. Bo\.zejko and
-Wodecki analyzed swap multimoves for the PFSP~\cite{bozejko2007}. In
+total weighted tardiness~\cite{congram2002}. \citet{ergun2006} reduced its swap-neighborhood search to $O(n^2)$,
+and \citet{grosso2004} added insertions. \citet{bozejko2007} analyzed swap multimoves for the PFSP. In
 single-machine total weighted tardiness the cost changes of independent
 swaps add up, which makes the DP exact. In the PFSP they do not
 (Section~\ref{sec:additivity}).
-\paragraph{Sequence-counted neighborhoods.} The QUBO form of the Fibonacci neighborhood was solved on a quantum annealer~\cite{bozejko2026new}, and the Motzkin numbers that count the Motzkin neighborhood are surveyed in~\cite{aigner1998}. Quantum annealing and QAOA have been applied to job shop~\cite{venturelli2015,kurowski2020,kurowski2023}, single-machine~\cite{bozejko2022distributed,bozejko2025noncrossing} and flow shop scheduling~\cite{bozejko2026huge,bozejko2024cinti}.
+\paragraph{Sequence-counted neighborhoods.} The quadratic unconstrained binary optimization (QUBO) form of the Fibonacci neighborhood was solved on a quantum annealer~\cite{bozejko2026new}, and the Motzkin numbers that count the Motzkin neighborhood are surveyed by \citet{aigner1998}. Quantum annealing and the quantum approximate optimization algorithm (QAOA) have been applied to job shop~\cite{venturelli2015,kurowski2020,kurowski2023}, single-machine~\cite{bozejko2022distributed,bozejko2025noncrossing} and flow shop scheduling~\cite{bozejko2026huge,bozejko2024cinti}.
 \paragraph{Bounded-reach moves.} Restricting how far a move may reach is a
 standard device in routing, e.g., Or-opt segments and granular
-neighborhoods~\cite{toth2003}. Balzereit et al.~\cite{balzereit2024}
+neighborhoods~\cite{toth2003}. \citet{balzereit2024}
 study local search with a bounded search radius for single-machine
 scheduling with family setup times and analyze its parameterized
 complexity in the radius. We study the same kind of radius--runtime
@@ -153,7 +148,7 @@ $C_{r,t}=\max(C_{r-1,t},C_{r,t-1})+p_{r,\pi(t)}$, and
 $C_{\max}(\pi)=C_{m,n}$, with $C_{0,t}=C_{r,0}=0$. Head and tail matrices $H$ and $T$ (forward and
 backward longest paths) give the makespan after any modification of a
 segment $[i,j]$ by recomputing only that segment,
-$C_{\max}=\max_r\bigl(H'_{r,j}+T_{r,j+1}\bigr)$, at cost $O(m(j-i+1))$.
+$C_{\max}=\max_r\bigl(H'_{r,j}+T_{r,j+1}\bigr)$, where $H'$ are the heads recomputed on $[i,j]$, at cost $O(m(j-i+1))$.
 
 Equivalently, $C_{\max}$ is a longest path in the $m\times n$ grid of
 operations. A \emph{path} $P$ is a sequence of cells from $(1,1)$ to
@@ -183,10 +178,47 @@ $k=5$.
 
 \begin{figure*}[t]
 \centering
-\includestandalone[width=\textwidth]{figures/fig_moves_n4}
+% TikZ source of the figure (single-file submission)
+\resizebox{\textwidth}{!}{%
+\definecolor{d1}{RGB}{31,119,180}\definecolor{d2}{RGB}{230,120,20}
+\definecolor{d3}{RGB}{44,160,44}\definecolor{d4}{RGB}{200,40,40}
+\definecolor{d5}{RGB}{148,103,189}\definecolor{d6}{RGB}{120,80,50}
+\begin{tikzpicture}[x=0.36cm,y=0.36cm,font=\footnotesize]
+% \mv{x}{y}{n}{swaps a/b,...}  (use 0/0 for the identity)
+\newcommand{\mv}[4]{%
+  \edef\lst{#4}\foreach \a/\b in \lst{\ifnum\a>0
+    \pgfmathtruncatemacro{\d}{\b-\a}%
+    \fill[d\d!14,rounded corners=2pt] (#1+\a-0.4,#2-0.38) rectangle (#1+\b+0.4,#2+0.38);
+    \draw[d\d,rounded corners=2pt,thin] (#1+\a-0.4,#2-0.38) rectangle (#1+\b+0.4,#2+0.38);
+    \draw[d\d,very thick] (#1+\a,#2+0.2) .. controls (#1+\a,#2+0.2+0.55*\d) and (#1+\b,#2+0.2+0.55*\d) .. (#1+\b,#2+0.2);
+  \fi}%
+  \foreach \i in {1,...,#3}{\fill (#1+\i,#2) circle (0.15);}}
+\def\gap{6.4}
+% k = 2: the Fibonacci moves
+\node[anchor=east] at (0,0) {$n=5$,\ $k=2$: 8 moves};
+\foreach [count=\c from 0] \s in {{0/0},{1/2},{2/3},{3/4},{4/5},{1/2,3/4},{1/2,4/5},{2/3,4/5}}{\mv{\c*\gap}{0}{5}{\s}}
+% new at k = 3
+\node[anchor=east] at (0,-3) {$k=3$: $+5=13$};
+\foreach [count=\c from 0] \s in {{1/3},{2/4},{3/5},{1/3,4/5},{1/2,3/5}}{\mv{\c*\gap}{-3}{5}{\s}}
+% new at k = 4 and k = 5
+\node[anchor=east] at (0,-6.2) {$k=4$: $+2=15$};
+\foreach [count=\c from 0] \s in {{1/4},{2/5}}{\mv{\c*\gap}{-6.2}{5}{\s}}
+\node[anchor=east] at (5*\gap+0.2,-6.2) {$k=n$: $+1=16=2^{n-1}$};
+\mv{5*\gap+0.4}{-6.2}{5}{1/5}
+% two moves on n = 12
+\draw[gray!50] (-12,-8.4) -- (8*\gap,-8.4);
+\node[anchor=east] at (0,-11.2) {$n=12$,\ $k=3$};
+\mv{0}{-11.2}{12}{1/3,4/5,7/9,11/12}
+\node[anchor=east] at (17.6,-11.2) {$k=n$};
+\mv{17.6}{-11.2}{12}{1/6,7/8,9/12}
+% legend
+\node[anchor=west] at (32.5,-10.6) {swap distance};
+\foreach \d in {1,...,5}{\fill[d\d] (32.6+1.9*\d-1.9,-11.8) rectangle ++(1.2,0.5); \node[anchor=west] at (33.7+1.9*\d-1.9,-11.55) {\scriptsize\d};}
+\end{tikzpicture}%
+}
 \caption{All compound moves on $n=5$ positions, grouped by the smallest
 $k$ that contains them, and two moves on $n=12$. An arc joins two
-swapped jobs, and its color gives the swap distance.}
+swapped jobs, a tile marks a block of Lemma~\ref{lem:blocks}, and the color gives the swap distance.}
 \label{fig:moves4}
 \end{figure*}
 
@@ -230,11 +262,68 @@ long as no two intervals cross.
 
 \begin{figure*}[t]
 \centering
-\includestandalone[width=\textwidth]{figures/fig_boards}
+% TikZ source of the figure (single-file submission)
+\resizebox{\textwidth}{!}{%
+\definecolor{d1}{RGB}{31,119,180}\definecolor{d2}{RGB}{230,120,20}
+\definecolor{d3}{RGB}{44,160,44}\definecolor{d4}{RGB}{200,40,40}
+\definecolor{d5}{RGB}{148,103,189}\definecolor{d6}{RGB}{140,86,75}
+\definecolor{d7}{RGB}{227,119,194}
+\begin{tikzpicture}[x=0.34cm,y=0.34cm,font=\footnotesize]
+% \arcs{k}{previous k}: all candidate swaps of N_k
+\newcommand{\arcs}[2]{%
+  \foreach \i in {1,...,8}{\foreach \j in {1,...,8}{%
+    \pgfmathtruncatemacro{\d}{\j-\i}%
+    \ifnum\d>0 \ifnum\d<#1
+      \pgfmathsetmacro{\h}{0.5*\d}%
+      \ifnum\d<#2 \def\op{0.28}\else\def\op{1}\fi
+      \draw[d\d,thick,opacity=\op] (\i-0.5,0.3) .. controls (\i-0.5,0.3+\h) and (\j-0.5,0.3+\h) .. (\j-0.5,0.3);
+    \fi\fi}}%
+  \foreach \i in {1,...,8}{\fill (\i-0.5,0.3) circle (0.14);}}
+% \board{k}{sigma(1..8)}
+\newcommand{\board}[2]{%
+  \foreach \r in {1,...,8}{\foreach \c in {1,...,8}{%
+    \pgfmathtruncatemacro{\d}{abs(\r-\c)}%
+    \ifnum\d>0 \ifnum\d<#1 \fill[d\d!22] (\c-1,-1-\r) rectangle (\c,-\r);\fi\fi
+    \ifnum\d=0 \fill[gray!14] (\c-1,-1-\r) rectangle (\c,-\r);\fi}}
+  \foreach \i in {1,...,7}{\draw[gray!45,very thin] (\i,-9) -- (\i,-1); \draw[gray!45,very thin] (0,-1-\i) -- (8,-1-\i);}
+  \draw (0,-9) rectangle (8,-1);
+  \foreach [count=\r] \c in {#2}{\node[inner sep=0pt,font=\scriptsize] at (\c-0.5,-\r-0.5) {$\mathbf{1}$};}}
+\newcommand{\blk}[2]{\draw[very thick] (#1-1,-1-#2) rectangle (#2,-#1);}
+\begin{scope}[shift={(0,0)}]
+  \node at (4,4.4) {$k=2$ (Fibonacci)};
+  \arcs{2}{1}\board{2}{2,1,3,5,4,6,8,7}\blk{1}{2}\blk{4}{5}\blk{7}{8}
+  \node at (4,-10) {7 candidates};
+\end{scope}
+\begin{scope}[shift={(10,0)}]
+  \node at (4,4.4) {$k=3$};
+  \arcs{3}{2}\board{3}{3,2,1,4,6,5,8,7}\blk{1}{3}\blk{5}{6}\blk{7}{8}
+  \node at (4,-10) {13 candidates};
+\end{scope}
+\begin{scope}[shift={(20,0)}]
+  \node at (4,4.4) {$k=4$};
+  \arcs{4}{3}\board{4}{4,2,3,1,6,5,8,7}\blk{1}{4}\blk{5}{6}\blk{7}{8}
+  \node at (4,-10) {18 candidates};
+\end{scope}
+\begin{scope}[shift={(30,0)}]
+  \node at (4,4.4) {$k=n$ (Dynasearch)};
+  \arcs{8}{4}\board{8}{6,2,3,4,5,1,8,7}\blk{1}{6}\blk{7}{8}
+  \node at (4,-10) {28 candidates};
+\end{scope}
+\begin{scope}[shift={(40,0)}]
+  \node at (4,4.4) {Motzkin};
+  \foreach \a/\b in {1/6,3/4,7/8}{\pgfmathtruncatemacro{\d}{\b-\a}%
+    \draw[d\d,very thick] (\a-0.5,0.3) .. controls (\a-0.5,0.3+0.5*\d) and (\b-0.5,0.3+0.5*\d) .. (\b-0.5,0.3);}
+  \foreach \i in {1,...,8}{\fill (\i-0.5,0.3) circle (0.14);}
+  \board{8}{6,2,4,3,5,1,8,7}\blk{1}{6}\blk{7}{8}
+  \draw[very thick,dashed] (2,-5) rectangle (4,-3);
+  \node at (4,-10) {nested swaps};
+\end{scope}
+\end{tikzpicture}%
+}
 \caption{The neighborhoods for $n=8$. Top: candidate swaps as arcs
 (faint arcs are already allowed at the previous $k$). Bottom: one move
 as its permutation matrix (ones in bold); shaded cells form the band
-$|t-\sigma(t)|\leq k-1$ and thick squares mark the blocks of
+$|t-\sigma(t)|\leq k-1$, colored by distance as in Fig.~\ref{fig:moves4}, and thick squares mark the blocks of
 Lemma~\ref{lem:blocks}.}
 \label{fig:boards}
 \end{figure*}
@@ -273,7 +362,7 @@ hence $x_0\leq\lambda_k$.
 \paragraph{The hierarchy.} A move of $\N_k$ is also a move of
 $\N_{k+1}$, and the inclusion is strict whenever $k<n$, because a single
 swap of distance $k$ lies in $\N_{k+1}$ only. Together with the
-neighborhoods of the earlier studies this gives the chain
+neighborhoods of the cited studies this gives the chain
 \begin{equation}\label{eq:chain}
 \begin{split}
 &\N_{\mathrm{Adj}}\subset\N_2=\N_{\mathrm{Fib}}\subset\N_3\subset\dots\subset\N_n\\
@@ -289,9 +378,31 @@ involutions.
 
 \begin{figure*}[t]
 \centering
-\includestandalone[width=0.8\textwidth]{figures/fig_chain}
+% TikZ source of the figure (single-file submission)
+\resizebox{0.8\textwidth}{!}{%
+\begin{tikzpicture}[font=\footnotesize,node distance=3.2mm,
+  nb/.style={draw,rounded corners=1.5pt,align=center,inner sep=2.5pt,minimum height=9mm},
+  fam/.style={nb,fill=gray!18}]
+\node[nb]  (adj) {Adjacent\\$10$};
+\node[fam,right=of adj] (k2) {Fibonacci\\$k=2$: $89$};
+\node[fam,right=of k2]  (k3) {Tribonacci\\$k=3$: $274$};
+\node[fam,right=of k3]  (k4) {$k=4$\\$401$};
+\node[right=of k4]      (dd) {$\cdots$};
+\node[fam,right=of dd]  (kn) {Dynasearch\\$k=n$: $512$};
+\node[nb,right=of kn]   (mo) {Motzkin\\$2188$};
+\node[nb,right=of mo]   (in) {involutions\\$9496$};
+\node[nb,dashed,right=of in] (gi) {generalized\\involutions};
+\node[nb,right=of gi]   (ce) {complete\\enumeration\\$n!=3628800$};
+\foreach \a/\b in {adj/k2,k2/k3,k3/k4,k4/dd,dd/kn,kn/mo,mo/in,in/gi,gi/ce}{\node at ($(\a.east)!0.5!(\b.west)$) {$\subset$};}
+\draw[decorate,decoration={brace,mirror,amplitude=3pt}] ([yshift=-1.5mm]k2.south west) -- node[below=3pt]{$\mathcal N_k$: wider band, cost $O(mnk^2)$} ([yshift=-1.5mm]kn.south east);
+\node[below=5.2mm of mo,align=center,inner sep=0pt] {nested\\swaps};
+\node[below=5.2mm of in,align=center,inner sep=0pt] {crossing\\swaps};
+\node[below=5.2mm of gi,align=center,inner sep=0pt] {open};
+\node[below=2.6mm of ce,align=center,inner sep=0pt] {all\\permutations};
+\end{tikzpicture}%
+}
 \caption{The inclusion chain of the swap neighborhoods with their sizes
-for $n=10$. The shaded part is the $k$-bonacci family.}
+for $n=10$. The shaded part is the $k$-bonacci family; dashed boxes lie outside this study.}
 \label{fig:chain}
 \end{figure*}
 
@@ -383,7 +494,7 @@ choose different moves.
 \citet{wojewodzki2026windowed} use a simpler test that marks a
 position as a boundary when the last machine starts a job immediately
 after the previous machine finishes it, and keep a swap only if a
-boundary lies in $[i,j]$. This test is a heuristic: on local optima it
+boundary lies in $[i,j]$. This test is a heuristic: on local optima of $\N_3$ (random instances) it
 discards 2--6\% of the improving swaps and keeps 1.6--4.8 times more
 candidates at $k=4$ and up to 1.7 times more at $k=n$ than the filter of
 Proposition~\ref{prop:filter}. We run every $k$
@@ -496,13 +607,13 @@ border, that is, with~$m$.
 % ---------------------------------------------------------------------
 \section{Experimental Protocol}\label{sec:setup}
 
-We follow the protocol of~\cite{wojewodzki2026windowed} and change only
+We follow the protocol of \citet{wojewodzki2026windowed} and change only
 the neighborhood.
 \begin{itemize}
 \item \textbf{Instances:} all 120 Taillard instances~\cite{taillard1993}
       (12 classes, $n\in\{20,50,100,200,500\}$, $m\in\{5,10,20\}$),
       verified against Taillard's generator.
-\item \textbf{Metaheuristics} (unchanged): ILS~\cite{lourenco2003} with a tabu list~\cite{glover1997} (tenure
+\item \textbf{Metaheuristics:} ILS~\cite{lourenco2003} with a tabu list~\cite{glover1997} (tenure
       10) and an elite pool of the 10 best solutions, perturbed by
       double-bridge kicks, started from the identity permutation.
 \item \textbf{Budgets:} $t_{\max}\in\{0.1,0.5,1,2,5,10\}$\,s,
@@ -512,12 +623,12 @@ the neighborhood.
       and Insert.
 \item \textbf{Neighborhoods:} $k\in\{2,3,4,5,6,8,12,16,n\}$, each
       with the exact filter of Proposition~\ref{prop:filter} and with the
-      block-boundary filter of~\cite{wojewodzki2026windowed}. The 60\,s runs use the exact filter and $k\in\{4,6,8,12,16,24,32\}$,
+      block-boundary filter of \citet{wojewodzki2026windowed}. The 60\,s runs use the exact filter and $k\in\{4,6,8,12,16,24,32\}$,
       and on $200\times 10$ also $k\in\{48,64,n\}$. A separate
       experiment sets $k$ to 10\%, 20\%, \dots, 90\% of $n$ with both
       filters. References: Insert (best single insertion with
       Taillard's acceleration), run in the same campaign, and Adjacent,
-      Fibonacci, Dynasearch and Motzkin as run in~\cite{wojewodzki2026windowed}.
+      Fibonacci, Dynasearch and Motzkin as run by \citet{wojewodzki2026windowed}.
 \item \textbf{Metric:} relative percentage deviation (RPD) to the Taillard lower bound and the two-sided
       Wilcoxon signed-rank test~\cite{wilcoxon1945}, $\alpha=0.05$. In addition:
       Holm-adjusted $p$-values~\cite{holm1979}, the Friedman test with the Nemenyi
@@ -549,7 +660,7 @@ the timing jitter of at most one move.
 On two classes ($20\times 5$ and $50\times 10$,
 $k\in\{3,8\}$) the extracted and the independent ILS values differ by at
 most 0.03 percentage points. A replication run of Fibonacci and Dynasearch (two classes, same seeds)
-reproduces the published quality.
+matches the reported quality.
 At 10\,s the values agree within 0.01 points. The largest difference at
 any budget is 0.25 points, for Dynasearch on $50\times 10$ at 0.1\,s,
 where a run completes about four iterations.
@@ -564,12 +675,12 @@ the predicted and the real makespan change, the distances of the selected
 swaps, the number of candidates and the evaluation time.
 For $n=200$ the same experiment uses $k\leq 16$ and gives 194 states.
 
-\paragraph{Quantum protocol.} The quantum runs follow~\cite{wojewodzki2026windowed} and differ only in the neighborhood.
-On the annealer the $k$-bonacci move is an interval-overlap quadratic unconstrained binary optimization (QUBO) problem~\cite{lucas2014ising,kadowaki1998} with
+\paragraph{Quantum protocol.} The quantum runs follow \citet{wojewodzki2026windowed} and differ only in the neighborhood.
+On the annealer the $k$-bonacci move is an interval-overlap QUBO problem~\cite{lucas2014ising,kadowaki1998} with
 interval length at most $k$ (the length cap also holds on the quantum processing unit, QPU),
 100 reads per call, inside the same ILS with $t_{\max}=10$\,s. On the
 gate-based processor (IQM Sirius, 16 qubits) the move comes from a
-fixed-angle quantum approximate optimization algorithm (QAOA)~\cite{farhi2014qaoa,wojewodzki2026gcmm} ($p=1$, 4096 shots) on windows of six positions with
+fixed-angle QAOA~\cite{farhi2014qaoa,wojewodzki2026gcmm} ($p=1$, 4096 shots) on windows of six positions with
 50\% overlap, and all windows of a move are submitted as one job.
 Neither platform has a classical fallback: a move that the QPU does not
 return ends the run with an error. All quantum results use instances
@@ -585,9 +696,6 @@ and on $100\times 10$, where only seed 0 was run (190 runs).
 
 \begin{table*}[t]
 \centering
-\caption{Mean RPD [\%] to the lower bound on the Taillard PFSP instances, ILS, exact filter. Bold marks
-the best value of a column.}
-\label{tab:main}
 \small
 \setlength{\tabcolsep}{4pt}
 \begin{tabular}{@{}l*{15}{c}@{}}
@@ -617,8 +725,11 @@ $k=16$ & 12.70 & 11.54 & 11.06 & 9.92 & 6.76 & 5.76 & 10.02 & 5.95 & 3.80 & 13.0
 $k=n$ & 12.74 & 11.55 & 11.09 & 13.28 & 7.69 & 5.85 & 17.10 & 9.41 & 4.97 & 17.13 & 16.18 & 10.20 & 14.39 & 14.39 & 14.39 \\
 \bottomrule
 \end{tabular}
+\caption{Mean RPD [\%] to the lower bound on the Taillard PFSP instances, ILS, exact filter. Bold marks
+the best value of a column.}
+\label{tab:main}
 \end{table*}
-The rows Adjacent, Fibonacci, Dynasearch and Motzkin are taken from~\cite{wojewodzki2026windowed} and use the block-boundary filter. As in the
+The rows Adjacent, Fibonacci, Dynasearch and Motzkin are taken from \citet{wojewodzki2026windowed} and use the block-boundary filter. As in the
 current campaign, a run finishes the move in progress, so where one move
 takes longer than the budget the cell holds the result after a single
 move. That campaign did not run Dynasearch and Motzkin on $n=500$ at
@@ -629,12 +740,12 @@ every seed, so a shorter budget gives the same result; these cells
 row $k=n$ is the
 Dynasearch neighborhood in the current implementation, which is faster
 on large instances. Every $k$ from 4 to 16 with the exact filter is ahead
-of the four earlier neighborhoods at 10\,s for $n\geq 50$.
+of the four reference neighborhoods at 10\,s for $n\geq 50$.
 
 \paragraph{Reach.} Most of the gain comes from the first steps of $k$
 (Table~\ref{tab:main}). Going from $k=2$ to $k=6$ removes between 0.9
 and 2.8 percentage points of RPD at 10\,s, and beyond $k=8$ the curve is
-flat or rises. At 10\,s the best $k$ is 12 for $n\leq 100$, 8 for $n=200$
+flat or rises. At 10\,s the best $k$ of Table~\ref{tab:main} is 12 for $n\leq 100$, 8 for $n=200$
 (an average of 16 on $200\times 10$ and 6--8 on $200\times 20$) and 6 for
 $n=500$. At shorter budgets it is the same or smaller, except
 for one tie within 0.01 points. With $k=n$ (full Dynasearch) the search
@@ -681,10 +792,6 @@ filter.}
 
 \begin{table}[t]
 \centering
-\caption{Best $k$ per class and budget on the Taillard PFSP instances (ILS, exact filter). Values
-within 0.05 points of the best are listed, and an asterisk marks cells
-where Insert is better.}
-\label{tab:bestk}
 \small
 \setlength{\tabcolsep}{2.5pt}
 \begin{tabular}{@{}lcccc@{}}
@@ -705,6 +812,10 @@ $200\times20$ & 5 & 5, 6 & 6, 8 & 6, 8 \\
 $500\times20$ & 5, 6 & 6 & 5, 6 & 8 \\
 \bottomrule
 \end{tabular}
+\caption{Best $k$ per class and budget on the Taillard PFSP instances (ILS, exact filter). Values
+within 0.05 points of the best are listed, and an asterisk marks cells
+where Insert is better.}
+\label{tab:bestk}
 \end{table}
 
 \paragraph{Machines.} The best $k$ falls with the number of machines
@@ -750,7 +861,7 @@ lies between 10 and 30 under the block-boundary filter and between 6 and
 exact variant beats the best block-boundary variant at every size.
 
 \paragraph{Insert.} Insert reaches a lower mean RPD than every $k$ on the
-$n=20$ average at all budgets, for $n=50$ from 0.5\,s and for $n=100$ from 1\,s.
+$n=20$ average at all budgets, for $n=50$ from 0.5\,s, for $n=100$ from 1\,s and for $n=200$ at 10\,s.
 At 10\,s the difference to the best $k$ is 0.1--0.25 points. We test on
 instance means, because the seeds of one instance are not independent.
 The Wilcoxon test then confirms the difference only for $n=100$
@@ -785,23 +896,17 @@ After about 690 iterations on $500\times 20$ the RPD is 7.6 for $k=4$,
 6.7 for $k=6$ and 6.4 for $k=8$, and after 4\,000 iterations of the long
 runs it falls from 5.2 for $k=4$ to 3.3 for $k=12$. A longer reach thus
 gives better moves, and the short best $k$ under a time budget reflects
-what a move costs. The 60\,s runs show the same. At every
-iteration count a larger $k$ is ahead: after 1\,000 iterations on
+what a move costs. In the 60\,s runs, after 1\,000 iterations on
 $500\times 20$ the RPD falls from 7.07 for $k=4$ to 5.11 for $k=16$, and
 on $200\times 10$ from 4.41 to 2.17. One move, however, takes 3.5\,ms
-at $k=4$ and 137\,ms at $k=32$ on $500\times 20$. Between the same two
-values of $k$ the time per move grows 27 times on $200\times 10$ and 48
-times on $200\times 20$, so more machines make a long reach more
-expensive.
+at $k=4$ and 137\,ms at $k=32$ on $500\times 20$.
 
 
 \paragraph{Quantum moves.} Table~\ref{tab:quantum} compares the three
 solvers of the same move on the runs made on all of them, 15 per class
-and $k$ (5 on $100\times 10$). In 10\,s the gate-based processor
-completes one move: a move takes about 12\,s on $n=20$ and about 53\,s
-on $n=100$. This one move improves the start in 183 of 190 runs. The
+and $k$ (5 on $100\times 10$). The gate-based processor starts one move within the 10\,s and finishes it; the move takes about 12\,s on $n=20$ and about 53\,s on $n=100$. This one move improves the start in 183 of 190 runs. The
 annealer makes 1.5 to 5.2 moves on average (3.0 to 5.1 in Table~\ref{tab:quantum}). Each call uses about 29\,ms of
-QPU time but takes about 2.5\,s with the network, and this round trip sets
+QPU time but takes 2--2.5\,s with the network, depending on $n$, and this round trip sets
 the number of moves. The annealer ends below the gate-based processor
 in 159 of the 190 paired runs. Both stay far
 above the classical ILS, which makes $10^4$--$10^5$ moves in the same
@@ -810,10 +915,6 @@ than the quality of a move.
 
 \begin{table}[t]
 \centering
-\caption{Mean RPD [\%] on the Taillard PFSP instances after 10\,s of ILS on the runs made on all three
-platforms, and the mean number of moves per run. The gate-based
-processor makes one move per run.}
-\label{tab:quantum}
 \small
 \setlength{\tabcolsep}{3pt}
 \begin{tabular}{@{}lcrrrrrr@{}}
@@ -838,6 +939,10 @@ $100\times 10$ & 3 & 23.2 & 22.2 & 19.6 & 4.6  & 4.8 & 19\,318 \\
                & 4 & 23.2 & 21.4 & 20.4 & 4.1  & 3.0 & 14\,159 \\
 \bottomrule
 \end{tabular}
+\caption{Mean RPD [\%] on the Taillard PFSP instances at the 10\,s ILS budget on the runs made on all three
+platforms, and the mean number of moves per run. The gate-based
+processor makes one move per run, which exceeds the budget.}
+\label{tab:quantum}
 \end{table}
 
 
@@ -864,14 +969,14 @@ the median (distance 3--11 for $m\geq 10$) with a long tail.
 A swap inside a compound move for the flow shop should reach only as far
 as the time budget pays for. Under a fixed budget the best $k$ falls with
 the number of machines and, on large instances, grows with the budget. With 20 machines and at
-least 100 jobs it stays at most 10 at every budget we ran, far
+least 100 jobs it never exceeds 10 at any budget we ran, far
 below what is needed to cover most Dynasearch moves on the largest
 instances. With 5 machines the choice of $k$ hardly matters once
 $k\geq 12$, and on 200 jobs with 10 machines the best $k$ grows with the
 budget. The exact critical-path filter improves every $k\leq 16$ at
 every instance size. Insert is better on 7 of the 11 classes with up to
 200 jobs at 10\,s. The compound swaps lead on $500\times 20$ at every budget up to 300\,s and on the other large classes
-at short budgets, where one Insert iteration is too expensive. At an equal number of iterations a longer reach is better on every class, so the limit on $k$ comes from the cost of a move, which grows faster than linearly in $k$ and in $m$, and not from the additivity error. A small $k$ also keeps the QUBO of the move banded, and with $k\leq 4$ it embeds on the annealer up to $n=500$, but within 10\,s both platforms stay far behind the classical search.
+at short budgets, where one Insert iteration is too expensive. At an equal number of iterations a longer reach is better on every class, so the limit on $k$ comes from the cost of a move, which grows faster than linearly in $k$ and in $m$, and not from the additivity error. With $k\leq 4$ the move embeds on the annealer up to $n=500$, but both quantum platforms stay far behind the classical search.
 
 \ifanon\else
 \section*{Acknowledgments}

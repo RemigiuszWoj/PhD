@@ -31,8 +31,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-plt.rcParams.update({"font.size": 8, "axes.spines.top": False, "axes.spines.right": False,
-                     "legend.frameon": False, "pdf.fonttype": 42})
+# usetex: Type 1 fonts, as the AAAI kit requires (no embedded TrueType)
+plt.rcParams.update({"font.size": 7, "axes.spines.top": False, "axes.spines.right": False,
+                     "legend.frameon": False, "text.usetex": True, "font.family": "serif"})
 GRAYS = ["0.75", "0.6", "0.45", "0.3", "0.15", "0.0"]
 MARKS = ["o", "s", "^", "D", "v", "P"]
 REFS = {"adjacent": "Adj", "fibonacci": "Fib", "dynasearch": "Dyn", "motzkin": "Motz", "insert": "Ins"}
@@ -75,7 +76,7 @@ def read_tables(tables: Path, extra, name: str):
 def fig_rpd(tables: Path, out: Path, algo: str, extra=()) -> None:
     data, budgets = read_tables(tables, extra, f"rpd_{algo}.csv")
     ns = sorted(data)
-    fig, axes = plt.subplots(1, len(ns), figsize=(1.75 * len(ns), 2.2), sharey=False)
+    fig, axes = plt.subplots(1, len(ns), figsize=(5.25, 1.4), sharey=False)  # printed size: 0.75 of the AAAI text width
     axes = [axes] if len(ns) == 1 else list(axes)
     for ax, n in zip(axes, ns):
         for bi, b in enumerate(budgets):
@@ -88,14 +89,15 @@ def fig_rpd(tables: Path, out: Path, algo: str, extra=()) -> None:
             v = data[n].get(nb, {}).get(budgets[-1])
             if v is not None:
                 ax.axhline(v, lw=0.5, ls=":", color="0.4")
-                ax.text(1.0, v, lab, transform=ax.get_yaxis_transform(), fontsize=5.5, va="bottom", ha="right")
+                ax.text(1.0, v, lab, transform=ax.get_yaxis_transform(), fontsize=5, va="bottom", ha="right")
         ax.set_xscale("log", base=2)
         ax.set_title(f"$n={n}$")
         ax.set_xlabel("$k$")
-    axes[0].set_ylabel("mean RPD [%]")
-    axes[0].legend(fontsize=5.5, title="budget", title_fontsize=5.5, loc="upper right", ncol=2,
-                   columnspacing=0.8, handlelength=1.5)
-    fig.tight_layout()
+    axes[0].set_ylabel(r"mean RPD [\%]")
+    h, l = axes[0].get_legend_handles_labels()
+    fig.legend(h, [f"budget {x}" if i == 0 else x for i, x in enumerate(l)], fontsize=6, loc="lower center", ncol=len(l),
+               columnspacing=1.0, handlelength=1.5, borderaxespad=0.1)
+    fig.tight_layout(pad=0.2, rect=(0, 0.11, 1, 1))
     fig.savefig(out / f"fig_rpd_vs_k{SUFFIX}.pdf")
     plt.close(fig)
 
@@ -103,7 +105,7 @@ def fig_rpd(tables: Path, out: Path, algo: str, extra=()) -> None:
 def fig_iters(tables: Path, out: Path, algo: str, extra=()) -> None:
     data, budgets = read_tables(tables, extra, f"iters_{algo}.csv")
     b = budgets[-1]
-    fig, ax = plt.subplots(figsize=(3.3, 2.3))
+    fig, ax = plt.subplots(figsize=(1.68, 1.4))  # printed size: 0.24 of the text width
     for i, n in enumerate(sorted(data)):
         pts = sorted((k_of(nb, n), v[b]) for nb, v in data[n].items()
                      if k_of(nb, n) is not None and b in v and v[b] > 0 and k_of(nb, n) <= n)
@@ -113,8 +115,8 @@ def fig_iters(tables: Path, out: Path, algo: str, extra=()) -> None:
     ax.set_yscale("log")
     ax.set_xlabel("$k$")
     ax.set_ylabel(f"iterations in {b / 1000:g} s")
-    ax.legend(fontsize=6)
-    fig.tight_layout()
+    ax.legend(fontsize=6, handlelength=1.2, borderaxespad=0.2)
+    fig.tight_layout(pad=0.2)
     fig.savefig(out / f"fig_iters_vs_k{SUFFIX}.pdf")
     plt.close(fig)
 
@@ -203,7 +205,7 @@ def fig_best_k_rel(dirs, out: Path, algo: str, budgets=(100, 1000, 10000)) -> No
         ax.set_xlabel("$n$")
         ax.set_title(f"{b / 1000:g} s")
     axes[0][0].set_ylabel("$k / n$")
-    axes[0][0].set_yticks([0.005, 0.01, 0.03, 0.1, 0.3, 1.0], ["0.5%", "1%", "3%", "10%", "30%", "100%"])
+    axes[0][0].set_yticks([0.005, 0.01, 0.03, 0.1, 0.3, 1.0], [r"0.5\%", r"1\%", r"3\%", r"10\%", r"30\%", r"100\%"])
     handles = [plt.Line2D([], [], ls="", marker=mark[m], color=shade[m], label=f"$m={m}$") for m in ms]
     handles.append(plt.Line2D([], [], ls="--", color="k", lw=0.7, label=r"$(\log_2 n+2)/n$"))
     axes[0][-1].legend(handles=handles, loc="lower left", fontsize=6)
@@ -248,7 +250,7 @@ def fig_rpd_vs_iters(run_dir: Path, out: Path, algo: str, ks=(4, 6, 8, 12, 16, 3
         n, m = f[3:].split("_")
         ax.set_title(f"${n}\\times{m}$")
         ax.set_xlabel("iteration")
-    axes[0].set_ylabel("mean RPD [%]")
+    axes[0].set_ylabel(r"mean RPD [\%]")
     axes[-1].legend(fontsize=5.5, handlelength=1.5)
     fig.tight_layout()
     fig.savefig(out / "fig_rpd_vs_iters_cp.pdf")
